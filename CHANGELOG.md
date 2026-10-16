@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-10-16
+
 ### Added
 - Custom screens, for dense dashboards like the ones people bring over from Home Assistant (#9). All three are opt-in
   per screen: a screen saved before keeps its look and its layout exactly.
