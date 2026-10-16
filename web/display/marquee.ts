@@ -23,6 +23,7 @@ const SLIDE = [
   '.hl-tt', // side panel pills: next event, happening now, check-in / check-out, birthdays
   '.cd-tt', // countdowns
   '.sched-body', // scheduled messages
+  '.cv-msg.is-mline .msg-tx', // a Personalizado message on one line (a box only the fine grid has)
 ].join(',');
 /** Chip titles clamped to a few lines (and card titles, calendar.eventStyle = 'cards'): they scroll up. */
 const SCROLL = ['.cal .ev.wrap > .tx', '.cal .ev.card > .tx'].join(',');

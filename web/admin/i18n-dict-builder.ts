@@ -1587,6 +1587,20 @@ const ROWS: [string, string, string, string, string][] = [
     'Ikke alle kort kan være i det normale gitter. Fjern nogle eller gør dem mindre, og prøv igen.',
   ],
   [
+    'La cuadrícula normal admite {n} widgets como máximo. Quita alguno y vuelve a probar.',
+    'The normal grid takes at most {n} widgets. Remove some and try again.',
+    'A grelha normal admite no máximo {n} widgets. Tira algum e tenta de novo.',
+    'Het normale raster past hoogstens {n} widgets. Haal er een paar weg en probeer het opnieuw.',
+    'Det normale gitter kan højst have {n} widgets. Fjern nogle, og prøv igen.',
+  ],
+  [
+    'La cuadrícula normal admite {n} entidades de Home Assistant como máximo. Quita alguna y vuelve a probar.',
+    'The normal grid takes at most {n} Home Assistant entities. Remove some and try again.',
+    'A grelha normal admite no máximo {n} entidades do Home Assistant. Tira alguma e tenta de novo.',
+    'Het normale raster past hoogstens {n} Home Assistant-entiteiten. Haal er een paar weg en probeer het opnieuw.',
+    'Det normale gitter kan højst have {n} Home Assistant-enheder. Fjern nogle, og prøv igen.',
+  ],
+  [
     'Cuadrícula fina: el doble de cuadros en cada sentido. Todo sigue en su sitio y ahora puedes hacer las tarjetas más pequeñas.',
     'Fine grid: twice the cells each way. Everything stays where it was, and now cards can be smaller.',
     'Grelha fina: o dobro dos quadrados em cada sentido. Tudo fica no seu lugar e agora os cartões podem ser mais pequenos.',

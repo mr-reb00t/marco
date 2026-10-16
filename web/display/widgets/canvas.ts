@@ -11,7 +11,7 @@
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
 import type { Announcement, CanvasGridId, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, canvasGrid, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasGrid, cellRange, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -128,6 +128,26 @@ export function roomFactor(kind: string, w: number, h: number, orientation: 'lan
   }
   if (!ma || (w <= mw && h <= mh)) return 1;
   return Math.min(2, Math.max(1.15, Math.sqrt((w * h) / ma)));
+}
+
+/**
+ * A box only the fine grid has (smaller than its kind's smallest box on the normal grid, in either direction): the
+ * card's compact look. data-mini on the body, with data-mw / data-mh its width and height in fine cells, so each
+ * kind's CSS (and its adapter) can draw a line, a strip or a small block. Never on the normal grid, never in the
+ * sidebar: every box the normal grid allows looks exactly as before.
+ */
+export function miniMark(body: HTMLElement, kind: string, cells: [number, number] | null, orientation: 'landscape' | 'portrait', grid: CanvasGridId): void {
+  const r = cells && grid === 'fine' && CANVAS_KINDS[kind as keyof typeof CANVAS_KINDS] ? cellRange(kind, orientation, 'normal') : null;
+  const mini = !!r && !!cells && (cells[0] < r.minW * 2 || cells[1] < r.minH * 2);
+  if (!mini) {
+    delete body.dataset.mini;
+    delete body.dataset.mw;
+    delete body.dataset.mh;
+    return;
+  }
+  body.dataset.mini = '';
+  body.dataset.mw = String(cells![0]);
+  body.dataset.mh = String(cells![1]);
 }
 
 /** The screen rect around the visible text, images and icons of a card body (not its wrappers), or null. */
@@ -421,8 +441,14 @@ export class Canvas {
     const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o, this.grid), o, this.grid) : 1;
     if (room > 1) e.body.dataset.room = '';
     else delete e.body.dataset.room;
+    miniMark(e.body, e.kind, pos?.zone === 'main' ? posCells(pos, o, this.grid) : null, o, this.grid);
     e.adapter.layout?.({ w, h, rem, size: pos?.zone === 'main' ? pos.size : 'side', zone: e.zone });
-    if (FILL[e.kind]) this.fillBox(e, rem, pos?.zone === 'main' ? pos.size : 'side');
+    // (a compact look is made for its small box: it is not zoomed up, so its rows never get shorter to grow)
+    if (FILL[e.kind] && e.body.dataset.mini === undefined) this.fillBox(e, rem, pos?.zone === 'main' ? pos.size : 'side');
+    else if (FILL[e.kind]) {
+      e.filled = false;
+      e.body.classList.remove('is-spread', 'is-tall');
+    }
   }
 
   /**

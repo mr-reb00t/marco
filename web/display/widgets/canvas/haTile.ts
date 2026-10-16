@@ -9,7 +9,7 @@ import { ctx } from '../../ctx';
 import { sizeCells } from '../../../../server/core/canvasCore.js';
 import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, stateIcon, stateText, stepDecimals, svgEl, tone } from '../ha/haui';
 import { bigType, fitWidth, typeCap } from './clock';
-import { el, haAdapter, icon, live, nameOf, tappable } from './ha';
+import { el, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
 import { climateState, colorRow, ctChips, fitSwatches, kelvinRgb } from './haControls';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
 
@@ -287,6 +287,15 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
       wrap.append(lb);
     }
   }
+  // the line of a climate in a box only the fine grid has: − the target + at its end while the width allows them
+  // (fitTile takes them out), and the temperature now as its state (short, so the name keeps the room)
+  if (size === 'row' && root.dataset.mini !== undefined && s?.d === 'climate' && s.mode !== 'off' && s.target !== null && live(env, s, 'setpoint')) {
+    const st = stepRow(env, alias, 'setpoint', s.step, `${fmtNum(s.target, s.step < 1 ? 1 : 0)}°`);
+    st.classList.add('is-line');
+    wrap.append(st);
+    const now = wrap.querySelector('.cv-ha-state');
+    if (now && s.cur !== null) now.textContent = `${fmtNum(s.cur, 1)}°`;
+  }
   root.appendChild(wrap);
   root.classList.toggle('has-feats', drawn.length > 0);
   if (drawn.length) root.appendChild(box);
@@ -341,7 +350,7 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
   }
   smaller(0.5);
   // the line of a cover: up and down only while the name keeps a word or so beside them
-  const lb = box.size === 'row' ? root.querySelector<HTMLElement>('.cv-ha-coverbtns.is-line') : null;
+  const lb = box.size === 'row' ? root.querySelector<HTMLElement>('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line') : null;
   if (lb) {
     const name = root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-name');
     const em = name ? parseFloat(getComputedStyle(name).fontSize) || 16 : 16;
@@ -447,6 +456,26 @@ export function growToFill(root: HTMLElement, max = 1.4, scale = 1): void {
   }
 }
 
+/**
+ * The Indicador and the Estadística on one line (a box only the fine grid has, styles-canvas-mini.css): the number
+ * as high as the line allows on the left, never more than about half the width, the name (and the bar or what the
+ * number is) beside it.
+ */
+function fitNumberLine(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
+  const cs = getComputedStyle(root);
+  const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  // the number's line box is 5.6rem × --wk high
+  let wk = Math.min(1.2, (h * 0.66) / (5.6 * box.rem)) * Math.min(1, scaleOf(env));
+  root.style.setProperty('--wk', wk.toFixed(3));
+  const big = root.querySelector<HTMLElement>('.cv-ha-big');
+  const bw = big?.getBoundingClientRect().width ?? 0;
+  if (bw > w * 0.5) {
+    wk = Math.max(0.25, (wk * w * 0.5) / bw);
+    root.style.setProperty('--wk', wk.toFixed(3));
+  }
+}
+
 // ------------------------------------------------------------------------------------------------ gauge
 /** ok / warn / err of a value against two breakpoints (inverted: a high value is the good one). */
 function level(num: number, th: unknown, invert: boolean): '' | 'ok' | 'warn' | 'err' {
@@ -536,6 +565,7 @@ function statisticAdapter(): CanvasAdapter {
     root.appendChild(big);
     if (!asking && (valV !== it.v || Date.now() - valAt > 5 * 60_000)) ask?.();
   }, (root, box, env) => {
+    if (miniLine(root)) return fitNumberLine(root, box, env);
     const wk = bigType(root, box, 11.5, scaleOf(env), 14, typeCap(root));
     fitWidth(root, root.querySelector('.cv-ha-big'), wk);
   });
@@ -566,6 +596,7 @@ export const HA_TILE_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Canva
     fitSwatches(root);
   }),
   'ha.gauge': () => haAdapter('cv-ha-sensor cv-ha-gauge', (p) => [aliasOf(p.entity)].filter(Boolean), drawGauge, (root, box, env) => {
+    if (miniLine(root)) return fitNumberLine(root, box, env);
     const wk = bigType(root, box, box.size === 'xs' ? 11.5 : 13, scaleOf(env), 14, typeCap(root));
     fitWidth(root, root.querySelector('.cv-ha-big'), wk);
   }),

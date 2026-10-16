@@ -28,7 +28,7 @@ import { cameraFrame, watchLive, LIVE_BOUNDARY } from '../haCamera.js';
 import { CAMERA_RE } from '../core/doorbellCore.js';
 import { redactSecrets } from '../core/activityCore.js';
 import { sniffImage } from '../core/imageInfo.js';
-import { CANVAS_ID_RE, CANVAS_KINDS, canvasCards } from '../core/canvasCore.js';
+import { CANVAS_ID_RE, CANVAS_KINDS, CANVAS_LIMITS_FINE, canvasCards } from '../core/canvasCore.js';
 import {
   ENTITY_RE, CHART_PERIODS, CONTROL_TABLE, aliasesFor, aliasControls, aliasFlagged, clampValue, controlsFor, downsample, isGasValve, isHighRisk,
   pickAttrs, periodRange, roundPoints, serviceCall, slim as slimOf, MAX_POINTS,
@@ -564,8 +564,9 @@ export function haAdminRouter() {
 
   // the builder's preview of items not saved yet: their entities' slim states, from the mirror or over REST
   r.post('/homeassistant/slim', async (req, res) => {
-    const list = entityList(req.body?.entities, 40);
-    if (!list) return res.status(400).json({ error: 'entities: up to 40 entity ids' });
+    // (a screen on the fine grid shows up to 80, CANVAS_LIMITS_FINE)
+    const list = entityList(req.body?.entities, CANVAS_LIMITS_FINE.haEntities);
+    if (!list) return res.status(400).json({ error: `entities: up to ${CANVAS_LIMITS_FINE.haEntities} entity ids` });
     if (!ha.haUsable()) return res.json({ conn: 'down', states: {} });
     const states = {};
     const live = haLive();

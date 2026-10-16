@@ -6,7 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as nodeModule from 'node:module';
 import {
-  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, CANVAS_TEMPLATES, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, ROTATOR_MAX, boxAllowed, boxOf, canvasCards,
+  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_LIMITS_FINE, canvasLimits, CANVAS_SIZE_IDS, CANVAS_TEMPLATES, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, ROTATOR_MAX, boxAllowed, boxOf, canvasCards,
   canvasDataItems, canvasDefaults, canvasEventsNeed, canvasFromTemplate, canvasWidgetIds, cellRange, conditionHidden, convertCanvasGrid, defaultCanvas, defaultItemStyle,
   deriveCanvasPortrait, exportCanvasFile, fitsAt, gridDims, itemAliases, kindFor, makeOccupancy, occupy, posCells, projectCanvas, readCanvasFile, rotatorKindOk, sanitizeCanvas,
   scheduleHidden, sizeCells,
@@ -289,7 +289,8 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   // its range: what every one of its cards allows too (the hourly forecast needs 6 cells across)
   const k = kindFor({ kind: 'rotator', props: d });
   assert.deepEqual([cellRange(k).minW, cellRange(k).minH], [6, 2]);
-  assert.deepEqual([cellRange(k, 'landscape', 'fine').minW, cellRange(k, 'landscape', 'fine').minH], [12, 4]);
+  // (on the fine grid: the largest of its cards' fine minimums, the hourly strip's 8×2)
+  assert.deepEqual([cellRange(k, 'landscape', 'fine').minW, cellRange(k, 'landscape', 'fine').minH], [8, 2]);
   assert.deepEqual(cellRange(kindFor({ kind: 'rotator', props: { cards: [] } })), cellRange('rotator'), 'no cards: the kind itself');
   // so a box too small for its cards is grown on save
   const small = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, {}, { pos: B(0, 0, 3, 2) })] });
@@ -501,4 +502,59 @@ test('builder: a Rotativa counts its cards, gets ids of its own when added or co
   // validation agrees with the editor
   const v = clean(structuredClone(d.cv));
   assert.deepEqual(v.errors, []);
+});
+
+test('the fine grid takes 48 cards and 80 Home Assistant entities; the normal grid keeps 24 and 40', () => {
+  // 49 sensors of 4×1 on the fine grid (room for 96): the 49th is one too many
+  const sensors = (n, w, h, cols) => Array.from({ length: n }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'ha.sensor', B((i % cols) * w, Math.floor(i / cols) * h, w, h), { entity: `sensor.s${i}` }));
+  const fine = clean({ ...defaultCanvas(), grid: 'fine', items: sensors(49, 4, 1, 6) });
+  assert.ok(fine.errors.some((e) => /too many items \(max 48\)/.test(e.m)), JSON.stringify(fine.errors));
+  assert.equal(fine.cv.items.length, 48);
+  assert.equal(CANVAS_LIMITS_FINE.items, 48);
+  assert.equal(canvasLimits('fine').haEntities, 80);
+  assert.deepEqual(canvasLimits('normal'), CANVAS_LIMITS);
+  // the normal grid: still 24
+  const normal = clean({ ...defaultCanvas(), items: sensors(25, 2, 1, 6) });
+  assert.ok(normal.errors.some((e) => /too many items \(max 24\)/.test(e.m)));
+  assert.equal(normal.cv.items.length, 24);
+  // 81 entities on the fine grid (14 rooms of 6 rows = 84): the 81st is refused, 80 are kept
+  const room = (i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 6, Math.floor(i / 4) * 4, 6, 4), { rows: Array.from({ length: 6 }, (_, j) => ({ entity: `light.r${i}_${j}`, name: '', interactive: true })) });
+  const many = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 14 }, (_, i) => room(i)) });
+  assert.ok(many.errors.some((e) => /too many Home Assistant entities \(max 80\)/.test(e.m)), JSON.stringify(many.errors));
+  assert.equal(new Set(many.cv.items.flatMap((it) => it.props.rows.map((r) => r.entity))).size, 78);
+  const ok = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 13 }, (_, i) => room(i)) });
+  assert.deepEqual(ok.errors, []);
+  // the same 13 rooms (78 entities) on the normal grid: past 40
+  const n13 = clean({ ...defaultCanvas(), items: Array.from({ length: 13 }, (_, i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 3, Math.floor(i / 4) * 3, 3, 3), room(i).props)) });
+  assert.ok(n13.errors.some((e) => /too many Home Assistant entities \(max 40\)/.test(e.m)));
+});
+
+test('back to the normal grid: refused while the screen has more than 24 cards or 40 entities', () => {
+  const thirty = { ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 30 }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'date', B((i % 8) * 3, Math.floor(i / 8) * 2, 3, 2))) };
+  const r = convertCanvasGrid(clean(thirty).cv, 'normal');
+  assert.equal(r.ok, false);
+  assert.equal(r.over, 'items');
+  const room = (i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 6, Math.floor(i / 4) * 6, 6, 6), { rows: Array.from({ length: 6 }, (_, j) => ({ entity: `light.r${i}_${j}`, name: '', interactive: true })) });
+  const rooms = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 8 }, (_, i) => room(i)) });
+  assert.deepEqual(rooms.errors, []);
+  const q = convertCanvasGrid(rooms.cv, 'normal');
+  assert.equal(q.ok, false);
+  assert.equal(q.over, 'haEntities');
+  // 24 cards: converts
+  const fit = convertCanvasGrid(clean({ ...thirty, items: thirty.items.slice(0, 24) }).cv, 'normal');
+  assert.equal(fit.ok, true);
+});
+
+test('builder: "N de 48 widgets" on the fine grid, and a 49th card is refused', ts, () => {
+  const fine = { ...defaultCanvas(), grid: 'fine' };
+  assert.equal(M.maxCards(fine), 48);
+  assert.equal(M.maxCards(defaultCanvas()), 24);
+  let cv = fine;
+  for (let i = 0; i < 48; i++) {
+    const r = M.addItem(cv, 'landscape', 'spacer', { zone: 'main', drop: M.firstSpot(cv, 'landscape', 'spacer', 'xs') ?? { x: 0, y: 0, size: 'xs' } });
+    assert.ok(r.ok, `card ${i + 1}: ${r.why}`);
+    cv = r.cv;
+  }
+  assert.equal(M.cardCount(cv), 48);
+  assert.equal(M.canAdd(cv, 'spacer'), 'tooMany');
 });

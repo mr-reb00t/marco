@@ -1,0 +1,310 @@
+/*
+ * Personalizado on the fine grid: the compact look of a card in a box only the fine grid has (smaller than its kind's
+ * smallest box on the normal grid). The controller marks its body data-mini, with data-mw / data-mh its width and
+ * height in fine cells (widgets/canvas.ts miniMark), so nothing here touches a box the normal grid allows.
+ */
+
+/* ---- time and calendar ---- */
+
+/* Reloj digital in a line (is-mline, clock.ts): the time with the date beside it, or the time alone (is-mnodate) */
+#app.preset-canvas .cv-clock.is-mline[data-mini] > div { flex-direction: row; align-items: baseline; justify-content: center; gap: calc(1.6rem * var(--wk, 1)); }
+.style-modern #app.preset-canvas .cv-clock.is-mline[data-mini] .date { flex: 0 1 auto; min-width: 0; margin: 0; font-size: calc(4rem * var(--wk, 1)); }
+#app.preset-canvas .cv-clock.is-mline.is-mnodate[data-mini] .date { display: none; }
+.style-modern #app.preset-canvas .cv-clock[data-mini] .clock.digital { line-height: 1; }
+
+/* Fecha in a line (is-mline, clock.ts): "Vie 16 oct", the weekday in its colour */
+#app.preset-canvas .cv-datecard.is-mline[data-mini] .cv-date-line { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.15; }
+#app.preset-canvas .cv-datecard.is-mline[data-mini] .cv-date-wd { font-size: inherit; }
+
+/* Reloj analógico small: less padding round the dial, no date under a dial two cells high */
+#app.preset-canvas .cv-body.cv-analog[data-mini] { --cv-pad: 0.5rem; --cv-pad-none: 0.3rem; gap: 0.4rem; }
+#app.preset-canvas .cv-analog[data-mini][data-mh='2'] .cv-date { display: none; }
+#app.preset-canvas .cv-analog[data-mini] .cv-date { font-size: 1.5rem; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* Reloj flip in a line: the digits alone */
+#app.preset-canvas .cv-flip.is-mnodate[data-mini] .cv-date { display: none; }
+#app.preset-canvas .cv-flip[data-mini] .cv-date { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-flip[data-mini] { gap: calc(0.6rem * var(--wk, 1)); }
+
+/* Cuentas atrás: one line per countdown (is-mline, calendar.ts), as many as fit */
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-card { padding: 0; font-size: 1.8rem; }
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-card .cd { display: flex; align-items: center; gap: 0.8rem; padding: 0.3rem 0; font-size: 1.8rem; min-width: 0; }
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-card .cd::after { display: none; }
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-em { flex: none; width: 2.8rem; height: 2.8rem; border-radius: 0.8rem; font-size: 1.6rem; }
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-tt { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cd.is-mline[data-mini] .cd-when { flex: none; white-space: nowrap; }
+#app.preset-canvas .cv-cd.is-mline.is-noem[data-mini] .cd-em { display: none; }
+
+/* Agenda: a short line per day, a line per event (the time, then the title ending in …) */
+#app.preset-canvas .cv-agenda[data-mini] .ag-day { margin-bottom: 0.8rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-date { display: block; padding: 0 0.2rem 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-date b { font-size: 1.8rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-date span { margin-left: 0.6rem; font-size: 1.5rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-list { background: none; border-radius: 0; box-shadow: none; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-ev { display: flex; align-items: center; gap: 0.7rem; padding: 0.3rem 0.4rem 0.3rem 1.4rem; background: none; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-ev.ongoing { background: rgb(var(--c) / 0.12); border-radius: 0.6rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-ev::before { left: 0.3rem; top: 0.5rem; bottom: 0.5rem; width: 0.4rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-ev + .ag-ev::after { display: none; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-em { flex: none; width: 2.2rem; font-size: 1.7rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-main { flex: 1 1 auto; min-width: 0; display: flex; align-items: baseline; gap: 0.6rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-tt { flex: 1 1 auto; min-width: 0; font-size: 1.8rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-sub { order: -1; flex: 0 1 auto; min-width: 0; max-width: 45%; margin: 0; font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-agenda[data-mini] :is(.ag-more, .ag-empty) { padding: 0.2rem 0.4rem 0.2rem 1.4rem; font-size: 1.5rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-empty.big { padding: 0.4rem; }
+
+/* Hoy and Por persona: a line per event or per person (views.ts renderMiniToday, renderMiniPeople) */
+#app.preset-canvas .cv-vmini[data-mini] { justify-content: flex-start; gap: 0.4rem; font-size: 1.8rem; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-head { flex: none; display: flex; align-items: baseline; gap: 0.6rem; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-head b { font-size: 1.9rem; font-weight: 700; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-head span { min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 1.5rem; color: var(--fg-2); }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-list { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev { position: relative; display: flex; align-items: center; gap: 0.6rem; min-width: 0; padding: 0.25rem 0.4rem 0.25rem 1.2rem; border-radius: 0.6rem; white-space: nowrap; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev::before { content: ''; position: absolute; left: 0.2rem; top: 0.45rem; bottom: 0.45rem; width: 0.4rem; border-radius: 9rem; background: rgb(var(--c)); }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev.ongoing { background: rgb(var(--c) / 0.14); }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev.past { opacity: 0.45; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev.cvm-hide { display: none; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-tm { flex: none; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-num); font-size: 1.5rem; font-weight: 600; color: var(--fg-2); }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-dot { display: none; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-em { flex: none; font-style: normal; font-size: 1.5rem; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-tt { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+#app.preset-canvas .cv-vmini[data-mini] :is(.cvm-more, .cvm-none) { flex: none; padding-left: 1.2rem; font-size: 1.5rem; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-more:empty { display: none; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-pp { padding-left: 0.2rem; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-pp .cvm-tm { flex: 0 1 auto; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-pp::before { display: none; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-pp.is-none .cvm-tt { font-weight: 500; color: var(--fg-3); }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-av { flex: none; display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 99rem; background: rgb(var(--c) / 0.35); font-family: var(--font-emoji), var(--font-ui); font-size: 1.4rem; font-weight: 700; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-name { flex: 0 1 auto; min-width: 0; max-width: 30%; overflow: hidden; text-overflow: ellipsis; font-size: 1.5rem; color: var(--fg-2); }
+#app.preset-canvas .cv-vmini.cvm-nonames[data-mini] .cvm-name { display: none; }
+
+/* ---- weather, content and navigation ---- */
+
+/* Tiempo ahora: icon, temperature and sky in one line (miniNow), or the sky under them */
+#app.preset-canvas .cv-body.cv-wx-now[data-mini] { display: flex; flex-direction: row; align-items: center; justify-content: center; gap: calc(1rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini] :is(.cv-wx-meta, .cv-wx-hl, .cv-wx-loc, .wx-src) { display: none; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini] .cv-wx-head { flex: none; gap: calc(0.5rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini] .cv-wx-side { flex: 0 1 auto; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].no-cond .cv-wx-side { display: none; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack { flex-direction: column; gap: calc(0.3rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack .cv-wx-side { max-width: 100%; align-items: center; }
+
+/* Por horas and Previsión: a strip of small hours or days (miniStrip) */
+#app.preset-canvas .cv-body:is(.cv-wx-hourly, .cv-wx-forecast)[data-mini] { gap: 0; }
+#app.preset-canvas .cv-body[data-mini] :is(.cv-wx-hours, .cv-wx-days) { gap: calc(0.4rem * var(--wk, 1)); flex-direction: row; justify-content: space-around; }
+#app.preset-canvas .cv-body[data-mini] :is(.cv-wx-hours .h, .cv-wx-days .d) { min-width: calc(4rem * var(--wk, 1)); flex-direction: column; justify-content: center; gap: calc(0.2rem * var(--wk, 1)); font-size: calc(1.6rem * var(--wk, 1)); line-height: 1.1; }
+#app.preset-canvas .cv-body[data-mini] :is(.cv-wx-hours .hi svg, .cv-wx-days .di svg) { width: calc(3.2rem * var(--wk, 1)); height: calc(3.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body[data-mini] :is(.cv-wx-hours, .cv-wx-days) .p { font-size: calc(1.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body[data-mini] .cv-wx-days .dn { flex: none; text-align: center; }
+#app.preset-canvas .cv-body[data-mini] .cv-wx-days .rng, #app.preset-canvas .cv-body[data-mini] :is(.cv-wx-hours .h, .cv-wx-days .d)[hidden] { display: none; }
+#app.preset-canvas .cv-body[data-mini].is-few :is(.cv-wx-hours, .cv-wx-days) :is(.p, .dmn) { display: none; }
+
+/* Mensaje: the emoji and the words on the lines the height holds (--mlines), ending in "..." */
+#app.preset-canvas .cv-card .cv-msg[data-mini] .msg { font-size: var(--mfs, 2rem); gap: 0.5em; max-width: 100%; min-width: 0; }
+.style-modern #app.preset-canvas .cv-msg[data-mini] .msg-em { width: 1.6em; height: 1.6em; font-size: 1em; border-radius: 0.45em; }
+#app.preset-canvas .cv-msg[data-mini] .msg-tx { min-width: 0; line-height: 1.25; }
+#app.preset-canvas .cv-msg.is-mline[data-mini] .msg-tx { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Lista de tareas: smaller rows on one line each, as many as fit; the heading only when there is room */
+#app.preset-canvas .cv-todo[data-mini] .todo li { font-size: var(--mfs, 1.6rem); padding: 0.3em 0; gap: 0.6em; }
+#app.preset-canvas .cv-todo[data-mini] .todo li[hidden], #app.preset-canvas .cv-todo.no-head[data-mini] .todo .card-h { display: none; }
+#app.preset-canvas .cv-todo[data-mini] .todo li > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-todo[data-mini] .todo li .ico { width: 1em; height: 1em; }
+#app.preset-canvas .cv-todo[data-mini] .todo .card-h { font-size: 1.4rem; margin-bottom: 0.2rem; }
+
+/* Valor one fine row high: the label and the value on one line (content.ts fitLine) */
+#app.preset-canvas .cv-value.is-mline[data-mini] { flex-direction: row; align-items: center; justify-content: space-between; gap: max(0.8rem, calc(1.2rem * var(--wk, 1))); }
+#app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-head { flex: 0 1 auto; font-size: calc(2.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-num { flex: none; align-self: center; }
+#app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-icon { flex: none; }
+#app.preset-canvas .cv-value.is-mline.no-label[data-mini] .cv-val-head { flex: none; }
+
+/* Noticias one fine row high: the headline alone on one line (it slides to its end, like every headline) */
+#app.preset-canvas .cv-news[data-mini][data-mh='1'] .news-stage { inset: 0.3rem 1.6rem; }
+#app.preset-canvas .cv-news[data-mini][data-mh='1'] :is(.news-h, .news-sum) { display: none; }
+#app.preset-canvas .cv-news[data-mini][data-mh='1'] .news-title { font-size: 2.1rem; line-height: 1.25; display: block; white-space: nowrap; }
+#app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-note, #app.preset-canvas .cv-value.is-mline.no-label[data-mini] .cv-val-label { display: none; }
+
+/* ---- family ---- */
+/* One fine row high (canvas/family.ts isLine): the rows side by side on one line, "+N" after them (fitAcross), the
+   last row left shrinking with its text ending in … */
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam { flex-direction: row; align-items: center; gap: 1rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .kf-list,
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .cvf-people { flex: 0 1 auto; min-width: 0; display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 1rem; overflow: hidden; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .kf-list > *,
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .cvf-people > * { flex: none; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .is-one > :not(.fit-hide) { flex: 0 1 auto; min-width: 0; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam .kf-more { font-size: 1.5rem; white-space: nowrap; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam .k-empty { flex-direction: row; gap: 0.8rem; min-width: 0; white-space: nowrap; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam .k-empty-em { font-size: 2.4rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam .k-empty b { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam .k-empty > span:not(.k-empty-em) { display: none; }
+/* Familia: a face and a name each, or faces alone */
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members { justify-content: flex-start; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .cvf-person { flex-direction: row; gap: 0.7rem; text-align: left; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .cvf-person .k-av { width: 3.6rem; height: 3.6rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .cvf-person .k-av i { font-size: 2.1rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .cvf-person .k-name { font-size: 1.7rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .k-stars { font-size: 1.4rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-members .cvf-people.is-tiny .k-stars { display: none; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-points { justify-content: flex-start; }
+/* Puntos: the place goes, smaller faces */
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank { gap: 0.7rem; padding: 0.3rem 0.9rem 0.3rem 0.3rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-points .cvf-place,
+#app.preset-canvas .cv-body[data-mini][data-mw='4'].cvf-points .cvf-place,
+#app.preset-canvas .cv-body[data-mini][data-mw='5'].cvf-points .cvf-place { display: none; }
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank .k-av { width: 3.4rem; height: 3.4rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank .k-av i { font-size: 2rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank .k-name { flex: 1 1 auto; font-size: 1.7rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-points .cvf-rank .k-name { flex: 0 1 auto; }
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank .k-stars { flex: none; }
+/* (a name keeps a few letters: the card does not grow past that, canvas.ts fillBox) */
+#app.preset-canvas .cv-body[data-mini].cvf-points .cvf-rank .k-name { min-width: 2.6em; }
+/* Premios: a small face, the reward, a thin bar with how far */
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .kf-reward { gap: 0.7rem; padding: 0.3rem 0.9rem 0.3rem 0.3rem; border-radius: 99rem; min-width: 0; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-rewards .kf-reward { max-width: 32rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .kf-reward .k-av { width: 3.4rem; height: 3.4rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .kf-reward .k-av i { font-size: 2rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .kf-row-main { gap: 0.2rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .kf-rw-t { font-size: 1.5rem; line-height: 1.15; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .k-progress { gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .k-bar { flex: 1 0 3rem; height: 0.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-rewards .k-frac { flex: 0 1 auto; min-width: 0; font-size: 1.25rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Comidas de hoy: each meal with its emoji, the dish under its name */
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-meals { justify-content: flex-start; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-meals .kf-meal { grid-template-columns: 3.4rem minmax(0, 1fr); column-gap: 0.7rem; max-width: 30rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-meals .kf-meal-em { width: 3.4rem; height: 3.4rem; font-size: 1.9rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-meals .kf-meal-l { font-size: 1.25rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-meals .kf-meal-t { font-size: 1.7rem; line-height: 1.15; }
+/* Cumpleaños: emoji, name, when */
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays { justify-content: flex-start; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays .cvf-bd { display: flex; align-items: center; gap: 0.7rem; font-size: 1.8rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays .cvf-bd > * { flex: none; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays .cvf-bd-em { font-size: 2.1rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays .cvf-bd-when { font-size: 1.5rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-birthdays .cvf-bd > .cvf-bd-name { flex: 0 1 auto; min-width: 3em; }
+/* Destacados: one line of pills, each shortened with … */
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-hl .highlights { flex-wrap: nowrap; gap: 0.8rem; overflow: hidden; max-width: 100%; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .hl-pill { flex: 0 1 auto; font-size: 1.6rem; padding: 0.5rem 0.9rem 0.5rem 0.8rem; gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .highlights { max-width: 100%; }
+#app.preset-canvas .cv-body[data-mini]:not([data-mh='1']).cv-hl .highlights { align-items: stretch; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .hl-pill { overflow: hidden; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .hl-tt { flex: 0 1 auto; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .hl-lead { flex: 0 1 auto; min-width: 3.4em; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-body[data-mini].cv-hl .hl-tt { min-width: 2em; }
+#app.preset-canvas .cv-body[data-mini][data-mw='4'].cv-hl .hl-em,
+#app.preset-canvas .cv-body[data-mini][data-mw='5'].cv-hl .hl-em { display: none; }
+/* Aviso: the emoji and the title on one line (the text under it when there is no title) */
+#app.preset-canvas .cv-body[data-mini].cvf-an { gap: 1rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-an-em { font-size: 3rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-an .cvf-an-em { font-size: 3rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-an .cvf-an-txt b { font-size: 2rem; -webkit-line-clamp: 1; }
+#app.preset-canvas .cv-body[data-mini].cvf-an .cvf-an-txt span { font-size: 1.6rem; -webkit-line-clamp: 2; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-an .cvf-an-txt b { font-size: 1.8rem; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-an .cvf-an-txt span { -webkit-line-clamp: 1; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-an .cvf-an-txt b ~ span { display: none; }
+#app.preset-canvas .cv-body[data-mini][data-mh='1'].cvf-an::before { top: 0.8rem; bottom: 0.8rem; }
+/* Tareas de hoy: the face says whose, so the name and the stars of each routine go; lower rows */
+#app.preset-canvas .cv-body[data-mini].cvf-chores .k-chore .k-by,
+#app.preset-canvas .cv-body[data-mini].cvf-chores .k-chore .k-pts { display: none; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .kf-list { gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .cvf-chore .k-av { width: 3.2rem; height: 3.2rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .cvf-chore .k-av i { font-size: 1.8rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .cvf-chore .k-chore { min-height: 3.8rem; padding: 0.3rem 0.7rem; gap: 0.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores.k-touch .cvf-chore .k-chore { min-height: 4.8rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .k-em { width: 3rem; height: 3rem; font-size: 1.7rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .k-tt { font-size: 1.6rem; -webkit-line-clamp: 1; }
+#app.preset-canvas .cv-body[data-mini].cvf-chores .k-check { width: 2.6rem; height: 2.6rem; }
+/* Rutinas: smaller rows; in a narrow box the stars go so the name reads */
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-list { gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-row { gap: 0.8rem; padding: 0.5rem 0.7rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-row .k-av { width: 3.6rem; height: 3.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-row .k-av i { font-size: 2.1rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-row .k-name { font-size: 1.7rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-routines .kf-row-main { gap: 0.3rem; }
+#app.preset-canvas .cv-body[data-mini][data-mw='4'].cvf-routines .kf-row .k-stars,
+#app.preset-canvas .cv-body[data-mini][data-mw='5'].cvf-routines .kf-row .k-stars { display: none; }
+/* Comidas de la semana: the list of days, tighter */
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mlist { gap: 0.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mday { gap: 0.1rem; padding: 0.4rem 0.8rem; border-radius: 1.1rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mday-h .km-wd { font-size: 1.3rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mday-h .km-dn { font-size: 1.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mline { gap: 0.6rem; font-size: 1.5rem; line-height: 1.15; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .cvf-mline-em { font-size: 1.5rem; }
+/* ... and the grid of a wide low box: the day on one line, a dish a line, the meals by their emoji alone */
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-grid { grid-template-columns: 2.6rem; gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-col { grid-template-rows: 2.2rem repeat(var(--km-rows, 3), minmax(0, 1fr)); gap: 0.3rem; border-radius: 1rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-day { flex-direction: row; align-items: baseline; gap: 0.5rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-wd { font-size: 1.3rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-dn { font-size: 1.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-slot > span:not(.km-slot-em) { display: none; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-slot-em { font-size: 1.6rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-cell { padding: 0.1rem 0.5rem; border-radius: 0.8rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-cell span { display: block; max-width: 100%; font-size: 1.3rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-cell.is-empty span { font-size: 1.4rem; }
+#app.preset-canvas .cv-body[data-mini].cvf-week .km-col.is-today { box-shadow: 0 0 0 0.3rem rgb(var(--accent-rgb) / 0.14); }
+
+/* ---- data cards, Rotativa, HTML and Tarjeta ---- */
+/* Cripto one fine cell high: one coin on one line (badge, name, sparkline, price and change), each coin in turn */
+#app.preset-canvas .cv-dt.is-line[data-mini] { justify-content: center; }
+#app.preset-canvas .cv-dt.is-line[data-mini] :is(.cv-mk-row, .cv-st-row) { flex: none; display: flex; align-items: center; gap: 0.6em; }
+#app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-who { flex: 0 1 auto; gap: 0.45em; min-width: 1.75em; }
+/* Bolsa as a list one fine cell high: the symbol always, its name while it fits */
+#app.preset-canvas .cv-dt.is-line[data-mini] .cv-st-who { flex: 0 1 auto; gap: 0.45em; min-width: max-content; }
+#app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-spark { flex: 1 1 3em; min-width: 2.6em; height: 1.5em; }
+#app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-val { flex: none; margin-left: auto; flex-direction: row; align-items: baseline; gap: 0.5em; }
+/* HTML card in a small box: its "set it up" note smaller, with less room around it */
+#app.preset-canvas .cv-html[data-mini] .cv-html-note { padding: 0.4rem 0.6rem; font-size: calc(1.4rem * var(--cv-scale, 1)); line-height: 1.2; }
+/* Rotativa one fine cell high: its dots in a column at the right edge, not under the line */
+#app.preset-canvas .cv-rot.has-dots[data-mini][data-mh='1'] > .cv-rot-slide { bottom: 0; right: 1.2rem; }
+#app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots { left: auto; top: 0; bottom: 0; right: 0.7rem; flex-direction: column; align-items: center; gap: 0.35rem; }
+#app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots i { width: 0.5rem; height: 0.5rem; }
+
+/* ---- Casa (Home Assistant) ---- */
+/* the media player on one line: the art as high as the card, the title and where it plays, play or pause at the end */
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player { gap: 0.7em; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-art { width: 100cqh; height: 100cqh; border-radius: 0.6em; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player .cv-ha-txt { min-width: 0; gap: 0; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-title { font-size: 1.1em; line-height: 1.2; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player .cv-ha-state { line-height: 1.2; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-mctl { flex: none; margin: 0; }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-tr { min-height: 0; min-width: 0; width: min(2.6em, 100cqh); height: min(2.6em, 100cqh); }
+#app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-tr svg { width: 1.3em; height: 1.3em; }
+/* the climate on one line: − the target + at its end */
+#app.preset-canvas .cv-ha-stepper.is-line { flex: none; gap: 0.3em; margin-left: auto; }
+#app.preset-canvas .cv-ha-stepper.is-line .cv-ctl { min-height: 0; min-width: 0; width: 2.2em; height: 2.2em; border-radius: 0.8em; }
+#app.preset-canvas .cv-ha-stepper.is-line .cv-ctl svg { width: 1.2em; height: 1.2em; }
+#app.preset-canvas .cv-ha-stepper.is-line .cv-ha-sval { flex: none; font-size: 1.1em; min-width: 2.6em; }
+#app.preset-canvas .cv-ha-tile.tone-heat .cv-ha-stepper.is-line .cv-ha-sval { color: var(--ha-heat); }
+#app.preset-canvas .cv-ha-tile.tone-cool .cv-ha-stepper.is-line .cv-ha-sval { color: var(--ha-cool); }
+/* the Indicador and the Estadística on one line: the number on the left, the name over the bar (or over what the
+   number is) beside it */
+#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto auto minmax(0, 1fr); column-gap: 0.9rem; row-gap: 0.35rem; align-items: center; }
+#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-big { grid-column: 1; grid-row: 1 / -1; align-self: center; gap: 0.3rem; }
+#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head { grid-column: 2; grid-row: 2; font-size: calc(1.3rem * var(--cv-scale, 1)); line-height: 1.2; }
+#app.preset-canvas .cv-ha-stat[data-mini][data-mh='1'] > .cv-ha-head { grid-row: 2 / 4; }
+#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head > .cv-ha-ico { display: none; }
+#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head .cv-ha-txt > * { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugebar { grid-column: 2; grid-row: 3; height: 0.7rem; margin: 0; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugeends { display: none; }
+/* the room in a small box: tighter rows, the icon and the switch sized with the text */
+#app.preset-canvas .cv-ha-room[data-mini] { gap: 0.2rem; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-room-title { margin-bottom: 0; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-rows { gap: 0; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-row { gap: 0.6em; padding: 0.15em 0; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-row.is-tap { min-height: 3.2rem; padding: 0.1rem 0; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-row .cv-ha-ico { width: 1.9em; height: 1.9em; padding: 0.4em; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-switch { width: 2.7em; height: 1.6em; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-switch i { top: 0.2em; left: 0.2em; width: 1.2em; height: 1.2em; }
+#app.preset-canvas .cv-ha-room[data-mini] .cv-ha-switch.is-on i { transform: translateX(1.1em); }
+/* the chart in a small box: a sparkline under the values now, all on one line (the labels shortened with …) */
+#app.preset-canvas .cv-ha-chart[data-mini] .cv-ha-chart-head { flex-wrap: nowrap; min-width: 0; }
+#app.preset-canvas .cv-ha-chart[data-mini] .cv-ha-legend { flex-wrap: nowrap; gap: 0 0.9em; overflow: hidden; }
+#app.preset-canvas .cv-ha-chart[data-mini] .cv-ha-leg { min-width: 0; flex: 0 1 auto; }
+#app.preset-canvas .cv-ha-chart[data-mini] .cv-ha-leg .l { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-ha-chart[data-mini] .cv-ha-leg :is(.sw, .now) { flex: none; }
+/* the scenes in a low box: the buttons as chips in one to three rows, each name on one line */
+#app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scenes { gap: 0.5rem; }
+#app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene { flex-direction: row; justify-content: center; gap: 0.2em; min-height: 0; padding: 0 0.45em; border-radius: 999px; }
+#app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene .cv-ha-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene .cv-ha-ico { width: 1.8em; height: 1.8em; padding: 0.35em; }
+#app.preset-canvas .cv-ha-scenecard.no-ico[data-mini][data-mw] .cv-ha-scene :is(.cv-ha-ico, .cv-ha-emoji) { display: none; }

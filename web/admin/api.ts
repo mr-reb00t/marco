@@ -225,7 +225,7 @@ export const api = {
   haEntities: (domain: string | readonly string[]) =>
     request<HaEntity[]>('GET', `/api/admin/homeassistant/entities?domain=${encodeURIComponent((Array.isArray(domain) ? domain : [domain]).join(','))}`),
   haStatus: () => request<HaLiveStatus>('GET', '/api/admin/homeassistant/status'),
-  /** Slim states of up to 40 entities (the builder's preview of items not saved yet). */
+  /** Slim states of up to 80 entities (the builder's preview of items not saved yet). */
   haSlim: (entities: string[]) => request<{ conn: 'ok' | 'down'; states: Record<string, HaSlim & { at: number; st?: string }> }>('POST', '/api/admin/homeassistant/slim', { entities }),
   /** The value of a Estadística card for the builder's preview (the screens' cache). */
   haStatistic: (entity: string, stat: string, period: string) =>

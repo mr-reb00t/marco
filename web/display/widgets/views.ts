@@ -303,6 +303,76 @@ export function fitPeopleView(root: HTMLElement): void {
   }
   }
 
+// ---- the compact Today and Per person (a Personalizado card in a box only the fine grid has) ----------------------
+
+/** One line of an event: its time (none for an all-day one), its emoji and its title (ending in …). */
+function miniRow(e: NEvent, nowMs: number, cfg: DisplayConfig, tm = ''): string {
+  const past = e.timed && e.endMs <= nowMs;
+  const on = e.timed && e.startMs <= nowMs && e.endMs > nowMs;
+  const time = tm || (e.timed ? hm(e.startMs, cfg) : '');
+  return `<div class="cvm-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}" style="${colStyle(e.color)}">${time ? `<b class="cvm-tm">${esc(time)}</b>` : '<i class="cvm-dot"></i>'}${e.emoji ? `<i class="cvm-em">${esc(e.emoji)}</i>` : ''}<span class="cvm-tt">${esc(e.title)}</span></div>`;
+}
+
+/** Drop rows from the end (what is over first) until `root` holds what is left, and say how many went. */
+function fitMini(root: HTMLElement): void {
+  const rows = Array.from(root.querySelectorAll<HTMLElement>('.cvm-ev'));
+  const more = root.querySelector<HTMLElement>('.cvm-more');
+  for (const r of rows) r.classList.remove('cvm-hide');
+  if (more) more.textContent = '';
+  if (!root.clientHeight) return;
+  const over = () => root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1;
+  const order = [...rows.filter((r) => r.classList.contains('past')), ...rows.filter((r) => !r.classList.contains('past')).reverse()];
+  // the first row always stays (its title ends in …)
+  for (const r of order) {
+    if (!over() || rows.filter((x) => !x.classList.contains('cvm-hide')).length <= 1) break;
+    r.classList.add('cvm-hide');
+    const n = rows.filter((x) => x.classList.contains('cvm-hide') && !x.classList.contains('past')).length;
+    if (more) more.textContent = n ? ctx.t('more', { n }) : '';
+  }
+}
+
+/** Today in a small card: "Hoy" and the date, then today's events one per line, as many as fit and "+N más". */
+export function renderMiniToday(root: HTMLElement, d: ViewData, tick: Tick, cfg: DisplayConfig = ctx.cfg): void {
+  const today = tick.dayKey;
+  const nowMs = tick.now.getTime();
+  const date = keyToUTC(today);
+  const list = [...allDayOn(d.events, today), ...timedOn(d.events, today)];
+  const rows = list.length ? list.map((e) => miniRow(e, nowMs, cfg)).join('') : `<div class="cvm-none">${esc(ctx.t('noEvents'))}</div>`;
+  setHTML(root, `<div class="cvm-head"><b>${esc(relativeDayLabel(ctx.lang, today, today, false))}</b><span>${esc(`${date.getUTCDate()} ${monthName(ctx.lang, date.getUTCMonth() + 1, 'short')}`)}</span></div><div class="cvm-list">${rows}</div><div class="cvm-more"></div>`);
+  fitMini(root);
+}
+
+/** Per person in a small card: a line per person, their colour and initial (or emoji) and what they have next. */
+export function renderMiniPeople(root: HTMLElement, d: ViewData, tick: Tick, cfg: DisplayConfig = ctx.cfg, opts: { columns?: string[] | null; days?: number } = {}): void {
+  const today = tick.dayKey;
+  const nowMs = tick.now.getTime();
+  const cols = peopleColumns(cfg, opts.columns);
+  const days = Array.from({ length: Math.max(1, Math.min(3, opts.days ?? 2)) }, (_, i) => addDays(today, i));
+  const html = cols.map((s) => {
+    const initial = (s.name.trim()[0] || '?').toUpperCase();
+    const who = `<span class="cvm-av" style="${colStyle(s.color)}">${s.emoji ? esc(s.emoji) : esc(initial)}</span><span class="cvm-name">${esc(s.name)}</span>`;
+    // what is on now or later today (an all-day one of today first), else the first thing of the next days
+    let next = '';
+    for (const key of days) {
+      const mine = (e: NEvent) => e.ev.sourceId === s.id;
+      const all = allDayOn(d.events, key).filter(mine);
+      const timed = timedOn(d.events, key).filter((e) => mine(e) && e.endMs > nowMs);
+      const e = all[0] ?? timed[0];
+      if (!e) continue;
+      const tm = key === today ? '' : relativeDayLabel(ctx.lang, key, today, false);
+      next = miniRow(e, nowMs, cfg, tm && e.timed ? `${tm} ${hm(e.startMs, cfg)}` : tm).replace('<div class="cvm-ev', '<div class="cvm-ev cvm-pp').replace(/(style="[^"]*">)/, `$1${who}`);
+      break;
+    }
+    return next || `<div class="cvm-ev cvm-pp is-none" style="${colStyle(s.color)}">${who}<span class="cvm-tt">${esc(ctx.t('nothingPlanned'))}</span></div>`;
+  }).join('');
+  setHTML(root, `<div class="cvm-list">${html || `<div class="cvm-none">${esc(ctx.t('noPeople'))}</div>`}</div><div class="cvm-more"></div>`);
+  // a narrow card: the names go when they would show a letter or two (the initials stay)
+  root.classList.remove('cvm-nonames');
+  const names = Array.from(root.querySelectorAll<HTMLElement>('.cvm-name'));
+  if (names.some((n) => n.scrollWidth > n.clientWidth + 1 && n.clientWidth < (parseFloat(getComputedStyle(n).fontSize) || 15) * 3.5)) root.classList.add('cvm-nonames');
+  fitMini(root);
+}
+
 export class Views {
   private kind = '';
   private clock: Clock | null = null;

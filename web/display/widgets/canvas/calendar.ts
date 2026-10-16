@@ -12,7 +12,7 @@ import type { Tick } from '../../time';
 import { Agenda } from '../agenda';
 import { MonthCalendar } from '../calendar';
 import { Countdowns } from '../countdowns';
-import { fitPeopleView, fitTodayView, renderPeopleView, renderTodayView, SKELETON } from '../views';
+import { fitPeopleView, fitTodayView, renderMiniPeople, renderMiniToday, renderPeopleView, renderTodayView, SKELETON } from '../views';
 import type { AdapterEnv, CanvasAdapter } from './types';
 
 type Props = Record<string, any>;
@@ -111,7 +111,17 @@ function grid(): CanvasAdapter {
       render();
     },
     update: () => render(),
-    layout: () => render(),
+    layout(b) {
+      // a box only the fine grid has: drawn as in a small box of the normal grid (some 40 by 34 rem for the month,
+      // 46 by 20 for the week), scaled down to its box, never under 60 % (the card's own text size on top)
+      if (root.dataset.mini !== undefined) {
+        const [nw, nh] = env.item().kind === 'calendar.month' ? [40, 34] : [46, 20];
+        const r = root.getBoundingClientRect();
+        const z = Math.max(0.6, Math.min(1, r.width / b.rem / nw, r.height / b.rem / nh));
+        root.style.zoom = String((Number(env.item().style?.scale) || 1) * z);
+      }
+      render();
+    },
     tick(t) {
       if (t.minuteChanged) render();
     },
@@ -235,9 +245,17 @@ function agenda(): CanvasAdapter {
 function view(kind: 'today' | 'people'): CanvasAdapter {
   let env: AdapterEnv;
   let root: HTMLElement;
+  // a box only the fine grid has: a line per event (Today) or per person (Per person), views.ts renderMini*
+  let mini = false;
   const render = () => {
     const t = env.now();
     const d = { events: eventsOf(env, t), weather: state.weather, countdowns: state.countdowns };
+    if (mini) {
+      const p = env.item().props as Props;
+      if (kind === 'today') renderMiniToday(root, d, t, env.cfg());
+      else renderMiniPeople(root, d, t, env.cfg(), { columns: Array.isArray(p.columns) ? p.columns : null, days: Number(p.days) || 2 });
+      return;
+    }
     if (kind === 'today') {
       renderTodayView(root, d, t, env.cfg());
       fitToday();
@@ -289,8 +307,20 @@ function view(kind: 'today' | 'people'): CanvasAdapter {
     },
     update: () => render(),
     layout() {
+      const m = root.dataset.mini !== undefined;
+      if (m !== mini) {
+        mini = m;
+        root.classList.toggle('view', !m);
+        root.classList.toggle(`view-${kind}`, !m);
+        root.classList.toggle('cv-vmini', m);
+        if (m) root.textContent = '';
+        else root.innerHTML = SKELETON[kind];
+        // (setHTML in views.ts skips a string it wrote last time: the next one is written whatever it is)
+        delete (root as unknown as { __html?: string }).__html;
+      }
       root.classList.remove('cv-td-nonext');
       render();
+      if (mini) return;
       if (kind === 'today') fitTodayView(root);
       else fitPeopleView(root);
     },
@@ -468,6 +498,8 @@ function countdowns(): CanvasAdapter {
     const rows = [...card.querySelectorAll<HTMLElement>('.cd')];
     for (const r of rows) r.style.removeProperty('display');
     if (!root.clientHeight) return;
+    // a card one row of the fine grid high: one countdown, the nearest
+    if (root.dataset.mini !== undefined && root.dataset.mh === '1') rows.slice(1).forEach((r) => (r.style.display = 'none'));
     for (let i = rows.length - 1; i > 0 && (root.scrollHeight > root.clientHeight + 2 || root.scrollWidth > root.clientWidth + 2); i--) rows[i].style.display = 'none';
   };
   const render = () => {
@@ -489,7 +521,10 @@ function countdowns(): CanvasAdapter {
     },
     update: () => render(),
     layout(box) {
-      root.classList.toggle('is-narrow', box.w / box.rem < 40);
+      // a box only the fine grid has: one line per countdown (emoji, title ending in …, days), as many as fit
+      const mini = root.dataset.mini !== undefined;
+      root.classList.toggle('is-mline', mini);
+      root.classList.toggle('is-narrow', !mini && box.w / box.rem < 40);
       // a long low box past the named sizes: the countdowns in two or three columns, read down each one
       const n = card.querySelectorAll('.cd').length;
       // (on screen: the box handed here is in the card's own pixels, smaller once it grows)
@@ -497,6 +532,12 @@ function countdowns(): CanvasAdapter {
       const cols = root.dataset.room !== undefined && !root.classList.contains('is-cards') && r.height / box.rem < 40 ? Math.max(1, Math.min(3, n, Math.floor(r.width / box.rem / 40))) : 1;
       root.classList.toggle('is-cols', cols > 1);
       root.style.setProperty('--cd-rows', String(Math.ceil(n / cols)));
+      // a narrow line: the emoji goes before the title would show only a letter or two
+      root.classList.remove('is-noem');
+      if (mini) {
+        const tt = card.querySelector<HTMLElement>('.cd-tt');
+        if (tt && tt.scrollWidth > tt.clientWidth + 1 && tt.clientWidth < (parseFloat(getComputedStyle(tt).fontSize) || 16) * 4.5) root.classList.add('is-noem');
+      }
       fit();
     },
     tick(t) {

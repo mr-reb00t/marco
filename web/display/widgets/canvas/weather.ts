@@ -61,6 +61,14 @@ function weatherAdapter(cls: string, draw: (root: HTMLElement, w: WeatherRespons
       last = box;
       // today's high and low once on a screen: a forecast on it already opens with today's row
       if (cls === 'cv-wx-now') root.classList.toggle('no-hl', !!(root.closest('#app') ?? document).querySelector('.cv-wx-forecast'));
+      // a box only the fine grid has: one line (or a small block) of its own (miniNow, miniStrip)
+      if (root.dataset.mini !== undefined) {
+        if (cls === 'cv-wx-now') return miniNow(root, box, Number(env.item().style?.scale) || 1);
+        return miniStrip(root, box);
+      }
+      root.classList.remove('is-mstack', 'no-cond', 'is-few');
+      for (const c of root.querySelectorAll<HTMLElement>('.cv-wx-hours .h[hidden], .cv-wx-days .d[hidden]')) c.hidden = false;
+      if (!nominal) root.style.removeProperty('--wk');
       shape?.(root, box, env);
       if (!nominal) return;
       const [h, w] = nominal(root, box);
@@ -164,6 +172,72 @@ function fillNow(root: HTMLElement, box: AdapterBox): void {
   const inner = r0.width - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
   const used = right - r0.left - (parseFloat(cs.paddingLeft) || 0);
   if (inner - used > inner * 0.08) root.classList.add('is-centred');
+}
+
+/** The height inside a card body's padding, in rem. */
+const innerH = (root: HTMLElement, box: AdapterBox): number => {
+  const cs = getComputedStyle(root);
+  return (root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)) / box.rem;
+};
+
+/** True when an element's words are cut by its "...". */
+const isCut = (e: HTMLElement | null): boolean => !!e && !!e.offsetParent && e.scrollWidth > e.clientWidth + 1;
+const overflows = (root: HTMLElement): boolean => root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1;
+
+/**
+ * Tiempo ahora in a box only the fine grid has (data-mini): the icon, the temperature and the sky in one line, or the
+ * sky under them in a box about as high as wide; the details, the high and low and the place are left out. The type
+ * fills the height, and gets smaller until the line fits; the sky goes first when it would read as a stub.
+ */
+function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
+  root.classList.remove('is-stack', 'is-big', 'is-centred', 'no-cond');
+  const h = box.h / box.rem;
+  const stack = h >= 9 && box.h > box.w * 0.55;
+  root.classList.toggle('is-mstack', stack);
+  let wk = Math.min(2.4, Math.max(0.4, h / (stack ? 10.4 : 7.2))) * scale;
+  root.style.setProperty('--wk', wk.toFixed(3));
+  const cond = root.querySelector<HTMLElement>('.cv-wx-cond');
+  if (cond && (isCut(cond) || cond.clientWidth < 5.5 * box.rem * Math.min(1, wk))) root.classList.add('no-cond');
+  for (let i = 0; i < 16 && overflows(root) && wk > 0.35; i++) {
+    wk *= 0.92;
+    root.style.setProperty('--wk', wk.toFixed(3));
+  }
+}
+
+/**
+ * Por horas and Previsión in a box only the fine grid has: a strip of small hours or days (time or day, icon,
+ * temperature; the chance of rain and the low only when there is room), as many as fit whole.
+ */
+function miniStrip(root: HTMLElement, box: AdapterBox): void {
+  root.classList.remove('is-grid', 'is-column');
+  const h = innerH(root, box);
+  // the chance of rain and the low only when there is room for them
+  const few = h < 10;
+  root.classList.toggle('is-few', few);
+  // the type follows the height: the time or day, the icon and the temperature under each other (plus the low or the
+  // chance of rain)
+  let wk = Math.min(1.3, Math.max(0.5, h / (few ? 7.6 : 9.6)));
+  root.style.setProperty('--wk', wk.toFixed(3));
+  const cells = [...root.querySelectorAll<HTMLElement>('.cv-wx-hours .h, .cv-wx-days .d')];
+  for (const c of cells) c.hidden = false;
+  const row = cells[0]?.parentElement;
+  if (!row) return;
+  // a column taller than the strip (the chance of rain under a day): smaller type until each column fits
+  for (let i = 0; i < 12 && wk > 0.5 && (row.scrollHeight > row.clientHeight + 1 || overflows(root)); i++) {
+    wk *= 0.93;
+    root.style.setProperty('--wk', wk.toFixed(3));
+  }
+  // as many as fit at their smallest width, the rest left out (never cut in half)
+  const out = () => {
+    const r = row.getBoundingClientRect();
+    const b = root.getBoundingClientRect();
+    return cells.some((c) => {
+      if (c.hidden) return false;
+      const q = c.getBoundingClientRect();
+      return q.right > r.right + 1 || q.bottom > b.bottom + 1;
+    }) || overflows(root);
+  };
+  for (let i = cells.length - 1; i > 0 && out(); i--) cells[i].hidden = true;
 }
 
 /**

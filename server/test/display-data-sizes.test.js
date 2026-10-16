@@ -67,7 +67,7 @@ const DRAW = (kind, size, orientation, sidebar, variants, from) => `(async () =>
   const pause = (ms) => new Promise((r) => setTimeout(r, ms));
   const { cols, rows } = cc.CANVAS_GRID[${JSON.stringify(orientation)}];
   // a named size, or a box of its own ("5x3")
-  const own = /^\d+x\d+$/.test(${JSON.stringify(size)});
+  const own = /^[0-9]+x[0-9]+$/.test(${JSON.stringify(size)});
   const [w, h] = own ? ${JSON.stringify(size)}.split('x').map(Number) : cc.sizeCells(${JSON.stringify(size)}, ${JSON.stringify(orientation)});
   const max = Math.min(6, cc.CANVAS_KINDS[${JSON.stringify(kind)}].perScreen ?? 6);
   const variants = ${JSON.stringify(variants)};

@@ -222,6 +222,12 @@ export function haAdapter(cls: string, aliases: (p: Props) => string[], draw: (r
   };
 }
 
+/**
+ * A box one fine cell high that only the fine grid has (data-mini, widgets/canvas.ts miniMark): the card's one-line
+ * look (the media player, the cover, the climate, the scenes, the gauge, the statistic).
+ */
+export const miniLine = (root: HTMLElement): boolean => root.dataset.mini !== undefined && root.dataset.mh === '1';
+
 export const nameOf = (p: Props, s: HaState | null) => String(p.name || s?.n || '');
 
 /** The control may be tapped now: touch is on, the item is interactive and the server offers it for this state. */
@@ -467,7 +473,9 @@ function mediaAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     }
     const txt = el('div', 'cv-ha-txt');
     // a small look in a box wider than the small size (4×2): the whole row of controls, as on the wide card
-    const size = root.dataset.size === 's' && root.classList.contains('is-roomy') ? 'w' : root.dataset.size || 'w';
+    // one line (a box only the fine grid has): the art, the title and play or pause, as on the small card
+    const line = miniLine(root);
+    const size = line ? 's' : root.dataset.size === 's' && root.classList.contains('is-roomy') ? 'w' : root.dataset.size || 'w';
     const playing = !!(m && m.title && m.state !== 'off' && m.state !== 'idle' && m.state !== 'standby');
     // playing: the title, the artist and where it plays (and "En pausa" when paused); idle: where, and its state
     const where = nameOf(p, s);
@@ -506,17 +514,25 @@ function mediaAdapter(item0: DisplayCanvasItem): CanvasAdapter {
         ctl.append(bar);
       }
     }
-    if (ctl.childNodes.length) txt.append(ctl);
+    if (ctl.childNodes.length && !line) txt.append(ctl);
     const wrap = el('div', `cv-ha-player tone-${tone(s)}`);
     wrap.append(art, txt);
+    if (ctl.childNodes.length && line) wrap.append(ctl);
     root.appendChild(wrap);
   }, (root, box, env) => {
     // the small look in a box at least 2.2 times as wide as high (4×2): room beside the art for back, next and the
     // volume, so they are drawn (once, when it changes) instead of a lone play button over empty space
-    const roomy = box.size === 's' && box.zone === 'main' && box.w >= box.h * 2.2;
+    const line = miniLine(root);
+    const roomy = !line && box.size === 's' && box.zone === 'main' && box.w >= box.h * 2.2;
     if (roomy !== root.classList.contains('is-roomy')) {
       root.classList.toggle('is-roomy', roomy);
       base.update();
+      return;
+    }
+    // one line: the type from its height (the art as high as the card, play or pause at its end)
+    if (line) {
+      root.classList.remove('is-stack');
+      bigType(root, box, 4.6, Number(env.item().style?.scale) || 1, 0, 1.2);
       return;
     }
     // a box as high as it is wide (3×4, a box of its own): the art on top, the words under it, both centred
@@ -540,6 +556,11 @@ export const HA_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdap
     // rows in two columns when one does not hold them and the card is wide enough
     root.classList.remove('is-2col');
     const sc = Number(env.item().style?.scale) || 1;
+    // a box only the fine grid has: the tighter rows (styles-canvas-mini.css), each about 2.9 lines of text high
+    if (root.dataset.mini !== undefined) {
+      bigType(root, box, rows * 2.9 + (p.title ? 2.2 : 0), sc, 22);
+      return;
+    }
     bigType(root, box, rows * 3.9 + (p.title ? 3 : 0), sc, 26);
     if (rows > 2 && root.scrollHeight > root.clientHeight + 1 && box.w / box.rem > 44) {
       root.classList.add('is-2col');

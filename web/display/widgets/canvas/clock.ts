@@ -112,6 +112,20 @@ export function shrinkLine(el: HTMLElement | null): void {
   if (size) el.style.fontSize = `${Math.max(size * 0.7, (size * room) / w * 0.98).toFixed(1)}px`;
 }
 
+/** A box only the fine grid has (canvas.ts miniMark): the compact look of the clocks and the date. */
+export const isMini = (root: HTMLElement): boolean => root.dataset.mini !== undefined;
+
+/**
+ * Type of a card in a box only the fine grid has: like bigType, from the box's height and width, but with no floor
+ * (bigType never goes under 0.6, too large for a line half a normal row high), then shrunk until it fits.
+ */
+function miniType(root: HTMLElement, box: AdapterBox, nominalRem: number, nominalW: number, scale: number): number {
+  const k = Math.min(box.h / box.rem / nominalRem, nominalW > 0 ? box.w / box.rem / nominalW : Infinity);
+  const wk = Math.min(2.4, Math.max(0.2, k)) * scale;
+  root.style.setProperty('--wk', wk.toFixed(3));
+  return shrinkToBox(root, wk);
+}
+
 /** Above 100 %, a new minute (wider digits, another day) is fitted again, so it stays inside its box. */
 function refit(t: Tick, scale: number, box: AdapterBox | null, a: CanvasAdapter): void {
   if (scale > 1 && box && t.minuteChanged) a.layout?.(box);
@@ -156,6 +170,31 @@ export function digitalClock(): CanvasAdapter {
     },
     layout(box) {
       fitBox = box;
+      const mini = isMini(root);
+      // a line (one row of the fine grid): the time with the date beside it, or alone when the date does not fit
+      const line = mini && box.h < box.w / 2;
+      root.classList.toggle('is-mline', line);
+      root.classList.remove('is-mnodate');
+      if (mini) {
+        const date = props(env).showDate !== false;
+        if (line) {
+          root.classList.add('is-mnodate');
+          const full = miniType(root, box, 11, 0, scaleOf(env));
+          if (!date) return;
+          root.classList.remove('is-mnodate');
+          const wk = miniType(root, box, 11, 0, scaleOf(env));
+          const d = root.querySelector<HTMLElement>('.date');
+          // the date shrinks the time, or is cut: the time alone
+          if (wk < full * 0.92 || (d && d.scrollWidth > d.clientWidth + 1)) {
+            root.classList.add('is-mnodate');
+            miniType(root, box, 11, 0, scaleOf(env));
+          }
+          return;
+        }
+        miniType(root, box, date ? 16 : 12, 30, scaleOf(env));
+        shrinkLine(root.querySelector<HTMLElement>('.date'));
+        return;
+      }
       keepInBox(root, bigType(root, box, props(env).showDate === false ? 13 : 17, scaleOf(env), 30), scaleOf(env));
       shrinkLine(root.querySelector<HTMLElement>('.date'));
     },
@@ -262,6 +301,15 @@ export function flipClock(): CanvasAdapter {
     },
     layout(box) {
       fitBox = box;
+      if (isMini(root)) {
+        // a line (one row of the fine grid): the digits alone; a small block: the digits and the date, smaller
+        const line = box.h < box.w / 2.5;
+        root.classList.toggle('is-mnodate', line);
+        const wk = miniType(root, box, props(env).showDate && !line ? 15 : 11, 33, scaleOf(env));
+        shrinkToBox(root, fitWidth(root, root.querySelector<HTMLElement>('.cv-flip-row'), wk));
+        return;
+      }
+      root.classList.remove('is-mnodate');
       const wk = bigType(root, box, props(env).showDate ? 17 : 13, scaleOf(env), 33);
       keepInBox(root, fitWidth(root, root.querySelector<HTMLElement>('.cv-flip-row'), wk), scaleOf(env));
     },
@@ -358,6 +406,8 @@ export function worldClock(): CanvasAdapter {
         wk = Math.max(floor, wk * 0.94);
         root.style.setProperty('--wk', wk.toFixed(3));
       }
+      // a box only the fine grid has: smaller type than bigType's floor when the cities need it
+      if (isMini(root)) shrinkToBox(root, wk);
     },
     tick(t) {
       if (t.minuteChanged) render(t);
@@ -384,19 +434,31 @@ export function dateCard(): CanvasAdapter {
   let root: HTMLElement;
   let env: AdapterEnv;
   let key = '';
+  // a line in a box only the fine grid has: "Vie 16 oct" (layout() decides)
+  let mline = false;
   const render = (t: Tick, force = false) => {
     const p = props(env);
     const w = state.weather?.today;
     applyInk(root, env);
     // the weekday takes the date colour too, unless the card has its own accent colour (the weekday's usual colour)
     root.classList.toggle('cv-dc-wd', !env.item().style?.accent);
-    const sig = `${t.dayKey}|${p.style}|${p.weekday}|${p.isoWeek}|${p.sun}|${w?.sunrise ?? ''}|${w?.sunset ?? ''}|${ctx.lang}`;
+    const sig = `${t.dayKey}|${p.style}|${p.weekday}|${p.isoWeek}|${p.sun}|${w?.sunrise ?? ''}|${w?.sunset ?? ''}|${ctx.lang}|${mline}`;
     if (sig === key && !force) return;
     key = sig;
     const lang = ctx.lang;
     const d = keyToUTC(t.dayKey);
     root.textContent = '';
-    root.classList.toggle('is-line', p.style === 'line');
+    root.classList.toggle('is-line', p.style === 'line' || mline);
+    root.classList.toggle('is-mline', mline);
+    if (mline) {
+      // the short weekday, the day and the short month, the weekday in its colour
+      const line = document.createElement('div');
+      line.className = 'cv-date-line';
+      const wd = Object.assign(document.createElement('span'), { className: 'cv-date-wd', textContent: weekdayName(lang, t.dayKey, 'short') });
+      line.append(wd, ` ${d.getUTCDate()} ${monthName(lang, d.getUTCMonth() + 1, 'short')}`);
+      root.appendChild(line);
+      return;
+    }
     if (p.style === 'line') {
       const line = document.createElement('div');
       line.className = 'cv-date-line';
@@ -454,6 +516,20 @@ export function dateCard(): CanvasAdapter {
     },
     layout(box) {
       fitBox = box;
+      const mini = isMini(root);
+      const line = mini && box.h < box.w / 2;
+      if (line !== mline) {
+        mline = line;
+        render(env.now(), true);
+      }
+      if (line) {
+        miniType(root, box, 5.6, 20, scaleOf(env));
+        return;
+      }
+      if (mini) {
+        miniType(root, box, (props(env).style === 'line' ? 7 : 18) + (root.querySelector('.cv-date-meta') ? 4 : 0), 20, scaleOf(env));
+        return;
+      }
       shrinkToBox(root, keepInBox(root, bigType(root, box, 18, scaleOf(env), 20, 4), scaleOf(env)));
     },
     tick(t) {

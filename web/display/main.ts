@@ -12,6 +12,7 @@ import './styles-canvas.css';
 import './styles-ha.css';
 import './styles-data.css';
 import './styles-canvas-room.css';
+import './styles-canvas-mini.css';
 import type {
   Announcement, CountdownsResponse, DisplayConfig, EventsResponse, FamilyDisplayState, Lang, NewsResponse, NightCommand, Photo, PhotosResponse, PlannerBar, StreamHello, WeatherResponse,
 } from '../shared/types';

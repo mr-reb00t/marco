@@ -163,7 +163,11 @@ function cutV(root: HTMLElement): boolean {
 /** A name or a number of the card is cut short (an ellipsis) or runs over its neighbour. */
 function cutH(root: HTMLElement): boolean {
   for (const e of root.querySelectorAll<HTMLElement>(CLIP)) {
-    if (!e.clientWidth) continue;
+    // (a column squeezed to nothing while its text is there is cut too: the symbol of a quote that vanished)
+    if (!e.clientWidth) {
+      if (e.scrollWidth > 1) return true;
+      continue;
+    }
     if (e.scrollWidth > e.clientWidth + 1) return true;
     // a word cut by less than a pixel still ends in "…" (the widths are whole pixels): its text measured exactly
     if (e.childElementCount === 0 && e.textContent) {
@@ -286,19 +290,36 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     const d = env.data.get(item0.id) as MarketData | null | undefined;
     const coins = d?.coins?.length ? d.coins : coinSkeleton(p);
     // a box past the named sizes with one coin: the big price and its chart rather than one line of a list
-    const big = p.layout === 'big' || b.box?.size === 'xs' || (root.dataset.room !== undefined && coins.length === 1);
-    if (big && coins.length) idx %= coins.length;
-    const sig = JSON.stringify([it.v, d, b.box?.w, b.box?.h, ctx.lang, big ? idx : -1, Math.floor(Date.now() / 60_000)]);
+    // a box one fine cell high (the fine grid only): one coin on one line, each in turn like the big card
+    const line = isLine(root);
+    const big = !line && (p.layout === 'big' || b.box?.size === 'xs' || (root.dataset.room !== undefined && coins.length === 1));
+    if ((big || line) && coins.length) idx %= coins.length;
+    const sig = JSON.stringify([it.v, d, b.box?.w, b.box?.h, ctx.lang, big || line ? idx : -1, line, Math.floor(Date.now() / 60_000)]);
     if (sig === b.sig && !force) return;
     b.sig = sig;
     root.textContent = '';
-    root.classList.remove('no-name', 'has-bgchart', 'is-bg');
+    root.classList.remove('no-name', 'has-bgchart', 'is-bg', 'is-line');
     root.style.setProperty('--dk', '1');
     root.classList.toggle('is-big', big);
     const n0 = emptyNote(d, coinSkeleton(p).length > 0);
     if (n0 && !(d === undefined && coins.length)) return note(root, n0);
     const range = String(d?.range || p.range || '7d');
     const chart: 'line' | 'area' | 'none' = p.chart === 'none' ? 'none' : p.chart === 'line' ? 'line' : 'area';
+    if (line) {
+      const c = coins[idx] ?? coins[0];
+      if (!c) return;
+      const row = drawLineRow(root, chart === 'none' ? null : spark(c.pts, trend(c.ch)), `cv-mk-row is-${trend(c.ch)}`);
+      const who = el('div', 'cv-mk-who');
+      who.append(coinBadge(c), el('span', 'cv-mk-name', c.name || c.sym));
+      row.prepend(who);
+      const val = el('div', 'cv-mk-val');
+      val.append(el('b', 'cv-mk-p', fmtPrice(c.price, c.cur)), changeChip(c.ch));
+      row.appendChild(val);
+      const st = staleText(env, item0.id, d);
+      root.classList.toggle('is-stale', !!st);
+      if (b.box) fitLine(root, b.box);
+      return;
+    }
     const style = chartStyleOf(p, 'below');
     if (big) drawBig(root, coins[idx] ?? coins[0], coins.length, idx, chart, b.box, style);
     else drawList(root, coins, chart, b.box, style);
@@ -335,12 +356,45 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     // a big card with several coins shows each in turn, 10 s each
     const p = b.env.item().props as Props;
     const n = (b.env.data.get(item0.id) as MarketData | null | undefined)?.coins?.length ?? 0;
-    if ((p.layout === 'big' || b.box?.size === 'xs') && n > 1 && t.ms - turnAt >= 10_000) {
+    if ((p.layout === 'big' || b.box?.size === 'xs' || isLine(b.root)) && n > 1 && t.ms - turnAt >= 10_000) {
       turnAt = t.ms;
       idx = (idx + 1) % n;
       render();
     } else if (t.minuteChanged) render();
   });
+}
+
+/** A box one fine cell high (the fine grid only, widgets/canvas.ts miniMark): the card on one line. */
+const isLine = (root: HTMLElement) => root.dataset.mini !== undefined && root.dataset.mh === '1';
+
+/** The one line of a card one fine cell high, with its sparkline in the middle (`s`, when there is one). */
+function drawLineRow(root: HTMLElement, s: SVGSVGElement | null | undefined, cls: string): HTMLElement {
+  root.classList.add('is-line');
+  const row = el('div', cls);
+  if (s) {
+    const holder = el('div', 'cv-mk-spark');
+    holder.appendChild(s);
+    row.appendChild(holder);
+  }
+  root.appendChild(row);
+  return row;
+}
+
+/**
+ * The line's text as large as about half the box's height allows, then, while something does not fit: the
+ * name goes (the badge or the symbol stays), the sparkline goes, the text gets smaller, and last the change goes.
+ */
+function fitLine(root: HTMLElement, box: AdapterBox): void {
+  // (the item's text size is on top of --dk already: .cv-dt reads --cv-scale)
+  const k = Math.max(0.8, Math.min(1.5, (box.h * 0.45) / (box.rem * 1.6)));
+  root.style.setProperty('--dk', k.toFixed(3));
+  const dk = (f: number) => () => root.style.setProperty('--dk', Math.max(0.7, k * f).toFixed(3));
+  ladder(root, [
+    () => root.classList.add('no-name'),
+    () => root.querySelectorAll('.cv-mk-spark, .cv-st-spark').forEach((x) => x.remove()),
+    dk(0.9), dk(0.8), dk(0.7), dk(0.6), dk(0.55), dk(0.5), dk(0.45),
+    () => root.querySelectorAll('.cv-dt-ch').forEach((x) => x.remove()),
+  ]);
 }
 
 function coinBadge(c: MarketCoinData): HTMLElement {
@@ -702,10 +756,29 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
     if (n0) return note(root, n0);
     const quotes = (d as StocksData).quotes ?? [];
     const ticker = p.layout !== 'list';
+    const line = isLine(root);
     root.classList.toggle('is-ticker', ticker);
+    root.classList.remove('is-line');
+    delete root.dataset.pages;
+    if (line && !ticker) {
+      // a list one fine cell high: one quote on one line, each in turn (tick)
+      const q = quotes[page % Math.max(1, quotes.length)];
+      if (!q) return;
+      if (quotes.length > 1) root.dataset.pages = String(quotes.length);
+      const row = drawLineRow(root, p.sparkline === true ? spark(q.pts, trend(q.ch)) : null, `cv-st-row is-${trend(q.ch)}`);
+      const who = el('div', 'cv-st-who');
+      who.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
+      row.prepend(who);
+      const val = el('div', 'cv-mk-val');
+      val.append(el('b', 'cv-mk-p', fmtPrice(q.price)), changeChip(q.ch));
+      row.appendChild(val);
+      root.classList.toggle('is-stale', !!staleText(env, item0.id, d));
+      if (b.box) fitLine(root, b.box);
+      return;
+    }
     if (ticker && b.box) {
-      // the line grows with the card's height, within reason
-      const px = Math.max(b.box.rem * 1.6, Math.min(b.box.h * 0.17, b.box.rem * 3.6)) * (Number(it.style?.scale) || 1);
+      // the line grows with the card's height, within reason (one fine cell high: about half of it)
+      const px = (line ? Math.max(b.box.rem * 1.4, Math.min(b.box.h * 0.4, b.box.rem * 2.6)) : Math.max(b.box.rem * 1.6, Math.min(b.box.h * 0.17, b.box.rem * 3.6))) * (Number(it.style?.scale) || 1);
       root.style.setProperty('--tk', `${px.toFixed(1)}px`);
     }
     if (ticker) drawTicker(root, quotes, b.box, p.sparkline === true);
@@ -761,6 +834,12 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       } else {
         // no motion: the quotes in pages that fit, one after another (tick)
         const kids = [...track.children] as HTMLElement[];
+        // a box only the fine grid has: a quote wider than the line gets smaller type, so each page shows it whole
+        if (root.dataset.mini !== undefined) {
+          const widest = Math.max(...kids.map((k) => k.getBoundingClientRect().width));
+          const tk = parseFloat(root.style.getPropertyValue('--tk')) || 0;
+          if (tk && widest > room) root.style.setProperty('--tk', `${Math.max(8, (tk * room) / widest - 0.5).toFixed(1)}px`);
+        }
         let x = 0;
         const pages: number[][] = [[]];
         for (const [i, k] of kids.entries()) {

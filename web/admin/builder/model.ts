@@ -4,7 +4,7 @@
 // size table and validation live in server/core/canvasCore.js; this file only moves items around within them.
 import type { CanvasConfig, CanvasGridId, CanvasItem, CanvasKind, CanvasPos, CanvasSize, SideSpan } from '../../shared/types';
 import {
-  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxOf, canvasCards, canvasDefaults, canvasGrid, cellRange, convertCanvasGrid, defaultItemStyle, deriveCanvasPortrait, fitsAt,
+  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, canvasLimits, SIDE_UNITS, boxOf, canvasCards, canvasDefaults, canvasGrid, cellRange, convertCanvasGrid, defaultItemStyle, deriveCanvasPortrait, fitsAt,
   firstFree, gridDims, gridFactor, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
@@ -163,7 +163,7 @@ export function fitSpan(cv: CanvasConfig, o: Orient, want: SideSpan, except?: st
 export function canAdd(cv: CanvasConfig, k: CanvasKind, cards: CanvasKind[] = k === 'rotator' ? ((canvasDefaults('rotator').cards as { kind: CanvasKind }[]) ?? []).map((c) => c.kind) : []): Refusal | null {
   // the cards of a Rotativa count as cards of the screen (canvasCore sanitizeCanvas)
   const all = canvasCards(cv.items);
-  if (all.length + 1 + cards.length > CANVAS_LIMITS.items) return 'tooMany';
+  if (all.length + 1 + cards.length > maxCards(cv)) return 'tooMany';
   for (const x of [k, ...cards]) {
     const cap = kind(x)?.perScreen;
     if (cap && all.filter((i) => i.kind === x).length + [k, ...cards].filter((y) => y === x).length > cap) return 'kindCap';
@@ -184,6 +184,8 @@ export function freshCardIds(cv: CanvasConfig, it: CanvasItem): void {
 
 /** How many cards a screen has (a Rotativa's cards count too), for "N de 24 widgets". */
 export const cardCount = (cv: CanvasConfig): number => canvasCards(cv.items).length;
+/** How many cards a screen may have: 24, or 48 on the fine grid (canvasCore canvasLimits). */
+export const maxCards = (cv: Pick<CanvasConfig, 'grid'>): number => canvasLimits(gOf(cv)).items;
 
 /** A drop target on the main grid (w and h: a box of its own, see Box). */
 export interface MainDrop {
@@ -779,8 +781,8 @@ export function noOverlap(cv: CanvasConfig): boolean {
  * "Cuadrícula": the canvas on the normal or the fine grid, both orientations (canvasCore convertCanvasGrid). Going
  * to the fine grid nothing moves on the screen; going back, `moved` and `resized` say how many cards had to change.
  */
-export function setGrid(cv: CanvasConfig, g: GridId): { ok: true; cv: CanvasConfig; moved: number; resized: number } | { ok: false } {
+export function setGrid(cv: CanvasConfig, g: GridId): { ok: true; cv: CanvasConfig; moved: number; resized: number } | { ok: false; over?: 'items' | 'haEntities' } {
   const r = convertCanvasGrid(cv, g);
-  if (!r.ok) return { ok: false };
+  if (!r.ok) return { ok: false, ...(r.over ? { over: r.over } : {}) };
   return { ok: true, cv: r.canvas, moved: r.moved.length, resized: r.resized.length };
 }

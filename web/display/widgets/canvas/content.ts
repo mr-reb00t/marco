@@ -7,6 +7,7 @@ import { reducedMotion } from '../../dom';
 import { state } from '../../store';
 import { renderMessage, renderTodo } from '../extras';
 import { News } from '../news';
+import { refreshMarquee } from '../../marquee';
 import { ago, fmtNum } from '../ha/haui';
 import { bigType, fitWidth } from './clock';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
@@ -33,6 +34,25 @@ function message(): CanvasAdapter {
       render();
     },
     update: () => render(),
+    // a box only the fine grid has: the words whole, as large as the box holds them (down to a small size), else on
+    // one line that slides to show the rest (the marquee of the titles)
+    layout(b) {
+      root.classList.remove('is-mline');
+      if (root.dataset.mini === undefined) {
+        root.style.removeProperty('--mfs');
+        return;
+      }
+      const h = innerH(root, b);
+      const tx = root.querySelector<HTMLElement>('.msg-tx');
+      const whole = () => root.scrollHeight <= root.clientHeight + 1 && root.scrollWidth <= root.clientWidth + 1 && (!tx || tx.scrollWidth <= tx.clientWidth + 1);
+      for (let fs = Math.min(2.6, h / 1.3); fs >= 1.4; fs *= 0.92) {
+        root.style.setProperty('--mfs', `${fs.toFixed(2)}rem`);
+        if (whole()) return;
+      }
+      root.classList.add('is-mline');
+      root.style.setProperty('--mfs', `${Math.max(1.2, Math.min(2.4, h / 1.35)).toFixed(2)}rem`);
+      refreshMarquee();
+    },
     data(topic) {
       if (topic === 'config') render();
     },
@@ -41,6 +61,12 @@ function message(): CanvasAdapter {
       root.textContent = '';
     },
   };
+}
+
+/** The height inside a card body's padding, in rem. */
+export function innerH(root: HTMLElement, b: AdapterBox): number {
+  const cs = getComputedStyle(root);
+  return (root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0)) / b.rem;
 }
 
 function todo(): CanvasAdapter {
@@ -62,6 +88,21 @@ function todo(): CanvasAdapter {
       render();
     },
     update: () => render(),
+    // a box only the fine grid has: smaller rows on one line each, the heading only when there is room, and as many
+    // rows as fit whole (the open ones come first)
+    layout(b) {
+      const rows = [...box.querySelectorAll<HTMLElement>('li')];
+      for (const li of rows) li.hidden = false;
+      root.classList.remove('no-head');
+      if (root.dataset.mini === undefined) {
+        root.style.removeProperty('--mfs');
+        return;
+      }
+      const h = innerH(root, b);
+      root.style.setProperty('--mfs', `${Math.min(1.9, Math.max(1.4, h / 6)).toFixed(2)}rem`);
+      root.classList.toggle('no-head', h < 11);
+      for (let i = rows.length - 1; i > 0 && root.scrollHeight > root.clientHeight + 1; i--) rows[i].hidden = true;
+    },
     data(topic) {
       if (topic === 'config') render();
     },
@@ -281,8 +322,26 @@ function value(): CanvasAdapter {
     if (last) fit(last);
   };
   const fit = (box: AdapterBox) => {
+    const line = root.dataset.mini !== undefined && root.dataset.mh === '1';
+    root.classList.toggle('is-mline', line);
+    root.classList.remove('no-label');
+    if (line) return fitLine(box);
     const wk = bigType(root, box, 18, Number(env.item().style?.scale) || 1, root.dataset.room !== undefined ? 16 : 0, 4);
     fitWidth(root, root.querySelector('.cv-val-num'), wk);
+  };
+  /**
+   * One fine row high: the label and the value side by side on one line ("hace 5 min" left out), the value as large
+   * as the height allows; the label gives way first (its "..."), then goes when too little of it would show.
+   */
+  const fitLine = (box: AdapterBox) => {
+    let wk = Math.min(1.2, Math.max(0.3, innerH(root, box) / 6.4)) * (Number(env.item().style?.scale) || 1);
+    root.style.setProperty('--wk', wk.toFixed(3));
+    const label = root.querySelector<HTMLElement>('.cv-val-label');
+    if (label && (label.clientWidth < 3 * box.rem || (label.scrollWidth > label.clientWidth + 1 && label.clientWidth < 7 * box.rem))) root.classList.add('no-label');
+    for (let i = 0; i < 16 && wk > 0.3 && (root.scrollWidth > root.clientWidth + 1 || root.scrollHeight > root.clientHeight + 1); i++) {
+      wk *= 0.92;
+      root.style.setProperty('--wk', wk.toFixed(3));
+    }
   };
   return {
     mount(r, e) {

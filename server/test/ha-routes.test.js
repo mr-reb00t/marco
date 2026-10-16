@@ -478,7 +478,8 @@ test('admin: status, slim states for unsaved items, preview history, entities gr
     assert.equal(slim.status, 200);
     assert.deepEqual(Object.keys(slim.json.states).sort(), ['light.kitchen', 'sensor.nope', 'switch.hall']);
     assert.equal(slim.json.states['sensor.nope'].d, 'unavailable');
-    assert.equal((await call('POST', '/api/admin/homeassistant/slim', { body: { entities: Array.from({ length: 41 }, (_, i) => `sensor.s${i}`) }, headers: { cookie } })).status, 400);
+    // (up to 80: a screen on the fine grid shows that many)
+    assert.equal((await call('POST', '/api/admin/homeassistant/slim', { body: { entities: Array.from({ length: 81 }, (_, i) => `sensor.s${i}`) }, headers: { cookie } })).status, 400);
     const h = await call('GET', '/api/admin/homeassistant/history?entity=sensor.living_temp&period=6h', { headers: { cookie } });
     assert.equal(h.status, 200);
     assert.equal(h.json.series[0].entity, 'sensor.living_temp');

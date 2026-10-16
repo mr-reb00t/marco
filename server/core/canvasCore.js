@@ -70,8 +70,15 @@ export const CANVAS_SCRIMS = ['uniform', 'topBottom', 'edges'];
 /** Corners: square ('sq'), soft ('m', kept for screens saved with it; the editor offers sq, l, xl), round, rounder. */
 export const CANVAS_RADII = ['sq', 'm', 'l', 'xl'];
 
-/** Caps per screen. */
+/** Caps per screen (the normal grid). */
 export const CANVAS_LIMITS = { items: 24, side: 8, haEntities: 40, liveCameras: 1 };
+/**
+ * Caps of a screen on the fine grid: twice the cards (its cards can be a quarter of the size), and twice the Home
+ * Assistant entities, so the cap per card stays the same. Each kind's own cap (perScreen) does not change.
+ */
+export const CANVAS_LIMITS_FINE = { ...CANVAS_LIMITS, items: 48, haEntities: 80 };
+/** The caps of a screen on a grid ('normal' or 'fine'). */
+export const canvasLimits = (grid) => (grid === 'fine' ? CANVAS_LIMITS_FINE : CANVAS_LIMITS);
 
 export const CANVAS_ID_RE = /^cv_[a-z0-9]{8}$/;
 export const HA_ENTITY_RE = /^[a-z_]{1,64}\.[a-z0-9_]{1,200}$/;
@@ -1073,18 +1080,69 @@ function haKind(sizes, def, cells, domains, { controls = false, one = true, bigT
 export { cssProblem };
 
 /**
- * The smallest box of some kinds on the fine grid, in fine cells (cellRange; the others take twice their normal
- * minimum): the one-line cards half as high as a normal row, the small numbers and clocks a little smaller.
- * Each is checked to read whole in the browser sweeps (display-canvas-flex.test.js).
+ * The smallest box of each kind on the fine grid, in fine cells (cellRange; null: twice its normal smallest). A box
+ * smaller than twice its normal smallest is drawn in the kind's compact look (a line, a strip or a small block:
+ * widgets/canvas.ts miniMark, styles-canvas-mini.css). None is larger than it was, so every saved box stays valid.
+ * Each is checked to read whole in the browser sweeps (display-canvas-density.test.js).
  */
 const FINE_MIN = {
-  'ha.tile': [4, 1], 'ha.switch': [4, 1], 'ha.sensor': [4, 1], 'ha.light': [4, 1], 'ha.climate': [4, 2],
-  heading: [2, 1], spacer: [1, 1], 'nav.progress': [3, 1],
-  value: [3, 2], 'weather.now': [3, 2], date: [3, 2], 'calendar.next': [3, 2],
-  'ha.statistic': [3, 2], market: [3, 2], stocks: [3, 2], rotator: [3, 2],
-  'ha.gauge': [3, 3], 'clock.analog': [3, 3], 'ha.cover': [3, 3], 'clock.digital': [3, 3],
+  'clock.digital': [3, 1],
+  'clock.analog': [2, 2],
+  'clock.flip': [4, 1],
+  'clock.world': [4, 2],
+  'date': [3, 1],
+  'calendar.month': [6, 4],
+  'calendar.week': [6, 3],
+  'calendar.agenda': [4, 2],
+  'calendar.today': [4, 2],
+  'calendar.next': [3, 1],
+  'calendar.people': [6, 3],
+  'countdowns': [4, 1],
+  'weather.now': [3, 1],
+  'weather.hourly': [8, 2],
+  'weather.forecast': [6, 2],
+  'message': [4, 1],
+  'todo': [4, 2],
+  'news': [6, 1],
+  'photo': [2, 2],
+  'widget': [5, 3],
+  'value': [3, 1],
+  'heading': [2, 1],
+  'spacer': [1, 1],
+  'nav.button': [2, 1],
+  'nav.pause': [2, 1],
+  'nav.progress': [3, 1],
+  'family.members': [4, 1],
+  'family.routines': [4, 3],
+  'family.points': [4, 1],
+  'family.rewards': [4, 1],
+  'family.chores': [4, 2],
+  'meals.today': [4, 1],
+  'meals.week': [6, 2],
+  'birthdays': [4, 1],
+  'highlights': [4, 1],
+  'announcement': [6, 1],
+  'market': [4, 1],
+  'sports': [4, 1],
+  'stocks': [4, 1],
+  'ha.tile': [4, 1],
+  'ha.light': [4, 1],
+  'ha.switch': [4, 1],
+  'ha.climate': [4, 1],
+  'ha.cover': [3, 1],
+  'ha.sensor': [4, 1],
+  'ha.gauge': [3, 1],
+  'ha.statistic': [3, 1],
+  'ha.room': [4, 3],
+  'ha.chart': [4, 2],
+  'ha.camera': [3, 2],
+  'ha.media': [6, 1],
+  'ha.scene': [4, 1],
+  'rotator': [2, 1],
+  'html': [3, 2],
+  'card': null,
 };
-for (const [k, v] of Object.entries(FINE_MIN)) CANVAS_KINDS[k].fine = v;
+for (const [k, v] of Object.entries(FINE_MIN)) if (v) CANVAS_KINDS[k].fine = v;
 
 export const CANVAS_KIND_IDS = Object.keys(CANVAS_KINDS);
 /** Kinds a server allows by default: every kind but the reserved ones. */
@@ -1385,6 +1443,8 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   // "Cuadrícula" and "Densidad": kept only when not the default, so a screen saved before stays as it was
   const grid = P.oneOf(c, `${p}.grid`, raw.grid, 'normal', CANVAS_GRID_IDS);
   const density = P.oneOf(c, `${p}.density`, raw.density, 'normal', CANVAS_DENSITIES);
+  // the caps of its grid (the fine grid holds twice the cards)
+  const LIM = canvasLimits(grid);
   const out = {
     v: 1,
     background,
@@ -1414,7 +1474,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   const entities = new Set();
   let live = 0;
   const items = [];
-  // every card counts towards CANVAS_LIMITS.items, the cards inside a Rotativa too
+  // every card counts towards the grid's cap of cards (canvasLimits), the cards inside a Rotativa too
   let cards = 0;
   rawItems.forEach((x, i) => {
     const q = `${p}.items[${i}]`;
@@ -1424,15 +1484,15 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     if (!k) return;
     if (k.reserved) return c.err(`${q}.kind`, 'not available in this version');
     if (!allowed.has(x.kind)) return c.err(`${q}.kind`, 'not available on this server');
-    if (cards >= CANVAS_LIMITS.items) return c.err(`${p}.items`, `too many items (max ${CANVAS_LIMITS.items})`);
+    if (cards >= LIM.items) return c.err(`${p}.items`, `too many items (max ${LIM.items})`);
     if (k.perScreen && (counts[x.kind] ?? 0) >= k.perScreen) return c.err(`${q}.kind`, `too many ${x.kind} (max ${k.perScreen})`);
     const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
     if (x.kind === 'rotator') {
       // its cards: within the screen's cap of cards and each kind's own cap, with ids of their own
       props.cards = props.cards.filter((cd, j) => {
         const ck = CANVAS_KINDS[cd.kind];
-        if (cards + 1 >= CANVAS_LIMITS.items) {
-          c.err(`${p}.items`, `too many items (max ${CANVAS_LIMITS.items})`);
+        if (cards + 1 >= LIM.items) {
+          c.err(`${p}.items`, `too many items (max ${LIM.items})`);
           return false;
         }
         if (ck.perScreen && (counts[cd.kind] ?? 0) >= ck.perScreen) {
@@ -1449,11 +1509,11 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
       if (live >= CANVAS_LIMITS.liveCameras) props.mode = 'snapshot';
       else live++;
     }
-    // HA entities: at most CANVAS_LIMITS.haEntities different ones per screen
+    // HA entities: at most LIM.haEntities different ones per screen
     for (const e of haEntitiesOf({ kind: x.kind, props })) {
       if (entities.has(e)) continue;
-      if (entities.size >= CANVAS_LIMITS.haEntities) {
-        c.err(`${q}.props`, `too many Home Assistant entities (max ${CANVAS_LIMITS.haEntities})`);
+      if (entities.size >= LIM.haEntities) {
+        c.err(`${q}.props`, `too many Home Assistant entities (max ${LIM.haEntities})`);
         return;
       }
       entities.add(e);
@@ -1487,8 +1547,8 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     const when = readCondition(c, `${q}.when`, x.when, { ha: haConds });
     if (when) {
       if (when.src === 'ha' && when.entity && !entities.has(when.entity)) {
-        if (entities.size >= CANVAS_LIMITS.haEntities) {
-          c.err(`${q}.when`, `too many Home Assistant entities (max ${CANVAS_LIMITS.haEntities})`);
+        if (entities.size >= LIM.haEntities) {
+          c.err(`${q}.when`, `too many Home Assistant entities (max ${LIM.haEntities})`);
           when.entity = '';
         } else entities.add(when.entity);
       }
@@ -1803,6 +1863,16 @@ export function convertCanvasGrid(cv0, to) {
   const resized = new Set();
   const lost = [];
   if (from === target) return { ok: true, canvas: cv, moved: [], resized: [], lost };
+  // back to the normal grid: refused while the screen has more cards or Home Assistant entities than it allows there
+  if (target === 'normal') {
+    const ents = new Set();
+    for (const it of cv.items) {
+      for (const e of haEntitiesOf(it)) ents.add(e);
+      if (it.when?.src === 'ha' && it.when.entity) ents.add(it.when.entity);
+    }
+    const over = canvasCards(cv.items).length > CANVAS_LIMITS.items ? 'items' : ents.size > CANVAS_LIMITS.haEntities ? 'haEntities' : '';
+    if (over) return { ok: false, canvas: cv, moved: [], resized: [], lost, over };
+  }
   if (target === 'fine') cv.grid = 'fine';
   else delete cv.grid;
   const keys = [['pos', 'landscape'], ...(cv.portraitAuto ? [] : [['portrait', 'portrait']])];

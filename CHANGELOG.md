@@ -20,8 +20,16 @@ All notable changes to this project are documented here. The format is based on
     default), with a soft crossfade (none in lite mode or with reduced motion) and optional small dots. No touch
     needed. Each card is any card with its own options, edited inside it, and gets its data like any other (Home
     Assistant, values, crypto, sports and stocks, calendars, widgets); a rotating card cannot hold another one, its
-    cards count towards the 24 cards of a screen, and its cards are only shown, never touch controls. The daily and
+    cards count towards the cards of a screen, and its cards are only shown, never touch controls. The daily and
     the hourly forecast in one spot is its default (#7).
+  - On the fine grid nearly every card can now be much smaller, with a compact look made for that box: a line for the
+    clock, the date, the next event, countdowns, the weather now, a message, a headline, a value, birthdays, meals,
+    the family, crypto, sports and stocks (one coin, game or quote at a time) and the Home Assistant cards (a media
+    player with its cover and play/pause, climate with − and +, blinds with up and down, gauges, statistics, scene
+    chips); small strips for the hourly and daily forecast and the week's meals; a sparkline for charts; shorter
+    lists for the agenda, today, the people view, to-dos, routines and rooms; and smaller month and week grids. A
+    screen on the fine grid takes up to 48 cards (24 on the normal one) and 80 Home Assistant entities (40); going
+    back to the normal grid asks to remove some first. Nothing changes on the normal grid.
 
 ## [0.16.0] - 2026-10-16
 

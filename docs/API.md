@@ -857,7 +857,7 @@ an imported file, the old token is not used until it is saved again for the new 
 /api/admin/homeassistant/entities?domain=light,switch` (name, state, unit, domain, device_class, area, icon and the
 attributes the builder uses; areas need a token of a Home Assistant administrator, otherwise `area` is `null`),
 `GET /api/admin/homeassistant/status` (`{ state: "connected" | "polling" | "error" | "off", reason?, lastEventAt,
-count, watched }`), `POST /api/admin/homeassistant/slim` (`{ entities }`, up to 40: slim states for items the builder
+count, watched }`), `POST /api/admin/homeassistant/slim` (`{ entities }`, up to 80: slim states for items the builder
 has not saved yet), `GET /api/admin/homeassistant/history?entity=&period=` and `POST /api/admin/homeassistant/action`
 (`{ entity, kind, control, value?, props? }`: the editor's *Probar* button, with the same allowlist and clamping as a
 screen; the screen's touch switch does not apply, the owner is the one pressing).
@@ -942,12 +942,16 @@ screen saved before has neither and is drawn exactly as before). `grid: "fine"` 
 landscape screen, 16×24 on a portrait one; `CANVAS_GRIDS`, `gridDims(orientation, grid)`): every `x`, `y`, `w` and `h`
 of the main grid is then in fine cells, a named size is twice its cells (`sizeCells(size, orientation, grid)`), and
 each kind's range is twice its normal one (`cellRange(kind, orientation, grid)`), except that some kinds may go smaller
-(`CANVAS_KINDS[kind].fine`, their smallest box in fine cells: the Entity, Switch, Sensor and Light cards 4×1, half a
-normal row). `w` and `h` are whole cells from 1 to 24. Sidebar spans are the same on both grids.
+(`CANVAS_KINDS[kind].fine`, their smallest box in fine cells: a line card half a normal row high, a small block a
+quarter of a normal cell; a box smaller than the kind's normal smallest is drawn in a compact look). `w` and `h` are
+whole cells from 1 to 24. Sidebar spans are the same on both grids. A screen on the fine grid takes up to 48 cards and
+80 Home Assistant entities (`canvasLimits(grid)`: `CANVAS_LIMITS` 24 and 40, `CANVAS_LIMITS_FINE`); each kind's own cap
+is the same on both grids.
 `convertCanvasGrid(canvas, "fine" | "normal")` converts a canvas in both orientations: to the fine grid every position
 and box doubles; back to the normal one each box is halved to the nearest cells its kind allows and the cards are
 placed again with no overlap, and the answer lists the cards that `moved`, were `resized` or found no room (`lost`, and
-then `ok: false`). `density: "compact"` draws the cards with tighter gaps, less padding and smaller titles. The display
+then `ok: false`; also `ok: false` with `over: "items"` or `"haEntities"` while the canvas has more cards or entities than
+the normal grid takes). `density: "compact"` draws the cards with tighter gaps, less padding and smaller titles. The display
 config carries both.
 
 **Rotativa.** The kind `rotator` (category *Contenido*, every edition, at most 4 per screen) is one slot that shows its
@@ -955,8 +959,8 @@ cards one after another: `{ cards: [{ id, kind, props }], everySec, dots }`. `ca
 the editor keeps at least 2), each a kind of its own validated by that kind (`rotatorKindOk`: never another `rotator`,
 `spacer`, `heading` or a navigation card; a kind the server does not allow is refused, so on Marco Cloud no Home
 Assistant card); each card has an id like an item's, unique on the screen. `everySec` is 5 to 120 (default 10), `dots`
-a boolean (default true). The cards count towards the 24 cards of a screen and towards each kind's own cap, their
-entities towards the 40 of a screen, and the box of a Rotativa is kept within what all its cards allow
+a boolean (default true). The cards count towards the cards of a screen (24, 48 on the fine grid) and towards each kind's own
+cap, their entities towards the screen's (40, 80 on the fine grid), and the box of a Rotativa is kept within what all its cards allow
 (`kindFor(item)`). A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
 (`canvasCards(items)`), so a card inside gets its Home Assistant states under aliases of its own id (`<cardId>:<n>`),
 its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch

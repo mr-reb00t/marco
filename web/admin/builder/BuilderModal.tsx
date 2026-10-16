@@ -35,7 +35,7 @@ import { push, redo, startHistory, undo, type History } from './history';
 import { Inspector, type InspectorTab } from './Inspector';
 import { kindName } from './kinds';
 import {
-  addItem, autoPortrait, boxCells, cardCount, duplicateItem, fitContent, editPortrait, gOf, grid, itemOf, nudge, omittedInPortrait, placeInPortrait, placements, readOnly, removeItem,
+  addItem, autoPortrait, boxCells, cardCount, maxCards, duplicateItem, fitContent, editPortrait, gOf, grid, itemOf, nudge, omittedInPortrait, placeInPortrait, placements, readOnly, removeItem,
   setCells, setGrid, setSidebarSide, sideItems, sideOf, stepSize, toMain, toSide, voidIds, type GridId, type MainDrop, type Orient, type Refusal, type Result,
 } from './model';
 import { Palette } from './Palette';
@@ -217,7 +217,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
   // ---- history
   const commit = (next: Partial<BState>, merge?: string) => setHist((h) => push(h, { ...h.present, ...next }, merge));
   const refuse = (why: Refusal, inWay?: string[]) => {
-    let m = t(REFUSALS[why], { n: CANVAS_LIMITS.items });
+    let m = t(REFUSALS[why], { n: maxCards(cv) });
     if (inWay?.length) m = `${m}. ${t('En ese hueco está: {names}', { names: inWay.join(', ') })}`;
     toast(m, 'error');
     announce(m);
@@ -235,7 +235,11 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
   const changeGrid = (g: GridId) => {
     const r = setGrid(cv, g);
     if (!r.ok) {
-      const m = t('No caben todas las tarjetas en la cuadrícula normal. Quita alguna o hazlas más pequeñas y vuelve a probar.');
+      const m = r.over === 'items'
+        ? t('La cuadrícula normal admite {n} widgets como máximo. Quita alguno y vuelve a probar.', { n: CANVAS_LIMITS.items })
+        : r.over === 'haEntities'
+          ? t('La cuadrícula normal admite {n} entidades de Home Assistant como máximo. Quita alguna y vuelve a probar.', { n: CANVAS_LIMITS.haEntities })
+          : t('No caben todas las tarjetas en la cuadrícula normal. Quita alguna o hazlas más pequeñas y vuelve a probar.');
       toast(m, 'error');
       announce(m);
       return;
@@ -673,7 +677,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       cramped={rects.cramped}
       noBlur={rects.noBlur}
       onFit={(id) => fit(id)}
-      env={{ ...fieldEnv, cardsLeft: CANVAS_LIMITS.items - count }}
+      env={{ ...fieldEnv, cardsLeft: maxCards(cv) - count }}
       haStates={haPv?.states ?? {}}
       haRaw={haPv?.raw ?? {}}
       openMode={full.security?.displayAccess === 'open'}
@@ -954,7 +958,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
                 <Icon name="alert" size={13} /> {t('{n} widgets no caben enteros', { n: crampedN })}
               </span>
             )}
-            <span>{t('{n} de {max} widgets', { n: count, max: CANVAS_LIMITS.items })}</span>
+            <span>{t('{n} de {max} widgets', { n: count, max: maxCards(cv) })}</span>
             {/* the grid of this screen: a click opens Página, where it is changed */}
             <button type="button" class="link-btn bld-status__grid" title={t('Cambiar en Página')} onClick={openPage}>
               {gOf(cv) === 'fine' ? t('Cuadrícula fina') : t('Cuadrícula normal')} · {dims.cols}×{dims.rows}

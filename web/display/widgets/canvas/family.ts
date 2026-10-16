@@ -64,6 +64,41 @@ function fitList(root: HTMLElement, list: HTMLElement | null, sel: string, first
   if (more?.textContent && root.scrollHeight > root.clientHeight + 1) more.textContent = '';
 }
 
+/**
+ * A box one fine row high (only the fine grid has it, widgets/canvas.ts miniMark): the card is one line, its rows side
+ * by side (styles-canvas-mini.css).
+ */
+const isLine = (root: HTMLElement) => root.dataset.mini !== undefined && root.dataset.mh === '1';
+
+/**
+ * fitList for a card on one line: rows drop from the end while the line is wider than the card, with "+N" after
+ * them; the last row left shrinks (its text ends in …) instead of going.
+ */
+function fitAcross(root: HTMLElement, list: HTMLElement | null, sel: string): void {
+  if (!list) return;
+  for (const r of Array.from(list.querySelectorAll('.fit-hide'))) r.classList.remove('fit-hide');
+  list.classList.remove('is-one');
+  const more = root.querySelector<HTMLElement>('.kf-more');
+  if (more) more.textContent = '';
+  const over = () => list.scrollWidth > list.clientWidth + 1 || root.scrollWidth > root.clientWidth + 1;
+  for (let guard = 0; guard < 60 && over(); guard++) {
+    const left = visible(list, sel);
+    if (left.length <= 1) break;
+    left[left.length - 1].classList.add('fit-hide');
+    const k = list.querySelectorAll(`${sel}.fit-hide`).length;
+    if (more) more.textContent = k ? `+${k}` : '';
+  }
+  // one row left that is still too wide: it shrinks, and "+N" gives it the room
+  if (over()) {
+    list.classList.add('is-one');
+    if (more) more.textContent = '';
+  }
+}
+
+/** fitList, or fitAcross for a card on one line. */
+const fitRowsOf = (root: HTMLElement, list: HTMLElement | null, sel: string, first?: () => HTMLElement | null | undefined) =>
+  (isLine(root) ? fitAcross(root, list, sel) : fitList(root, list, sel, first));
+
 interface Spec {
   cls: string;
   /** body html (from the kids builders, text escaped); '' = nothing yet; null = nothing to show (card hidden) */
@@ -174,7 +209,7 @@ const members = familyCard({
     const f = env.family().state;
     const n = f && !f.hidden ? membersOf(f, (env.item().props as Props).memberIds).length : 0;
     let best = 0;
-    if (root.dataset.room !== undefined && n > 1) {
+    if (root.dataset.room !== undefined && n > 1 && !isLine(root)) {
       const [w, h] = onScreen(root, b);
       let score = 0;
       for (let c = 1; c <= n; c++) {
@@ -190,6 +225,12 @@ const members = familyCard({
     if (!grid) return;
     grid.classList.remove('is-compact', 'is-tiny');
     for (const r of Array.from(grid.querySelectorAll('.fit-hide'))) r.classList.remove('fit-hide');
+    // one line: each face with its name, then faces alone, then people from the end ("+N")
+    if (isLine(root)) {
+      grid.classList.add('is-compact');
+      if (grid.scrollWidth > grid.clientWidth + 1) grid.classList.add('is-tiny');
+      return fitAcross(root, grid, '.cvf-person');
+    }
     const over = () => root.scrollHeight > root.clientHeight + 1 || grid.scrollWidth > grid.clientWidth + 1;
     // first the bars go, then the names, then people from the end ("+N más", one always stays)
     if (over()) grid.classList.add('is-compact');
@@ -255,7 +296,7 @@ const points = familyCard({
     return `<div class="kf-list cvf-board" style="--cvf-n:${rows.length}">${rows.join('')}</div><div class="kf-more"></div>`;
   },
   fit(root) {
-    fitList(root, root.querySelector<HTMLElement>('.cvf-board'), '.cvf-rank');
+    fitRowsOf(root, root.querySelector<HTMLElement>('.cvf-board'), '.cvf-rank');
   },
   // a box taller than any named size and wide enough: a tile per child side by side (the place, a big face, the stars)
   shape(root, b, env) {
@@ -282,7 +323,7 @@ const rewards = familyCard({
     return `<div class="kf-list" style="--cvf-n:${rows.length}">${rows.join('')}</div>`;
   },
   fit(root) {
-    fitList(root, root.querySelector<HTMLElement>('.kf-list'), '.kf-reward');
+    fitRowsOf(root, root.querySelector<HTMLElement>('.kf-list'), '.kf-reward');
   },
   // a box taller than any named size and wide enough: a tile per reward side by side (a big face, the reward over
   // two lines, a thick bar)
@@ -350,7 +391,7 @@ const mealsToday = familyCard({
     return rows.length ? `<div class="kf-list" style="--cvf-n:${rows.length}">${rows.join('')}</div>` : note('🍽️', ctx.t('kidsNoMealsDay'));
   },
   fit(root) {
-    fitList(root, root.querySelector<HTMLElement>('.kf-list'), '.kf-meal');
+    fitRowsOf(root, root.querySelector<HTMLElement>('.kf-list'), '.kf-meal');
   },
   // a box taller than any named size and wide enough: a tile per meal side by side, the dish over a few lines
   shape(root, b, env) {
@@ -360,7 +401,7 @@ const mealsToday = familyCard({
     const [w, h] = onScreen(root, b);
     root.classList.toggle('is-tiles', n > 0 && h >= 30 && w >= n * 24);
     // a long low box past the named sizes: the meals side by side
-    root.classList.toggle('is-row', n > 1 && root.dataset.room !== undefined && h < 30 && w >= n * 30);
+    root.classList.toggle('is-row', n > 1 && root.dataset.room !== undefined && !isLine(root) && h < 30 && w >= n * 30);
   },
 });
 
@@ -483,7 +524,7 @@ function birthdays(): CanvasAdapter {
   const columns = (b: AdapterBox) => {
     const n = root.querySelectorAll('.cvf-bd').length;
     const [w, h] = onScreen(root, b);
-    const cols = root.dataset.room !== undefined && h < 40 ? Math.max(1, Math.min(3, n, Math.floor(w / 40))) : 1;
+    const cols = root.dataset.room !== undefined && !isLine(root) && h < 40 ? Math.max(1, Math.min(3, n, Math.floor(w / 40))) : 1;
     root.classList.toggle('is-cols', cols > 1);
     root.style.setProperty('--cvf-cols', String(cols));
     root.style.setProperty('--cvf-rows', String(Math.ceil(n / cols)));
@@ -491,7 +532,7 @@ function birthdays(): CanvasAdapter {
   let last: AdapterBox | null = null;
   const fit = () => {
     if (last) columns(last);
-    fitList(root, root.querySelector<HTMLElement>('.kf-list'), '.cvf-bd');
+    fitRowsOf(root, root.querySelector<HTMLElement>('.kf-list'), '.cvf-bd');
   };
   return {
     mount(r, e) {
@@ -550,6 +591,11 @@ function highlights(): CanvasAdapter {
     layout(b) {
       // pills of about 30rem side by side in a wide card, two in a small one
       const wide = b.w / b.rem;
+      // one fine row high: one line of pills, as many as about 24rem each gives
+      if (isLine(root)) {
+        root.classList.add('is-row');
+        return build(Math.min(4, Math.max(1, Math.floor(onScreen(root, b)[0] / 24))));
+      }
       root.classList.toggle('is-row', wide >= 60);
       // a box taller than the named sizes: a pill a line, as many as its height holds (up to six)
       const tall = root.dataset.room !== undefined ? Math.min(6, Math.floor(root.getBoundingClientRect().height / b.rem / 7)) : 0;

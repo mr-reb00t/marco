@@ -12,7 +12,7 @@ export const CANVAS_DENSITIES: ('normal' | 'compact')[];
 export function gridFactor(grid?: CanvasGridId | string | null): 1 | 2;
 export function gridDims(orientation?: Orientation | string, grid?: CanvasGridId | string | null): { cols: number; rows: number };
 export function canvasGrid(cv: { grid?: CanvasGridId | string } | null | undefined): CanvasGridId;
-export function convertCanvasGrid(cv: CanvasConfig, to: CanvasGridId): { ok: boolean; canvas: CanvasConfig; moved: string[]; resized: string[]; lost: string[] };
+export function convertCanvasGrid(cv: CanvasConfig, to: CanvasGridId): { ok: boolean; canvas: CanvasConfig; moved: string[]; resized: string[]; lost: string[]; over?: 'items' | 'haEntities' };
 export const ROTATOR_MAX: number;
 export const ROTATOR_MIN: number;
 export const ROTATOR_EVERY_DEFAULT: number;
@@ -33,7 +33,12 @@ export const CANVAS_SCRIMS: CanvasConfig['scrim'][];
 export const CANVAS_BACKGROUNDS: CanvasConfig['background'][];
 export const CANVAS_SURFACES: ('glass' | 'solid' | 'none')[];
 export const CANVAS_RADII: ('m' | 'l' | 'xl')[];
-export const CANVAS_LIMITS: { items: number; side: number; haEntities: number; liveCameras: number };
+export type CanvasLimits = { items: number; side: number; haEntities: number; liveCameras: number };
+export const CANVAS_LIMITS: CanvasLimits;
+/** The caps of a screen on the fine grid (48 cards, 80 Home Assistant entities). */
+export const CANVAS_LIMITS_FINE: CanvasLimits;
+/** The caps of a screen on a grid. */
+export function canvasLimits(grid?: CanvasGridId | string | null): CanvasLimits;
 export const CANVAS_ID_RE: RegExp;
 export const HA_ENTITY_RE: RegExp;
 export const VALUE_KEY_RE: RegExp;

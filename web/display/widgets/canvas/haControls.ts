@@ -7,7 +7,7 @@ import type { DisplayCanvasItem, HaState, TileFeature } from '../../../shared/ty
 import { ctx } from '../../ctx';
 import { CTL_ICON, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fanName, fmtNum, modeName, ring, stateIcon, stateText, tone } from '../ha/haui';
 import { bigType, typeCap } from './clock';
-import { el, haAdapter, icon, live, nameOf, tappable } from './ha';
+import { el, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
 import { coverButtons, drawTile, fitTile, growToFill, tileStateText } from './haTile';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
 
@@ -232,6 +232,8 @@ function climatePower(env: AdapterEnv, alias: string, s: HaState | null, c: Clim
 }
 
 function drawClimate(root: HTMLElement, env: AdapterEnv): void {
+  // one line (a box only the fine grid has, whatever size it is drawn like): the line, − the target + at its end
+  if (miniLine(root)) root.dataset.size = 'row';
   root.classList.toggle('cv-ha-tile-card', sizeOf(root) === 'row');
   root.classList.remove('has-under');
   const size = sizeOf(root);
@@ -368,6 +370,13 @@ function drawCover(root: HTMLElement, env: AdapterEnv): void {
   const alias = aliasOf(p.entity);
   const s = env.ha.state(alias);
   const cv = s?.d === 'cover' ? s : null;
+  // one line (a box only the fine grid has): the Entidad card's line, with up and down at its end
+  const line = miniLine(root);
+  root.classList.toggle('cv-ha-tile-card', line);
+  if (line) {
+    root.dataset.size = 'row';
+    return drawTile(root, env);
+  }
   const size = sizeOf(root);
   topOf(root, env, icon('shutter'), s ? stateText(s) : '');
   if (!cv) return;
@@ -444,7 +453,7 @@ export const HA_CONTROL_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Ca
   }),
   'ha.switch': () => haAdapter('cv-ha-ctl-card cv-ha-switchcard', (p) => [aliasOf(p.entity)].filter(Boolean), drawSwitch, fitTile),
   'ha.climate': () => haAdapter('cv-ha-ctl-card cv-ha-climate', (p) => [aliasOf(p.entity)].filter(Boolean), drawClimate, (root, box, env) => {
-    if (box.size === 'row') return fitTile(root, box, env);
+    if (box.size === 'row' || miniLine(root)) return fitTile(root, { ...box, size: 'row' }, env);
     const nominal = box.size === 'xs' ? 13 : box.size === 's' ? 12 : box.size === 'w' ? 11 : box.size === 't' ? 30 : 22;
     const sc = scaleOf(env);
     const dial = () => root.querySelector<HTMLElement>('.cv-ha-dial')?.clientHeight ?? 0;
@@ -480,12 +489,31 @@ export const HA_CONTROL_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Ca
     }
   }),
   'ha.cover': () => haAdapter('cv-ha-ctl-card cv-ha-cover', (p) => [aliasOf(p.entity)].filter(Boolean), drawCover, (root, box, env) => {
+    if (miniLine(root)) return fitTile(root, { ...box, size: 'row' }, env);
     fitBy((z) => (z === 'xs' ? 13 : z === 'm' ? 13 : 12), 22)(root, box, env);
     if (box.size !== 'row') growToFill(root, 1.4, scaleOf(env));
   }),
   'ha.scene': () => haAdapter('cv-ha-ctl-card cv-ha-scenecard', (p) => ((p.buttons ?? []) as Props[]).map((b) => aliasOf(b.entity)).filter(Boolean), drawScenes, (root, box, env) => {
     // as many columns as the buttons need to fit the height (a button is at least 4.8rem high)
     const n = Math.max(1, ((env.item().props as Props).buttons ?? []).length);
+    // a box only the fine grid has (one to three cells high): the buttons as chips in as many rows as the height
+    // holds, the names on one line shortened with … (and no icon when a chip is narrow), so each scene still reads
+    if (root.dataset.mini !== undefined) {
+      const rows = Math.min(n, Math.max(1, Math.floor((box.h / box.rem + 0.5) / 5.2)));
+      const cols = Math.ceil(n / rows);
+      root.style.setProperty('--cols', String(cols));
+      let wk = bigType(root, box, rows * 4.6 + (rows - 1) * 0.6, scaleOf(env), 0, 1.2);
+      root.classList.toggle('no-ico', box.w / cols < 9 * box.rem * wk);
+      // names cut: a little smaller type first (to 70 %), then the …
+      const names = [...root.querySelectorAll<HTMLElement>('.cv-ha-scene .cv-ha-name')];
+      const floor = wk * 0.7;
+      for (let i = 0; i < 6 && wk > floor && names.some((e) => e.scrollWidth > e.clientWidth + 1); i++) {
+        wk = Math.max(floor, wk * 0.92);
+        root.style.setProperty('--wk', wk.toFixed(3));
+      }
+      return;
+    }
+    root.classList.remove('no-ico');
     const fitRows = Math.max(1, Math.floor((box.h / box.rem + 0.8) / 6.2));
     const want = box.size === 'w' ? Math.min(n, 6) : Math.min(n, box.size === 'xs' ? 1 : 2);
     // never so many columns that a name gets only a few letters (a narrow box of its own, a wide sidebar)
