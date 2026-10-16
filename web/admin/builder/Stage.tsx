@@ -663,7 +663,7 @@ export function Stage(props: {
               );
             })}
             {sel && selBox && (
-              <div class="bld-selection" style={px(selBox)} aria-hidden="true">
+              <div class={`bld-selection ${selBox.h * s < 80 ? 'is-short' : ''}`} style={px(selBox)} aria-hidden="true">
                 <span class="bld-selection__tag">{sizeTag(sel)}</span>
                 {!ro && (
                   <span

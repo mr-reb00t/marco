@@ -167,6 +167,11 @@
 .bld-handle { right: 0; bottom: 0; transform-origin: 100% 100%; cursor: nwse-resize; }
 .bld-handle svg { transform: rotate(45deg); }
 .bld-more { right: 0; top: 0; transform-origin: 100% 0; cursor: pointer; background: var(--surface); color: var(--text); }
+/* a card too low for the two buttons one above the other (a one-row card on the fine grid): side by side at the top */
+.bld-selection.is-short .bld-handle { top: 0; bottom: auto; right: calc(36px / var(--s, 1)); transform-origin: 100% 0; }
+@media (pointer: coarse) {
+  .bld-selection.is-short .bld-handle { right: calc(42px / var(--s, 1)); }
+}
 /* bigger targets for a finger */
 @media (pointer: coarse) {
   .bld-handle, .bld-more { width: 36px; height: 36px; }
