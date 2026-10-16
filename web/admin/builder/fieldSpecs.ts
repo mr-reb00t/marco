@@ -46,7 +46,9 @@ export type Spec =
   | { type: 'stocksKey' }
   | { type: 'note'; text: string; go?: { label: string; route: string } }
   /** a small heading over the fields that follow */
-  | { type: 'group'; label: string };
+  | { type: 'group'; label: string }
+  /** a Rotativa's cards: each with its own kind and options (RotatorFields.tsx) */
+  | { type: 'rotatorCards' };
 
 const HIDE_PAST: Spec = { k: 'hidePast', type: 'bool', label: 'Ocultar lo que ya ha pasado' };
 const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
@@ -96,7 +98,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'showDate', type: 'bool', label: 'Mostrar la fecha' },
     { k: 'dateFormat', type: 'seg', label: 'Fecha', opts: [{ v: 'long', l: 'Larga' }, { v: 'short', l: 'Corta' }] },
     DATE_POS_FIELD,
-    { k: 'weight', type: 'seg', label: 'Grosor', opts: [{ v: 'light', l: 'Fina' }, { v: 'regular', l: 'Normal' }, { v: 'bold', l: 'Gruesa' }] },
+    { k: 'weight', type: 'seg', label: 'Grosor', opts: [{ v: 'light', l: 'Delgada' }, { v: 'regular', l: 'Normal' }, { v: 'bold', l: 'Gruesa' }] },
   ],
   'clock.analog': [
     { k: 'face', type: 'select', label: 'Esfera', opts: [{ v: 'classic', l: 'Clásica' }, { v: 'minimal', l: 'Mínima' }, { v: 'dots', l: 'Puntos' }, { v: 'numbers', l: 'Números' }] },
@@ -177,6 +179,11 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     CHART_STYLE('De fondo: las barras de las horas llenan la tarjeta de borde a borde, detrás del precio de ahora.', (p, widgets) => widgets.find((w) => w.id === p.widgetId)?.type === 'prices'),
   ],
   spacer: [{ type: 'note', text: 'Un hueco que no se ve. Sirve para dejar libre una parte de la pantalla.' }],
+  rotator: [
+    { type: 'rotatorCards' },
+    { k: 'everySec', type: 'num', label: 'Cambiar cada', min: 5, max: 120, step: 5, unit: 'sec' },
+    { k: 'dots', type: 'bool', label: 'Mostrar puntos', hint: 'Unos puntos pequeños abajo dicen qué tarjeta se ve.' },
+  ],
   'family.members': [{ k: 'memberIds', type: 'members', label: 'Personas' }, { k: 'showPoints', type: 'bool', label: 'Estrellas' }],
   'family.routines': [{ k: 'memberId', type: 'member', label: 'De quién' }, { k: 'showDone', type: 'bool', label: 'Mostrar las hechas' }],
   'family.points': [{ k: 'memberIds', type: 'members', label: 'Personas' }],

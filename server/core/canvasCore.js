@@ -8,8 +8,31 @@ import { COIN_ID_RE, DATA_LIMITS, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGU
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
-/** Cells of the main area: 12×8 on a landscape screen, 8×12 on a portrait one. */
+/** Cells of the main area: 12×8 on a landscape screen, 8×12 on a portrait one (the Normal grid). */
 export const CANVAS_GRID = { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } };
+
+/**
+ * "Cuadrícula" (canvas.grid): 'normal' (CANVAS_GRID, every screen saved before) or 'fine', twice as many cells each
+ * way (24×16 landscape, 16×24 portrait). A fine cell is half a normal one, so every named size and every kind's range
+ * is twice as many fine cells (the same box on the screen), except where a kind can go smaller (`fine` in
+ * CANVAS_KINDS: its smallest box in fine cells). Sidebar spans do not change.
+ */
+export const CANVAS_GRID_IDS = ['normal', 'fine'];
+export const CANVAS_GRIDS = {
+  normal: CANVAS_GRID,
+  fine: { landscape: { cols: 24, rows: 16 }, portrait: { cols: 16, rows: 24 } },
+};
+/** "Densidad" (canvas.density): 'normal' or 'compact' (tighter gaps, less padding inside the cards, smaller titles). */
+export const CANVAS_DENSITIES = ['normal', 'compact'];
+/** Cells of one normal cell on a grid (1 or 2). */
+export const gridFactor = (grid) => (grid === 'fine' ? 2 : 1);
+const gridOf = (grid) => (grid === 'fine' ? 'fine' : 'normal');
+/** { cols, rows } of the main area on an orientation and a grid. */
+export function gridDims(orientation = 'landscape', grid = 'normal') {
+  return CANVAS_GRIDS[gridOf(grid)][orientation === 'portrait' ? 'portrait' : 'landscape'];
+}
+/** The grid of a canvas (screens saved before the setting existed are 'normal'). */
+export const canvasGrid = (cv) => gridOf(cv?.grid);
 
 /**
  * Named sizes: [w, h] in cells per orientation. An item stores one of them, and when its box is not exactly a named
@@ -78,10 +101,12 @@ export function needsConfirm(domain, attrs, entityId = '', name = '') {
   return [id, fname, String(name || '')].some((x) => x && DOORLIKE_RE.test(x));
 }
 
-/** [w, h] of a size on an orientation. */
-export function sizeCells(size, orientation = 'landscape') {
+/** [w, h] of a size on an orientation (and a grid: twice the cells on the fine one). */
+export function sizeCells(size, orientation = 'landscape', grid = 'normal') {
   const s = CANVAS_SIZES[size] ?? CANVAS_SIZES.m;
-  return s[orientation === 'portrait' ? 'portrait' : 'landscape'];
+  const c = s[orientation === 'portrait' ? 'portrait' : 'landscape'];
+  const f = gridFactor(grid);
+  return f === 1 ? c : [c[0] * f, c[1] * f];
 }
 
 const orientOf = (o) => (o === 'portrait' ? 'portrait' : 'landscape');
@@ -92,17 +117,22 @@ const kindOf = (kind) => (typeof kind === 'string' ? CANVAS_KINDS[kind] : kind);
  * portrait screen at most 8 wide, and a kind that may take the whole height takes all 12 rows), widened to hold every
  * named size of the kind on that orientation, never past the grid.
  */
-export function cellRange(kind, orientation = 'landscape') {
+export function cellRange(kind, orientation = 'landscape', grid = 'normal') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
-  const { cols, rows } = CANVAS_GRID[o];
-  const [a, b, c, d] = k?.cells ?? [1, 1, cols, rows];
-  let minW = Math.min(a, cols);
-  let minH = Math.min(b, rows);
-  let maxW = Math.min(c, cols);
-  let maxH = o === 'portrait' && d >= CANVAS_GRID.landscape.rows ? rows : Math.min(d, rows);
+  const g = gridOf(grid);
+  const f = gridFactor(g);
+  const { cols, rows } = gridDims(o, g);
+  const [a, b, c, d] = k?.cells ?? [1, 1, CANVAS_GRID.landscape.cols, CANVAS_GRID.landscape.rows];
+  // on the fine grid: twice the cells, or the kind's own smallest fine box (a line card half as high)
+  const fa = f === 2 && k?.fine ? k.fine[0] : a * f;
+  const fb = f === 2 && k?.fine ? k.fine[1] : b * f;
+  let minW = Math.min(fa, cols);
+  let minH = Math.min(fb, rows);
+  let maxW = Math.min(c * f, cols);
+  let maxH = o === 'portrait' && d >= CANVAS_GRID.landscape.rows ? rows : Math.min(d * f, rows);
   for (const s of k?.sizes ?? []) {
-    const [w, h] = sizeCells(s, o);
+    const [w, h] = sizeCells(s, o, g);
     minW = Math.min(minW, w);
     minH = Math.min(minH, h);
     maxW = Math.max(maxW, w);
@@ -112,23 +142,23 @@ export function cellRange(kind, orientation = 'landscape') {
 }
 
 /** [w, h] of a main-grid position: its own w and h when it has them, else its named size's. */
-export function posCells(pos, orientation = 'landscape') {
+export function posCells(pos, orientation = 'landscape', grid = 'normal') {
   if (pos && Number.isInteger(pos.w) && Number.isInteger(pos.h)) return [pos.w, pos.h];
-  return sizeCells(pos?.size, orientation);
+  return sizeCells(pos?.size, orientation, grid);
 }
 
 /**
  * The named size a w×h box of `kind` is drawn like (cards lay out by it, then fit the real box): the largest of the
  * kind's sizes that fits inside the box (ties: the closer shape); when none does, the one that sticks out least.
  */
-export function lookSize(kind, w, h, orientation = 'landscape') {
+export function lookSize(kind, w, h, orientation = 'landscape', grid = 'normal') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
   const sizes = k?.sizes ?? CANVAS_SIZE_IDS;
   let best = null;
   let key = null;
   for (const s of sizes) {
-    const [sw, sh] = sizeCells(s, o);
+    const [sw, sh] = sizeCells(s, o, grid);
     const out = Math.max(0, sw - w) + Math.max(0, sh - h);
     const shape = Math.abs(Math.log((sw / sh) / (w / h)));
     // fits first, then the bigger, then the closer shape; when nothing fits: the least sticking out, then smaller
@@ -145,22 +175,22 @@ export function lookSize(kind, w, h, orientation = 'landscape') {
  * A w×h box of `kind` as stored: clamped to its range; a box that is exactly one of its named sizes is stored as
  * that name alone (so every screen saved before keeps its shape), any other as { size: its look, w, h }.
  */
-export function boxOf(kind, w, h, orientation = 'landscape') {
+export function boxOf(kind, w, h, orientation = 'landscape', grid = 'normal') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
-  const r = cellRange(k, o);
+  const r = cellRange(k, o, grid);
   const cw = Math.min(r.maxW, Math.max(r.minW, Math.round(w)));
   const ch = Math.min(r.maxH, Math.max(r.minH, Math.round(h)));
   const named = (k?.sizes ?? []).find((s) => {
-    const [sw, sh] = sizeCells(s, o);
+    const [sw, sh] = sizeCells(s, o, grid);
     return sw === cw && sh === ch;
   });
-  return named ? { size: named } : { size: lookSize(k, cw, ch, o), w: cw, h: ch };
+  return named ? { size: named } : { size: lookSize(k, cw, ch, o, grid), w: cw, h: ch };
 }
 
-/** True when a box of w×h cells is within the range of `kind` on an orientation. */
-export function boxAllowed(kind, w, h, orientation = 'landscape') {
-  const r = cellRange(kind, orientation);
+/** True when a box of w×h cells is within the range of `kind` on an orientation (and a grid). */
+export function boxAllowed(kind, w, h, orientation = 'landscape', grid = 'normal') {
+  const r = cellRange(kind, orientation, grid);
   return Number.isInteger(w) && Number.isInteger(h) && w >= r.minW && w <= r.maxW && h >= r.minH && h <= r.maxH;
 }
 
@@ -831,6 +861,25 @@ export const CANVAS_KINDS = {
       buttons: P.list(c, `${p}.buttons`, x.buttons, 6, (b, q) => ({ entity: P.entity(c, `${q}.entity`, b.entity, DOMAINS.scene), label: P.str(c, `${q}.label`, b.label, '', 40), icon: P.str(c, `${q}.icon`, b.icon, '', 8) })),
     }),
   },
+  // "Rotativa": one slot that shows its cards one after another (a card carousel, no touch needed). Each card is a
+  // kind of its own with its own props (ROTATOR_KINDS); sanitizeCanvas gives them ids and counts them like items.
+  rotator: {
+    cat: 'content', sizes: ['s', 'm', 'w', 't', 'l', 'xl'], def: 'w', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 4,
+    defaults: () => ({
+      cards: [
+        // ids: given by the editor (and by sanitizeCanvas to a card with none)
+        { id: '', kind: 'weather.forecast', props: CANVAS_KINDS['weather.forecast'].defaults() },
+        { id: '', kind: 'weather.hourly', props: CANVAS_KINDS['weather.hourly'].defaults() },
+      ],
+      everySec: ROTATOR_EVERY_DEFAULT,
+      dots: true,
+    }),
+    props: (c, p, x, refs, opts) => ({
+      cards: rotatorCards(c, `${p}.cards`, x.cards, refs, opts),
+      everySec: P.num(c, `${p}.everySec`, x.everySec, ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MIN, ROTATOR_EVERY_MAX),
+      dots: P.bool(c, `${p}.dots`, x.dots, true),
+    }),
+  },
   // ---- Avanzado
   html: {
     cat: 'adv', sizes: SIZES_BUT_BAND, def: 'm', cells: [2, 2, 12, 8], side: true, edition: 'local', feature: 'customWidgets', perScreen: 3, private: true,
@@ -881,6 +930,110 @@ export const CANVAS_KINDS = {
   },
 };
 
+/** Most cards in one Rotativa, and its "Cambiar cada" (seconds). */
+export const ROTATOR_MAX = 6;
+export const ROTATOR_MIN = 2;
+export const ROTATOR_EVERY_DEFAULT = 10;
+export const ROTATOR_EVERY_MIN = 5;
+export const ROTATOR_EVERY_MAX = 120;
+/** Kinds that never go inside a Rotativa: another Rotativa, the layout helpers and the cards made to be touched. */
+const ROTATOR_NEVER = /^(?:rotator|spacer|heading|card|nav\..*)$/;
+/** True when a card of `kind` may be one of a Rotativa's cards (on a server that allows the kind). */
+export const rotatorKindOk = (kind) => typeof kind === 'string' && !!CANVAS_KINDS[kind] && !CANVAS_KINDS[kind].reserved && !ROTATOR_NEVER.test(kind);
+
+/**
+ * The cards of a Rotativa: [{ id, kind, props }], each validated with its kind's own props. Kinds this server does not
+ * allow and the kinds that never go inside one are refused (an error, the card is left out); a card of a saved widget
+ * that was deleted goes quietly, a camera shows pictures (never a live stream). Ids are checked by sanitizeCanvas.
+ */
+function rotatorCards(c, p, v, refs, opts) {
+  if (v === undefined || v === null) return [];
+  if (!Array.isArray(v)) {
+    c.err(p, 'expected array');
+    return [];
+  }
+  if (v.length > ROTATOR_MAX) c.err(p, `too many cards (max ${ROTATOR_MAX})`);
+  const allowed = new Set(opts?.canvasKinds ?? DEFAULT_CANVAS_KINDS);
+  const out = [];
+  v.slice(0, ROTATOR_MAX).forEach((x, i) => {
+    const q = `${p}[${i}]`;
+    if (!isObj(x)) return c.err(q, 'expected object');
+    const k = CANVAS_KINDS[x.kind];
+    if (!k) return; // a kind this version does not know (an import from a newer server)
+    if (!rotatorKindOk(x.kind)) return c.err(`${q}.kind`, 'not allowed inside a rotating card');
+    if (!allowed.has(x.kind)) return c.err(`${q}.kind`, 'not available on this server');
+    const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
+    if (x.kind === 'widget' && !(refs?.widgets instanceof Map ? refs.widgets.has(props.widgetId) : false)) return;
+    if (x.kind === 'ha.camera') props.mode = 'snapshot';
+    out.push({ id: typeof x.id === 'string' ? x.id : '', kind: x.kind, props });
+  });
+  return out;
+}
+
+/**
+ * Every card of a list of items: each item, and after a Rotativa its cards as items of their own ({ id, kind, props,
+ * parent }) that share its hiding, its schedule, its condition and its place, and are never touch controls. The
+ * server's feeds (Home Assistant aliases, values, data cards, calendars, widgets) walk this list, so a card inside a
+ * Rotativa gets its data like any other and is hidden whenever its Rotativa is.
+ */
+export function canvasCards(items) {
+  const out = [];
+  for (const it of Array.isArray(items) ? items : []) {
+    if (!it) continue;
+    out.push(it);
+    if (it.kind !== 'rotator' || !Array.isArray(it.props?.cards)) continue;
+    for (const cd of it.props.cards) {
+      if (!cd || typeof cd.kind !== 'string') continue;
+      const x = { id: cd.id, kind: cd.kind, props: cd.props ?? {}, parent: it.id, pos: it.pos, style: it.style, interactive: false };
+      if (it.portrait !== undefined) x.portrait = it.portrait;
+      // as the display gets them: the card's hash and why it is a placeholder
+      if (cd.v) x.v = cd.v;
+      if (cd.disabled) x.disabled = cd.disabled;
+      if (it.hidden) x.hidden = true;
+      if (it.schedule) x.schedule = it.schedule;
+      if (it.when) x.when = it.when;
+      out.push(x);
+    }
+  }
+  return out;
+}
+
+/**
+ * The kind an item is sized as: its kind, except a Rotativa with cards, whose range is the part every one of its
+ * cards allows too (the largest of their smallest boxes, on both grids, and the smallest of their largest), with the
+ * named sizes of a Rotativa that fall inside it, so each card always has room for itself. Takes the place of the
+ * kind wherever a box is worked out (cellRange, boxOf, lookSize accept it).
+ */
+export function kindFor(item) {
+  const k = CANVAS_KINDS[item?.kind];
+  const cards = item?.kind === 'rotator' && Array.isArray(item.props?.cards) ? item.props.cards.filter((cd) => CANVAS_KINDS[cd?.kind]) : [];
+  if (!k || !cards.length) return k;
+  let [a, b, c, d] = k.cells;
+  let [fa, fb] = k.fine ?? [a * 2, b * 2];
+  for (const cd of cards) {
+    const r = cellRange(cd.kind, 'landscape', 'normal');
+    const f = cellRange(cd.kind, 'landscape', 'fine');
+    a = Math.max(a, r.minW);
+    b = Math.max(b, r.minH);
+    c = Math.min(c, r.maxW);
+    d = Math.min(d, r.maxH);
+    fa = Math.max(fa, f.minW);
+    fb = Math.max(fb, f.minH);
+  }
+  c = Math.max(c, a);
+  d = Math.max(d, b);
+  const inside = (s) => {
+    const [w, h] = sizeCells(s, 'landscape');
+    return w >= a && h >= b && w <= c && h <= d;
+  };
+  let sizes = k.sizes.filter(inside);
+  if (!sizes.length) sizes = CANVAS_SIZE_IDS.filter((s) => s !== 'row' && inside(s)).slice(0, 1);
+  if (!sizes.length) return k;
+  const area = (s) => sizeCells(s, 'landscape')[0] * sizeCells(s, 'landscape')[1];
+  const def = sizes.includes(k.def) ? k.def : [...sizes].sort((x, y) => Math.abs(area(x) - area(k.def)) - Math.abs(area(y) - area(k.def)))[0];
+  return { ...k, cells: [a, b, c, d], fine: [Math.min(fa, a * 2), Math.min(fb, b * 2)], sizes, def };
+}
+
 /** A bar's two ends (0 to 100 by default), the lower first, never the same. */
 function rangeOf(c, p, a, b, ka, kb) {
   const x = P.num(c, `${p}.${ka}`, a, 0, -1e9, 1e9, false);
@@ -918,6 +1071,20 @@ function haKind(sizes, def, cells, domains, { controls = false, one = true, bigT
 
 /** Why a custom card's CSS is refused ('' = fine): see cardTemplate.js. */
 export { cssProblem };
+
+/**
+ * The smallest box of some kinds on the fine grid, in fine cells (cellRange; the others take twice their normal
+ * minimum): the one-line cards half as high as a normal row, the small numbers and clocks a little smaller.
+ * Each is checked to read whole in the browser sweeps (display-canvas-flex.test.js).
+ */
+const FINE_MIN = {
+  'ha.tile': [4, 1], 'ha.switch': [4, 1], 'ha.sensor': [4, 1], 'ha.light': [4, 1], 'ha.climate': [4, 2],
+  heading: [2, 1], spacer: [1, 1], 'nav.progress': [3, 1],
+  value: [3, 2], 'weather.now': [3, 2], date: [3, 2], 'calendar.next': [3, 2],
+  'ha.statistic': [3, 2], market: [3, 2], stocks: [3, 2], rotator: [3, 2],
+  'ha.gauge': [3, 3], 'clock.analog': [3, 3], 'ha.cover': [3, 3], 'clock.digital': [3, 3],
+};
+for (const [k, v] of Object.entries(FINE_MIN)) CANVAS_KINDS[k].fine = v;
 
 export const CANVAS_KIND_IDS = Object.keys(CANVAS_KINDS);
 /** Kinds a server allows by default: every kind but the reserved ones. */
@@ -961,9 +1128,9 @@ export function newCanvasId(taken = new Set()) {
 // ---- placement ---------------------------------------------------------------------------------------------------
 
 /** Occupancy of a grid: cells[y][x] = item id or null. */
-export function makeOccupancy(orientation = 'landscape') {
-  const { cols, rows } = CANVAS_GRID[orientation === 'portrait' ? 'portrait' : 'landscape'];
-  return { cols, rows, orientation, cells: Array.from({ length: rows }, () => new Array(cols).fill(null)) };
+export function makeOccupancy(orientation = 'landscape', grid = 'normal') {
+  const { cols, rows } = gridDims(orientation, grid);
+  return { cols, rows, orientation, grid: gridOf(grid), cells: Array.from({ length: rows }, () => new Array(cols).fill(null)) };
 }
 export function fitsAt(occ, x, y, w, h) {
   if (x < 0 || y < 0 || x + w > occ.cols || y + h > occ.rows) return false;
@@ -1091,13 +1258,13 @@ function readPos(c, p, raw) {
   const int = (v) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : 0);
   if (raw.zone !== undefined && raw.zone !== 'main') c.err(`${p}.zone`, 'must be one of main, side');
   const pos = { zone: 'main', x: int(raw.x), y: int(raw.y), size: typeof raw.size === 'string' ? raw.size : '' };
-  // a box of its own: w and h in whole cells (placeMain clamps them to the kind's range)
+  // a box of its own: w and h in whole cells (placeMain clamps them to the kind's range; 24 on the fine grid)
   if (raw.w !== undefined || raw.h !== undefined) {
-    const cell = (v) => Number.isInteger(v) && v >= 1 && v <= 12;
+    const cell = (v) => Number.isInteger(v) && v >= 1 && v <= 24;
     if (cell(raw.w) && cell(raw.h)) {
       pos.w = raw.w;
       pos.h = raw.h;
-    } else c.err(`${p}.w`, 'w and h must both be whole cells (1 to 12)');
+    } else c.err(`${p}.w`, 'w and h must both be whole cells (1 to 24)');
   }
   return pos;
 }
@@ -1108,17 +1275,17 @@ function readPos(c, p, raw) {
  * moves to the nearest free spot (with a warning). With no free spot at all it is dropped (an error). Returns the
  * ids that were dropped.
  */
-function placeMain(c, list, orientation, key) {
-  const occ = makeOccupancy(orientation);
+function placeMain(c, list, orientation, key, grid = 'normal') {
+  const occ = makeOccupancy(orientation, grid);
   const dropped = new Set();
   for (const { item, path } of list) {
     const pos = item[key];
-    const k = CANVAS_KINDS[item.kind];
+    const k = kindFor(item);
     if (pos.w !== undefined) {
       // its own box: clamped to the kind's range, stored as a named size when it is exactly one
-      const r = cellRange(k, orientation);
-      const box = boxOf(k, pos.w, pos.h, orientation);
-      const [bw, bh] = posCells(box, orientation);
+      const r = cellRange(k, orientation, grid);
+      const box = boxOf(k, pos.w, pos.h, orientation, grid);
+      const [bw, bh] = posCells(box, orientation, grid);
       if (bw !== pos.w || bh !== pos.h) warnOf(c, `${path}.w`, `${pos.w}×${pos.h} not allowed for ${item.kind} (${r.minW}×${r.minH} to ${r.maxW}×${r.maxH}), ${bw}×${bh} used`);
       delete pos.w;
       delete pos.h;
@@ -1127,7 +1294,7 @@ function placeMain(c, list, orientation, key) {
       if (pos.size) warnOf(c, `${path}.size`, `size not allowed for ${item.kind}, ${k.def} used`);
       pos.size = k.def;
     }
-    const [w, h] = posCells(pos, orientation);
+    const [w, h] = posCells(pos, orientation, grid);
     pos.x = Math.min(Math.max(0, pos.x), occ.cols - w);
     pos.y = Math.min(Math.max(0, pos.y), occ.rows - h);
     if (!fitsAt(occ, pos.x, pos.y, w, h)) {
@@ -1215,6 +1382,9 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   };
   // the photo cannot be both behind the whole screen and in the sidebar alone
   if (sidebar.fill === 'photo' && background === 'photo') sidebar.fill = 'glass';
+  // "Cuadrícula" and "Densidad": kept only when not the default, so a screen saved before stays as it was
+  const grid = P.oneOf(c, `${p}.grid`, raw.grid, 'normal', CANVAS_GRID_IDS);
+  const density = P.oneOf(c, `${p}.density`, raw.density, 'normal', CANVAS_DENSITIES);
   const out = {
     v: 1,
     background,
@@ -1231,6 +1401,8 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     swipe: P.bool(c, `${p}.swipe`, raw.swipe, D.swipe),
     perf: P.oneOf(c, `${p}.perf`, raw.perf, D.perf, ['auto', 'low']),
     portraitAuto: P.bool(c, `${p}.portraitAuto`, raw.portraitAuto, D.portraitAuto),
+    ...(grid === 'fine' ? { grid } : {}),
+    ...(density === 'compact' ? { density } : {}),
     items: [],
   };
 
@@ -1242,6 +1414,8 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   const entities = new Set();
   let live = 0;
   const items = [];
+  // every card counts towards CANVAS_LIMITS.items, the cards inside a Rotativa too
+  let cards = 0;
   rawItems.forEach((x, i) => {
     const q = `${p}.items[${i}]`;
     if (!isObj(x)) return c.err(q, 'expected object');
@@ -1250,9 +1424,26 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     if (!k) return;
     if (k.reserved) return c.err(`${q}.kind`, 'not available in this version');
     if (!allowed.has(x.kind)) return c.err(`${q}.kind`, 'not available on this server');
-    if (items.length >= CANVAS_LIMITS.items) return c.err(`${p}.items`, `too many items (max ${CANVAS_LIMITS.items})`);
+    if (cards >= CANVAS_LIMITS.items) return c.err(`${p}.items`, `too many items (max ${CANVAS_LIMITS.items})`);
     if (k.perScreen && (counts[x.kind] ?? 0) >= k.perScreen) return c.err(`${q}.kind`, `too many ${x.kind} (max ${k.perScreen})`);
     const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
+    if (x.kind === 'rotator') {
+      // its cards: within the screen's cap of cards and each kind's own cap, with ids of their own
+      props.cards = props.cards.filter((cd, j) => {
+        const ck = CANVAS_KINDS[cd.kind];
+        if (cards + 1 >= CANVAS_LIMITS.items) {
+          c.err(`${p}.items`, `too many items (max ${CANVAS_LIMITS.items})`);
+          return false;
+        }
+        if (ck.perScreen && (counts[cd.kind] ?? 0) >= ck.perScreen) {
+          c.err(`${q}.props.cards[${j}].kind`, `too many ${cd.kind} (max ${ck.perScreen})`);
+          return false;
+        }
+        counts[cd.kind] = (counts[cd.kind] ?? 0) + 1;
+        cards++;
+        return true;
+      });
+    }
     if (x.kind === 'widget' && !(refs.widgets instanceof Map ? refs.widgets.has(props.widgetId) : false)) return; // its widget was deleted
     if (x.kind === 'ha.camera' && props.mode === 'live') {
       if (live >= CANVAS_LIMITS.liveCameras) props.mode = 'snapshot';
@@ -1268,9 +1459,16 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
       entities.add(e);
     }
     counts[x.kind] = (counts[x.kind] ?? 0) + 1;
+    cards++;
     let id = typeof x.id === 'string' && CANVAS_ID_RE.test(x.id) && !seen.has(x.id) ? x.id : '';
     if (!id) id = newCanvasId(seen);
     seen.add(id);
+    if (x.kind === 'rotator') {
+      for (const cd of props.cards) {
+        if (!CANVAS_ID_RE.test(cd.id) || seen.has(cd.id)) cd.id = newCanvasId(seen);
+        seen.add(cd.id);
+      }
+    }
     const item = { id, kind: x.kind, pos: null, style: sanitizeStyle(c, `${q}.style`, x.style), props };
     if (k.controls) item.interactive = haControls ? P.bool(c, `${q}.interactive`, x.interactive, true) : false;
     if (k.controls) {
@@ -1305,7 +1503,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   // ---- landscape positions: the sidebar stack, then the main grid
   const sideOn = sidebar.side !== 'none';
   const toMain = (it, key) => {
-    const k = CANVAS_KINDS[it.item.kind];
+    const k = kindFor(it.item);
     it.item[key] = { zone: 'main', x: 0, y: 0, size: k.def, moved: true };
   };
   const sideL = [];
@@ -1323,12 +1521,12 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   // items moved out of the sidebar look for room after the ones placed by the owner (nearest to the top left)
   const mainL = [...items.filter((it) => it.item.pos.zone === 'main' && !it.item.pos.moved), ...items.filter((it) => it.item.pos.moved)];
   for (const it of mainL) delete it.item.pos.moved;
-  const droppedL = placeMain(c, mainL, 'landscape', 'pos');
+  const droppedL = placeMain(c, mainL, 'landscape', 'pos', grid);
 
   // ---- portrait positions (only when the owner arranged portrait by hand)
   let kept = items.filter((it) => !droppedL.has(it.item.id));
   if (!out.portraitAuto) {
-    const derived = new Map(deriveCanvasPortrait(kept.map((it) => it.item), sidebar).placed.map((d) => [d.id, d.pos]));
+    const derived = new Map(deriveCanvasPortrait(kept.map((it) => it.item), sidebar, grid).placed.map((d) => [d.id, d.pos]));
     for (const it of kept) {
       if (!it.item.portrait) it.item.portrait = derived.get(it.item.id) ?? null;
       if (!it.item.portrait) continue;
@@ -1341,7 +1539,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     for (const it of mainP) delete it.item.portrait.moved;
     // a portrait spot that cannot be found leaves the item out of the portrait view (it stays on landscape)
     const pc = { err: (path, m) => warnOf(c, `${path}.portrait`, m), warn: (path, m) => warnOf(c, path, m) };
-    const droppedP = placeMain(pc, mainP.map((it) => ({ item: it.item, path: it.path })), 'portrait', 'portrait');
+    const droppedP = placeMain(pc, mainP.map((it) => ({ item: it.item, path: it.path })), 'portrait', 'portrait', grid);
     for (const it of kept) if (droppedP.has(it.item.id) || !it.item.portrait) it.item.portrait = null;
   }
   kept = kept.map((it) => it.item);
@@ -1432,7 +1630,7 @@ export function conditionMet(when, raw) {
 export function conditionEntities(screen) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of screen.canvas?.items ?? []) if (!it.hidden && it.when?.src === 'ha' && it.when.entity) out.add(it.when.entity);
+  for (const it of canvasCards(screen.canvas?.items)) if (!it.hidden && it.when?.src === 'ha' && it.when.entity) out.add(it.when.entity);
   return out;
 }
 
@@ -1440,19 +1638,19 @@ export function conditionEntities(screen) {
 export function conditionKeys(screen) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of screen.canvas?.items ?? []) if (!it.hidden && it.when?.src === 'value' && it.when.key) out.add(it.when.key);
+  for (const it of canvasCards(screen.canvas?.items)) if (!it.hidden && it.when?.src === 'value' && it.when.key) out.add(it.when.key);
   return out;
 }
 
 /**
  * The items of a screen its conditions hide right now: `ha(entity)` gives the entity's state string (null when not
  * known), `value(key)` a Valor value (null when none). On a private screen every item with a condition is hidden
- * (what it would say about the house is not shown either).
+ * (what it would say about the house is not shown either). The cards of a Rotativa its condition hides are in it too.
  */
 export function conditionHidden(screen, { ha = () => null, value = () => null, isPrivate = false } = {}) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of screen.canvas?.items ?? []) {
+  for (const it of canvasCards(screen.canvas?.items)) {
     const w = it.when;
     if (it.hidden || !w) continue;
     if ((w.src === 'ha' && !w.entity) || (w.src === 'value' && !w.key)) continue;
@@ -1511,11 +1709,11 @@ export function scheduleOn(item, now = new Date(), tz = 'UTC') {
   return windowState(rules, now, tz).active;
 }
 
-/** The ids of a screen's items their schedule hides at `now` (items hidden by hand are not counted). */
+/** The ids of a screen's items (and Rotativa cards) their schedule hides at `now` (items hidden by hand are not counted). */
 export function scheduleHidden(screen, now = new Date(), tz = 'UTC') {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of screen.canvas?.items ?? []) if (!it.hidden && !scheduleOn(it, now, tz)) out.add(it.id);
+  for (const it of canvasCards(screen.canvas?.items)) if (!it.hidden && !scheduleOn(it, now, tz)) out.add(it.id);
   return out;
 }
 
@@ -1538,6 +1736,8 @@ export function haEntitiesOf(item) {
   const add = (e) => {
     if (typeof e === 'string' && e) out.push(e);
   };
+  // a Rotativa: the entities of its cards
+  if (item.kind === 'rotator') return (Array.isArray(p.cards) ? p.cards : []).flatMap((cd) => (cd && cd.kind !== 'rotator' ? haEntitiesOf({ kind: cd.kind, props: cd.props }) : []));
   if (!item.kind?.startsWith('ha.') && item.kind !== 'html') return out;
   add(p.entity);
   add(p.showWhen);
@@ -1552,23 +1752,25 @@ export function haEntitiesOf(item) {
 
 /**
  * The portrait arrangement derived from the landscape one (canvas.portraitAuto): main items by (y, x) at the first
- * free spot of the 8×12 grid, keeping their size (their own box at most 8 wide, else their named size, else the kind's default, else 's'); sidebar items keep their place
+ * free spot of the 8×12 grid (16×24 on the fine one), keeping their size (their own box at most the grid's width,
+ * else their named size, else the kind's default, else 's'); sidebar items keep their place
  * in the stack. Deterministic, so the admin, the server and the display agree. Returns { placed: [{ id, pos }],
  * omitted: [id] } (items that do not fit).
  */
-export function deriveCanvasPortrait(items, _sidebar) {
-  const occ = makeOccupancy('portrait');
+export function deriveCanvasPortrait(items, _sidebar, grid = 'normal') {
+  const g = gridOf(grid);
+  const occ = makeOccupancy('portrait', g);
   const placed = [];
   const omitted = [];
   const main = items.filter((it) => it.pos?.zone === 'main').slice().sort((a, b) => a.pos.y - b.pos.y || a.pos.x - b.pos.x);
   for (const it of main) {
-    const k = CANVAS_KINDS[it.kind];
+    const k = kindFor(it);
     const named = [...new Set([it.pos.size, k?.def, 's'].filter((s) => s && (!k || k.sizes.includes(s) || s === 's')))];
     // a box of its own keeps its cells (at most the 8 columns) before the named sizes are tried
-    const tries = [...(Number.isInteger(it.pos.w) && k ? [boxOf(k, Math.min(it.pos.w, CANVAS_GRID.portrait.cols), it.pos.h, 'portrait')] : []), ...named.map((size) => ({ size }))];
+    const tries = [...(Number.isInteger(it.pos.w) && k ? [boxOf(k, Math.min(it.pos.w, gridDims('portrait', g).cols), it.pos.h, 'portrait', g)] : []), ...named.map((size) => ({ size }))];
     let done = false;
     for (const box of tries) {
-      const [w, h] = posCells(box, 'portrait');
+      const [w, h] = posCells(box, 'portrait', g);
       const spot = firstFree(occ, w, h);
       if (!spot) continue;
       occupy(occ, it.id, spot.x, spot.y, w, h);
@@ -1580,6 +1782,108 @@ export function deriveCanvasPortrait(items, _sidebar) {
   }
   for (const it of items) if (it.pos?.zone === 'side') placed.push({ id: it.id, pos: { ...it.pos } });
   return { placed, omitted };
+}
+
+// ---- the grid of a screen ("Cuadrícula") --------------------------------------------------------------------------
+
+/**
+ * A canvas on another grid ('normal' or 'fine'), in both orientations (a portrait arranged by hand too; a derived
+ * one follows by itself). To the fine grid every position and box doubles: the screen looks exactly the same. Back to
+ * the normal grid each box is halved to the nearest whole cells its kind allows (a box only the fine grid has grows
+ * to the kind's smallest), and the cards are placed again in reading order, each at its halved spot when free, else
+ * at the nearest free one (`moved`); a card with no room at all keeps its kind's smallest box when that fits
+ * somewhere, else it is left out of portrait, or the change is refused (`ok: false`, `lost`). Sidebar spans do not
+ * change. Returns { ok, canvas, moved: [ids], resized: [ids] (a box that is not twice whole normal cells), lost: [ids] }.
+ */
+export function convertCanvasGrid(cv0, to) {
+  const target = gridOf(to);
+  const from = canvasGrid(cv0);
+  const cv = structuredClone(cv0);
+  const moved = new Set();
+  const resized = new Set();
+  const lost = [];
+  if (from === target) return { ok: true, canvas: cv, moved: [], resized: [], lost };
+  if (target === 'fine') cv.grid = 'fine';
+  else delete cv.grid;
+  const keys = [['pos', 'landscape'], ...(cv.portraitAuto ? [] : [['portrait', 'portrait']])];
+  for (const [key, o] of keys) {
+    if (target === 'fine') {
+      for (const it of cv.items) {
+        const p = it[key];
+        if (p?.zone !== 'main') continue;
+        p.x *= 2;
+        p.y *= 2;
+        if (Number.isInteger(p.w)) {
+          p.w *= 2;
+          p.h *= 2;
+        }
+      }
+      continue;
+    }
+    // in reading order first; when some card finds no room, once more with the largest boxes first (they leave the
+    // small ones the gaps), each still as near as it can be to its halved spot
+    const all = cv.items.filter((it) => it[key]?.zone === 'main');
+    const want = new Map(all.map((it) => {
+      const p = it[key];
+      const k = kindFor(it);
+      const [fw, fh] = posCells(p, o, 'fine');
+      const box = boxOf(k, Math.max(1, Math.round(fw / 2)), Math.max(1, Math.round(fh / 2)), o, 'normal');
+      return [it.id, { k, fw, fh, box, x: Math.round(p.x / 2), y: Math.round(p.y / 2) }];
+    }));
+    const place = (order, pack = false) => {
+      const occ = makeOccupancy(o, 'normal');
+      const res = new Map();
+      const miss = [];
+      for (const it of order) {
+        const wv = want.get(it.id);
+        const [w, h] = posCells(wv.box, o, 'normal');
+        const x = Math.min(Math.max(0, wv.x), occ.cols - w);
+        const y = Math.min(Math.max(0, wv.y), occ.rows - h);
+        const free = (bw, bh, ax, ay) => (pack ? firstFree(occ, bw, bh) : fitsAt(occ, ax, ay, bw, bh) ? { x: ax, y: ay } : nearestFree(occ, ax, ay, bw, bh));
+        let spot = free(w, h, x, y);
+        let use = wv.box;
+        if (!spot) {
+          // no room at that size: its smallest box, nearest to where it was
+          const r = cellRange(wv.k, o, 'normal');
+          use = boxOf(wv.k, r.minW, r.minH, o, 'normal');
+          const [mw, mh] = posCells(use, o, 'normal');
+          spot = free(mw, mh, Math.min(x, occ.cols - mw), Math.min(y, occ.rows - mh));
+        }
+        if (!spot) {
+          miss.push(it.id);
+          continue;
+        }
+        const [uw, uh] = posCells(use, o, 'normal');
+        occupy(occ, it.id, spot.x, spot.y, uw, uh);
+        res.set(it.id, { spot, use, moved: spot.x !== x || spot.y !== y || use !== wv.box });
+      }
+      return { res, miss };
+    };
+    const reading = [...all].sort((a, b) => a[key].y - b[key].y || a[key].x - b[key].x);
+    let done = place(reading);
+    if (done.miss.length) {
+      const area = (it) => posCells(want.get(it.id).box, o, 'normal').reduce((m, n) => m * n, 1);
+      const bigFirst = [...reading].sort((a, b) => area(b) - area(a));
+      // then packed from the top left, the largest first (the last resort: the order of the screen may change)
+      for (const next of [place(bigFirst), place(bigFirst, true)]) if (next.miss.length < done.miss.length) done = next;
+    }
+    for (const it of all) {
+      const got = done.res.get(it.id);
+      if (!got) {
+        if (key === 'portrait') {
+          it.portrait = null;
+          moved.add(it.id);
+        } else lost.push(it.id);
+        continue;
+      }
+      const wv = want.get(it.id);
+      if (got.moved) moved.add(it.id);
+      const [uw, uh] = posCells(got.use, o, 'normal');
+      if (uw * 2 !== wv.fw || uh * 2 !== wv.fh) resized.add(it.id);
+      it[key] = { zone: 'main', x: got.spot.x, y: got.spot.y, ...got.use };
+    }
+  }
+  return { ok: lost.length === 0, canvas: cv, moved: [...moved], resized: [...resized].filter((id) => !moved.has(id)), lost };
 }
 
 // ---- projection --------------------------------------------------------------------------------------------------
@@ -1666,16 +1970,15 @@ export function projectCanvas(screen, opts = {}) {
   // private, and a display the server trusts (`trusted` false: open mode from outside the local network)
   const taps = !!cv.touch && !priv && opts.trusted !== false;
   const names = new Map((opts.screens ?? []).map((s) => [s.id, s.name]));
-  const derived = cv.portraitAuto ? new Map(deriveCanvasPortrait(cv.items, cv.sidebar).placed.map((d) => [d.id, d.pos])) : null;
+  const derived = cv.portraitAuto ? new Map(deriveCanvasPortrait(cv.items, cv.sidebar, canvasGrid(cv)).placed.map((d) => [d.id, d.pos])) : null;
   const members = new Map((opts.members ?? []).map((m) => [m.id, m.calendarId ?? null]));
   // the schedules decide at `now` in the screen's zone; the display asks again at the next change (`next`)
   const now = opts.now ?? new Date();
   const tz = opts.tz || 'UTC';
   const offNow = scheduleHidden(screen, now, tz);
   const nextMs = scheduleNext(screen, now, tz);
-  // hidden items (by hand or by their schedule) keep their cells (the derivation above counts them) but are not sent
-  const items = cv.items.filter((it) => !it.hidden && !offNow.has(it.id)).map((it) => {
-    const k = CANVAS_KINDS[it.kind];
+  /** An item's props as the display gets them (aliases for entities, the people's calendars, a target's name). */
+  const propsOf = (it) => {
     let props = it.kind.startsWith('ha.') || it.kind === 'html' ? aliasEntities(it) : structuredClone(it.props);
     // per person: the members chosen become the calendars shown as columns (members without a calendar are left out)
     if (it.kind === 'calendar.people') {
@@ -1687,6 +1990,29 @@ export function projectCanvas(screen, opts = {}) {
       if (opts.screens && !names.has(props.target)) props = { ...props, target: '' };
       else props = { ...props, targetName: names.get(props.target) ?? '' };
     }
+    return props;
+  };
+  /** Why the display draws a placeholder instead of a card ('feature', 'privacy'), or ''. */
+  const offOf = (kind) => {
+    const k = CANVAS_KINDS[kind];
+    if (!k || !allowed.has(kind) || k.reserved) return 'feature';
+    if (priv && k.private) return 'privacy';
+    return '';
+  };
+  // hidden items (by hand or by their schedule) keep their cells (the derivation above counts them) but are not sent
+  const items = cv.items.filter((it) => !it.hidden && !offNow.has(it.id)).map((it) => {
+    const k = CANVAS_KINDS[it.kind];
+    let props = propsOf(it);
+    // a Rotativa: each card as the display gets an item (its props, a placeholder where it may not show, a hash)
+    if (it.kind === 'rotator') {
+      props.cards = (it.props?.cards ?? []).map((cd) => {
+        const off = offOf(cd.kind);
+        const x = { id: cd.id, kind: cd.kind, props: off ? {} : propsOf(cd) };
+        if (off) x.disabled = off;
+        x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '']));
+        return x;
+      });
+    }
     const portrait = derived ? derived.get(it.id) ?? null : it.portrait ?? null;
     const out = {
       id: it.id, kind: it.kind, pos: it.pos, portrait, style: it.style,
@@ -1696,8 +2022,8 @@ export function projectCanvas(screen, opts = {}) {
     if (it.confirm) out.confirm = true;
     // which feed says whether it is drawn now (never the entity or the key: the server works it out)
     if (it.when && (it.when.src === 'ha' ? it.when.entity : it.when.key)) out.when = { src: it.when.src };
-    if (!k || !allowed.has(it.kind) || k.reserved) out.disabled = 'feature';
-    else if (priv && k.private) out.disabled = 'privacy';
+    const off = offOf(it.kind);
+    if (off) out.disabled = off;
     if (out.disabled) out.props = {};
     out.v = fnv(JSON.stringify([out.kind, out.props, out.style, out.pos, out.portrait, out.interactive, out.disabled ?? '', ...(out.when ? [out.when.src] : [])]));
     return out;
@@ -1705,20 +2031,20 @@ export function projectCanvas(screen, opts = {}) {
   const { items: _i, touch: _t, ...rest } = cv;
   const out = { ...structuredClone(rest), orientation: screen.screen?.orientation ?? 'auto', touch, taps, swipe: taps && !!cv.swipe, items };
   if (nextMs !== null) out.next = new Date(nextMs).toISOString();
-  if (opts.haOff && items.some((it) => it.kind.startsWith('ha.') && !it.disabled)) out.haOff = true;
+  if (opts.haOff && items.some((it) => !it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'rotator' && it.props.cards.some((cd) => cd.kind.startsWith('ha.') && !cd.disabled))))) out.haOff = true;
   return out;
 }
 
 /** The data items (market, sports, stocks) a screen shows, hidden ones left out. */
 export function canvasDataItems(screen, { now = new Date(), tz = 'UTC' } = {}) {
   if (screen?.layout?.preset !== 'canvas') return [];
-  return (screen.canvas?.items ?? []).filter((it) => !it.hidden && DATA_KIND_IDS.includes(it.kind) && scheduleOn(it, now, tz));
+  return canvasCards(screen.canvas?.items).filter((it) => !it.hidden && DATA_KIND_IDS.includes(it.kind) && scheduleOn(it, now, tz));
 }
 
 /** Widget ids (config.widgets) the canvas of a screen shows ('widget' items), in item order, no repeats. */
 export function canvasWidgetIds(screen, { now = new Date(), tz = 'UTC' } = {}) {
   if (screen?.layout?.preset !== 'canvas') return [];
-  return [...new Set((screen.canvas?.items ?? []).filter((it) => it.kind === 'widget' && !it.hidden && it.props?.widgetId && scheduleOn(it, now, tz)).map((it) => it.props.widgetId))];
+  return [...new Set(canvasCards(screen.canvas?.items).filter((it) => it.kind === 'widget' && !it.hidden && it.props?.widgetId && scheduleOn(it, now, tz)).map((it) => it.props.widgetId))];
 }
 
 /** Screen ids the "Ir a pantalla" cards of a screen go to (shown ones; 'home' and unchosen left out), no repeats. */
@@ -1739,7 +2065,7 @@ export function navTargets(screen) {
  */
 export function canvasEventsNeed(canvas) {
   let days = 0;
-  for (const it of canvas?.items ?? []) {
+  for (const it of canvasCards(canvas?.items)) {
     const p = it.props || {};
     if (it.kind === 'calendar.month') days = Math.max(days, (p.weeks === 'auto' || !p.weeks ? 6 : p.weeks) * 7 + 7);
     else if (it.kind === 'calendar.week') days = Math.max(days, 8);
@@ -2152,6 +2478,15 @@ export const CANVAS_PICKS = ['calendars', 'people', 'entities', 'widget', 'scree
 function stripItem(it) {
   const p = structuredClone(it.props ?? {});
   const removed = new Set();
+  // a Rotativa: each of its cards, and what any of them lost
+  if (it.kind === 'rotator' && Array.isArray(p.cards)) {
+    p.cards = p.cards.map((cd) => {
+      if (!isObj(cd)) return cd;
+      const r = stripItem({ kind: cd.kind, props: isObj(cd.props) ? cd.props : {} });
+      for (const k of r.removed) removed.add(k);
+      return { ...cd, props: r.item.props };
+    });
+  }
   if (Array.isArray(p.sourceIds) && p.sourceIds.length) removed.add('calendars');
   if ('sourceIds' in p) p.sourceIds = null;
   if (Array.isArray(p.memberIds) && p.memberIds.length) removed.add('people');
@@ -2182,7 +2517,7 @@ function stripItem(it) {
   const out = { ...structuredClone(it), props: p };
   delete out.ack;
   if (out.when?.src === 'ha') out.when = { ...out.when, entity: ent(out.when.entity) };
-  return { item: out, removed: [...removed] };
+  return { item: out, removed: [...removed].sort((a, b) => CANVAS_PICKS.indexOf(a) - CANVAS_PICKS.indexOf(b)) };
 }
 
 /**
@@ -2228,7 +2563,14 @@ export function readCanvasFile(raw, refs = {}, opts = {}) {
       continue;
     }
     const before = isObj(raw.picks) && Array.isArray(raw.picks[x.id]) ? raw.picks[x.id].filter((k) => CANVAS_PICKS.includes(k)) : [];
-    const r = stripItem({ ...x, props: isObj(x.props) ? x.props : {} });
+    const x2 = { ...x, props: isObj(x.props) ? x.props : {} };
+    // a Rotativa's cards of kinds this server does not offer are left out too
+    if (x.kind === 'rotator' && Array.isArray(x2.props.cards)) {
+      const ok = x2.props.cards.filter((cd) => isObj(cd) && rotatorKindOk(cd.kind) && allowed.has(cd.kind));
+      dropped += x2.props.cards.length - ok.length;
+      x2.props = { ...x2.props, cards: ok.map((cd) => ({ ...cd, id: '' })) };
+    }
+    const r = stripItem(x2);
     // a Home Assistant condition where there is no Home Assistant (Marco Cloud): the card shows always
     if (r.item.when?.src === 'ha' && !haConds) {
       delete r.item.when;

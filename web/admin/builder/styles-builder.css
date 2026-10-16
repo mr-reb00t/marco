@@ -192,6 +192,19 @@
 .bld-placing--auto { background: var(--surface); border-color: var(--border-strong); }
 .bld-status { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 12px; color: var(--text-2); padding: 0 4px; }
 .bld-status__warn { color: var(--warn); display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+/* the grid of the screen ("Cuadrícula fina · 24×16"): a click opens Página */
+.bld-status__grid { font-size: inherit; color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; }
+.bld-status__grid:hover { color: var(--text); }
+/* a Rotativa's cards in the inspector (RotatorFields.tsx) */
+.bld-rot__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.bld-rot__card { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2, transparent); }
+.bld-rot__card.is-open { border-color: var(--accent); }
+.bld-rot__head { display: flex; align-items: center; gap: 2px; padding: 2px 4px; }
+.bld-rot__name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.bld-rot__name > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bld-rot__chev { transition: transform 0.15s ease; transform: rotate(-90deg); }
+.bld-rot__chev.is-open { transform: none; }
+.bld-rot__body { padding: 4px 10px 12px; border-top: 1px solid var(--border); }
 
 /* ---------------------------------------------------------------- inspector */
 .bld-inspector { padding: 14px 16px 24px; }

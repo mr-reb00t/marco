@@ -14,6 +14,7 @@ import { HA_CONTROL_ADAPTERS } from './haControls';
 import { HA_TILE_ADAPTERS } from './haTile';
 import { HTML_ADAPTERS } from './html';
 import { NAV_ADAPTERS } from './nav';
+import { ROTATOR_ADAPTERS } from './rotator';
 import type { CanvasAdapter } from './types';
 import { WEATHER_ADAPTERS } from './weather';
 
@@ -31,6 +32,7 @@ const ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
   ...HTML_ADAPTERS,
   ...DATA_ADAPTERS,
   ...NAV_ADAPTERS,
+  ...ROTATOR_ADAPTERS,
 };
 
 /** Kinds this display draws itself (the rest get the placeholder). */

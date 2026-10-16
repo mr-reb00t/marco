@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { canvasCards } from '../../../server/core/canvasCore.js';
 import { useEffect, useState } from 'preact/hooks';
 import type { HaLiveStatus, TestHomeAssistantResponse } from '../../shared/types';
 import { api, ApiError, doorbellWithImage } from '../api';
@@ -234,7 +235,7 @@ function LiveCard({ full, cfg, set }: SectionProps) {
   }, []);
   const used = full.screens
     .filter((s) => s.layout?.preset === 'canvas')
-    .map((s) => ({ name: s.name, items: (s.canvas?.items ?? []).filter((it) => !it.hidden).map((it) => ({ kind: it.kind, entities: entitiesOf(it) })).filter((x) => x.entities.length) }))
+    .map((s) => ({ name: s.name, items: canvasCards(s.canvas?.items).filter((it) => !it.hidden).map((it) => ({ kind: it.kind, entities: entitiesOf(it) })).filter((x) => x.entities.length) }))
     .filter((s) => s.items.length);
   const label = !st ? t('Cargando…') : st.state === 'connected' ? t('Conectado en directo') : st.state === 'polling' ? t('Modo consulta') : st.state === 'off' ? t('Falta la URL o el token') : t('Sin conexión');
   const dot = !st ? 'idle' : st.state === 'connected' ? 'ok' : st.state === 'polling' ? 'warn' : st.state === 'off' ? 'idle' : 'error';

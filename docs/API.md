@@ -924,7 +924,8 @@ cells) and gets no states, values or data; a paused window does not count and no
 canvas block carries `next`, the ISO time a window of one of its items starts or ends next, and the display asks for
 its config again a few seconds after it. The schedule itself never reaches a display.
 
-**Sizes.** A Personalizado item on the main grid (12×8 cells on a landscape screen, 8×12 on a portrait one) has a
+**Sizes.** A Personalizado item on the main grid (12×8 cells on a landscape screen, 8×12 on a portrait one, twice as
+many on the fine grid: see *Grid and density*) has a
 position `{ zone: "main", x, y, size }` where `size` is a named size (`xs`, `s`, `m`, `w`, `t`, `l`, `xl`, `band`, `full`,
 `row`, `sq`; `CANVAS_SIZES` gives their cells per orientation). It may also carry its own `w` and `h`, whole cells
 from 1 to 12: then the box is `w`×`h` and `size` is the named size it is drawn like (the largest of its kind's sizes
@@ -935,6 +936,33 @@ box that is exactly a named size as the name alone, and refuses `w` without `h` 
 (an error; the named size is used). Screens saved before keep their named sizes and look the same. The portrait view
 drawn from the landscape one keeps a box of its own (at most 8 wide) before it tries the named sizes. The display
 config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or `fill`).
+
+**Grid and density.** A canvas may carry `grid` and `density`, both written only when they are not the default (a
+screen saved before has neither and is drawn exactly as before). `grid: "fine"` doubles the cells each way (24×16 on a
+landscape screen, 16×24 on a portrait one; `CANVAS_GRIDS`, `gridDims(orientation, grid)`): every `x`, `y`, `w` and `h`
+of the main grid is then in fine cells, a named size is twice its cells (`sizeCells(size, orientation, grid)`), and
+each kind's range is twice its normal one (`cellRange(kind, orientation, grid)`), except that some kinds may go smaller
+(`CANVAS_KINDS[kind].fine`, their smallest box in fine cells: the Entity, Switch, Sensor and Light cards 4×1, half a
+normal row). `w` and `h` are whole cells from 1 to 24. Sidebar spans are the same on both grids.
+`convertCanvasGrid(canvas, "fine" | "normal")` converts a canvas in both orientations: to the fine grid every position
+and box doubles; back to the normal one each box is halved to the nearest cells its kind allows and the cards are
+placed again with no overlap, and the answer lists the cards that `moved`, were `resized` or found no room (`lost`, and
+then `ok: false`). `density: "compact"` draws the cards with tighter gaps, less padding and smaller titles. The display
+config carries both.
+
+**Rotativa.** The kind `rotator` (category *Contenido*, every edition, at most 4 per screen) is one slot that shows its
+cards one after another: `{ cards: [{ id, kind, props }], everySec, dots }`. `cards` holds 2 to 6 cards (at most 6;
+the editor keeps at least 2), each a kind of its own validated by that kind (`rotatorKindOk`: never another `rotator`,
+`spacer`, `heading` or a navigation card; a kind the server does not allow is refused, so on Marco Cloud no Home
+Assistant card); each card has an id like an item's, unique on the screen. `everySec` is 5 to 120 (default 10), `dots`
+a boolean (default true). The cards count towards the 24 cards of a screen and towards each kind's own cap, their
+entities towards the 40 of a screen, and the box of a Rotativa is kept within what all its cards allow
+(`kindFor(item)`). A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
+(`canvasCards(items)`), so a card inside gets its Home Assistant states under aliases of its own id (`<cardId>:<n>`),
+its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch
+controls (a control on one answers `not_found`); a camera inside shows pictures. In the display config each card is
+projected like an item (`{ id, kind, props, v, disabled? }`, entity ids replaced by aliases, `privacy` placeholders
+on a private screen).
 
 **Navigation (touch screens).** Three kinds in the palette category *Navegación* (`cat: "nav"`, every edition):
 `nav.button` (*Ir a pantalla*: `{ target, label, icon, show, returnMin }`), `nav.pause` (*Pausar carrusel*: `{ label,

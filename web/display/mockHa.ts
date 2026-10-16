@@ -1,5 +1,6 @@
 // Demo Home Assistant states (?demo=1&preset=canvas&shot=home): made-up states for the aliases of the demo screen,
 // chosen by each item's kind and domain, so the Casa cards can be shown and screenshotted without a server.
+import { canvasCards } from '../../server/core/canvasCore.js';
 import type { DisplayConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic } from '../shared/types';
 import { controlsFor, tileFeatures } from '../../server/core/haCore.js';
 import { attrsFromSlim } from '../shared/haGuess';
@@ -143,7 +144,7 @@ export function demoHaStates(cfg: DisplayConfig | null): Record<string, HaState>
   const used: Record<string, number> = {};
   // a showcase screen's own states by alias (web/display/showcase/)
   const own = showcaseOf(cfg)?.ha;
-  for (const it of cfg?.canvas?.items ?? []) {
+  for (const it of canvasCards(cfg?.canvas?.items)) {
     const p = it.props as Record<string, any>;
     const refs: Ref[] = [p.entity, ...(p.rows ?? []).map((r: any) => r.entity), ...(p.buttons ?? []).map((b: any) => b.entity), ...(p.bind ?? []).map((b: any) => b.entity)];
     const gate = p.showWhen as Ref;
@@ -182,7 +183,7 @@ export function demoHaStates(cfg: DisplayConfig | null): Record<string, HaState>
 
 /** The made-up value of a demo Estadística card: energy used today, this week or this month, or a mean temperature. */
 export function demoHaStatistic(cfg: DisplayConfig | null, itemId: string): HaStatistic | null {
-  const it = cfg?.canvas?.items?.find((x) => x.id === itemId);
+  const it = canvasCards(cfg?.canvas?.items).find((x) => x.id === itemId);
   if (!it) return null;
   const mine = showcaseOf(cfg)?.statistic?.(itemId);
   if (mine) return mine;
@@ -195,7 +196,7 @@ export function demoHaStatistic(cfg: DisplayConfig | null, itemId: string): HaSt
 
 /** A day of smooth made-up points per series of a demo chart (or a sensor's curve). */
 export function demoHaHistory(cfg: DisplayConfig | null, itemId: string): HaHistory | null {
-  const it = cfg?.canvas?.items?.find((x) => x.id === itemId);
+  const it = canvasCards(cfg?.canvas?.items).find((x) => x.id === itemId);
   if (!it) return null;
   const mine = showcaseOf(cfg)?.history?.(itemId);
   if (mine) return mine;

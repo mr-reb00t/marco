@@ -101,6 +101,8 @@ export interface CanvasAdapter {
   data?(topic: CanvasTopic): void;
   /** Nothing to show (an empty message, no countdowns): the controller hides the card. */
   empty?(): boolean;
+  /** A Rotativa: its slides (one per card, made by the controller) changed, or one of them became empty or not. */
+  slides?(): void;
   destroy(): void;
 }
 

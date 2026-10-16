@@ -7,7 +7,7 @@
 //   again on every action).
 // - tileFeatures(): the rows under an Entidad card (the owner's, or the ones that suit the entity's domain).
 // - parseHistory() / parseStatistics() / downsample(): chart points, at most 200 per series (LTTB).
-import { HA_ENTITY_RE, TILE_FEATURES, conditionEntities, itemAliases, itemNames, needsConfirm } from './canvasCore.js';
+import { HA_ENTITY_RE, TILE_FEATURES, canvasCards, conditionEntities, itemAliases, itemNames, needsConfirm } from './canvasCore.js';
 
 export const ENTITY_RE = HA_ENTITY_RE;
 export { needsConfirm };
@@ -208,12 +208,13 @@ export function fromRestState(st) {
 /**
  * The aliases of a screen's Personalizado items (none unless its layout is 'canvas'; hidden items are not sent, so
  * they have none): Map alias → { entity, itemId, kind, slot, interactive }. `interactive` is the item's (and, for a
- * room row, the row's) own switch, before the screen's touch switch.
+ * room row, the row's) own switch, before the screen's touch switch. The cards of a Rotativa have aliases of their own
+ * (their own ids) and are never controls.
  */
 export function aliasesFor(screen) {
   const out = new Map();
   if (screen?.layout?.preset !== 'canvas' || !Array.isArray(screen.canvas?.items)) return out;
-  for (const it of screen.canvas.items) {
+  for (const it of canvasCards(screen.canvas.items)) {
     if (it.hidden) continue;
     const list = itemAliases(it);
     const names = itemNames(it);

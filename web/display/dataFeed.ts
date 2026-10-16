@@ -4,6 +4,7 @@
 // token (GET /api/display/data/crest/:token). Nothing here ever talks to a third party.
 // In the admin preview, the builder posts the numbers of items not saved yet ('marco:preview-data'); they win over
 // what the server sends for the same item. The demo (?demo=1) works them out from made-up answers (mockData.ts).
+import { canvasCards } from '../../server/core/canvasCore.js';
 import type { DataItemData, DisplayConfig, DisplayDataResponse } from '../shared/types';
 import { ApiError, getJSON } from './api';
 import { authHeaders, isPreview, withScreen } from './identity';
@@ -24,7 +25,7 @@ const isObj = (x: unknown): x is Record<string, any> => !!x && typeof x === 'obj
 
 /** True when the screen of `cfg` draws a data card. */
 export function showsData(cfg: DisplayConfig | null | undefined): boolean {
-  return !!cfg?.canvas?.items?.some((it) => !it.disabled && DATA_KINDS.includes(it.kind));
+  return canvasCards(cfg?.canvas?.items).some((it) => !it.disabled && DATA_KINDS.includes(it.kind));
 }
 
 /** Only answers of the three shapes are kept (a wrong one is never drawn). */

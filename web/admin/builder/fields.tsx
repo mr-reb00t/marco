@@ -1,4 +1,5 @@
 // Inspector, Contenido tab: draws the options of each kind (fieldSpecs.ts) as one small form.
+import { RotatorCards } from './RotatorFields';
 import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, WidgetDef } from '../../shared/types';
 import { ColorPicker, EmojiPicker, Field, NumberInput, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { HaEntitySelect } from '../components/HaEntityPicker';
@@ -13,6 +14,12 @@ import { ValueKeyInput } from './ValueKeyInput';
 import { CoinsField, FollowField, StocksKeyField, SymbolsField } from './DataPickers';
 
 export interface FieldEnv {
+  /** the kinds this server offers (a Rotativa picks its cards among them) */
+  allowed?: readonly string[];
+  /** cards the screen still takes (a Rotativa's cards count too) */
+  cardsLeft?: number;
+  /** a card of a Rotativa is being edited: the preview shows it and holds it (null: it turns again) */
+  pinCard?: (item: string, card: string | null) => void;
   sources: { id: string; name: string; color: string; emoji: string }[];
   /** the household's screens ("Ir a pantalla"), and the one being edited */
   screens?: { id: string; name: string }[];
@@ -324,6 +331,7 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
             </Field>
           );
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
+        if (s.type === 'rotatorCards') return <RotatorCards item={item} env={env} put={put} />;
         if (s.type === 'note')
           return (
             <p class="muted small bld-note">

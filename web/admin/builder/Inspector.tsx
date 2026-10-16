@@ -15,7 +15,7 @@ import { ScheduleField } from './ScheduleField';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { PICK_TEXT } from './picks';
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, kindName } from './kinds';
-import { boxCells, cellsOf, fitSpan, itemOf, placements, rangeOf, readOnly, resize, setCells, sideOf, sizesOf, type Orient, type Refusal, type Result } from './model';
+import { boxCells, cellsOf, fitSpan, gOf, grid, itemOf, placements, rangeOf, readOnly, resize, setCells, sideOf, sizesOf, sizingOf, type GridId, type Orient, type Refusal, type Result } from './model';
 
 /** The corners the editor offers; a screen saved with the old soft corners ('m') shows the nearest, Redondeadas. */
 const RADIUS_OPTS = [
@@ -61,8 +61,9 @@ function Stepper({ label, value, min, max, onStep }: { label: string; value: num
 function CellsPick({ item, cv, orient, apply, refuse }: { item: CanvasItem; cv: CanvasConfig; orient: Orient; apply: (r: Result) => void; refuse: (why: Refusal) => void }) {
   const p = placements(cv, orient).get(item.id);
   if (p?.zone !== 'main') return null;
-  const [w, h] = boxCells(p, orient);
-  const r = rangeOf(item.kind, orient);
+  const G = gOf(cv);
+  const [w, h] = boxCells(p, orient, G);
+  const r = rangeOf(sizingOf(item), orient, G);
   const step = (dw: number, dh: number) => {
     const res = setCells(cv, orient, item.id, w + dw, h + dh);
     if (res.ok) apply(res);
@@ -74,7 +75,10 @@ function CellsPick({ item, cv, orient, apply, refuse }: { item: CanvasItem; cv: 
         <Stepper label={t('Anchura')} value={w} min={r.minW} max={r.maxW} onStep={(d) => step(d, 0)} />
         <Stepper label={t('Altura')} value={h} min={r.minH} max={r.maxH} onStep={(d) => step(0, d)} />
       </div>
-      <p class="muted small">{t('En cuadros de la cuadrícula. Este widget va de {min} a {max}.', { min: `${r.minW}×${r.minH}`, max: `${r.maxW}×${r.maxH}` })}</p>
+      <p class="muted small">
+        {t('En cuadros de la cuadrícula. Este widget va de {min} a {max}.', { min: `${r.minW}×${r.minH}`, max: `${r.maxW}×${r.maxH}` })}
+        {G === 'fine' ? ` ${t('Cuadrícula fina: cada cuadro es la mitad de uno normal.')}` : ''}
+      </p>
     </div>
   );
 }
@@ -84,12 +88,13 @@ function SizePick({ item, cv, orient, onPick }: { item: CanvasItem; cv: CanvasCo
   const p = placements(cv, orient).get(item.id);
   // a box of its own matches no preset
   const cur = p?.zone === 'main' && p.w === undefined ? p.size : null;
+  const G = gOf(cv);
+  const { cols, rows } = grid(orient, G);
   return (
     <div class="bld-sizes" role="radiogroup" aria-label={t('Tamaño')}>
-      {sizesOf(item.kind, orient).map((sz) => {
-        const [w, h] = cellsOf(sz, orient);
+      {sizesOf(sizingOf(item), orient).map((sz) => {
+        const [w, h] = cellsOf(sz, orient, G);
         const room = sz === cur || resize(cv, orient, item.id, sz).ok;
-        const big = orient === 'portrait' ? 12 : 12;
         return (
           <button
             type="button"
@@ -102,7 +107,7 @@ function SizePick({ item, cv, orient, onPick }: { item: CanvasItem; cv: CanvasCo
           >
             <svg viewBox={orient === 'portrait' ? '0 0 16 24' : '0 0 24 16'} aria-hidden="true">
               <rect x="0.5" y="0.5" width={orient === 'portrait' ? 15 : 23} height={orient === 'portrait' ? 23 : 15} rx="2" fill="none" stroke="currentColor" stroke-opacity=".3" />
-              <rect x="1.5" y="1.5" width={(w * (orient === 'portrait' ? 13 : 21)) / (orient === 'portrait' ? 8 : big)} height={(h * (orient === 'portrait' ? 21 : 13)) / (orient === 'portrait' ? 12 : 8)} rx="1" fill="currentColor" />
+              <rect x="1.5" y="1.5" width={(w * (orient === 'portrait' ? 13 : 21)) / cols} height={(h * (orient === 'portrait' ? 21 : 13)) / rows} rx="1" fill="currentColor" />
             </svg>
             <span>{t(SIZE_LABEL[sz])}</span>
             <small>
@@ -141,6 +146,8 @@ export interface InspectorProps {
   inCarousel?: boolean;
   /** a new canvas from the inspector (`merge`: consecutive changes with this key are one undo step) */
   edit: (cv: CanvasConfig, merge?: string) => void;
+  /** "Cuadrícula": move the screen to the normal or the fine grid (BuilderModal: converts it, says what moved) */
+  onGrid: (g: GridId) => void;
   apply: (r: Result) => void;
   refuse: (why: Refusal) => void;
   setGlass: (g: GlassConfig, merge?: string) => void;
@@ -195,6 +202,36 @@ function PagePanel(p: InspectorProps) {
   return (
     <div class="stack bld-page">
       <h4 class="bld-h">{t('Página')}</h4>
+      <Field
+        label={t('Cuadrícula')}
+        hint={gOf(cv) === 'fine' ? t('Fina: 24×16 cuadros, para más tarjetas y más pequeñas. Al volver a Normal, cada tarjeta va al cuadro más cercano.') : t('Normal: 12×8 cuadros. Fina tiene el doble en cada sentido, para más tarjetas y más pequeñas.')}
+      >
+        <Segmented
+          full
+          value={gOf(cv)}
+          options={[
+            { value: 'normal', label: t('Normal') },
+            { value: 'fine', label: t('Fina') },
+          ]}
+          onChange={(v) => v !== gOf(cv) && p.onGrid(v)}
+        />
+      </Field>
+      <Field label={t('Densidad')} hint={t('Compacta junta más las tarjetas y deja menos margen dentro de ellas.')}>
+        <Segmented
+          full
+          value={cv.density === 'compact' ? 'compact' : 'normal'}
+          options={[
+            { value: 'normal', label: t('Normal') },
+            { value: 'compact', label: t('Compacta') },
+          ]}
+          onChange={(v) =>
+            set((c) => {
+              if (v === 'compact') c.density = 'compact';
+              else delete c.density;
+            })
+          }
+        />
+      </Field>
       <Field
         label={t('Fondo')}
         hint={

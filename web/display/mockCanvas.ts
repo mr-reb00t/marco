@@ -3,7 +3,7 @@
 // household, look, values, ink, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends.
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
-import { CANVAS_GRID, CANVAS_KINDS, boxAllowed, canvasDefaults, defaultCanvas, defaultItemStyle, lookSize, projectCanvas, sanitizeCanvas, sizeCells } from '../../server/core/canvasCore.js';
+import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
 import { cardSnippets } from '../shared/cardSnippets';
 import { SHOWCASES } from './showcase';
 
@@ -459,7 +459,7 @@ export function demoValues(cfg: DisplayConfig | null): Record<string, DisplayVal
     'home.battery': { v: 76, u: '%', l: 'Batería de casa', at: now - 6 * 60_000 },
   };
   const keys = new Set<string>();
-  for (const it of cfg?.canvas?.items ?? []) {
+  for (const it of canvasCards(cfg?.canvas?.items)) {
     const p = it.props as { key?: string; bind?: { value?: string }[] };
     if (it.kind === 'value' && p.key) keys.add(p.key);
     if (it.kind === 'html') for (const b of p.bind ?? []) if (b?.value) keys.add(b.value);
@@ -504,26 +504,33 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
     case 'value': return [{ key: 'solar.today', label: 'Solar hoy', unit: 'kWh', decimals: 1, icon: '☀️' }, { key: 'washer', label: 'Lavadora', icon: '🧺' }, { key: 'garage.open', label: 'Garaje abierto', icon: '🚗' }][n % 3];
     // one, three or five of the next events (the card leaves out what its box does not hold)
     case 'calendar.next': return { count: 1 + (n % 3) * 2 };
+    // a Rotativa of its default cards (the week and the hours ahead), turning every five seconds
+    case 'rotator': return { everySec: 5 };
     case 'ha.scene': return { buttons: ['scene', 'script', 'scene', 'button'].slice(0, 2 + (n % 3)).map((d, i) => ({ entity: `${d}.s_${n}_${i}`, label: '', icon: '' })) };
     default: return {};
   }
 }
 
 /**
- * &shot=size:<kind>:<size or WxH>[:portrait|landscape[:top|left|right|none[:photo]]]: as many copies of one card at
- * one size (a named one, or any box of w×h cells its kind allows, e.g. 5x2) as the grid holds (at most six, on a touch
- * screen), for the tests that every card fits at every size it allows (display-canvas.test.js); :photo puts the demo
- * photos behind.
+ * &shot=size:<kind>:<size or WxH>[:portrait|landscape[:top|left|right|none[:photo|ambient[:fine][:compact]]]]: as many
+ * copies of one card at one size (a named one, or any box of w×h cells its kind allows, e.g. 5x2) as the grid holds
+ * (at most six, on a touch screen), for the tests that every card fits at every size it allows (display-canvas.test.js);
+ * :photo puts the demo photos behind, :fine draws it on the fine grid (WxH in fine cells), :compact in Densidad compacta.
  */
 function sizeFixture(name: string): (typeof CANVAS_FIXTURES)[string] | null {
-  const [, kind, size, orient, side, bg] = name.split(':');
+  const parts = name.split(':');
+  const [, kind, size, orient, side, bg] = parts;
+  const g = parts.slice(4).includes('fine') ? 'fine' : 'normal';
+  const compact = parts.slice(4).includes('compact');
   const def = (CANVAS_KINDS as Record<string, { sizes: string[]; perScreen?: number }>)[kind];
   const o = orient === 'portrait' ? 'portrait' : 'landscape';
   const cells = /^(\d{1,2})x(\d{1,2})$/.exec(size ?? '');
-  if (!def || (!def.sizes.includes(size) && !(cells && boxAllowed(kind, Number(cells[1]), Number(cells[2]), o)))) return null;
-  const { cols, rows } = CANVAS_GRID[o];
-  const [w, h] = cells ? [Number(cells[1]), Number(cells[2])] : sizeCells(size, o);
-  const at = (x: number, y: number) => (cells ? { ...B(x, y, w, h), size: lookSize(kind, w, h, o) as never } : M(x, y, size));
+  // (a Rotativa: within what its default cards allow, canvasCore kindFor)
+  const sized = kindFor({ kind, props: { ...canvasDefaults(kind), ...sizeProps(kind, 0) } }) ?? kind;
+  if (!def || (!def.sizes.includes(size) && !(cells && boxAllowed(sized, Number(cells[1]), Number(cells[2]), o, g)))) return null;
+  const { cols, rows } = gridDims(o, g);
+  const [w, h] = cells ? [Number(cells[1]), Number(cells[2])] : sizeCells(size, o, g);
+  const at = (x: number, y: number) => (cells ? { ...B(x, y, w, h), size: lookSize(sized, w, h, o, g) as never } : M(x, y, size));
   const items: Raw[] = [];
   const max = Math.min(6, def.perScreen ?? 6);
   for (let y = 0; y + h <= rows && items.length < max; y += h) {
@@ -534,7 +541,7 @@ function sizeFixture(name: string): (typeof CANVAS_FIXTURES)[string] | null {
   const sidebar = where ? { side: where, size: 'wide' as const, fill: 'glass' as const } : undefined;
   // :photo at the end (after the side, or :none): the demo photos behind, a little dimmed
   const back = bg === 'photo' ? { background: 'photo' as const, dim: 0.25 } : { background: 'ambient' as const };
-  return { canvas: { ...back, touch: true, ...(sidebar ? { sidebar } : {}) }, items, orientation: o };
+  return { canvas: { ...back, touch: true, ...(sidebar ? { sidebar } : {}), ...(g === 'fine' ? { grid: g } : {}), ...(compact ? { density: 'compact' as const } : {}) }, items, orientation: o };
 }
 
 /** The demo canvas of `name` (unknown: starter), as the server would send it; `screens`: the household's (names of the "Ir a pantalla" targets). */

@@ -2,7 +2,7 @@ import type { ComponentType } from 'preact';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { CALENDAR_BLUR_DEFAULT, CALENDAR_OPACITY_DEFAULT, GLASS_DEFAULTS, glassVars, normalizeGlass, SCREEN_PHOTO_PRESETS, type PhotoStats } from '../../shared/glass';
 import type { BackgroundScope, CanvasConfig, DisplayStyle, FrameCorner, GlassConfig, LayoutPreset, PlannerBar, WidgetPlacement } from '../../shared/types';
-import { CANVAS_GLASS_DEFAULTS, defaultCanvas, startCanvasGlass } from '../../../server/core/canvasCore.js';
+import { CANVAS_GLASS_DEFAULTS, defaultCanvas, startCanvasGlass, canvasCards } from '../../../server/core/canvasCore.js';
 import { CanvasStyleThumb, CanvasThumb } from '../builder/thumb';
 import { Icon } from '../components/icons';
 import { EventStyleField, PLANNER_CALENDAR, undoPlannerPick, weeksCap, WeeksField } from '../components/PlannerFields';
@@ -1137,7 +1137,7 @@ export function LayoutSection(props: SectionProps) {
 /** Personalizado: a drawing of the saved layout, what it holds, and the button that opens the editor. */
 function CanvasCard({ cfg, onOpen }: { cfg: SectionProps['cfg']; onOpen: () => void }) {
   const cv: CanvasConfig = cfg.canvas ?? defaultCanvas();
-  const n = cv.items.length;
+  const n = canvasCards(cv.items).length;
   const side = { none: 'sin barra lateral', left: 'barra lateral a la izquierda', right: 'barra lateral a la derecha', top: 'barra lateral arriba', bottom: 'barra lateral abajo' }[cv.sidebar.side];
   const bg = { photo: 'foto', ambient: 'animado', solid: 'color' }[cv.background];
   return (

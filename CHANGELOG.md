@@ -5,6 +5,24 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- Custom screens, for dense dashboards like the ones people bring over from Home Assistant (#9). All three are opt-in
+  per screen: a screen saved before keeps its look and its layout exactly.
+  - *Grid* in the editor's *Page* settings: *Normal* (12×8 cells, 8×12 in portrait, as before) or *Fine* (24×16 and
+    16×24). Switching converts the screen in both orientations: to *Fine* every card keeps its place and size, back to
+    *Normal* each card goes to the nearest whole cells (a message says how many had to move, and *Undo* takes it back).
+    On the fine grid cards can be smaller: a line card (Entity, Switch, Sensor, Light) can be half a normal row high,
+    and small numbers, clocks and gauges a little smaller too. The sizes the editor offers stay the same shapes. The
+    status bar shows the grid (*Fine grid · 24×16*) and opens *Page* with a click.
+  - *Density*: *Normal* or *Compact*, with tighter gaps between the cards, less padding inside them and slightly
+    smaller titles.
+  - *Rotating card* (in *Content*): one spot that shows 2 to 6 cards one after another, every 5 to 120 seconds (10 by
+    default), with a soft crossfade (none in lite mode or with reduced motion) and optional small dots. No touch
+    needed. Each card is any card with its own options, edited inside it, and gets its data like any other (Home
+    Assistant, values, crypto, sports and stocks, calendars, widgets); a rotating card cannot hold another one, its
+    cards count towards the 24 cards of a screen, and its cards are only shown, never touch controls. The daily and
+    the hourly forecast in one spot is its default (#7).
+
 ## [0.16.0] - 2026-10-16
 
 ### Added

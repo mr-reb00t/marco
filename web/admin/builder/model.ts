@@ -2,10 +2,10 @@
 // mouse, touch and keyboard paths share one set of rules and the server tests can run them. Each operation takes a
 // canvas and returns a new one (or a refusal), and never leaves two items on the same cells. The grid rules, the
 // size table and validation live in server/core/canvasCore.js; this file only moves items around within them.
-import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, SideSpan } from '../../shared/types';
+import type { CanvasConfig, CanvasGridId, CanvasItem, CanvasKind, CanvasPos, CanvasSize, SideSpan } from '../../shared/types';
 import {
-  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxOf, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
-  firstFree, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, sizeCells,
+  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxOf, canvasCards, canvasDefaults, canvasGrid, cellRange, convertCanvasGrid, defaultItemStyle, deriveCanvasPortrait, fitsAt,
+  firstFree, gridDims, gridFactor, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
 export type Orient = 'landscape' | 'portrait';
@@ -26,9 +26,16 @@ export const keyOf = (o: Orient): PosKey => (o === 'portrait' ? 'portrait' : 'po
 export const readOnly = (cv: CanvasConfig, o: Orient): boolean => o === 'portrait' && cv.portraitAuto;
 /** The sidebar's side on an orientation (left and right go on top and at the bottom of a portrait screen). */
 export const sideOf = (cv: CanvasConfig, o: Orient): CanvasConfig['sidebar']['side'] => (o === 'portrait' ? portraitSide(cv.sidebar.side) : cv.sidebar.side);
-export const grid = (o: Orient) => CANVAS_GRID[o];
-export const cellsOf = (size: CanvasSize, o: Orient): [number, number] => sizeCells(size, o) as [number, number];
-const kind = (k: string) => CANVAS_KINDS[k as CanvasKind];
+/** The grid of a canvas ("Cuadrícula": 'normal' 12×8, or 'fine' 24×16). Every cell count below is in its cells. */
+export const gOf = (cv: Pick<CanvasConfig, 'grid'> | null | undefined): CanvasGridId => canvasGrid(cv);
+export type GridId = CanvasGridId;
+export const grid = (o: Orient, g: GridId = 'normal') => gridDims(o, g);
+export const cellsOf = (size: CanvasSize, o: Orient, g: GridId = 'normal'): [number, number] => sizeCells(size, o, g) as [number, number];
+/** A kind, or the sizing of an item (a Rotativa: what its cards allow too, canvasCore kindFor). */
+export type KindRef = CanvasKind | string | CanvasKindDef;
+const kind = (k: KindRef): CanvasKindDef => (typeof k === 'string' ? CANVAS_KINDS[k as CanvasKind] : k);
+/** What an item is sized as (its kind; a Rotativa with cards: the range they leave it). */
+export const sizingOf = (it: Pick<CanvasItem, 'kind' | 'props'>): CanvasKindDef => kindFor(it);
 
 /**
  * The box of a card on the main grid: a named size, plus its own w and h in cells when it is not exactly one
@@ -36,19 +43,19 @@ const kind = (k: string) => CANVAS_KINDS[k as CanvasKind];
  */
 export type Box = { size: CanvasSize; w?: number; h?: number };
 /** [w, h] of a box or a named size on `o`. */
-export const boxCells = (b: Box | CanvasSize, o: Orient): [number, number] => (typeof b === 'string' ? cellsOf(b, o) : (posCells(b, o) as [number, number]));
+export const boxCells = (b: Box | CanvasSize, o: Orient, g: GridId = 'normal'): [number, number] => (typeof b === 'string' ? cellsOf(b, o, g) : (posCells(b, o, g) as [number, number]));
 /** A box as stored for `k` on `o` (a named size alone when it is exactly one). */
-export const boxFor = (k: CanvasKind | string, w: number, h: number, o: Orient): Box => boxOf(k, w, h, o) as Box;
+export const boxFor = (k: KindRef, w: number, h: number, o: Orient, g: GridId = 'normal'): Box => boxOf(k, w, h, o, g) as Box;
 /** The box of a named size or a box, as a plain Box. */
 const asBox = (b: Box | CanvasSize): Box => (typeof b === 'string' ? { size: b } : b.w !== undefined && b.h !== undefined ? { size: b.size, w: b.w, h: b.h } : { size: b.size });
 /** The smallest and largest box of `k` on `o`. */
-export const rangeOf = (k: CanvasKind | string, o: Orient) => cellRange(k, o);
+export const rangeOf = (k: KindRef, o: Orient, g: GridId = 'normal') => cellRange(k, o, g);
 /** A main position at (x, y) with box `b`. */
 const mainPos = (x: number, y: number, b: Box | CanvasSize): MainPos => ({ zone: 'main', x, y, ...asBox(b) });
 /** True when two boxes take the same cells. */
-const sameCells = (a: Box | CanvasSize, b: Box | CanvasSize, o: Orient) => {
-  const [aw, ah] = boxCells(a, o);
-  const [bw, bh] = boxCells(b, o);
+const sameCells = (a: Box | CanvasSize, b: Box | CanvasSize, o: Orient, g: GridId) => {
+  const [aw, ah] = boxCells(a, o, g);
+  const [bw, bh] = boxCells(b, o, g);
   return aw === bw && ah === bh;
 };
 
@@ -56,7 +63,7 @@ const sameCells = (a: Box | CanvasSize, b: Box | CanvasSize, o: Orient) => {
 export function placements(cv: CanvasConfig, o: Orient): Map<string, CanvasPos> {
   const out = new Map<string, CanvasPos>();
   if (o === 'portrait' && cv.portraitAuto) {
-    for (const p of deriveCanvasPortrait(cv.items, cv.sidebar).placed) out.set(p.id, p.pos as CanvasPos);
+    for (const p of deriveCanvasPortrait(cv.items, cv.sidebar, gOf(cv)).placed) out.set(p.id, p.pos as CanvasPos);
     return out;
   }
   const k = keyOf(o);
@@ -76,10 +83,10 @@ export function omittedInPortrait(cv: CanvasConfig): string[] {
 /** The cells taken on `o`, leaving out `except`. */
 export function occupancy(cv: CanvasConfig, o: Orient, except?: string | string[]) {
   const skip = new Set(Array.isArray(except) ? except : except ? [except] : []);
-  const occ = makeOccupancy(o);
+  const occ = makeOccupancy(o, gOf(cv));
   for (const [id, p] of placements(cv, o)) {
     if (p.zone !== 'main' || skip.has(id)) continue;
-    const [w, h] = boxCells(p, o);
+    const [w, h] = boxCells(p, o, gOf(cv));
     occupy(occ, id, p.x, p.y, w, h);
   }
   return occ;
@@ -93,7 +100,7 @@ export function sideStack(cv: CanvasConfig, o: Orient): { id: string; pos: SideP
 }
 
 /** Sizes a kind allows, smallest first (by area, ties by the order of the size table: m 4×3 before w 6×2). */
-export function sizesOf(k: CanvasKind | string, o: Orient = 'landscape'): CanvasSize[] {
+export function sizesOf(k: KindRef, o: Orient = 'landscape'): CanvasSize[] {
   const d = kind(k);
   if (!d) return [];
   const area = (s: CanvasSize) => cellsOf(s, o)[0] * cellsOf(s, o)[1];
@@ -101,7 +108,7 @@ export function sizesOf(k: CanvasKind | string, o: Orient = 'landscape'): Canvas
 }
 
 /** The allowed size of `k` closest to `want` in area (ties: the smaller). */
-export function closestSize(k: CanvasKind | string, want: CanvasSize, o: Orient = 'landscape'): CanvasSize {
+export function closestSize(k: KindRef, want: CanvasSize, o: Orient = 'landscape'): CanvasSize {
   const list = sizesOf(k, o);
   if (list.includes(want)) return want;
   const [w, h] = cellsOf(want, o);
@@ -121,13 +128,14 @@ export function closestSize(k: CanvasKind | string, want: CanvasSize, o: Orient 
 /** Main-area size → sidebar span: xs and s take 2 units, m, w and t take 3, larger ones 4. */
 export const spanForSize = (size: CanvasSize): 2 | 3 | 4 => (size === 'xs' || size === 's' ? 2 : size === 'm' || size === 'w' || size === 't' ? 3 : 4);
 /** A box → sidebar span: by its named size, or by its rows when it has its own cells (2 rows or less 2, 3 rows 3, else 4). */
-export const spanForBox = (b: Box, o: Orient): 2 | 3 | 4 => {
+export const spanForBox = (b: Box, o: Orient, g: GridId = 'normal'): 2 | 3 | 4 => {
   if (b.w === undefined) return spanForSize(b.size);
-  const h = boxCells(b, o)[1];
+  // in normal rows (a fine row is half of one)
+  const h = Math.ceil(boxCells(b, o, g)[1] / gridFactor(g));
   return h <= 2 ? 2 : h === 3 ? 3 : 4;
 };
 /** Sidebar span → main-area size of `k`: 2 is small, 3 medium, 4 and fill large, then the closest the kind allows. */
-export const sizeForSpan = (k: CanvasKind | string, span: SideSpan): CanvasSize => closestSize(k, span === 2 ? 's' : span === 3 ? 'm' : 'l');
+export const sizeForSpan = (k: KindRef, span: SideSpan): CanvasSize => closestSize(k, span === 2 ? 's' : span === 3 ? 'm' : 'l');
 
 /** Units of the stack the fixed spans take, how many items there are and whether one fills the rest. */
 export function sideUse(cv: CanvasConfig, o: Orient, except?: string) {
@@ -152,12 +160,30 @@ export function fitSpan(cv: CanvasConfig, o: Orient, want: SideSpan, except?: st
 }
 
 /** How many more items the screen takes, and whether a kind is at its own cap. */
-export function canAdd(cv: CanvasConfig, k: CanvasKind): Refusal | null {
-  if (cv.items.length >= CANVAS_LIMITS.items) return 'tooMany';
-  const cap = kind(k)?.perScreen;
-  if (cap && cv.items.filter((i) => i.kind === k).length >= cap) return 'kindCap';
+export function canAdd(cv: CanvasConfig, k: CanvasKind, cards: CanvasKind[] = k === 'rotator' ? ((canvasDefaults('rotator').cards as { kind: CanvasKind }[]) ?? []).map((c) => c.kind) : []): Refusal | null {
+  // the cards of a Rotativa count as cards of the screen (canvasCore sanitizeCanvas)
+  const all = canvasCards(cv.items);
+  if (all.length + 1 + cards.length > CANVAS_LIMITS.items) return 'tooMany';
+  for (const x of [k, ...cards]) {
+    const cap = kind(x)?.perScreen;
+    if (cap && all.filter((i) => i.kind === x).length + [k, ...cards].filter((y) => y === x).length > cap) return 'kindCap';
+  }
   return null;
 }
+
+/** Fresh ids for the cards of a Rotativa (a new one, a copy), none taken on the screen. */
+export function freshCardIds(cv: CanvasConfig, it: CanvasItem): void {
+  if (it.kind !== 'rotator' || !Array.isArray(it.props.cards)) return;
+  const taken = new Set(canvasCards(cv.items).map((i) => i.id));
+  taken.add(it.id);
+  for (const c of it.props.cards as { id: string }[]) {
+    c.id = newCanvasId(taken);
+    taken.add(c.id);
+  }
+}
+
+/** How many cards a screen has (a Rotativa's cards count too), for "N de 24 widgets". */
+export const cardCount = (cv: CanvasConfig): number => canvasCards(cv.items).length;
 
 /** A drop target on the main grid (w and h: a box of its own, see Box). */
 export interface MainDrop {
@@ -189,7 +215,7 @@ export function occupantsAt(cv: CanvasConfig, o: Orient, x: number, y: number, w
  * empty card that must move finds no free spot (it is never deleted).
  */
 function makeRoom(cv: CanvasConfig, o: Orient, size: Box | CanvasSize, x: number, y: number, voids: ReadonlySet<string>, id?: string): MainDrop | null {
-  const [w, h] = boxCells(size, o);
+  const [w, h] = boxCells(size, o, gOf(cv));
   const under = occupantsAt(cv, o, x, y, w, h, id);
   if (!under.length || under.some((u) => !voids.has(u))) return null;
   const pl = placements(cv, o);
@@ -200,7 +226,7 @@ function makeRoom(cv: CanvasConfig, o: Orient, size: Box | CanvasSize, x: number
   const move: { id: string; x: number; y: number }[] = [];
   for (const m of movers) {
     const p = pl.get(m) as MainPos;
-    const [mw, mh] = boxCells(p, o);
+    const [mw, mh] = boxCells(p, o, gOf(cv));
     const spot = nearestFree(occ, p.x, p.y, mw, mh);
     if (!spot) return null;
     occupy(occ, m, spot.x, spot.y, mw, mh);
@@ -218,8 +244,8 @@ export function resolveMain(
   cv: CanvasConfig, o: Orient, size0: Box | CanvasSize, x: number, y: number, opts: { id?: string; at?: { x: number; y: number }; voids?: ReadonlySet<string> } = {},
 ): MainDrop | null {
   const size = asBox(size0);
-  const { cols, rows } = grid(o);
-  const [w, h] = boxCells(size, o);
+  const { cols, rows } = grid(o, gOf(cv));
+  const [w, h] = boxCells(size, o, gOf(cv));
   if (w > cols || h > rows) return null;
   const cx = Math.min(Math.max(0, x), cols - w);
   const cy = Math.min(Math.max(0, y), rows - h);
@@ -230,7 +256,7 @@ export function resolveMain(
     const other = occ.cells[opts.at.y]?.[opts.at.x];
     const op = other ? placements(cv, o).get(other) : undefined;
     // a card of the same cells under the pointer swaps places with the dragged one
-    if (other && op?.zone === 'main' && sameCells(op, here, o) && sameCells(here, size, o) && !opts.voids?.has(other)) return { x: op.x, y: op.y, ...size, swap: other };
+    if (other && op?.zone === 'main' && sameCells(op, here, o, gOf(cv)) && sameCells(here, size, o, gOf(cv)) && !opts.voids?.has(other)) return { x: op.x, y: op.y, ...size, swap: other };
   }
   // dropped on cards that show nothing (a spacer, an empty or hidden card): the new one takes their place, there or
   // at the origin of the one under the pointer
@@ -305,7 +331,7 @@ function clearRoom(cv: CanvasConfig, o: Orient, drop: MainDrop) {
 export function moveMain(cv: CanvasConfig, o: Orient, id: string, x: number, y: number, at?: { x: number; y: number }): Result {
   const p = placements(cv, o).get(id);
   if (!p) return no('noRoom');
-  const size: Box | CanvasSize = p.zone === 'main' ? p : sizeForSpan(itemOf(cv, id)!.kind, p.span);
+  const size: Box | CanvasSize = p.zone === 'main' ? p : sizeForSpan(sizingOf(itemOf(cv, id)!), p.span);
   const drop = resolveMain(cv, o, size, x, y, { id, at });
   return drop ? applyMain(cv, o, id, drop) : no('noRoom');
 }
@@ -321,8 +347,8 @@ export function nudge(cv: CanvasConfig, o: Orient, id: string, dx: number, dy: n
     if (!along) return no('noRoom');
     return reorderSide(cv, o, id, p.order + along);
   }
-  const { cols, rows } = grid(o);
-  const [w, h] = boxCells(p, o);
+  const { cols, rows } = grid(o, gOf(cv));
+  const [w, h] = boxCells(p, o, gOf(cv));
   const occ = occupancy(cv, o, id);
   for (let i = 1; ; i++) {
     const x = p.x + dx * i;
@@ -338,10 +364,10 @@ export function stepSize(cv: CanvasConfig, o: Orient, id: string, dir: 1 | -1): 
   const p = placements(cv, o).get(id);
   if (!it || !p) return no('noRoom');
   if (p.zone === 'side') return stepSpan(cv, o, id, dir);
-  const list = sizesOf(it.kind, o);
+  const list = sizesOf(sizingOf(it), o);
   // a box of its own steps from the named size of about its area
-  const [cw, ch] = boxCells(p, o);
-  const area = (s: CanvasSize) => cellsOf(s, o)[0] * cellsOf(s, o)[1];
+  const [cw, ch] = boxCells(p, o, gOf(cv));
+  const area = (s: CanvasSize) => cellsOf(s, o, gOf(cv))[0] * cellsOf(s, o, gOf(cv))[1];
   let i = list.indexOf(p.size);
   if (p.w !== undefined) {
     const up = list.findIndex((s) => area(s) > cw * ch);
@@ -361,7 +387,7 @@ export function resize(cv: CanvasConfig, o: Orient, id: string, size: CanvasSize
   if (readOnly(cv, o)) return no('auto');
   const it = itemOf(cv, id);
   const p = placements(cv, o).get(id);
-  if (!it || !p || p.zone !== 'main' || !kind(it.kind)?.sizes.includes(size)) return no('noRoom');
+  if (!it || !p || p.zone !== 'main' || !sizingOf(it)?.sizes.includes(size)) return no('noRoom');
   const drop = resolveMain(cv, o, size, p.x, p.y, { id });
   return drop ? applyMain(cv, o, id, { ...drop, swap: undefined }) : no('noRoom');
 }
@@ -375,10 +401,10 @@ export function setCells(cv: CanvasConfig, o: Orient, id: string, w: number, h: 
   const it = itemOf(cv, id);
   const p = placements(cv, o).get(id);
   if (!it || !p || p.zone !== 'main') return no('noRoom');
-  const box = boxFor(it.kind, w, h, o);
-  const [bw, bh] = boxCells(box, o);
+  const box = boxFor(sizingOf(it), w, h, o, gOf(cv));
+  const [bw, bh] = boxCells(box, o, gOf(cv));
   if (bw !== w || bh !== h) return no('limit');
-  if (sameCells(box, p, o)) return no('limit');
+  if (sameCells(box, p, o, gOf(cv))) return no('limit');
   const drop = resolveMain(cv, o, box, p.x, p.y, { id });
   return drop ? applyMain(cv, o, id, { ...drop, swap: undefined }) : no('noRoom');
 }
@@ -392,8 +418,8 @@ export function handleBox(cv: CanvasConfig, o: Orient, id: string, w: number, h:
   const it = itemOf(cv, id);
   const p = placements(cv, o).get(id);
   if (!it || !p || p.zone !== 'main') return null;
-  const r = rangeOf(it.kind, o);
-  const { cols, rows } = grid(o);
+  const r = rangeOf(sizingOf(it), o, gOf(cv));
+  const { cols, rows } = grid(o, gOf(cv));
   const tw = Math.min(r.maxW, Math.max(r.minW, Math.round(w)));
   const th = Math.min(r.maxH, Math.max(r.minH, Math.round(h)));
   const occ = occupancy(cv, o, id);
@@ -409,7 +435,7 @@ export function handleBox(cv: CanvasConfig, o: Orient, id: string, w: number, h:
       }
     }
   }
-  return best ? boxFor(it.kind, best[0], best[1], o) : null;
+  return best ? boxFor(sizingOf(it), best[0], best[1], o, gOf(cv)) : null;
 }
 
 /** Put item `id` at its origin with box `b` (the handle, after handleBox). */
@@ -417,8 +443,8 @@ export function applyBox(cv: CanvasConfig, o: Orient, id: string, b: Box): Resul
   if (readOnly(cv, o)) return no('auto');
   const p = placements(cv, o).get(id);
   if (!p || p.zone !== 'main') return no('noRoom');
-  if (sameCells(b, p, o)) return no('noRoom');
-  const [w, h] = boxCells(b, o);
+  if (sameCells(b, p, o, gOf(cv))) return no('noRoom');
+  const [w, h] = boxCells(b, o, gOf(cv));
   if (!fitsAt(occupancy(cv, o, id), p.x, p.y, w, h)) return no('noRoom');
   return applyMain(cv, o, id, { x: p.x, y: p.y, ...asBox(b) });
 }
@@ -434,8 +460,8 @@ export function fitContent(cv: CanvasConfig, o: Orient, id: string, need: { w: n
   const p = placements(cv, o).get(id);
   if (!it || !p) return no('noRoom');
   if (p.zone === 'side') return stepSpan(cv, o, id, 1);
-  const r = rangeOf(it.kind, o);
-  const [cw, ch] = boxCells(p, o);
+  const r = rangeOf(sizingOf(it), o, gOf(cv));
+  const [cw, ch] = boxCells(p, o, gOf(cv));
   // what the content asks for, in whole cells (at least one more cell one way)
   const wantW = Math.min(r.maxW, Math.max(cw, Math.ceil(cw * Math.max(1, need.w) - 0.05)));
   const wantH = Math.min(r.maxH, Math.max(ch, Math.ceil(ch * Math.max(1, need.h) - 0.05)));
@@ -445,11 +471,11 @@ export function fitContent(cv: CanvasConfig, o: Orient, id: string, need: { w: n
   list.sort((a, b) => a[0] * a[1] - b[0] * b[1] || Math.abs(a[0] / a[1] - cw / ch) - Math.abs(b[0] / b[1] - cw / ch));
   // at its origin first, then anywhere nearby
   for (const [w, h] of list) {
-    const box = boxFor(it.kind, w, h, o);
+    const box = boxFor(sizingOf(it), w, h, o, gOf(cv));
     if (fitsAt(occupancy(cv, o, id), p.x, p.y, w, h)) return applyMain(cv, o, id, { x: p.x, y: p.y, ...box });
   }
   for (const [w, h] of list) {
-    const drop = resolveMain(cv, o, boxFor(it.kind, w, h, o), p.x, p.y, { id });
+    const drop = resolveMain(cv, o, boxFor(sizingOf(it), w, h, o, gOf(cv)), p.x, p.y, { id });
     if (drop) return applyMain(cv, o, id, { ...drop, swap: undefined });
   }
   return no('noBigger');
@@ -493,7 +519,7 @@ export function toSide(cv0: CanvasConfig, o: Orient, id: string, index: number):
   if (!it || !p) return no('noRoom');
   if (!kind(it.kind)?.side) return no('noSide');
   if (p.zone === 'side') return reorderSide(cv0, o, id, index);
-  const span = fitSpan(cv0, o, spanForBox(p, o), id);
+  const span = fitSpan(cv0, o, spanForBox(p, o, gOf(cv0)), id);
   if (!span) return no('sideFull');
   const cv = clone(cv0);
   insertSide(cv, o, id, span, index);
@@ -529,7 +555,7 @@ export function toMain(cv: CanvasConfig, o: Orient, id: string, x: number, y: nu
   const p = placements(cv, o).get(id);
   if (!it || !p) return no('noRoom');
   if (p.zone === 'main') return moveMain(cv, o, id, x, y);
-  const drop = resolveMain(cv, o, sizeForSpan(it.kind, p.span), x, y, { id });
+  const drop = resolveMain(cv, o, sizeForSpan(sizingOf(it), p.span), x, y, { id });
   return drop ? applyMain(cv, o, id, drop) : no('noRoom');
 }
 
@@ -537,19 +563,19 @@ export function toMain(cv: CanvasConfig, o: Orient, id: string, x: number, y: nu
  * Where a new item of `k` goes when it is just picked: the first free spot scanning from the top left; with no free
  * spot, the place of a card that shows nothing (`voids`, see resolveMain).
  */
-export function firstSpot(cv: CanvasConfig, o: Orient, k: CanvasKind, size?: CanvasSize, voids?: ReadonlySet<string>): MainDrop | null {
+export function firstSpot(cv: CanvasConfig, o: Orient, k: KindRef, size?: CanvasSize, voids?: ReadonlySet<string>): MainDrop | null {
   const occ = occupancy(cv, o);
   const sizes = [size ?? kind(k).def, ...sizesOf(k, o)];
   for (const s of sizes) {
-    const [w, h] = cellsOf(s, o);
+    const [w, h] = cellsOf(s, o, gOf(cv));
     const spot = firstFree(occ, w, h);
     if (spot) return { x: spot.x, y: spot.y, size: s };
   }
   if (!voids?.size) return null;
   const pl = placements(cv, o);
   for (const s of sizes) {
-    const { cols, rows } = grid(o);
-    const [w, h] = cellsOf(s, o);
+    const { cols, rows } = grid(o, gOf(cv));
+    const [w, h] = cellsOf(s, o, gOf(cv));
     for (const id of tabOrder(cv, o)) {
       const p = pl.get(id);
       if (!voids.has(id) || p?.zone !== 'main') continue;
@@ -574,6 +600,7 @@ export function newItem(cv: CanvasConfig, k: CanvasKind, extra: Record<string, u
     style: { ...(defaultItemStyle() as CanvasItem['style']), ...(kind(k).defStyle ?? {}) },
     props: { ...canvasDefaults(k), ...extra },
   };
+  freshCardIds(cv, it);
   if (kind(k).controls) {
     it.interactive = true;
     it.confirm = false;
@@ -604,7 +631,7 @@ export function addItem(
     cv.items.push(it);
     insertSide(cv, o, it.id, span, target.index);
   } else {
-    const drop = target?.drop ?? firstSpot(cv, o, k, undefined, voids);
+    const drop = target?.drop ?? firstSpot(cv, o, sizingOf(it), undefined, voids);
     if (!drop) return no('noRoom');
     clearRoom(cv, o, drop);
     cv.items.push(it);
@@ -613,11 +640,11 @@ export function addItem(
   }
   // the other orientation: landscape always needs a place; a hand-made portrait gets one if there is room
   if (o === 'portrait') {
-    const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, 'landscape', k);
+    const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, 'landscape', sizingOf(it));
     if (!spot) return no('noRoom');
     it.pos = { zone: 'main', x: spot.x, y: spot.y, size: spot.size };
   } else if (!cv.portraitAuto) {
-    const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, other, k);
+    const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, other, sizingOf(it));
     it.portrait = spot ? { zone: 'main', x: spot.x, y: spot.y, size: spot.size } : null;
   }
   return { ok: true, cv, id: it.id, drop: used };
@@ -637,7 +664,7 @@ export function duplicateItem(cv0: CanvasConfig, o: Orient, id: string): Result 
   const src = itemOf(cv0, id);
   if (!src) return no('noRoom');
   if (readOnly(cv0, o)) return no('auto');
-  const cap = canAdd(cv0, src.kind);
+  const cap = canAdd(cv0, src.kind, src.kind === 'rotator' ? ((src.props.cards as { kind: CanvasKind }[]) ?? []).map((c) => c.kind) : []);
   if (cap) return no(cap);
   const p = placements(cv0, o).get(id)!;
   let target: Parameters<typeof addItem>[3] = null;
@@ -649,6 +676,7 @@ export function duplicateItem(cv0: CanvasConfig, o: Orient, id: string): Result 
   if (!r.ok) return r;
   const it = itemOf(r.cv, r.id!)!;
   it.props = structuredClone(src.props);
+  freshCardIds(r.cv, it);
   it.style = structuredClone(src.style);
   if (src.interactive !== undefined) it.interactive = src.interactive;
   if (p.zone === 'side') {
@@ -673,7 +701,7 @@ export function setSidebarSide(cv0: CanvasConfig, side: CanvasConfig['sidebar'][
         cv.items = cv.items.filter((i) => i.id !== it.id);
         continue;
       }
-      const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, o, it.kind, sizeForSpan(it.kind, p.span));
+      const spot = firstSpot({ ...cv, items: cv.items.filter((i) => i.id !== it.id) }, o, sizingOf(it), sizeForSpan(sizingOf(it), p.span));
       if (spot) setPos(cv, o, it.id, { zone: 'main', x: spot.x, y: spot.y, size: spot.size });
       else if (o === 'portrait') it.portrait = null;
       else cv.items = cv.items.filter((i) => i.id !== it.id);
@@ -707,7 +735,7 @@ export function placeInPortrait(cv0: CanvasConfig, id: string): Result {
   if (cv0.portraitAuto) return no('auto');
   const it = itemOf(cv0, id);
   if (!it) return no('noRoom');
-  const spot = firstSpot(cv0, 'portrait', it.kind);
+  const spot = firstSpot(cv0, 'portrait', sizingOf(it));
   if (!spot) return no('noRoom');
   const cv = clone(cv0);
   setPos(cv, 'portrait', id, { zone: 'main', x: spot.x, y: spot.y, size: spot.size });
@@ -736,13 +764,23 @@ export function tabOrder(cv: CanvasConfig, o: Orient): string[] {
 /** True when no two items share a cell on either orientation (the rule every operation keeps). */
 export function noOverlap(cv: CanvasConfig): boolean {
   for (const o of ['landscape', 'portrait'] as Orient[]) {
-    const occ = makeOccupancy(o);
+    const occ = makeOccupancy(o, gOf(cv));
     for (const [id, p] of placements(cv, o)) {
       if (p.zone !== 'main') continue;
-      const [w, h] = boxCells(p, o);
+      const [w, h] = boxCells(p, o, gOf(cv));
       if (!fitsAt(occ, p.x, p.y, w, h)) return false;
       occupy(occ, id, p.x, p.y, w, h);
     }
   }
   return true;
+}
+
+/**
+ * "Cuadrícula": the canvas on the normal or the fine grid, both orientations (canvasCore convertCanvasGrid). Going
+ * to the fine grid nothing moves on the screen; going back, `moved` and `resized` say how many cards had to change.
+ */
+export function setGrid(cv: CanvasConfig, g: GridId): { ok: true; cv: CanvasConfig; moved: number; resized: number } | { ok: false } {
+  const r = convertCanvasGrid(cv, g);
+  if (!r.ok) return { ok: false };
+  return { ok: true, cv: r.canvas, moved: r.moved.length, resized: r.resized.length };
 }

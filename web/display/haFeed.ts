@@ -10,6 +10,7 @@
 //
 // Taps on the controls (widgets/canvas/touch.ts) go through send(): the new value shows at once (optimistic), the
 // action is posted, and the card goes back to the real state when the server says no or after 8 s at the latest.
+import { canvasCards } from '../../server/core/canvasCore.js';
 import type { DisplayConfig, HaActionResponse, HaControl, HaHistory, HaSnapshot, HaState, HaStatistic } from '../shared/types';
 import { ApiError, getJSON } from './api';
 import { authHeaders, isPreview, withScreen } from './identity';
@@ -136,7 +137,7 @@ const isObj = (x: unknown): x is Record<string, any> => !!x && typeof x === 'obj
 
 /** True when the screen of `cfg` has a Home Assistant card that is drawn (not a placeholder), or a custom card bound to one. */
 export function showsHa(cfg: DisplayConfig | null | undefined): boolean {
-  return !!cfg?.canvas?.items?.some((it) => it.when?.src === 'ha' || (!it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && isObj(b.entity))))));
+  return canvasCards(cfg?.canvas?.items).some((it) => it.when?.src === 'ha' || (!it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && isObj(b.entity))))));
 }
 
 export class HaFeed implements HaSource {

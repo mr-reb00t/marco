@@ -794,6 +794,8 @@ export type CanvasKind =
   | 'calendar.month' | 'calendar.week' | 'calendar.agenda' | 'calendar.today' | 'calendar.next' | 'calendar.people' | 'countdowns'
   | 'weather.now' | 'weather.hourly' | 'weather.forecast'
   | 'message' | 'todo' | 'news' | 'photo' | 'widget' | 'value' | 'spacer' | 'heading'
+  // Rotativa: one slot that shows its cards one after another (RotatorProps)
+  | 'rotator'
   // Navegación: touch screens go to another screen, pause the carousel or show where it is
   | 'nav.button' | 'nav.pause' | 'nav.progress'
   // Familia y hogar: the family data the display already has (GET /api/display/family)
@@ -885,7 +887,34 @@ export interface CanvasConfig {
   perf: 'auto' | 'low';
   /** the portrait arrangement is derived from the landscape one */
   portraitAuto: boolean;
+  /** "Cuadrícula": 'fine' has twice the cells each way (24×16, 16×24); absent = 'normal' (12×8, 8×12) */
+  grid?: CanvasGridId;
+  /** "Densidad": 'compact' has tighter gaps, less padding and smaller titles; absent = 'normal' */
+  density?: 'normal' | 'compact';
   items: CanvasItem[];
+}
+
+export type CanvasGridId = 'normal' | 'fine';
+
+/** One card of a Rotativa: a kind of its own with its own props (validated by that kind). */
+export interface RotatorCard {
+  id: string;
+  kind: CanvasKind;
+  props: Record<string, unknown>;
+}
+/** A Rotativa's props: its cards (2 to 6), "Cambiar cada" in seconds (5 to 120) and the dots. */
+export interface RotatorProps {
+  cards: RotatorCard[];
+  everySec: number;
+  dots: boolean;
+}
+/** A Rotativa card as the display gets it (props projected like an item's; a placeholder where it may not show). */
+export interface DisplayRotatorCard {
+  id: string;
+  kind: CanvasKind;
+  props: Record<string, unknown>;
+  v: string;
+  disabled?: 'feature' | 'privacy' | 'setup';
 }
 
 /** One item as the display gets it (entity ids replaced by aliases, privacy and edition applied). */

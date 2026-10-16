@@ -28,7 +28,7 @@ import { cameraFrame, watchLive, LIVE_BOUNDARY } from '../haCamera.js';
 import { CAMERA_RE } from '../core/doorbellCore.js';
 import { redactSecrets } from '../core/activityCore.js';
 import { sniffImage } from '../core/imageInfo.js';
-import { CANVAS_ID_RE, CANVAS_KINDS } from '../core/canvasCore.js';
+import { CANVAS_ID_RE, CANVAS_KINDS, canvasCards } from '../core/canvasCore.js';
 import {
   ENTITY_RE, CHART_PERIODS, CONTROL_TABLE, aliasesFor, aliasControls, aliasFlagged, clampValue, controlsFor, downsample, isGasValve, isHighRisk,
   pickAttrs, periodRange, roundPoints, serviceCall, slim as slimOf, MAX_POINTS,
@@ -278,7 +278,8 @@ function screenItem(req, res, kinds) {
   const cfg = getConfig();
   const { screen } = requestScreen(cfg, req);
   const id = String(req.params.item || '');
-  const item = CANVAS_ID_RE.test(id) && screen.layout?.preset === 'canvas' ? screen.canvas?.items?.find((x) => x.id === id && !x.hidden) : null;
+  // a card inside a Rotativa reads its own history, statistic and pictures too
+  const item = CANVAS_ID_RE.test(id) && screen.layout?.preset === 'canvas' ? canvasCards(screen.canvas?.items).find((x) => x.id === id && !x.hidden) : null;
   if (!item || !kinds.includes(item.kind)) {
     res.status(404).json({ error: 'not found' });
     return null;

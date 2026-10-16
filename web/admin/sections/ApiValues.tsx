@@ -5,7 +5,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { HookValueInfo, StoredConfig } from '../../shared/types';
-import { VALUE_KEY_RE } from '../../../server/core/canvasCore.js';
+import { VALUE_KEY_RE, canvasCards } from '../../../server/core/canvasCore.js';
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
 import { Button, Card, Empty, Field, Select, TextInput } from '../components/ui';
@@ -27,7 +27,7 @@ export function usedValueKeys(full: StoredConfig): string[] {
   const out: string[] = [];
   for (const s of full.screens ?? []) {
     if (s.layout?.preset !== 'canvas') continue;
-    for (const it of s.canvas?.items ?? []) {
+    for (const it of canvasCards(s.canvas?.items)) {
       const p = it.props as { key?: string; bind?: { value?: string }[] };
       if (it.kind === 'value' && p.key) out.push(p.key);
       if (it.kind === 'html') for (const b of p.bind ?? []) if (b?.value) out.push(b.value);

@@ -73,8 +73,8 @@
   display: grid;
   grid-template-columns: repeat(var(--cv-cols, 12), minmax(0, 1fr));
   grid-template-rows: repeat(var(--cv-rows, 8), minmax(0, 1fr));
-  gap: 1.2rem;
-  padding: 2.4rem;
+  gap: var(--cv-gap, 1.2rem);
+  padding: var(--cv-edge, 2.4rem);
   flex: 1;
   min-height: 0;
   height: 100%;
@@ -85,12 +85,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: repeat(8, minmax(0, 1fr));
-  gap: 1.2rem;
-  padding: 2.4rem 2rem;
+  gap: var(--cv-gap, 1.2rem);
+  padding: var(--cv-edge, 2.4rem) var(--cv-edge-x, 2rem);
   height: 100%;
   box-sizing: border-box;
 }
-.style-modern #app.preset-canvas #canvas-side.is-row { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(8, minmax(0, 1fr)); padding: 2rem 2.4rem; }
+.style-modern #app.preset-canvas #canvas-side.is-row { grid-template-rows: minmax(0, 1fr); grid-template-columns: repeat(8, minmax(0, 1fr)); padding: var(--cv-edge-x, 2rem) var(--cv-edge, 2.4rem); }
+/* "Densidad compacta": tighter gaps between the cards, less padding inside them and slightly smaller titles (the
+   cards fit their content to the box as always; widgets/canvas.ts and the builder's geometry.ts read the same sizes) */
+.style-modern #app#app.preset-canvas.cv-dense { --cv-gap: 0.6rem; --cv-edge: 1.4rem; --cv-edge-x: 1.2rem; --cv-pad: 1rem 1.3rem; --cv-pad-none: 0.4rem; --cv-tpad: 1rem 1.3rem 0; --cv-tsize: 1.4rem; }
+/* "Cuadrícula fina": a card one fine row high (half a normal row, a line with an icon, a name and a state) keeps
+   little padding above and below; every box the normal grid also has looks exactly as before */
+.style-modern #app#app.preset-canvas.cv-fine .cv-item[data-cells$='x1'] { --cv-pad: 0.3rem 1.4rem; --cv-pad-none: 0.2rem 0.6rem; }
+.style-modern #app#app.preset-canvas.cv-fine.cv-dense .cv-item[data-cells$='x1'] { --cv-pad: 0.2rem 1rem; }
 
 /* ------------------------------------------------------------------------------- cards */
 #app.preset-canvas .cv-item { position: relative; display: flex; min-width: 0; min-height: 0; }
@@ -207,7 +214,7 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none .clock .sec { color: var(--fg-2); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-wx-hours, .cv-wx-days) .p,
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-wx-hours, .cv-wx-days) .p { color: #0a62b0; }
-#app.preset-canvas .cv-title { flex: none; padding: 1.6rem 2.2rem 0; font-size: calc(1.6rem * var(--cv-scale, 1)); font-weight: 600; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-title { flex: none; padding: var(--cv-tpad, 1.6rem 2.2rem 0); font-size: calc(var(--cv-tsize, 1.6rem) * var(--cv-scale, 1)); font-weight: 600; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-title[hidden] { display: none; }
 #app.preset-canvas .cv-body {
   position: relative;
@@ -216,11 +223,24 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 1.8rem 2.2rem;
+  padding: var(--cv-pad, 1.8rem 2.2rem);
   overflow: hidden;
   box-sizing: border-box;
 }
-#app.preset-canvas .cv-card.is-none > .cv-body { padding: 0.8rem; }
+#app.preset-canvas .cv-card.is-none > .cv-body, #app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-slide { padding: var(--cv-pad-none, 0.8rem); }
+/* Rotativa (widgets/canvas/rotator.ts): its cards in slides on top of each other, one on show, a soft crossfade */
+#app.preset-canvas .cv-body.cv-rot { padding: 0; }
+#app.preset-canvas .cv-rot > .cv-rot-slide { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.9s ease; }
+#app.preset-canvas .cv-rot.has-dots > .cv-rot-slide { bottom: 1.4rem; }
+#app.preset-canvas .cv-rot > .cv-rot-slide.is-on { opacity: 1; pointer-events: auto; }
+#app.preset-canvas .cv-rot.no-motion > .cv-rot-slide { transition: none; }
+#app.preset-canvas .cv-rot-dots { position: absolute; left: 0; right: 0; bottom: 0.7rem; display: flex; justify-content: center; gap: 0.6rem; pointer-events: none; }
+#app.preset-canvas .cv-rot-dots[hidden] { display: none; }
+#app.preset-canvas .cv-rot-dots i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: currentColor; opacity: 0.28; transition: opacity 0.6s ease; }
+#app.preset-canvas .cv-rot-dots i.is-on { opacity: 0.85; }
+@media (prefers-reduced-motion: reduce) {
+  #app.preset-canvas .cv-rot > .cv-rot-slide, #app.preset-canvas .cv-rot-dots i { transition: none; }
+}
 /* the widgets inside a card are not cards of their own */
 #app.preset-canvas .cv-card .cd-card, #app.preset-canvas .cv-card .msg, #app.preset-canvas .cv-card .todo, #app.preset-canvas .cv-card .weather, #app.preset-canvas .cv-card .agenda.compact .ag-list {
   background: none !important;

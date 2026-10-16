@@ -1,0 +1,104 @@
+// "Rotativa" (kind 'rotator'): one slot that shows its cards one after another, every `everySec` seconds, with a soft
+// crossfade (none in lite mode, on a slow device or with reduced motion) and small dots that say which card is on.
+// The controller (widgets/canvas.ts) makes one slide per card, each a card body with the card's own adapter, and
+// fits every slide to the box (the hidden ones too, so a card is ready when its turn comes); this adapter only picks
+// the slide on show. A card with nothing to show (.is-empty) is skipped; no touch is needed.
+import type { DisplayCanvasItem } from '../../../shared/types';
+import { ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MAX, ROTATOR_EVERY_MIN } from '../../../../server/core/canvasCore.js';
+import type { AdapterEnv, CanvasAdapter } from './types';
+
+const reduced = (): boolean => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+};
+
+/** The card the admin's editor is changing, by Rotativa id: shown and held while it is edited (main.ts). */
+export const rotatorPins = new Map<string, string>();
+
+class Rotator implements CanvasAdapter {
+  private root!: HTMLElement;
+  private env!: AdapterEnv;
+  private dots!: HTMLElement;
+  /** the id of the card on show */
+  private cur = '';
+  /** when it came on (ms) */
+  private since = 0;
+
+  mount(root: HTMLElement, env: AdapterEnv): void {
+    this.root = root;
+    this.env = env;
+    root.classList.add('cv-rot');
+    this.dots = document.createElement('div');
+    this.dots.className = 'cv-rot-dots';
+    this.dots.setAttribute('aria-hidden', 'true');
+    root.appendChild(this.dots);
+    this.update();
+  }
+
+  private props(): { everySec: number; dots: boolean } {
+    const p = this.env.item().props as { everySec?: unknown; dots?: unknown };
+    const n = Number(p.everySec);
+    return { everySec: Number.isFinite(n) ? Math.min(ROTATOR_EVERY_MAX, Math.max(ROTATOR_EVERY_MIN, n)) : ROTATOR_EVERY_DEFAULT, dots: p.dots !== false };
+  }
+
+  private all(): HTMLElement[] {
+    return Array.from(this.root.children).filter((el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains('cv-rot-slide'));
+  }
+
+  /** The slides that have something to show (all of them while none has: the Rotativa is then hidden anyway). */
+  private live(): HTMLElement[] {
+    const all = this.all();
+    const some = all.filter((el) => !el.classList.contains('is-empty'));
+    return some.length ? some : all;
+  }
+
+  update(): void {
+    this.slides();
+  }
+
+  slides(): void {
+    const live = this.live();
+    const pin = rotatorPins.get(this.env.item().id);
+    if (pin && live.some((el) => el.dataset.card === pin)) this.cur = pin;
+    // the card on show went away or became empty: the next one, at once
+    if (!live.some((el) => el.dataset.card === this.cur)) {
+      this.cur = live[0]?.dataset.card ?? '';
+      this.since = Date.now();
+    }
+    this.draw(live);
+  }
+
+  tick(): void {
+    const live = this.live();
+    if (rotatorPins.has(this.env.item().id)) return this.slides();
+    if (live.length < 2) return this.slides();
+    if (Date.now() - this.since < this.props().everySec * 1000) return;
+    const i = live.findIndex((el) => el.dataset.card === this.cur);
+    this.cur = live[(i + 1) % live.length].dataset.card ?? '';
+    this.since = Date.now();
+    this.draw(live);
+  }
+
+  private draw(live: HTMLElement[]): void {
+    const { dots } = this.props();
+    this.root.classList.toggle('no-motion', this.env.low() || reduced());
+    for (const el of this.all()) el.classList.toggle('is-on', el.dataset.card === this.cur);
+    const show = dots && live.length > 1;
+    this.root.classList.toggle('has-dots', show);
+    this.dots.hidden = !show;
+    if (!show) return;
+    if (this.dots.childElementCount !== live.length) this.dots.replaceChildren(...live.map(() => document.createElement('i')));
+    live.forEach((el, i) => this.dots.children[i].classList.toggle('is-on', el.dataset.card === this.cur));
+  }
+
+  destroy(): void {
+    this.dots?.remove();
+  }
+}
+
+export const ROTATOR_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
+  rotator: () => new Rotator(),
+};

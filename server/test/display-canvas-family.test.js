@@ -49,8 +49,8 @@ test('the family cards reuse the kids renderers and data path: no request, no ta
   assert.match(main, /if \(kids\.active\) renderKids\(current\(\)\);\n\s+\/\/[^\n]*\n\s+canvasView\.onData\('family'\);/);
   // the corner toast steps aside only for an announcement card laid out in this orientation
   assert.match(main, /announcements\.setDocked\(on && canvasView\.shows\('announcement'\)\)/);
-  // the family data is asked for on a canvas with a family card, as on a kids layout
-  assert.match(main, /isKidsPreset\(p\) \|\| \(p === 'canvas' && !!ctx\.cfg\.canvas\?\.items\.some\(\(it\) => !it\.disabled && CANVAS_KINDS\[it\.kind\]\?\.family\)\)/);
+  // the family data is asked for on a canvas with a family card (a Rotativa's cards too), as on a kids layout
+  assert.match(main, /isKidsPreset\(p\) \|\| \(p === 'canvas' && canvasCards\(ctx\.cfg\.canvas\?\.items\)\.some\(\(it\) => !it\.disabled && CANVAS_KINDS\[it\.kind\]\?\.family\)\)/);
   // the server's tap route is the kids one (touch on, not private, a known display, the screen's members)
   const route = read('server/routes/family.js');
   assert.match(route, /r\.post\('\/display\/family\/toggle'/);

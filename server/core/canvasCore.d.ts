@@ -1,11 +1,26 @@
 // Types for canvasCore.js (Personalizado screens), used by the admin and the display.
 import type {
-  CanvasCategory, CanvasCondition, CanvasConfig, CanvasGlass, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
+  CanvasCategory, CanvasCondition, CanvasConfig, CanvasGlass, CanvasGridId, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
 } from '../../web/shared/types';
 
 export type Orientation = 'landscape' | 'portrait';
 
 export const CANVAS_GRID: { landscape: { cols: number; rows: number }; portrait: { cols: number; rows: number } };
+export const CANVAS_GRID_IDS: CanvasGridId[];
+export const CANVAS_GRIDS: Record<CanvasGridId, { landscape: { cols: number; rows: number }; portrait: { cols: number; rows: number } }>;
+export const CANVAS_DENSITIES: ('normal' | 'compact')[];
+export function gridFactor(grid?: CanvasGridId | string | null): 1 | 2;
+export function gridDims(orientation?: Orientation | string, grid?: CanvasGridId | string | null): { cols: number; rows: number };
+export function canvasGrid(cv: { grid?: CanvasGridId | string } | null | undefined): CanvasGridId;
+export function convertCanvasGrid(cv: CanvasConfig, to: CanvasGridId): { ok: boolean; canvas: CanvasConfig; moved: string[]; resized: string[]; lost: string[] };
+export const ROTATOR_MAX: number;
+export const ROTATOR_MIN: number;
+export const ROTATOR_EVERY_DEFAULT: number;
+export const ROTATOR_EVERY_MIN: number;
+export const ROTATOR_EVERY_MAX: number;
+export function rotatorKindOk(kind: string): boolean;
+/** Every item and, after a Rotativa, its cards as items (sharing its hiding, schedule, condition and place). */
+export function canvasCards<T extends { id: string; kind: string; props?: Record<string, unknown> }>(items: T[] | null | undefined): (T & { parent?: string })[];
 export const CANVAS_SIZES: Record<CanvasSize, { landscape: [number, number]; portrait: [number, number] }>;
 export const CANVAS_SIZE_IDS: CanvasSize[];
 export const SIDE_SPANS: SideSpan[];
@@ -50,6 +65,8 @@ export interface CanvasKindDef {
   def: CanvasSize;
   /** [min w, min h, max w, max h] in landscape cells (cellRange gives them per orientation) */
   cells: [number, number, number, number];
+  /** its smallest box on the fine grid, in fine cells (else twice its normal minimum) */
+  fine?: [number, number];
   side: boolean;
   edition: 'all' | 'local';
   feature?: string;
@@ -87,12 +104,13 @@ export const NAV_TAP_KINDS: CanvasKind[];
 export function navTargets(screen: unknown): string[];
 export function canvasDataItems(screen: unknown, opts?: { now?: Date; tz?: string }): CanvasItem[];
 
-export function sizeCells(size: CanvasSize | string, orientation?: Orientation | string): [number, number];
-export function cellRange(kind: CanvasKind | string | CanvasKindDef, orientation?: Orientation | string): { minW: number; minH: number; maxW: number; maxH: number };
-export function posCells(pos: { size: CanvasSize | string; w?: number; h?: number } | null | undefined, orientation?: Orientation | string): [number, number];
-export function lookSize(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string): CanvasSize;
-export function boxOf(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string): { size: CanvasSize; w?: number; h?: number };
-export function boxAllowed(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string): boolean;
+type GridArg = CanvasGridId | string | null | undefined;
+export function sizeCells(size: CanvasSize | string, orientation?: Orientation | string, grid?: GridArg): [number, number];
+export function cellRange(kind: CanvasKind | string | CanvasKindDef, orientation?: Orientation | string, grid?: GridArg): { minW: number; minH: number; maxW: number; maxH: number };
+export function posCells(pos: { size: CanvasSize | string; w?: number; h?: number } | null | undefined, orientation?: Orientation | string, grid?: GridArg): [number, number];
+export function lookSize(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string, grid?: GridArg): CanvasSize;
+export function boxOf(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string, grid?: GridArg): { size: CanvasSize; w?: number; h?: number };
+export function boxAllowed(kind: CanvasKind | string | CanvasKindDef, w: number, h: number, orientation?: Orientation | string, grid?: GridArg): boolean;
 export function canvasDefaults(kind: CanvasKind | string): Record<string, unknown>;
 /** The text colour props of the clocks and the date card ("Color de la hora", "Color de la fecha"). */
 export const INK_PROPS: Partial<Record<CanvasKind, readonly ('timeColor' | 'dateColor')[]>>;
@@ -110,8 +128,8 @@ export function startCanvasGlass(screen: { layout?: { preset?: string } | null; 
 export function startCanvasGlassOnSave(prev: { screens?: unknown[] } | null | undefined, next: { screens?: unknown[] }): string[];
 export function portraitSide(side: CanvasConfig['sidebar']['side']): CanvasConfig['sidebar']['side'];
 
-export interface Occupancy { cols: number; rows: number; orientation: Orientation; cells: (string | null)[][] }
-export function makeOccupancy(orientation?: Orientation | string): Occupancy;
+export interface Occupancy { cols: number; rows: number; orientation: Orientation; grid: CanvasGridId; cells: (string | null)[][] }
+export function makeOccupancy(orientation?: Orientation | string, grid?: GridArg): Occupancy;
 export function fitsAt(occ: Occupancy, x: number, y: number, w: number, h: number): boolean;
 export function occupy(occ: Occupancy, id: string, x: number, y: number, w: number, h: number): void;
 export function nearestFree(occ: Occupancy, x: number, y: number, w: number, h: number): { x: number; y: number } | null;
@@ -137,7 +155,7 @@ export function haEntitiesOf(item: Pick<CanvasItem, 'kind' | 'props'>): string[]
 export function itemNames(item: Pick<CanvasItem, 'kind' | 'props'>): { entity: string; name: string }[];
 export function needsConfirm(domain: string, attrs?: Record<string, unknown> | null, entityId?: string, name?: string): boolean;
 export function itemAliases(item: Pick<CanvasItem, 'id' | 'kind' | 'props'>): { alias: string; entity: string; slot: number }[];
-export function deriveCanvasPortrait(items: Pick<CanvasItem, 'id' | 'kind' | 'pos'>[], sidebar?: CanvasConfig['sidebar']): { placed: { id: string; pos: CanvasPos }[]; omitted: string[] };
+export function deriveCanvasPortrait(items: Pick<CanvasItem, 'id' | 'kind' | 'pos'>[], sidebar?: CanvasConfig['sidebar'], grid?: GridArg): { placed: { id: string; pos: CanvasPos }[]; omitted: string[] };
 export function projectCanvas(
   screen: { layout?: { preset?: string }; screen?: { orientation?: string }; canvas?: CanvasConfig } | null | undefined,
   opts?: { isPrivate?: boolean; canvasKinds?: readonly string[]; haControls?: boolean; members?: { id: string; calendarId: string | null }[]; screens?: { id: string; name: string }[]; trusted?: boolean; now?: Date; tz?: string },
@@ -186,3 +204,5 @@ export function readCanvasFile(
 ):
   | { ok: true; canvas: CanvasConfig; picks: Record<string, CanvasPick[]>; dropped: number; conditions: number; theme: 'light' | 'dark' | null; glass: unknown }
   | { ok: false; error: string; path?: string };
+/** The kind an item is sized as (a Rotativa: the range its cards allow too). */
+export function kindFor(item: { kind: string; props?: Record<string, unknown> } | null | undefined): CanvasKindDef;

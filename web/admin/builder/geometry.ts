@@ -4,7 +4,7 @@
 // the real boxes ('marco:canvas-rects', web/display/main.ts); until it does, the same CSS rules are worked out here.
 import type { CanvasConfig, CanvasPos } from '../../shared/types';
 import { SIDEBAR_SHARE, SIDE_UNITS } from '../../../server/core/canvasCore.js';
-import { boxCells, grid, sideOf, type Orient } from './model';
+import { boxCells, gOf, grid, sideOf, type GridId, type Orient } from './model';
 
 export interface Box {
   x: number;
@@ -26,6 +26,8 @@ export interface Geometry {
   row: boolean;
   /** the sidebar's whole strip, padding included */
   strip: Box | null;
+  /** the canvas's grid ("Cuadrícula") the cells are counted in */
+  grid: GridId;
 }
 
 /** The display's root size unit (styles.css --u) for a screen of W×H and a font scale. */
@@ -53,16 +55,21 @@ export function computeGeometry(cv: CanvasConfig, o: Orient, fs = 1, size?: { w:
   }
   const pad = (b: Box, px: number, py: number, g: number): GridBox => ({ x: b.x + px, y: b.y + py, w: b.w - 2 * px, h: b.h - 2 * py, gx: g, gy: g });
   const row = side === 'top' || side === 'bottom';
+  // "Densidad compacta": the gaps and the padding of styles-canvas.css .cv-dense
+  const dense = cv.density === 'compact';
+  const gap = (dense ? 0.6 : 1.2) * rem;
+  const edge = (dense ? 1.4 : 2.4) * rem;
+  const edgeX = (dense ? 1.2 : 2) * rem;
   return {
-    W, H, row, strip: sideBox,
-    main: pad(mainBox, 2.4 * rem, 2.4 * rem, 1.2 * rem),
-    side: sideBox ? (row ? pad(sideBox, 2.4 * rem, 2 * rem, 1.2 * rem) : pad(sideBox, 2 * rem, 2.4 * rem, 1.2 * rem)) : null,
+    W, H, row, strip: sideBox, grid: gOf(cv),
+    main: pad(mainBox, edge, edge, gap),
+    side: sideBox ? (row ? pad(sideBox, edge, edgeX, gap) : pad(sideBox, edgeX, edge, gap)) : null,
   };
 }
 
 /** The box of cells (x, y, w, h) on the main grid. */
 export function cellBox(g: Geometry, o: Orient, x: number, y: number, w: number, h: number): Box {
-  const { cols, rows } = grid(o);
+  const { cols, rows } = grid(o, g.grid);
   const cw = (g.main.w - g.main.gx * (cols - 1)) / cols;
   const ch = (g.main.h - g.main.gy * (rows - 1)) / rows;
   return { x: g.main.x + x * (cw + g.main.gx), y: g.main.y + y * (ch + g.main.gy), w: w * cw + (w - 1) * g.main.gx, h: h * ch + (h - 1) * g.main.gy };
@@ -70,7 +77,7 @@ export function cellBox(g: Geometry, o: Orient, x: number, y: number, w: number,
 
 /** The cell under a point of the screen (clamped to the grid), and whether the point is inside the main grid. */
 export function cellAt(g: Geometry, o: Orient, px: number, py: number): { x: number; y: number; inside: boolean } {
-  const { cols, rows } = grid(o);
+  const { cols, rows } = grid(o, g.grid);
   const cw = (g.main.w - g.main.gx * (cols - 1)) / cols;
   const ch = (g.main.h - g.main.gy * (rows - 1)) / rows;
   const fx = (px - g.main.x + g.main.gx / 2) / (cw + g.main.gx);
@@ -81,7 +88,7 @@ export function cellAt(g: Geometry, o: Orient, px: number, py: number): { x: num
 
 /** The box of a main-grid position. */
 export const mainBox = (g: Geometry, o: Orient, p: Extract<CanvasPos, { zone: 'main' }>): Box => {
-  const [w, h] = boxCells(p, o);
+  const [w, h] = boxCells(p, o, g.grid);
   return cellBox(g, o, p.x, p.y, w, h);
 };
 

@@ -6,7 +6,7 @@
 // (GET /api/admin/homeassistant/camera, 'marco:preview-camera'): the preview never opens a live picture.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { CanvasConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic, TileFeature } from '../../shared/types';
-import { itemAliases, itemNames, needsConfirm } from '../../../server/core/canvasCore.js';
+import { itemAliases, itemNames, needsConfirm, canvasCards } from '../../../server/core/canvasCore.js';
 import { controlsFor, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
 
@@ -53,7 +53,7 @@ async function cameraBlob(entity: string): Promise<Blob | null> {
 /** Charts (and sensors with their curve) of the draft: item id → { entities, period, labels }. */
 function chartsOf(cv: CanvasConfig) {
   const out: { id: string; entities: string[]; period: string; labels: string[] }[] = [];
-  for (const it of cv.items) {
+  for (const it of canvasCards(cv.items)) {
     const p = it.props as Record<string, any>;
     if (it.kind === 'ha.chart') {
       const series = ((p.series ?? []) as { entity?: string; label?: string }[]).filter((s) => s.entity);
@@ -67,7 +67,8 @@ function chartsOf(cv: CanvasConfig) {
 
 export function useHaPreview(cv: CanvasConfig, enabled: boolean): HaPreview | null {
   const aliases = useMemo(
-    () => cv.items.flatMap((it) => {
+    // the cards inside a Rotativa too (their own aliases; never touch controls)
+    () => canvasCards(cv.items).flatMap((it) => {
       if (it.hidden) return [];
       const names = itemNames(it);
       return itemAliases(it).map((a) => ({ ...a, kind: it.kind, props: it.props, touch: cv.touch && it.interactive !== false, ack: !!it.ack, name: names[a.slot]?.name ?? '' }));
@@ -78,7 +79,7 @@ export function useHaPreview(cv: CanvasConfig, enabled: boolean): HaPreview | nu
   const condEntities = useMemo(() => cv.items.flatMap((it) => (it.when?.src === 'ha' && it.when.entity && !it.hidden ? [it.when.entity] : [])), [cv]);
   const entities = useMemo(() => [...new Set([...aliases.map((a) => a.entity), ...condEntities])].sort().slice(0, 40), [aliases, condEntities]);
   const statItems = useMemo(
-    () => cv.items.filter((it) => it.kind === 'ha.statistic' && !it.hidden && (it.props as { entity?: string }).entity).map((it) => {
+    () => canvasCards(cv.items).filter((it) => it.kind === 'ha.statistic' && !it.hidden && (it.props as { entity?: string }).entity).map((it) => {
       const p = it.props as { entity: string; stat?: string; period?: string };
       return { id: it.id, entity: p.entity, stat: p.stat || 'change', period: p.period || 'today' };
     }),
@@ -93,7 +94,7 @@ export function useHaPreview(cv: CanvasConfig, enabled: boolean): HaPreview | nu
   const [frames, setFrames] = useState<Record<string, Blob>>({});
   // the camera cards of the draft: item id → entity (cards waiting for a sensor are shown too, dimmed)
   const cams = useMemo(
-    () => cv.items.filter((it) => it.kind === 'ha.camera' && !it.hidden && typeof (it.props as { entity?: unknown }).entity === 'string' && (it.props as { entity: string }).entity).map((it) => ({ id: it.id, entity: (it.props as { entity: string }).entity })),
+    () => canvasCards(cv.items).filter((it) => it.kind === 'ha.camera' && !it.hidden && typeof (it.props as { entity?: unknown }).entity === 'string' && (it.props as { entity: string }).entity).map((it) => ({ id: it.id, entity: (it.props as { entity: string }).entity })),
     [cv],
   );
   const camKey = JSON.stringify(cams);

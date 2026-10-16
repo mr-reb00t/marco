@@ -10,8 +10,8 @@
 // - A card with nothing to show (no message, no countdowns) keeps its cell but is not drawn (.is-empty).
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
-import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, GlassConfig } from '../../shared/types';
-import { CANVAS_GRID, CANVAS_KINDS, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import type { Announcement, CanvasGridId, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, GlassConfig } from '../../shared/types';
+import { CANVAS_KINDS, canvasGrid, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -117,11 +117,11 @@ const SPREAD = new Set(['meals.week', 'countdowns', 'birthdays', 'todo', 'meals.
  * many times its box holds the largest one's area (at most twice), so a full-screen list is not a small block in the
  * middle while every saved card of a named size looks as before.
  */
-export function roomFactor(kind: string, w: number, h: number, orientation: 'landscape' | 'portrait'): number {
+export function roomFactor(kind: string, w: number, h: number, orientation: 'landscape' | 'portrait', grid: CanvasGridId = 'normal'): number {
   const sizes = (CANVAS_KINDS as Record<string, { sizes: string[] }>)[kind]?.sizes ?? [];
   let mw = 0, mh = 0, ma = 0;
   for (const s of sizes) {
-    const [sw, sh] = sizeCells(s, orientation);
+    const [sw, sh] = sizeCells(s, orientation, grid);
     mw = Math.max(mw, sw);
     mh = Math.max(mh, sh);
     ma = Math.max(ma, sw * sh);
@@ -228,6 +228,10 @@ interface Entry {
   cfg: DisplayConfig;
   /** its body was grown to its box (fillBox) */
   filled?: boolean;
+  /** a Rotativa: one entry per card, each in a slide of this card's body (they share its el, card and title) */
+  subs?: Entry[];
+  /** a Rotativa's card: the Rotativa */
+  parent?: Entry;
 }
 
 export class Canvas {
@@ -269,7 +273,7 @@ export class Canvas {
   /** The low-power look turned on or off: the adapters drop or bring back what they skip there, the cards restyle. */
   lowChanged(): void {
     if (!this.cv) return;
-    for (const e of this.entries.values()) if (!e.item.disabled) e.adapter.update();
+    for (const e of this.every()) if (!e.item.disabled) e.adapter.update();
     this.restyle();
   }
 
@@ -298,7 +302,7 @@ export class Canvas {
     this.screen = cfg;
     this.portrait = portrait;
     this.main.hidden = false;
-    const grid = CANVAS_GRID[portrait ? 'portrait' : 'landscape'];
+    const grid = gridDims(portrait ? 'portrait' : 'landscape', canvasGrid(cv));
     this.main.style.setProperty('--cv-cols', String(grid.cols));
     this.main.style.setProperty('--cv-rows', String(grid.rows));
     const side = sidebarSide(cv, portrait);
@@ -323,6 +327,7 @@ export class Canvas {
       this.place(e, pos, tracks.get(it.id));
       this.style(e);
       if (rebuilt) {
+        this.dropSubs(e);
         e.adapter.destroy();
         e.body.textContent = '';
         e.body.className = 'cv-body';
@@ -330,6 +335,7 @@ export class Canvas {
         e.adapter.mount(e.body, this.env(e));
       } else if (changed) e.adapter.update();
       else if (screenChanged) e.adapter.data?.('config');
+      if (e.kind === 'rotator') this.syncSubs(e, changed, screenChanged);
     }
     for (const e of [...this.entries.values()]) if (!keep.has(e.id)) this.drop(e);
     // DOM order = item order (focus order, and the admin's overlay reads the rects in this order)
@@ -346,14 +352,25 @@ export class Canvas {
   /** Whether a card of `kind` is laid out now (placed in this orientation and not turned off). */
   shows(kind: string): boolean {
     if (!this.cv) return false;
-    for (const e of this.entries.values()) if (e.kind === kind && !e.item.disabled) return true;
+    for (const e of this.every()) if (e.kind === kind && !e.item.disabled) return true;
     return false;
   }
 
-  /** Every second: clocks with seconds work now, the rest on minute changes. */
+  /** Every card and every card of a Rotativa (after it). */
+  private *every(): Generator<Entry> {
+    for (const e of this.entries.values()) {
+      yield e;
+      for (const s of e.subs ?? []) yield s;
+    }
+  }
+
+  /** Every second: clocks with seconds work now, the rest on minute changes (a Rotativa turns after its cards). */
   tick(t: Tick): void {
     if (!this.cv || this.paused) return;
-    for (const e of this.entries.values()) e.adapter.tick?.(t);
+    for (const e of this.entries.values()) {
+      for (const s of e.subs ?? []) s.adapter.tick?.(t);
+      e.adapter.tick?.(t);
+    }
     if (t.minuteChanged) this.flags();
   }
 
@@ -361,12 +378,12 @@ export class Canvas {
   onData(topic: CanvasTopic): void {
     if (!this.cv) return;
     if (topic === 'events') this.evCache = [];
-    for (const e of this.entries.values()) e.adapter.data?.(topic);
+    for (const e of this.every()) e.adapter.data?.(topic);
     this.flags();
     // a card grown to its box (FILL) was measured with what it showed then (a "loading" line, last minute's list):
     // with new content it is fitted again, so how it looks never depends on when the data came
     // (Home Assistant, pushed values and data cards draw none of them)
-    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'photos' && topic !== 'nav') for (const e of this.entries.values()) if (FILL[e.kind]) this.relayoutSoon(e.id);
+    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'photos' && topic !== 'nav') for (const e of this.every()) if (FILL[e.kind]) this.relayoutSoon(e.parent?.id ?? e.id);
   }
 
   /** Fit every card to its box again (resize, fonts, the sidebar changed size), or only the cards of `only`. */
@@ -375,22 +392,37 @@ export class Canvas {
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
     for (const e of this.entries.values()) {
       if (only && !only.has(e.id)) continue;
-      // before measuring: a zoomed body reports its box in its own (zoomed) pixels
-      applyScale(e);
-      const w = e.body.clientWidth;
-      const h = e.body.clientHeight;
-      if (!w || !h) continue;
-      const pos = posFor(e.item, this.portrait);
-      // a box past every named size of its kind: cards may lay out for the extra room (data-room, styles-canvas-room.css)
-      const o = this.portrait ? 'portrait' : 'landscape';
-      const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o), o) : 1;
-      if (room > 1) e.body.dataset.room = '';
-      else delete e.body.dataset.room;
-      e.adapter.layout?.({ w, h, rem, size: pos?.zone === 'main' ? pos.size : 'side', zone: e.zone });
-      if (FILL[e.kind]) this.fillBox(e, rem, pos?.zone === 'main' ? pos.size : 'side');
+      this.fitOne(e, rem);
+      // a Rotativa's cards: each in its slide, the box of the Rotativa (the hidden ones too, so each is ready to show)
+      for (const s of e.subs ?? []) {
+        s.zone = e.zone;
+        this.fitOne(s, rem);
+      }
     }
     this.flags();
     this.look();
+  }
+
+  /** The grid of the canvas on screen. */
+  private get grid(): CanvasGridId {
+    return canvasGrid(this.cv);
+  }
+
+  /** Fit one card (or one card of a Rotativa) to its body. */
+  private fitOne(e: Entry, rem: number): void {
+    // before measuring: a zoomed body reports its box in its own (zoomed) pixels
+    applyScale(e);
+    const w = e.body.clientWidth;
+    const h = e.body.clientHeight;
+    if (!w || !h) return;
+    const pos = posFor(e.item, this.portrait);
+    // a box past every named size of its kind: cards may lay out for the extra room (data-room, styles-canvas-room.css)
+    const o = this.portrait ? 'portrait' : 'landscape';
+    const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o, this.grid), o, this.grid) : 1;
+    if (room > 1) e.body.dataset.room = '';
+    else delete e.body.dataset.room;
+    e.adapter.layout?.({ w, h, rem, size: pos?.zone === 'main' ? pos.size : 'side', zone: e.zone });
+    if (FILL[e.kind]) this.fillBox(e, rem, pos?.zone === 'main' ? pos.size : 'side');
   }
 
   /**
@@ -402,13 +434,18 @@ export class Canvas {
     const b = e.body;
     const base = Number(e.item.style?.scale) || 1;
     e.filled = false;
+    // the rows shared out or on two lines of the last pass: the card was just laid out with them, so it is laid out
+    // again without them before anything is measured (else what fits is worked out for a shape it no longer has, and
+    // the card goes back and forth between grown and cramped)
+    const had = b.classList.contains('is-spread') || b.classList.contains('is-tall');
     b.classList.remove('is-spread', 'is-tall');
+    if (had && b.clientWidth && b.clientHeight) e.adapter.layout?.({ w: b.clientWidth, h: b.clientHeight, rem, size, zone: e.zone });
     const box = b.getBoundingClientRect();
-    if (!box.height || !box.width || e.el.classList.contains('is-empty')) return;
+    if (!box.height || !box.width || (e.parent ? b : e.el).classList.contains('is-empty')) return;
     const pos = posFor(e.item, this.portrait);
-    const [cw, ch] = pos?.zone === 'main' ? posCells(pos, this.portrait ? 'portrait' : 'landscape') : [0, 0];
+    const [cw, ch] = pos?.zone === 'main' ? posCells(pos, this.portrait ? 'portrait' : 'landscape', this.grid) : [0, 0];
     // (the week's meals as a list of days: a narrow box no named size of it has)
-    const room = Math.max(cw ? roomFactor(e.kind, cw, ch, this.portrait ? 'portrait' : 'landscape') : 1, b.querySelector('.cvf-mlist') ? 1.5 : 1);
+    const room = Math.max(cw ? roomFactor(e.kind, cw, ch, this.portrait ? 'portrait' : 'landscape', this.grid) : 1, b.querySelector('.cvf-mlist') ? 1.5 : 1);
     // cards that grow only in a box past their named sizes (their named sizes look as before)
     if (room <= 1 && (e.kind === 'family.chores' || e.kind === 'meals.week')) {
       applyScale(e);
@@ -629,7 +666,7 @@ export class Canvas {
     const s = e.el.style;
     if (pos.zone === 'main') {
       e.zone = 'main';
-      const [w, h] = posCells(pos, this.portrait ? 'portrait' : 'landscape');
+      const [w, h] = posCells(pos, this.portrait ? 'portrait' : 'landscape', this.grid);
       s.gridColumn = `${pos.x + 1} / span ${w}`;
       s.gridRow = `${pos.y + 1} / span ${h}`;
       // the named size it is drawn like, and its cells (a box of its own is any w×h within the kind's range)
@@ -760,7 +797,67 @@ export class Canvas {
     }
   }
 
+  /**
+   * The cards of a Rotativa, kept in step with its props: one slide (a card body of its own, in the Rotativa's body)
+   * and one adapter per card, reconciled by id and kind like the items; a card whose hash or Rotativa changed is
+   * drawn again in place. The Rotativa's adapter (widgets/canvas/rotator.ts) shows one slide at a time.
+   */
+  private syncSubs(e: Entry, changed: boolean, screenChanged: boolean): void {
+    const cards = e.item.disabled ? [] : ((e.item.props as { cards?: DisplayRotatorCard[] }).cards ?? []);
+    const old = new Map((e.subs ?? []).map((s) => [s.id, s]));
+    const next: Entry[] = [];
+    for (const cd of cards) {
+      const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v: `${cd.v}|${e.item.v}`, pos: e.item.pos, portrait: e.item.portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}) };
+      let s = old.get(cd.id);
+      if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled)) {
+        this.dropSub(s);
+        s = undefined;
+      }
+      old.delete(cd.id);
+      if (!s) {
+        const body = document.createElement('div');
+        body.className = 'cv-body cv-rot-slide';
+        body.dataset.card = cd.id;
+        s = { id: cd.id, kind: cd.kind, item, el: e.el, card: e.card, title: e.title, body, adapter: adapterFor(item), zone: e.zone, cramped: false, need: null, noBlur: false, lookKey: '', surface: e.surface, cfg: itemCfg(this.screen!, item), parent: e };
+        s.adapter.mount(body, this.env(s));
+      } else {
+        const ch = s.item.v !== item.v;
+        s.item = item;
+        if (ch || screenChanged) s.cfg = itemCfg(this.screen!, item);
+        if (ch) s.adapter.update();
+        else if (screenChanged) s.adapter.data?.('config');
+      }
+      next.push(s);
+    }
+    for (const s of old.values()) this.dropSub(s);
+    e.subs = next;
+    // the slides in the order of the cards, before what the Rotativa draws itself (its dots)
+    let at: ChildNode | null = e.body.firstChild;
+    for (const s of next) {
+      if (at !== s.body) e.body.insertBefore(s.body, at);
+      at = s.body.nextSibling;
+    }
+    e.adapter.slides?.();
+    if (changed) this.relayoutSoon(e.id);
+  }
+
+  private dropSub(s: Entry): void {
+    try {
+      s.adapter.destroy();
+    } catch (err) {
+      console.warn('[canvas] destroy', err);
+    }
+    s.body.remove();
+    this.media.delete(s.id);
+  }
+
+  private dropSubs(e: Entry): void {
+    for (const s of e.subs ?? []) this.dropSub(s);
+    e.subs = [];
+  }
+
   private drop(e: Entry): void {
+    this.dropSubs(e);
     this.ro?.unobserve(e.body);
     try {
       e.adapter.destroy();
@@ -815,10 +912,32 @@ export class Canvas {
         e.el.classList.toggle('is-cond-off', off);
         blurChanged = true;
       }
-      const b = e.body;
-      const cramped = !!b.clientHeight && (b.scrollHeight > b.clientHeight + 2 || b.scrollWidth > b.clientWidth + 2);
+      const over = (b: HTMLElement) => !!b.clientHeight && (b.scrollHeight > b.clientHeight + 2 || b.scrollWidth > b.clientWidth + 2);
+      const needOf = (b: HTMLElement) => ({ w: Math.round((b.scrollWidth / Math.max(1, b.clientWidth)) * 100) / 100, h: Math.round((b.scrollHeight / Math.max(1, b.clientHeight)) * 100) / 100 });
+      let cramped = over(e.body);
+      e.need = cramped ? needOf(e.body) : null;
+      // a Rotativa: empty when every card is, cramped when one of its cards is (the most it needs)
+      if (e.subs?.length) {
+        let all = true;
+        for (const s of e.subs) {
+          const em = !!s.adapter.empty?.();
+          s.body.classList.toggle('is-empty', em);
+          if (!em) all = false;
+          s.cramped = !em && over(s.body);
+          s.need = s.cramped ? needOf(s.body) : null;
+          if (s.cramped) {
+            cramped = true;
+            e.need = { w: Math.max(e.need?.w ?? 1, s.need!.w), h: Math.max(e.need?.h ?? 1, s.need!.h) };
+          }
+          if (s.cramped && s.filled) {
+            s.filled = false;
+            this.relayoutSoon(e.id);
+          }
+        }
+        e.el.classList.toggle('is-empty', all);
+        e.adapter.slides?.();
+      }
       e.cramped = cramped;
-      e.need = cramped ? { w: Math.round((b.scrollWidth / Math.max(1, b.clientWidth)) * 100) / 100, h: Math.round((b.scrollHeight / Math.max(1, b.clientHeight)) * 100) / 100 } : null;
       e.el.classList.toggle('is-cramped', cramped);
       // a grown card whose content grew since (new data): laid out again from its own size
       if (cramped && e.filled) {

@@ -25,6 +25,7 @@ import { familyAdminRouter, familyPublicRouter, familyDisplayRouter, familyPhoto
 import { geocodeRouter } from './geocode.js';
 import { hostGuard } from './lib/net.js';
 import { redactSecrets } from './core/activityCore.js';
+import { canvasCards } from './core/canvasCore.js';
 import { displayAuth, mediaAuth } from './displayAccess.js';
 import { checkTrustProxy } from './lib/trustProxy.js';
 import { immichMedia } from './immich.js';
@@ -65,7 +66,7 @@ export function displayCsp(cfg) {
   if (!cfg || typeof cfg !== 'object') return DISPLAY_CSP;
   const hit = cspCache.get(cfg);
   if (hit) return hit;
-  const cards = (cfg.screens ?? []).some((s) => s?.layout?.preset === 'canvas' && (s.canvas?.items ?? []).some((it) => it?.kind === 'html' && !it.hidden));
+  const cards = (cfg.screens ?? []).some((s) => s?.layout?.preset === 'canvas' && canvasCards(s.canvas?.items).some((it) => it?.kind === 'html' && !it.hidden));
   let csp = DISPLAY_CSP;
   if (cards) {
     const origins = new Set();

@@ -5,6 +5,7 @@
 // write them with textContent and never read them as HTML, a URL or a colour.
 // In the admin preview, the builder posts the values it knows ('marco:preview-values'), so a card not saved yet
 // shows its key's value too.
+import { canvasCards } from '../../server/core/canvasCore.js';
 import type { DisplayConfig, DisplayValue, ValuesSnapshot } from '../shared/types';
 import { getJSON } from './api';
 import { isPreview, withScreen } from './identity';
@@ -34,7 +35,7 @@ function clean(v: unknown): DisplayValue | null {
 
 /** True when the screen of `cfg` draws a card that reads a pushed value. */
 export function showsValues(cfg: DisplayConfig | null | undefined): boolean {
-  return !!cfg?.canvas?.items?.some((it) => it.when?.src === 'value' || (!it.disabled && (it.kind === 'value' || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && typeof b.value === 'string' && b.value)))));
+  return canvasCards(cfg?.canvas?.items).some((it) => it.when?.src === 'value' || (!it.disabled && (it.kind === 'value' || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && typeof b.value === 'string' && b.value)))));
 }
 
 export class ValuesFeed implements ValueSource {

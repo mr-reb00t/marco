@@ -75,7 +75,8 @@ import { DataFeed } from './dataFeed';
 import { demoData } from './mockData';
 import { demoValues } from './mockCanvas';
 import { HaTouch } from './widgets/canvas/touch';
-import { CANVAS_KINDS, canvasEventsNeed, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasCards, canvasEventsNeed, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
+import { rotatorPins } from './widgets/canvas/rotator';
 
 const params = ctx.params;
 if (isWidgetOnly) document.documentElement.classList.add('widget-only');
@@ -384,7 +385,11 @@ function applyLayout(): void {
     preset === 'photoFrame' ? `corner-${['tl', 'tr', 'bl', 'br'].includes(corner) ? corner : 'br'}` : '',
     // Personalizado: where its sidebar is on this orientation, how it is filled, and the background
     ...(preset === 'canvas' && cfg.canvas
-      ? [`cv-side-${sidebarSide(cfg.canvas, portrait)}`, `cv-fill-${cfg.canvas.sidebar.fill}`, `cv-bg-${cfg.canvas.background}`, `cv-scrim-${cfg.canvas.scrim ?? 'uniform'}`]
+      ? [
+          `cv-side-${sidebarSide(cfg.canvas, portrait)}`, `cv-fill-${cfg.canvas.sidebar.fill}`, `cv-bg-${cfg.canvas.background}`, `cv-scrim-${cfg.canvas.scrim ?? 'uniform'}`,
+          // "Cuadrícula fina" and "Densidad compacta" (styles-canvas.css)
+          cfg.canvas.grid === 'fine' ? 'cv-fine' : '', cfg.canvas.density === 'compact' ? 'cv-dense' : '',
+        ]
       : []),
   ].filter(Boolean).join(' ');
   if (preset === 'canvas' && cfg.canvas) {
@@ -1196,7 +1201,7 @@ let familyTaps = 0;
 const wantsFamily = () => {
   if (!state.config || !ctx.cfg.family?.enabled) return false;
   const p = effectivePreset(ctx.cfg);
-  return isKidsPreset(p) || (p === 'canvas' && !!ctx.cfg.canvas?.items.some((it) => !it.disabled && CANVAS_KINDS[it.kind]?.family));
+  return isKidsPreset(p) || (p === 'canvas' && canvasCards(ctx.cfg.canvas?.items).some((it) => !it.disabled && CANVAS_KINDS[it.kind]?.family));
 };
 
 /** The answer to request `seq` for screen `sid`: kept unless a newer request was answered first, with the taps on top. */
@@ -2436,6 +2441,13 @@ if (isPreview && params.get('builder') === '1') {
     if (e.source !== window.parent || e.data?.type !== 'marco:builder-busy') return;
     if (e.data.on === true) engine?.stop();
     else engine?.start();
+  });
+  // the editor is changing one card of a Rotativa: that card shows and stays until it is done (null: it turns again)
+  window.addEventListener('message', (e) => {
+    if (e.source !== window.parent || e.data?.type !== 'marco:rotator-pin') return;
+    rotatorPins.clear();
+    const { item, card } = e.data;
+    if (typeof item === 'string' && typeof card === 'string') rotatorPins.set(item, card);
   });
 }
 

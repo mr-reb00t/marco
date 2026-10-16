@@ -35,8 +35,8 @@ import { push, redo, startHistory, undo, type History } from './history';
 import { Inspector, type InspectorTab } from './Inspector';
 import { kindName } from './kinds';
 import {
-  addItem, autoPortrait, boxCells, duplicateItem, fitContent, editPortrait, itemOf, nudge, omittedInPortrait, placeInPortrait, placements, readOnly, removeItem,
-  setCells, setSidebarSide, sideItems, sideOf, stepSize, toMain, toSide, voidIds, type MainDrop, type Orient, type Refusal, type Result,
+  addItem, autoPortrait, boxCells, cardCount, duplicateItem, fitContent, editPortrait, gOf, grid, itemOf, nudge, omittedInPortrait, placeInPortrait, placements, readOnly, removeItem,
+  setCells, setGrid, setSidebarSide, sideItems, sideOf, stepSize, toMain, toSide, voidIds, type GridId, type MainDrop, type Orient, type Refusal, type Result,
 } from './model';
 import { Palette } from './Palette';
 import { Stage, type AddSpec, type RectsInfo, type StageApi } from './Stage';
@@ -119,6 +119,8 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
   const [said, setSaid] = useState('');
   const [saving, setSaving] = useState(false);
   const [menu, setMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  // the card of a Rotativa the inspector is editing: held on the preview (Stage posts it to the frame)
+  const [pin, setPin] = useState<{ item: string; card: string } | null>(null);
   const [recover, setRecover] = useState<CanvasDraft | null>(null);
   const [panel, setPanel] = useState<'none' | 'palette' | 'inspector'>('none');
   const [sheetH, setSheetH] = useState(50);
@@ -194,6 +196,8 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       ha: !cloud && !!full.homeassistant?.enabled,
       cloud,
       values: hookValues ?? [],
+      allowed,
+      pinCard: (item: string, card: string | null) => setPin((p) => (card ? { item, card } : p?.item === item ? null : p)),
     };
   }, [cfg, full, refs, hookValues]);
   // Home Assistant cards in the frame: states and points of the draft's entities (also for items not saved yet)
@@ -224,6 +228,28 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
     if (what) announce(what);
   };
   const doUndo = () => setHist((h) => (h.past.length ? (announce(t('Deshecho')), undo(h)) : h));
+  /**
+   * "Cuadrícula": the screen on the normal or the fine grid (model.ts setGrid: to the fine one nothing moves; back to
+   * the normal one each card goes to the nearest whole cells, and the toast says how many had to move). One undo step.
+   */
+  const changeGrid = (g: GridId) => {
+    const r = setGrid(cv, g);
+    if (!r.ok) {
+      const m = t('No caben todas las tarjetas en la cuadrícula normal. Quita alguna o hazlas más pequeñas y vuelve a probar.');
+      toast(m, 'error');
+      announce(m);
+      return;
+    }
+    commit({ cv: r.cv });
+    const n = r.moved + r.resized;
+    const m = g === 'fine'
+      ? t('Cuadrícula fina: el doble de cuadros en cada sentido. Todo sigue en su sitio y ahora puedes hacer las tarjetas más pequeñas.')
+      : n
+        ? t('Cuadrícula normal: {n} tarjetas han cambiado de sitio o de tamaño para caber.', { n })
+        : t('Cuadrícula normal: todo sigue en su sitio.');
+    toast(m, n ? 'info' : 'ok', 6000, { label: t('Deshacer'), run: doUndo });
+    announce(m);
+  };
   const doRedo = () => setHist((h) => (h.future.length ? (announce(t('Rehecho')), redo(h)) : h));
   // an orientation undone or redone: the stage follows a fixed one
   useEffect(() => {
@@ -547,10 +573,10 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       if (e.shiftKey) {
         // one cell wider or narrower (left, right), taller or shorter (down, up); the sidebar's height steps
         const p = placements(cv, orient).get(selected);
-        const r = p?.zone === 'main' ? setCells(cv, orient, selected, boxCells(p, orient)[0] + dx, boxCells(p, orient)[1] + dy) : stepSize(cv, orient, selected, dx + dy > 0 ? 1 : -1);
+        const r = p?.zone === 'main' ? setCells(cv, orient, selected, boxCells(p, orient, gOf(cv))[0] + dx, boxCells(p, orient, gOf(cv))[1] + dy) : stepSize(cv, orient, selected, dx + dy > 0 ? 1 : -1);
         if (r.ok) {
           const q = placements(r.cv, orient).get(selected);
-          apply(r, q?.zone === 'main' ? t('Tamaño {w}×{h}', { w: boxCells(q, orient)[0], h: boxCells(q, orient)[1] }) : t('Tamaño cambiado'));
+          apply(r, q?.zone === 'main' ? t('Tamaño {w}×{h}', { w: boxCells(q, orient, gOf(cv))[0], h: boxCells(q, orient, gOf(cv))[1] }) : t('Tamaño cambiado'));
         } else refuse(r.why);
       } else {
         const r = nudge(cv, orient, selected, dx, dy);
@@ -592,7 +618,16 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
     el.addEventListener('pointercancel', up);
   };
 
-  const count = cv.items.length;
+  // every card counts, the cards inside a Rotativa too (the screen's cap, canvasCore sanitizeCanvas)
+  const count = cardCount(cv);
+  const dims = grid(orient, gOf(cv));
+  const openPage = () => {
+    setPreview(false);
+    setSelected(null);
+    setPlacing(null);
+    setMenu(null);
+    if (narrow) setPanel('inspector');
+  };
   const crampedN = [...rects.cramped].filter((id) => itemOf(cv, id) && !itemOf(cv, id)!.hidden).length;
   const omitted = omittedInPortrait(cv);
   // what imported cards still have to choose (a badge on the stage, a line in the inspector)
@@ -618,7 +653,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
     const r = fitContent(cv, orient, id, rects.need.get(id));
     if (r.ok) {
       const q = placements(r.cv, orient).get(id);
-      apply(r, q?.zone === 'main' ? t('Tamaño {w}×{h}', { w: boxCells(q, orient)[0], h: boxCells(q, orient)[1] }) : t('Tamaño cambiado'));
+      apply(r, q?.zone === 'main' ? t('Tamaño {w}×{h}', { w: boxCells(q, orient, gOf(cv))[0], h: boxCells(q, orient, gOf(cv))[1] }) : t('Tamaño cambiado'));
     } else refuse(r.why);
   };
   const menuItem = menu ? itemOf(cv, menu.id) : null;
@@ -627,6 +662,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
   const inspector = (
     <Inspector
       cv={cv}
+      onGrid={changeGrid}
       glass={st.glass}
       orient={orient}
       screenOrientation={fixed}
@@ -637,7 +673,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       cramped={rects.cramped}
       noBlur={rects.noBlur}
       onFit={(id) => fit(id)}
-      env={fieldEnv}
+      env={{ ...fieldEnv, cardsLeft: CANVAS_LIMITS.items - count }}
       haStates={haPv?.states ?? {}}
       haRaw={haPv?.raw ?? {}}
       openMode={full.security?.displayAccess === 'open'}
@@ -876,6 +912,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
             </div>
           )}
           <Stage
+            pin={selected && pin?.item === selected ? pin : null}
             cv={cv}
             orient={orient}
             url={url}
@@ -918,6 +955,10 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
               </span>
             )}
             <span>{t('{n} de {max} widgets', { n: count, max: CANVAS_LIMITS.items })}</span>
+            {/* the grid of this screen: a click opens Página, where it is changed */}
+            <button type="button" class="link-btn bld-status__grid" title={t('Cambiar en Página')} onClick={openPage}>
+              {gOf(cv) === 'fine' ? t('Cuadrícula fina') : t('Cuadrícula normal')} · {dims.cols}×{dims.rows}
+            </button>
             <span>{dirty ? t('Cambios sin guardar') : t('Sin cambios')}</span>
             {otherDirty && <span class="muted">{t('También se guardarán los cambios de otras secciones')}</span>}
           </div>

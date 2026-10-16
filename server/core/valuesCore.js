@@ -1,6 +1,6 @@
 // Pushed values for the Valor card (POST /api/hooks/values) and token scopes, shared by the self-hosted server and
 // Marco Cloud. Pure: no I/O, no clock (callers pass `now`). See docs/API.md.
-import { VALUE_KEY_RE } from './canvasCore.js';
+import { VALUE_KEY_RE, canvasCards } from './canvasCore.js';
 
 /** What an API token may do. A token with no `scopes` field (made before scopes existed) has '*'. */
 export const TOKEN_SCOPES = Object.freeze(['announce', 'commands', 'privacy', 'doorbell', 'values', 'screen']);
@@ -103,8 +103,8 @@ export function parseValues(body, limits = VALUES_LIMITS) {
 export function screenValueKeys(screen, hiddenIds = null) {
   const keys = new Set();
   if (screen?.layout?.preset !== 'canvas') return keys;
-  for (const it of screen.canvas?.items ?? []) {
-    // hidden items, and the ones a condition hides now (`hiddenIds`), get no values
+  for (const it of canvasCards(screen.canvas?.items)) {
+    // hidden items, and the ones a condition hides now (`hiddenIds`), get no values (a Rotativa's cards: with it)
     if (it.hidden || hiddenIds?.has(it.id)) continue;
     if (it.kind === 'value' && typeof it.props?.key === 'string' && VALUE_KEY_RE.test(it.props.key)) keys.add(it.props.key);
     if (it.kind === 'html' && Array.isArray(it.props?.bind)) {

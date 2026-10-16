@@ -9,6 +9,7 @@
 //   family.touch setting, online, not private, never in the admin's preview; the server checks the credential too).
 // - Birthdays come from the screen's events (the Cumpleaños calendar), highlights reuse widgets/highlights.ts, and the
 //   announcement card shows the newest announcement of widgets/alerts.ts; those three write their text as text.
+import { canvasCards } from '../../../../server/core/canvasCore.js';
 import type { FamilyDisplayState, FamilyMemberView } from '../../../shared/types';
 import { diffDays, monthName, keyToUTC, weekdayName } from '../../../shared/i18n';
 import { ctx } from '../../ctx';
@@ -59,6 +60,8 @@ function fitList(root: HTMLElement, list: HTMLElement | null, sel: string, first
     const k = list.querySelectorAll(`${sel}.fit-hide`).length;
     more.textContent = k ? ctx.t('more', { n: k }) : '';
   });
+  // down to one row that only fits alone (a small box, a busy day): the row stays whole and the "+N more" line goes
+  if (more?.textContent && root.scrollHeight > root.clientHeight + 1) more.textContent = '';
 }
 
 interface Spec {
@@ -144,7 +147,7 @@ function familyCard(spec: Spec): () => CanvasAdapter {
 /** Another card of `kind` on the same screen (the canvas the card is on), optionally one that `ok` accepts. */
 function onSameScreen(env: AdapterEnv, kind: string, ok: (it: { props: unknown }) => boolean = () => true): boolean {
   const me = env.item().id;
-  const items = (env.cfg().canvas?.items ?? []) as { id: string; kind: string; props: unknown }[];
+  const items = canvasCards(env.cfg().canvas?.items) as { id: string; kind: string; props: unknown }[];
   return items.some((it) => it.id !== me && it.kind === kind && ok(it));
 }
 
