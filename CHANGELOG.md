@@ -5,8 +5,10 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.3] - 2026-10-17
+
 ### Changed
-- Smaller cards on the fine grid (#9). Screens saved before look exactly the same: only new, smaller boxes are allowed.
+- Smaller cards on the fine grid (#9). Screens saved before keep their layout: only new, smaller boxes are allowed.
   - *Entity*, *Light*, *Switch*, *Climate*, *Blind* and *Sensor* now go down to 2×1 fine cells (they stopped at 4×1,
     3×1 for *Blind*). At 3×1 the card keeps its icon, name and state on one line. At 2×1 the icon is left out and the
     name sits over the state, in the same type size as a wider card, so it still reads from across the room.
