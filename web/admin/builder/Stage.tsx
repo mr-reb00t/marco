@@ -2,6 +2,7 @@
 // on top: the cells while something is dragged, a ring on the selected widget, its size handle and menu, the ghost of
 // a drop (green when it fits, red when it does not) and a badge on cards whose content does not fit. The iframe never
 // takes pointer events; every gesture lands on the overlay (dnd.ts).
+import { postDraftWeather } from '../weatherPreview';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { HaPreview } from './haPreview';
@@ -138,6 +139,8 @@ export function Stage(props: {
     if (!loaded || !origin || !props.live) return;
     try {
       frame.current?.contentWindow?.postMessage({ type: 'marco:preview-draft', config: props.live, focus: null }, origin);
+      // weather cards with a place not saved yet (#11)
+      void postDraftWeather(frame.current?.contentWindow, origin, props.live);
     } catch {
       /* the frame went away */
     }
@@ -663,7 +666,7 @@ export function Stage(props: {
               );
             })}
             {sel && selBox && (
-              <div class={`bld-selection ${selBox.h * s < 80 ? 'is-short' : ''}`} style={px(selBox)} aria-hidden="true">
+              <div class={`bld-selection ${selBox.h < cellBox(geo, orient, 0, 0, 1, 2).h - 1 ? 'is-short' : ''}`} style={px(selBox)} aria-hidden="true">
                 <span class="bld-selection__tag">{sizeTag(sel)}</span>
                 {!ro && (
                   <span
