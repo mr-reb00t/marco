@@ -5,6 +5,30 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- Weather of more than one place (#11).
+  - Each screen can show the weather of its own place: *Weather* > *Location of this screen*, *Home* (as before) or
+    *Another place*, found with the same city search. Every layout of that screen uses it (the weather card, the
+    forecast, Modern, Classic, the kids layouts and the custom screens), and so do its steps in a carousel.
+  - On custom screens every weather card (*Weather now*, *Next hours*, *Next days*) can have a place of its own, or
+    stay on *Same as the screen*. A card with a place of its own shows the place's name.
+  - New card *Weather in several cities*, in the *Weather* group: 2 to 8 places, each with its sky, the temperature
+    now, its name and (optional) today's high and low, as a list or a grid. On the fine grid it also fits in one row,
+    showing as many places as there is room for.
+  - Every place is fetched once and shared by all the screens and cards that show it, in every language. A screen
+    shows its own place and at most 8 others (32 for the whole setup), and places no screen uses any more are dropped
+    from the cache. Home Assistant's weather entity and indoor sensors still belong to the home place.
+  - The admin preview shows a new place before you save.
+- *Birthdays* > *Tidy birthday titles* (on by default, as before): birthdays from your calendars, like "Astrid's
+  Birthday" or "Cumpleaños de Ana", show just the name next to the 🎂. Turn it off to keep the calendar's own title.
+  The 🎂 stays either way, and ALL CAPS titles are still written in normal case. The age only comes with birthdays you
+  add in Marco itself (#10).
+
+### Fixed
+- *Filters* preview: a birthday title that Marco tidies no longer looks like something that was removed. Instead of
+  "before: ~~Astrid's Birthday~~" it now reads "Birthday recognised · original title: Astrid's Birthday", and a title
+  changed by a rename rule says which rule did it (#10).
+
 ## [0.16.1] - 2026-10-16
 
 ### Added

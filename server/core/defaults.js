@@ -27,7 +27,7 @@ export const RESERVED_SOURCE_IDS = [LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID];
 export const SCREEN_SPLIT_KEYS = {
   calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom'],
-  weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance'],
+  weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
   todo: ['enabled'],
   countdowns: ['enabled', 'max'],
@@ -103,7 +103,9 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       sourceIds: null, // null = every enabled source (incl. local + birthdays); array = only these ids
     },
     datetime: { enabled: true, clock: 'digital', format24: true, showSeconds: true, showAmPm: false, dateFormat: 'weekday_d_month', dateCustom: '{dddd}, {d} {mmmm} {yyyy}' },
-    weather: { enabled: true, forecastDays: 5, showHourly: true, showPrecipChance: true },
+    // place: null = the household's place (config.weather), or { name, lat, lon } for this screen only
+    // (core/weatherPlaces.js): every layout of the screen and its carousel steps show the weather of that place
+    weather: { enabled: true, forecastDays: 5, showHourly: true, showPrecipChance: true, place: null },
     news: { enabled: true, rotateSec: 15 },
     todo: { enabled: false },
     message: { enabled: false, text: '', emoji: '💬' },
@@ -142,7 +144,9 @@ export function defaultConfig() {
     },
     todo: { items: [] },
     localEvents: { enabled: true, name: 'Family', color: '#e76f51', emoji: '', privacy: 'busy', items: [] },
-    birthdays: { enabled: true, name: 'Birthdays', color: '#ff6f91', emoji: '🎂', showAge: true, privacy: 'keep', items: [] },
+    // tidyTitles: birthday titles from any calendar ("Astrid's Birthday", "Cumple de Ana") show only the name next
+    // to the 🎂 (server/rules.js tidyTitleWhy); off keeps the calendar's own title
+    birthdays: { enabled: true, name: 'Birthdays', color: '#ff6f91', emoji: '🎂', showAge: true, tidyTitles: true, privacy: 'keep', items: [] },
     eventRules: { items: [] },
     countdowns: { items: [], includeBirthdays: true, birthdayDays: 30, includeFlagged: true, horizonDays: 365 },
     schedules: { items: [] },

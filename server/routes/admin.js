@@ -10,7 +10,9 @@ import * as immich from '../immich.js';
 import { IMMICH_KEY_RE, immichKeyStatus } from '../core/immichCore.js';
 import { testIcs, sourceStatus } from '../calendars.js';
 import { testFeed, status as newsStatus } from '../news.js';
-import { status as weatherStatus, weatherKey, checkWeatherKey } from '../weather.js';
+import { status as weatherStatus, weatherKey, checkWeatherKey, previewWeather } from '../weather.js';
+import { previewPlacesOf } from '../core/weatherPlaces.js';
+import { LANGS } from '../core/lib/i18n.js';
 import { WEATHER_KEY_RE, weatherKeyStatus } from '../core/weather.js';
 import {
   listGallery, uploadMiddleware, thumbMiddleware, deletePhoto, finalizeUpload, readMeta, writeMeta, setFocus, setHidden, getPhoto, checkNames,
@@ -235,6 +237,14 @@ export function adminRouter({ onConfigSaved } = {}) {
     if (checked === false) return res.status(400).json({ error: 'key_invalid' });
     updateSecrets((s) => { s.weather = { ...(s.weather || {}), apiKey: k }; });
     res.json({ ...weatherKeyStatus(k), checked: checked === true });
+  }));
+
+  // --- weather of places not saved yet (the admin preview of a screen's place or a card's, #11) ---
+  r.post('/weather/preview', wrap(async (req, res) => {
+    const places = previewPlacesOf(req.body);
+    if (!places) return res.status(400).json({ error: 'invalid_places' });
+    const lang = LANGS.includes(req.body?.lang) ? req.body.lang : 'en';
+    res.json({ places: await previewWeather(places, lang) });
   }));
 
   // --- gallery ---

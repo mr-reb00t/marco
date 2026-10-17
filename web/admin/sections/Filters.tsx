@@ -8,6 +8,7 @@ import { Button, Callout, Card, ColorPicker, EmojiPicker, Empty, PageHeader, Reo
 import { daysBetween, eventDay, eventTimeLabel, fmtDay, relDays, todayIn } from '../dates';
 import { t } from '../i18n';
 import { takeIntent } from '../intent';
+import { titleNote } from '../titleNote';
 import { allSourceOptions, moveItem, normalize, uid } from '../util';
 import type { SectionProps } from './common';
 
@@ -98,7 +99,7 @@ function RuleRow({ r, i, n, hits, errors, sources, upd, remove, move, reorder, h
 }
 
 function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: PreviewEvent; rules: EventRule[]; onHide: () => void; onEmoji: (v: string) => void; onColor: (v: string | null) => void; onFocusRule: (id: string) => void }) {
-  const renamed = e.originalTitle && e.originalTitle !== e.title;
+  const note = titleNote(e, rules);
   return (
     <li class={`pev ${e.hidden ? 'is-hidden' : ''}`} style={{ '--ev': e.color } as any}>
       <span class="pev__bar" />
@@ -111,13 +112,14 @@ function PreviewRow({ e, rules, onHide, onEmoji, onColor, onFocusRule }: { e: Pr
           </span>
           {e.hidden && <span class="badge badge--soft">{t('oculto')}</span>}
         </div>
-        <div class="pev__meta muted small">
+        <div class="pev__meta muted small" title={e.titleWhy === 'birthday' ? t('Marco deja solo el nombre junto al 🎂. Puedes cambiarlo en Cumpleaños, «Ordenar los títulos de cumpleaños».') : undefined}>
           {eventTimeLabel(e)} · {e.sourceName}
-          {renamed && (
+          {note && (
             <>
               {' · '}
               <span class="pev__before">
-                {t('antes')}: <s>{e.originalTitle}</s>
+                {note.lead && <>{note.lead} · </>}
+                {t('título original')}: <span class="pev__orig">{note.original}</span>
               </span>
             </>
           )}

@@ -40,7 +40,7 @@ import type { PrecipLayer } from './gl/precipLayer';
 import type { WeatherFxLayer } from './gl/weatherFxLayer';
 import { weatherFxOf } from './icons';
 import {
-  mockAnnouncements, mockCarouselConfigs, mockConfig, mockCountdowns, mockEvents, mockFamily, mockNavScreens, mockNews, mockPhotos, mockWeather,
+  mockAnnouncements, mockCarouselConfigs, mockConfig, mockCountdowns, mockEvents, mockFamily, mockNavScreens, mockNews, mockPhotos, mockWeather, mockPlaceWeather,
 } from './mock';
 import { loadCache, loadScreenCache, on, saveCache, saveScreenCache, set, setConfigOverlay, state } from './store';
 import { detectLiveMode, startConfigPoll, startPoll, type StreamHandlers } from './live';
@@ -61,6 +61,8 @@ import { News } from './widgets/news';
 import { Photos, photoStats, type SlideshowPosition } from './widgets/photos';
 import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, photoOnWholeScreen } from '../shared/glass';
 import { Weather } from './widgets/weather';
+import { screenWeather, weatherSig } from './weatherPlaces';
+import { weatherPlacesOf } from '../../server/core/weatherPlaces.js';
 import { VIEW_PRESETS, Views } from './widgets/views';
 import { checkSetup, showWelcome, waitForSetup } from './widgets/welcome';
 import { afterPairUrl, pairHealth, pairingLang, showPairing } from './widgets/pairing';
@@ -692,7 +694,7 @@ function renderCanvas(): void {
 
 /** Content of the layouts with their own view (no-op for the others). */
 function renderView(tick: Tick): void {
-  views.render({ events: ctx.cfg.calendar.enabled ? eventsNormalized() : [], weather: state.weather, countdowns: state.countdowns }, tick);
+  views.render({ events: ctx.cfg.calendar.enabled ? eventsNormalized() : [], weather: screenWeather(), countdowns: state.countdowns }, tick);
 }
 
 /**
@@ -728,7 +730,7 @@ function familyShown(tick: Tick): { state: FamilyDisplayState | null; touch: boo
 function renderKids(tick: Tick): void {
   if (!kids.active) return;
   const { state: fam, touch } = familyShown(tick);
-  kids.render({ family: fam, events: ctx.cfg.calendar.enabled ? eventsNormalized() : [], weather: state.weather, touch }, tick);
+  kids.render({ family: fam, events: ctx.cfg.calendar.enabled ? eventsNormalized() : [], weather: screenWeather(), touch }, tick);
 }
 
 function renderCountdowns(tick: Tick): void {
@@ -744,11 +746,11 @@ function renderCountdowns(tick: Tick): void {
 }
 
 function renderWeather(tick: Tick): void {
-  if (effectivePreset(ctx.cfg) !== 'canvas') weather.render(state.weather, tick.dayKey);
+  if (effectivePreset(ctx.cfg) !== 'canvas') weather.render(screenWeather(), tick.dayKey);
   const p = effectivePreset(ctx.cfg);
   if (p === 'photoFrame' || p === 'bedside') renderView(tick);
   renderKids(tick);
-  const cur = ctx.cfg.weather.enabled ? state.weather?.current : undefined;
+  const cur = ctx.cfg.weather.enabled ? screenWeather()?.current : undefined;
   const plan = cur ? weatherFxOf(cur.code, cur.isDay) : { mode: null, level: 0, storm: false };
   if (precip) {
     precip.mode = plan.mode === 'rain' || plan.mode === 'snow' ? plan.mode : null;
@@ -1121,16 +1123,22 @@ async function fetchEvents(): Promise<void> {
   }
 }
 
+/** The demo's weather (?demo=1): the screen's place and every other place it shows, made up (mock.ts). */
+function demoWeather(cfg: DisplayConfig | null): WeatherResponse {
+  const [own, ...others] = cfg?.weather ? weatherPlacesOf(cfg.weather, cfg.canvas?.items ?? null) : [];
+  const w = own?.home === false ? mockPlaceWeather(current().now, own, own.key) : mockWeather(current().now, params.get('wx'));
+  if (own) w.placeKey = own.key;
+  if (others.length) w.places = Object.fromEntries(others.map((p) => [p.key, mockPlaceWeather(current().now, p, p.key)]));
+  return w;
+}
+
 async function fetchWeather(): Promise<void> {
-  if (state.demo) {
-    const w = mockWeather(current().now, params.get('wx'));
-    return set('weather', w);
-  }
+  if (state.demo) return set('weather', demoWeather(state.config));
   try {
-    const lang = ctx.lang;
+    const sig = weatherSig(state.config);
     const r = await api.weather();
-    weatherByLang.set(lang, { w: r, at: Date.now() });
-    if (lang !== ctx.lang) return;
+    weatherByLang.set(sig, { w: r, at: Date.now() });
+    if (sig !== weatherSig(state.config)) return;
     set('weather', r);
     saveCache('weather', r);
   } catch (e) {
@@ -1341,7 +1349,14 @@ on('config', (s) => {
   syncFamily(s.config);
   // an unsaved draft in the admin preview may show other days (weeks, weekStart, startOn): fetch the events they need
   if (isPreview && fetchedRange && eventsRange().join('/') !== fetchedRange) void fetchEvents();
+  // other places to show (the screen's place or a card's changed): their weather at once (the demo makes it up); not
+  // in the preview, where unsaved places come from the admin (weatherPlaces.ts)
+  const wsig = weatherSig(s.config);
+  if (wsig !== weatherShownSig && (state.demo || (weatherShownSig && !isPreview && !weatherByLang.has(wsig)))) void fetchWeather();
+  weatherShownSig = wsig;
 });
+/** weatherSig of the config the weather was last asked for. */
+let weatherShownSig = '';
 
 // ---------------------------------------------------------------------------------------------
 // Carousel (web/display/carousel.ts): a display bound to a carousel shows its screens one after another. A display
@@ -1353,7 +1368,10 @@ let offlineBoot = false;
 /** ?step=<slug> shows one step only, ?carousel=0 stays on the first step (testing, the admin preview). */
 const stepParam = (params.get('step') || '').trim().toLowerCase() || null;
 const carouselFrozen = params.get('carousel') === '0';
-/** Weather per language: screens of a carousel may speak different languages. */
+/**
+ * Weather per language and places (weatherPlaces.ts weatherSig): screens of a carousel may speak different languages
+ * and show other places.
+ */
 const weatherByLang = new Map<string, { w: WeatherResponse; at: number }>();
 
 function syncCarousel(c: DisplayConfig): void {
@@ -1463,10 +1481,10 @@ async function fetchBundle(id: string, parts: BundlePart[], known: DisplayConfig
   if (events) out.events = events;
   if (countdowns) out.countdowns = countdowns;
   if (ph) out.photos = ph;
-  const lang = cfg.screen?.language;
-  if (lang && lang !== ctx.lang && !(Date.now() - (weatherByLang.get(lang)?.at ?? 0) < 10 * 60_000)) {
+  const sig = weatherSig(cfg);
+  if (sig !== weatherSig(state.config) && !(Date.now() - (weatherByLang.get(sig)?.at ?? 0) < 10 * 60_000)) {
     const w = await one(() => api.weather(id));
-    if (w) weatherByLang.set(lang, { w, at: Date.now() });
+    if (w) weatherByLang.set(sig, { w, at: Date.now() });
   }
   return out;
 }
@@ -1633,9 +1651,10 @@ function showScreen(id: string, b: Bundle, sw: SwitchInfo): void {
     // the slideshow of the screen that leaves is kept where it is, so it goes on from there when that screen is back
     if (newPhotos && state.photos) photoSpots.set(photoSig, { photos: state.photos, at: photos.position() });
     photoSig = sig;
-    if (b.config.screen?.language && b.config.screen.language !== ctx.lang) {
-      const w = weatherByLang.get(b.config.screen.language);
-      state.weather = w ? w.w : state.weather;
+    const wsig = weatherSig(b.config);
+    if (wsig !== weatherSig(state.config)) {
+      const w = weatherByLang.get(wsig);
+      state.weather = w ? w.w : state.demo ? demoWeather(b.config) : state.weather;
     }
     // the new screen goes in with its own number of weeks at once (no rows of the old one fading out)
     calendar.still = true;
@@ -1659,7 +1678,7 @@ function showScreen(id: string, b: Bundle, sw: SwitchInfo): void {
         if (!takeover()) void photos.next();
       } else void fetchPhotos();
     }
-    if (!weatherByLang.has(ctx.lang)) void fetchWeather();
+    if (!weatherByLang.has(weatherSig(b.config))) void fetchWeather();
   };
   if (booting) {
     switcher.finish();

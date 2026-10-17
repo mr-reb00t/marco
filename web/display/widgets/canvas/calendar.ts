@@ -14,6 +14,7 @@ import { MonthCalendar } from '../calendar';
 import { Countdowns } from '../countdowns';
 import { fitPeopleView, fitTodayView, renderMiniPeople, renderMiniToday, renderPeopleView, renderTodayView, SKELETON } from '../views';
 import type { AdapterEnv, CanvasAdapter } from './types';
+import { screenWeather } from '../../weatherPlaces';
 
 type Props = Record<string, any>;
 
@@ -249,7 +250,7 @@ function view(kind: 'today' | 'people'): CanvasAdapter {
   let mini = false;
   const render = () => {
     const t = env.now();
-    const d = { events: eventsOf(env, t), weather: state.weather, countdowns: state.countdowns };
+    const d = { events: eventsOf(env, t), weather: screenWeather(), countdowns: state.countdowns };
     if (mini) {
       const p = env.item().props as Props;
       if (kind === 'today') renderMiniToday(root, d, t, env.cfg());

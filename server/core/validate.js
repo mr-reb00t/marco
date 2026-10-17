@@ -8,6 +8,7 @@ import { isValidTimeZone } from './lib/tz.js';
 import { randomId, fold } from './lib/text.js';
 import { LANGS } from './lib/i18n.js';
 import { WEATHER_PROVIDER_IDS, OPEN_METEO_MODEL_IDS, KEY_PROVIDERS } from './weather.js';
+import { cleanPlace, configWeatherPlaces, countScreenPlaces, MAX_SCREEN_WEATHER_PLACES, MAX_WEATHER_PLACES } from './weatherPlaces.js';
 import { PRIVACY_MODES, MAX_PRIVACY_RULES, defaultSourcePrivacy } from './privacy.js';
 import { CAMERA_RE, DOORBELL_MIN_SEC, DOORBELL_MAX_SEC } from './doorbellCore.js';
 import {
@@ -364,6 +365,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     forecastDays: num(ctx, `${p}.weather.forecastDays`, we.forecastDays, D.weather.forecastDays, 1, 14, true),
     showHourly: bool(ctx, `${p}.weather.showHourly`, we.showHourly, D.weather.showHourly),
     showPrecipChance: bool(ctx, `${p}.weather.showPrecipChance`, we.showPrecipChance, D.weather.showPrecipChance),
+    // "Ubicación de esta pantalla": null = the household's place
+    place: cleanPlace(ctx, `${p}.weather.place`, we.place),
   };
 
   const ne = obj(ctx, `${p}.news`, x.news);
@@ -881,6 +884,7 @@ export function validateConfig(input, opts = {}) {
     color: color(ctx, 'birthdays.color', bd.color, D.birthdays.color),
     emoji: emoji(ctx, 'birthdays.emoji', bd.emoji, D.birthdays.emoji),
     showAge: bool(ctx, 'birthdays.showAge', bd.showAge, D.birthdays.showAge),
+    tidyTitles: bool(ctx, 'birthdays.tidyTitles', bd.tidyTitles, D.birthdays.tidyTitles),
     privacy: oneOf(ctx, 'birthdays.privacy', bd.privacy, D.birthdays.privacy, PRIVACY_MODES),
     items: list(ctx, 'birthdays.items', bd.items, [], 500, sanitizeBirthday),
   };
@@ -1012,6 +1016,11 @@ export function validateConfig(input, opts = {}) {
       screenIds,
     ),
   };
+  // weather places (#11): at most MAX_SCREEN_WEATHER_PLACES per screen, MAX_WEATHER_PLACES in the whole config
+  screens.forEach((s, i) => {
+    if (countScreenPlaces({ weather }, s) > MAX_SCREEN_WEATHER_PLACES) ctx.err(`screens[${i}].weather.place`, `too many weather places on this screen (max ${MAX_SCREEN_WEATHER_PLACES})`);
+  });
+  if (configWeatherPlaces({ weather, screens }).length > MAX_WEATHER_PLACES) ctx.err('weather.places', `too many weather places (max ${MAX_WEATHER_PLACES})`);
   const revision = Number.isInteger(c.revision) && c.revision > 0 ? c.revision : 1;
   const value = {
     version: CONFIG_VERSION, revision, defaultScreen, screens,

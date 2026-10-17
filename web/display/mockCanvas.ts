@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family,
-// household, look, values, ink, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends.
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -444,6 +444,20 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
   },
   empty: { canvas: {}, items: [] },
   ...SHOWCASE,
+  // weather of several places (#11), made-up places: the screen's own, a card with a place of its own, the cities card
+  // as a list and as a grid, the next days somewhere else (the demo makes the weather up: mock.ts mockPlaceWeather)
+  places: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: B(0, 0, 4, 2) },
+      { kind: 'weather.now', pos: B(0, 2, 4, 3) },
+      { kind: 'weather.now', pos: B(4, 0, 4, 3), props: { place: { name: 'Beach house', lat: 37.02, lon: -7.93 } } },
+      { kind: 'weather.cities', pos: B(8, 0, 4, 5), props: { places: [{ name: 'Grandma’s', lat: 41.55, lon: -8.42 }, { name: 'Lake cabin', lat: 46.2, lon: 7.4 }, { name: 'Uni flat', lat: 52.37, lon: 4.9 }, { name: 'Beach house', lat: 37.02, lon: -7.93 }] } },
+      { kind: 'weather.cities', pos: B(0, 5, 7, 3), props: { layout: 'grid', places: [{ name: 'Grandma’s', lat: 41.55, lon: -8.42 }, { name: 'Lake cabin', lat: 46.2, lon: 7.4 }, { name: 'Uni flat', lat: 52.37, lon: 4.9 }, { name: 'Ski lodge', lat: 63.4, lon: 10.4 }] } },
+      { kind: 'weather.forecast', pos: B(4, 3, 4, 2), props: { place: { name: 'Lake cabin', lat: 46.2, lon: 7.4 } } },
+      { kind: 'weather.forecast', pos: B(7, 5, 5, 3), props: { place: { name: 'Ski lodge', lat: 63.4, lon: 10.4 }, layout: 'column', days: 3 } },
+    ],
+  },
 };
 
 /** The demo's pushed values (?demo=1): made up, a few minutes old; the mailbox one is three hours old (stale). */
@@ -506,6 +520,15 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
     case 'calendar.next': return { count: 1 + (n % 3) * 2 };
     // a Rotativa of its default cards (the week and the hours ahead), turning every five seconds
     case 'rotator': return { everySec: 5 };
+    // two, four (a long name among them) or eight places, every other copy as a grid, with and without high and low
+    case 'weather.cities': {
+      const all = [
+        { name: 'Grandma’s', lat: 41.55, lon: -8.42 }, { name: 'The lake cabin up in the mountains', lat: 46.2, lon: 7.4 },
+        { name: 'Uni flat', lat: 52.37, lon: 4.9 }, { name: 'Ski lodge', lat: 63.4, lon: 10.4 }, { name: 'Beach house', lat: 37.02, lon: -7.93 },
+        { name: 'Office', lat: 40.42, lon: -3.7 }, { name: 'Aunt Rosa', lat: 45.46, lon: 9.19 }, { name: 'Campsite', lat: 43.3, lon: 5.4 },
+      ];
+      return { places: all.slice(0, [2, 4, 8][n % 3]), layout: n % 2 ? 'grid' : 'list', highLow: n % 4 !== 3 };
+    }
     case 'ha.scene': return { buttons: ['scene', 'script', 'scene', 'button'].slice(0, 2 + (n % 3)).map((d, i) => ({ entity: `${d}.s_${n}_${i}`, label: '', icon: '' })) };
     default: return {};
   }

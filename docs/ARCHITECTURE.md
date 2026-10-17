@@ -77,7 +77,7 @@ The stored config has **global** sections shared by every screen and a list of *
   "news":       { "feeds": [{ "id", "name", "url", "enabled" }], "maxItems": 30 },
   "todo":       { "items": [{ "id", "text", "done" }] },
   "localEvents":{ "enabled": true, "name": "Family", "color": "#e76f51", "emoji": "", "privacy": "busy", "items": [LocalEvent] },
-  "birthdays":  { "enabled": true, "name": "Birthdays", "color": "#ff6f91", "emoji": "🎂", "showAge": true, "privacy": "keep", "items": [Birthday] },
+  "birthdays":  { "enabled": true, "name": "Birthdays", "color": "#ff6f91", "emoji": "🎂", "showAge": true, "tidyTitles": true, "privacy": "keep", "items": [Birthday] },
   "eventRules": { "items": [EventRule] },
   "countdowns": { "items": [Countdown], "includeBirthdays": true, "birthdayDays": 30, "includeFlagged": true, "horizonDays": 365 },
   "schedules":  { "items": [ScheduledMessage] },

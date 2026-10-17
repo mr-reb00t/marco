@@ -144,3 +144,28 @@ test('previewEvents keeps hidden events, uses draft rules and counts rule hits; 
   assert.deepEqual(bad.errors.map((e) => e.path).sort(), ['birthdays.items[0].day', 'birthdays.items[0].name', 'eventRules.items[0].emoji']);
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test('birthday titles (#10): tidied by default and said so; birthdays.tidyTitles off keeps the calendar title', () => {
+  const fam = { id: 'c_g', name: 'Google', color: '#4ea8de', emoji: '', kind: 'generic' };
+  const bdays = { id: 'c_b', name: 'Birthdays', color: '#ff6f91', emoji: '', kind: 'birthdays' };
+  const opts = (over = {}) => ({ rules: RULES, eventRules: [], from: '2026-10-01', to: '2026-10-31', tz: TZ, lang: 'en', detail: true, ...over });
+  const raw = (title) => ({ uid: title, title, description: '', location: '', allDay: true, start: '2026-10-10', end: '2026-10-11' });
+
+  // on (the default): only the name next to the 🎂, and the preview knows why
+  let [e] = buildSourceEvents([raw("Astrid's Birthday")], fam, opts());
+  assert.deepEqual([e.title, e.emoji, e.originalTitle, e.titleWhy], ['Astrid', '🎂', "Astrid's Birthday", 'birthday']);
+  [e] = buildSourceEvents([raw('Cumpleaños de Ana')], bdays, opts());
+  assert.deepEqual([e.title, e.emoji, e.titleWhy], ['Ana', '🎂', 'birthday']);
+  // off: the calendar's title stays, the 🎂 too; ALL CAPS is still written in normal case
+  [e] = buildSourceEvents([raw("Astrid's Birthday")], fam, opts({ tidyBirthdays: false }));
+  assert.deepEqual([e.title, e.emoji, e.titleWhy], ["Astrid's Birthday", '🎂', null]);
+  [e] = buildSourceEvents([raw('CUMPLE MARIA')], bdays, opts({ tidyBirthdays: false }));
+  assert.deepEqual([e.title, e.titleWhy], ['Cumple Maria', 'caps']);
+  [e] = buildSourceEvents([raw('CUMPLE MARIA')], bdays, opts());
+  assert.deepEqual([e.title, e.titleWhy], ['Maria', 'birthday']);
+  // a rename rule says 'rule'; a title nothing changed says null
+  [e] = buildSourceEvents([raw('Cita X')], fam, opts({ eventRules: [rule({ id: 'r', action: 'rename', match: 'x', replaceWith: 'médico' })] }));
+  assert.equal(e.titleWhy, 'rule');
+  [e] = buildSourceEvents([raw('Algo')], fam, opts());
+  assert.equal(e.titleWhy, null);
+});

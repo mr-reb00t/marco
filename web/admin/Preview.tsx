@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { Icon } from './components/icons';
 import { t } from './i18n';
 import { draftWidgetPreviews } from './livePreview';
+import { postDraftWeather } from './weatherPreview';
 
 /** Tested widget copies already read as Blobs (previewUrl → Blob), so a draft change does not read them again. */
 const widgetBlobs = new Map<string, Promise<Blob | null>>();
@@ -41,6 +42,8 @@ export function Preview({ reloadKey, portrait, onClose, variant, saved, url, ope
     try {
       const origin = new URL(url, location.href).origin;
       frame.current?.contentWindow?.postMessage({ type: 'marco:preview-draft', config: live, focus }, origin);
+      // a screen's place or a weather card's not saved yet (#11)
+      void postDraftWeather(frame.current?.contentWindow, origin, live);
       // Marco Cloud: unsaved widgets show the copy their last test made (the server only serves saved ones)
       for (const pv of live ? draftWidgetPreviews() : []) {
         void widgetBlob(pv.url).then((blob) => {

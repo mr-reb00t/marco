@@ -1,81 +1,36 @@
 import { useEffect, useState } from 'preact/hooks';
 import { HaEntityPicker } from '../components/HaEntityPicker';
+import { PlaceChoice, PlaceSearch } from '../components/PlaceSearch';
 import { Icon } from '../components/icons';
 import { Button, Callout, Card, Field, NumberInput, PageHeader, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
 import { ScopeBadge } from '../components/ui';
-import type { AdminStatus, GeocodeResult, OpenMeteoModel, WeatherKeyStatus, WeatherProvider } from '../../shared/types';
+import type { AdminStatus, OpenMeteoModel, WeatherKeyStatus, WeatherProvider } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
 import { has } from '../caps';
-import { getLang, kmh, t } from '../i18n';
+import { kmh, t } from '../i18n';
 import type { SectionProps } from './common';
 
 export function WeatherSection({ cfg, set, errors }: SectionProps) {
   const w = cfg.weather;
   const haOffered = has('homeassistant');
   const haOn = haOffered && cfg.homeassistant.enabled;
-  const [q, setQ] = useState('');
-  const [results, setResults] = useState<GeocodeResult[] | null>(null);
-  const [searching, setSearching] = useState(false);
-
-  const search = async (e?: Event) => {
-    e?.preventDefault();
-    if (!q.trim()) return;
-    setSearching(true);
-    try {
-      // Through this server (GET /api/admin/geocode), so the browser only talks to its own server.
-      const j = await api.geocode(q.trim(), getLang());
-      setResults(j.results ?? []);
-    } catch (e) {
-      setResults([]);
-      if ((e as ApiError).status === 429) toast(t('Demasiadas búsquedas seguidas. Espera unos minutos.'), 'error');
-      else toast(t('No se pudo buscar (¿sin conexión a Internet?). Inténtalo de nuevo.'), 'error');
-    } finally {
-      setSearching(false);
-    }
-  };
-
   return (
     <>
       <PageHeader title={t('Tiempo')} desc={t('Previsión, humedad y viento de tu ciudad. Elige de dónde vienen los datos: todas las fuentes son gratuitas.')} />
       <Card id="wx-main" title={t('Tiempo')} icon="cloud">
         <ToggleRow label={<>{t('Mostrar el tiempo')} <ScopeBadge scope="screen" /></>} checked={w.enabled} onChange={(v) => set((d) => void (d.weather.enabled = v))} />
         <div class={`stack ${w.enabled ? '' : 'is-disabled'}`}>
-          <Field label={t('Ubicación')} hint={t('Busca una ciudad para rellenar las coordenadas.')}>
-            <form class="search-row" onSubmit={search}>
-              <TextInput value={q} onValue={setQ} placeholder={t('Buscar ciudad…')} prefix={<Icon name="search" size={14} />} />
-              <Button type="submit" loading={searching}>
-                {t('Buscar')}
-              </Button>
-            </form>
-            {results && (
-              <div class="geo-results">
-                {results.length === 0 && <div class="muted small">{t('Sin resultados')}</div>}
-                {results.map((r) => (
-                  <button
-                    type="button"
-                    class="geo-result"
-                    onClick={() => {
-                      set((d) => {
-                        d.weather.lat = Math.round(r.lat * 1000) / 1000;
-                        d.weather.lon = Math.round(r.lon * 1000) / 1000;
-                        d.weather.locationName = [r.name, r.admin1].filter(Boolean).join(', ');
-                      });
-                      setResults(null);
-                      setQ('');
-                    }}
-                  >
-                    <Icon name="pin" size={14} />
-                    <span>
-                      <strong>{r.name}</strong> <span class="muted">{[r.admin1, r.country].filter(Boolean).join(', ')}</span>
-                    </span>
-                    <span class="mono small muted">
-                      {r.lat.toFixed(3)}, {r.lon.toFixed(3)}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            )}
+          <Field label={<>{t('Ubicación')} <ScopeBadge scope="global" /></>} hint={t('Busca una ciudad para rellenar las coordenadas.')}>
+            <PlaceSearch
+              onPick={(p) =>
+                set((d) => {
+                  d.weather.lat = p.lat;
+                  d.weather.lon = p.lon;
+                  d.weather.locationName = p.name;
+                })
+              }
+            />
           </Field>
           <div class="grid grid--3">
             <Field label={t('Nombre visible')}>
@@ -88,6 +43,18 @@ export function WeatherSection({ cfg, set, errors }: SectionProps) {
               <NumberInput value={w.lon} step={0.001} min={-180} max={180} error={!!errors['weather.lon']} onValue={(v) => set((d) => void (d.weather.lon = v))} />
             </Field>
           </div>
+          <Field
+            label={<>{t('Ubicación de esta pantalla')} <ScopeBadge scope="screen" /></>}
+            hint={t('Todas las vistas de esta pantalla (y sus pasos en un carrusel) muestran el tiempo de este lugar.')}
+            error={errors['weather.place']}
+          >
+            <PlaceChoice
+              value={w.place ?? null}
+              inherit={t('La de casa')}
+              inheritHint={w.locationName ? t('Ahora: {name}', { name: w.locationName }) : undefined}
+              onChange={(v) => set((d) => void (d.weather.place = v))}
+            />
+          </Field>
           <div class="grid grid--2">
             <Field label={t('Unidades')}>
               <Segmented

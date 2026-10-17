@@ -46,11 +46,17 @@ export function unshout(title) {
 /**
  * Display title clean-up: un-shout ALL-CAPS titles and, when the emoji already says it (🎂 rules or
  * birthday-kind sources), drop the redundant "Cumple de"/"Birthday" words so only the name remains.
+ * `birthdayNames: false` (config birthdays.tidyTitles off) keeps the birthday words: only the un-shouting is left.
+ * Returns { title, why }: why = 'birthday' (the birthday words went), 'caps' (only un-shouted) or null (unchanged).
  */
-export function tidyTitle(title, { rule, source, emoji } = {}) {
-  let out = unshout(String(title ?? '').trim());
+export function tidyTitleWhy(title, { rule, source, emoji, birthdayNames = true } = {}) {
+  const raw = String(title ?? '').trim();
+  let out = unshout(raw);
+  const caps = out !== raw;
   const isBirthday = emoji === '🎂' || source?.kind === 'birthdays' || (rule && rule.emoji === '🎂');
-  if (isBirthday) {
+  let birthday = false;
+  if (isBirthday && birthdayNames) {
+    const before = out;
     const stripped = out.replace(BIRTHDAY_PREFIX_RE, '');
     if (stripped !== out && /\p{L}/u.test(stripped)) out = stripped;
     else {
@@ -58,8 +64,13 @@ export function tidyTitle(title, { rule, source, emoji } = {}) {
       if (m && /\p{L}/u.test(m[1])) out = m[1];
     }
     out = out.charAt(0).toUpperCase() + out.slice(1);
+    birthday = out !== before;
   }
-  return out;
+  return { title: out, why: birthday ? 'birthday' : caps ? 'caps' : null };
+}
+
+export function tidyTitle(title, opts = {}) {
+  return tidyTitleWhy(title, opts).title;
 }
 
 const BLOCKED_RE = /not available|unavailable|no disponible|indispon[ií]vel|bloque|blocked|closed|cerrado|fechado|niet beschikbaar|geblokkeerd|gesloten|ikke tilgængelig|ikke ledig|blokeret/i;

@@ -2179,7 +2179,7 @@ h1 .scope {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pev__before s {
+.pev__before .pev__orig {
   opacity: 0.85;
 }
 .pev__rules {
@@ -5867,3 +5867,9 @@ button.immich-album:hover {
   margin: 0;
   color: var(--text-2);
 }
+
+/* Weather places (#11): the chosen place, and the places of "Tiempo en varias ciudades" */
+.place-chosen { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.place-chosen strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.place-search .geo-results { margin-top: 6px; }

@@ -2094,6 +2094,21 @@
     },
     {
       "method": "POST",
+      "path": "/api/admin/weather/preview",
+      "query": [],
+      "feature": null,
+      "callers": [
+        "weatherPreview"
+      ],
+      "request": "WeatherPreviewRequest",
+      "response": "WeatherPreviewResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "places"
+      ]
+    },
+    {
+      "method": "POST",
       "path": "/api/auth/2fa",
       "query": [],
       "feature": "twoFactor",

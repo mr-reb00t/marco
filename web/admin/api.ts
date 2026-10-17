@@ -63,6 +63,8 @@ import type {
   HaAdminHistory, HaEntity, HaLiveStatus, HaSlim,
   TestHomeAssistantResponse,
   WeatherKeyStatus,
+  WeatherPreviewRequest,
+  WeatherPreviewResponse,
   TestImmichResponse,
   ImmichKeyStatus,
   ImmichAlbum,
@@ -248,6 +250,8 @@ export const api = {
   refreshImmich: () => request<ImmichStatus>('POST', '/api/admin/immich/refresh'),
   clearImmichCache: () => request<{ ok: boolean; freed: number }>('DELETE', '/api/admin/immich/cache'),
   weatherKey: () => request<WeatherKeyStatus>('GET', '/api/admin/weather/key'),
+  /** The weather of places not saved yet (the preview of a screen's place or a card's), by placeKey. */
+  weatherPreview: (body: WeatherPreviewRequest) => request<WeatherPreviewResponse>('POST', '/api/admin/weather/preview', body),
   /** '' removes the key; a key the provider refuses answers 400 key_invalid */
   setWeatherKey: (key: string) => request<WeatherKeyStatus>('PUT', '/api/admin/weather/key', { key }),
 

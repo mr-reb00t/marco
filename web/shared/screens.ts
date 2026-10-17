@@ -7,7 +7,7 @@ import type { AppConfig, ScreenProfile, StoredConfig } from './types';
 export const SCREEN_SPLIT_KEYS = {
   calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat'],
-  weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance'],
+  weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
   todo: ['enabled'],
   countdowns: ['enabled', 'max'],

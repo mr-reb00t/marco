@@ -308,3 +308,14 @@
 #app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene .cv-ha-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene .cv-ha-ico { width: 1.8em; height: 1.8em; padding: 0.35em; }
 #app.preset-canvas .cv-ha-scenecard.no-ico[data-mini][data-mw] .cv-ha-scene :is(.cv-ha-ico, .cv-ha-emoji) { display: none; }
+
+/* Tiempo en varias ciudades on the fine grid: one line of places (sky, temperature, name), as many as fit */
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-around; gap: calc(1.4rem * var(--wk, 1)); overflow: hidden; }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city { display: flex; flex: none; width: auto; max-width: none; margin: 0; gap: calc(0.4rem * var(--wk, 1)); font-size: calc(1.8rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city-icon svg { width: calc(2.6rem * var(--wk, 1)); height: calc(2.6rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city-temp { order: 1; font-size: 1.1em; }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city-name { order: 2; min-width: 0; max-width: 8em; font-weight: 500; color: var(--fg-2); }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city-hl { display: none; }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city[hidden] { display: none; }
+#app.preset-canvas .cv-body.cv-wx-cities[data-mini].is-one .cv-city { flex: 0 1 auto; min-width: 0; }
+#app.preset-canvas .cv-body[data-mini] .cv-wx-place { display: none; }

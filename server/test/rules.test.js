@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRule, decorate as decorateFull, keywordMatches, normalizeAirbnbTitle, petsToEmoji, tidyTitle } from '../rules.js';
+import { matchRule, decorate as decorateFull, keywordMatches, normalizeAirbnbTitle, petsToEmoji, tidyTitle, tidyTitleWhy } from '../rules.js';
 import { fold } from '../lib/text.js';
 import { RULES } from './helpers.js';
 
@@ -126,4 +126,13 @@ test('expanded multilingual icon rules', () => {
   assert.equal(em('Pay rent'), '💶');
   assert.equal(em("Lucía's birthday party"), '🎂');
   assert.equal(em('Carmen comes over'), null); // short keyword "car" only as a whole word
+});
+
+test('tidyTitleWhy (#10): why a title changed, and birthdayNames off keeps the birthday words', () => {
+  assert.deepEqual(tidyTitleWhy("Astrid's Birthday", { emoji: '🎂' }), { title: 'Astrid', why: 'birthday' });
+  assert.deepEqual(tidyTitleWhy("Astrid's Birthday", { emoji: '🎂', birthdayNames: false }), { title: "Astrid's Birthday", why: null });
+  assert.deepEqual(tidyTitleWhy('CUMPLE MARIA', { emoji: '🎂', birthdayNames: false }), { title: 'Cumple Maria', why: 'caps' });
+  assert.deepEqual(tidyTitleWhy('Cumple', { emoji: '🎂' }), { title: 'Cumple', why: null });
+  assert.deepEqual(tidyTitleWhy('Dentista', {}), { title: 'Dentista', why: null });
+  assert.equal(tidyTitle('Cumpleaños de Juan', { emoji: '🎂', birthdayNames: false }), 'Cumpleaños de Juan');
 });

@@ -18,10 +18,10 @@ import { cardDocument, checkCard, parseCard, renderCard, type CardNode, type Car
 import { formatDateLine, formatTime } from '../../../shared/i18n';
 import { ctx } from '../../ctx';
 import { isPreview } from '../../identity';
-import { state } from '../../store';
 import { ago, fmtNum, stateText } from '../ha/haui';
 import { nextEvents } from './calendar';
 import type { AdapterEnv, CanvasAdapter } from './types';
+import { screenWeather } from '../../weatherPlaces';
 
 type Bind = { name: string; entity?: { a: string; d: string } | string | null; value?: string; builtin?: 'time' | 'date' | 'weather' | 'nextEvent' };
 type Props = { html?: string; css?: string; bind?: Bind[]; refreshSec?: number };
@@ -71,7 +71,7 @@ function values(env: AdapterEnv, binds: Bind[]): Map<string, (field: string) => 
     if (b.builtin === 'time') out.set(b.name, (f) => (f === '' || f === 'time' ? formatTime(t.now, ctx.tz, dt.format24, dt.showAmPm) : null));
     else if (b.builtin === 'date') out.set(b.name, (f) => (f === '' ? formatDateLine(ctx.lang, t.dayKey, dt.dateFormat, dt.dateCustom ?? '') : null));
     else if (b.builtin === 'weather') {
-      const w = state.weather?.current ?? null;
+      const w = screenWeather()?.current ?? null;
       out.set(b.name, (f) => (!w ? null : f === '' ? Math.round(w.temp) : f === 'unit' ? '°' : f === 'name' ? w.description : f === 'on' ? w.isDay : null));
     } else if (b.builtin === 'nextEvent') {
       const e = nextEvents(env.events(), t, 1)[0] ?? null;

@@ -29,10 +29,9 @@ export function runRefresh() {
       if (lastHash !== null && (hash !== lastHash || win.from !== lastDay)) publish('events', { hash });
       lastHash = hash;
       lastDay = win.from;
-      // Pre-warm the weather cache for every language used by a screen that shows weather.
-      for (const lang of new Set(cfg.screens.filter((s) => s.weather.enabled).map((s) => s.screen.language))) {
-        getWeather({ lang }).catch(() => {});
-      }
+      // Pre-warm the weather cache for every screen that shows weather (each place once: the cache is per place, for
+      // every language).
+      for (const screen of cfg.screens.filter((s) => s.weather.enabled)) getWeather({ screen }).catch(() => {});
       if (cfg.screens.some((s) => s.news.enabled)) getNews().catch(() => {});
     } catch (err) {
       console.warn('[refresher]', err.message);

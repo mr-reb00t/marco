@@ -46,7 +46,7 @@ test('registry: every kind of the spec and of the owner amendments is reserved, 
   const want = [
     'clock.digital', 'clock.analog', 'clock.flip', 'clock.world', 'date',
     'calendar.month', 'calendar.week', 'calendar.agenda', 'calendar.today', 'calendar.next', 'calendar.people', 'countdowns',
-    'weather.now', 'weather.hourly', 'weather.forecast',
+    'weather.now', 'weather.hourly', 'weather.forecast', 'weather.cities',
     'message', 'todo', 'news', 'photo', 'widget', 'value', 'spacer', 'heading', 'rotator',
     'nav.button', 'nav.pause', 'nav.progress',
     'family.members', 'family.routines', 'family.points', 'family.rewards', 'family.chores', 'meals.today', 'meals.week', 'birthdays', 'highlights', 'announcement',

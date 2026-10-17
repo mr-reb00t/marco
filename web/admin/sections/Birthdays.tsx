@@ -250,6 +250,13 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
           <ToggleRow icon="🔢" label={t('Mostrar la edad')} hint={t('Solo si conoces el año de nacimiento')} checked={bd.showAge} onChange={(v) => setFull((d) => void (d.birthdays.showAge = v))} />
           {has('privacy') && <PrivacyModeField value={bd.privacy ?? 'keep'} onChange={(v) => setFull((d) => void (d.birthdays.privacy = v))} />}
         </div>
+        <ToggleRow
+          icon="✂️"
+          label={t('Ordenar los títulos de cumpleaños')}
+          hint={t('Los cumpleaños de tus calendarios (por ejemplo «Cumpleaños de Ana» o «Ana\'s Birthday») se muestran solo con el nombre junto al 🎂. Desactívalo para ver el título tal como viene del calendario.')}
+          checked={bd.tidyTitles !== false}
+          onChange={(v) => setFull((d) => void (d.birthdays.tidyTitles = v))}
+        />
       </Card>
 
       <Card

@@ -388,6 +388,27 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-wx-meta em + b { margin-left: 0.2em; }
 #app.preset-canvas .cv-wx-meta b { color: var(--fg); font-weight: 600; }
 #app.preset-canvas .cv-wx .wx-src { grid-column: 1 / -1; font-size: 1.1rem; color: var(--fg-3); }
+/* the place of a forecast or hourly card with a place of its own (#11) */
+#app.preset-canvas .cv-wx-place { flex: none; font-size: calc(1.5rem * var(--wk, 1)); font-weight: 600; color: var(--fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+#app.preset-canvas .cv-wx-place[hidden] { display: none; }
+/* Tiempo en varias ciudades (weather.cities): a line per place (list, in columns when wide) or a tile per place (grid) */
+#app.preset-canvas .cv-wx-cities { justify-content: center; gap: calc(0.9rem * var(--wk, 1)); }
+#app.preset-canvas .cv-city { display: grid; grid-template-columns: calc(3.4rem * var(--wk, 1)) minmax(0, 1fr) auto; align-items: center; column-gap: calc(1rem * var(--wk, 1)); font-size: calc(2.2rem * var(--wk, 1)); line-height: 1.15; width: 100%; max-width: 22em; margin-inline: auto; }
+#app.preset-canvas .cv-wx-cities.has-hl .cv-city { grid-template-columns: calc(3.4rem * var(--wk, 1)) minmax(0, 1fr) auto auto; }
+#app.preset-canvas .cv-city[hidden] { display: none; }
+#app.preset-canvas .cv-city-icon { display: flex; }
+#app.preset-canvas .cv-city-icon svg { width: calc(3.4rem * var(--wk, 1)); height: calc(3.4rem * var(--wk, 1)); }
+#app.preset-canvas .cv-city-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-city-temp { font-family: var(--font-num); font-weight: 600; font-size: 1.2em; font-variant-numeric: tabular-nums; text-align: right; }
+#app.preset-canvas .cv-city-hl { font-family: var(--font-num); font-size: 0.72em; color: var(--fg-2); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; min-width: 5.4em; }
+#app.preset-canvas .cv-wx-cities.is-cols { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); align-content: center; column-gap: calc(3rem * var(--wk, 1)); }
+#app.preset-canvas .cv-wx-cities.is-grid { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); align-content: center; gap: calc(1.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city { grid-template-columns: auto auto; grid-template-rows: auto auto auto; justify-content: center; justify-items: center; row-gap: calc(0.3rem * var(--wk, 1)); max-width: none; text-align: center; }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city-name { grid-column: 1 / -1; grid-row: 1; max-width: 100%; }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city-icon { grid-row: 2; }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city-icon svg { width: calc(4.6rem * var(--wk, 1)); height: calc(4.6rem * var(--wk, 1)); }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city-temp { grid-row: 2; font-size: 1.7em; text-align: left; }
+#app.preset-canvas .cv-wx-cities.is-grid .cv-city-hl { grid-column: 1 / -1; grid-row: 3; min-width: 0; text-align: center; }
 /* the weather icons are drawn for a dark page: darker lines on a card with dark text, as on the kids layouts */
 .theme-light #app.preset-canvas .cv-card.is-glass:not(.has-own) .cv-wx svg [stroke='#eef2f7'],
 .theme-light #app.preset-canvas .cv-card.is-solid:not(.has-own) .cv-wx svg [stroke='#eef2f7'],

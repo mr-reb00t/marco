@@ -1,12 +1,14 @@
 // Personalizado weather: the conditions now, the next hours and the next days, from the screen's weather (the same
-// data and icons as the side panel). Values are written as text; icons are the static SVG strings of icons.ts.
+// data and icons as the side panel) or a place of the card's own (#11), and "Tiempo en varias ciudades" (a few places
+// at once). Values are written as text; icons are the static SVG strings of icons.ts.
 import type { DisplayCanvasItem, WeatherResponse } from '../../../shared/types';
 import { diffDays, formatTime, weekdayName, zonedParts } from '../../../shared/i18n';
 import { ctx } from '../../ctx';
 import { ICON, weatherIcon } from '../../icons';
-import { state } from '../../store';
+import { placeLabel } from '../../../../server/core/weatherPlaces.js';
+import { placeWeather } from '../../weatherPlaces';
 import { sourceCredit } from '../weather';
-import { bigType } from './clock';
+import { bigType, isMini, keepInBox, shrinkToBox } from './clock';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
 
 type Props = Record<string, any>;
@@ -38,9 +40,10 @@ function weatherAdapter(cls: string, draw: (root: HTMLElement, w: WeatherRespons
   let root: HTMLElement;
   let sig = '';
   let last: AdapterBox | null = null;
+  const weather = () => placeWeather((env.item().props as Props).place);
   const render = (force = false) => {
-    const w = state.weather;
-    const s = `${w?.updatedAt ?? ''}|${w?.current?.temp ?? ''}|${env.item().v}|${env.now().dayKey}|${ctx.lang}`;
+    const w = weather();
+    const s = `${w?.placeKey ?? ''}|${w?.updatedAt ?? ''}|${w?.current?.temp ?? ''}|${env.item().v}|${env.now().dayKey}|${ctx.lang}`;
     if (s === sig && !force) return;
     sig = s;
     root.textContent = '';
@@ -69,7 +72,11 @@ function weatherAdapter(cls: string, draw: (root: HTMLElement, w: WeatherRespons
       root.classList.remove('is-mstack', 'no-cond', 'is-few');
       for (const c of root.querySelectorAll<HTMLElement>('.cv-wx-hours .h[hidden], .cv-wx-days .d[hidden]')) c.hidden = false;
       if (!nominal) root.style.removeProperty('--wk');
+      const caption = root.querySelector<HTMLElement>('.cv-wx-place');
+      if (caption) caption.hidden = false;
       shape?.(root, box, env);
+      // a place's name over the hours or the days: only when everything still fits with it
+      if (caption && overflows(root)) caption.hidden = true;
       if (!nominal) return;
       const [h, w] = nominal(root, box);
       bigType(root, box, h, Number(env.item().style?.scale) || 1, w, 4);
@@ -86,7 +93,7 @@ function weatherAdapter(cls: string, draw: (root: HTMLElement, w: WeatherRespons
     data(topic) {
       if (topic === 'weather') render(true);
     },
-    empty: () => !state.weather?.current,
+    empty: () => !weather()?.current,
     destroy() {
       root.textContent = '';
     },
@@ -251,10 +258,17 @@ const nowNominal: Nominal = (root, box) => {
   return stack ? [26, 18] : [18, 18 * 2.2];
 };
 
+/** The hours and the days of a place of the card's own: its name in a small line on top (left out when it does not fit). */
+function placeCaption(root: HTMLElement, p: Props): void {
+  const name = p.place && typeof p.place === 'object' ? placeLabel(p.place) : '';
+  if (name) root.appendChild(el('div', 'cv-wx-place', name));
+}
+
 function drawHourly(root: HTMLElement, w: WeatherResponse, env: AdapterEnv): void {
   const p = env.item().props as Props;
   const n = [6, 12, 24].includes(Number(p.hours)) ? Number(p.hours) : 12;
   const dt = env.cfg().datetime;
+  placeCaption(root, p);
   const row = el('div', 'cv-wx-hours');
   (w.hourly ?? []).slice(0, n).forEach((h, i) => {
     const z = zonedParts(new Date(h.time), ctx.tz);
@@ -275,6 +289,7 @@ function drawForecast(root: HTMLElement, w: WeatherResponse, env: AdapterEnv): v
   const all = days.flatMap((d) => [d.min, d.max]).filter(has);
   const lo = Math.min(...all), hi = Math.max(...all);
   const span = Math.max(1, hi - lo);
+  placeCaption(root, p);
   const list = el('div', 'cv-wx-days');
   for (const d of days) {
     const cell = el('div', `d${diffDays(today, d.date) === 0 ? ' today' : ''}`);
@@ -316,7 +331,147 @@ const forecastShape = (root: HTMLElement, box: AdapterBox, env: AdapterEnv): voi
   root.classList.toggle('is-column', (env.item().props as Props).layout === 'column' || (box.zone === 'main' && h > w * 1.3));
 };
 
+// ---------------------------------------------------------------------------------------------- weather.cities
+type CityRow = { el: HTMLElement; key: string };
+
+/**
+ * "Tiempo en varias ciudades": a row (list) or a tile (grid) per place, with its sky, its temperature now, its name and
+ * (highLow) the day's high and low. Laid out like the world clock: the rows in one column, or in two or three side by
+ * side when a wide box gives them larger type; a grid has as many columns as make its tiles closest to square. In a box
+ * only the fine grid has (data-mini) it is one line of places (sky, temperature, name), as many as fit whole.
+ */
+function citiesAdapter(): CanvasAdapter {
+  let env: AdapterEnv;
+  let root: HTMLElement;
+  let rows: CityRow[] = [];
+  let sig = '';
+  let last: AdapterBox | null = null;
+  const props = () => env.item().props as Props;
+  const places = (): { name: string; lat: number; lon: number }[] => (Array.isArray(props().places) ? props().places : []).slice(0, 8);
+  const build = (force = false) => {
+    const list = places();
+    const ws = list.map((p) => placeWeather(p));
+    const s = `${ws.map((w) => `${w?.placeKey ?? ''}:${w?.updatedAt ?? ''}:${w?.current?.temp ?? ''}`).join(';')}|${env.item().v}|${env.now().dayKey}|${ctx.lang}|${env.low()}`;
+    if (s === sig && !force) return;
+    sig = s;
+    root.textContent = '';
+    root.classList.toggle('is-grid', props().layout === 'grid');
+    const hl = props().highLow !== false;
+    rows = list.map((p, i) => {
+      const w = ws[i];
+      const row = el('div', 'cv-city');
+      const c = w?.current;
+      row.appendChild(icon('cv-city-icon', c ? weatherIcon(c.code, c.isDay, { animated: false }) : ''));
+      row.appendChild(el('span', 'cv-city-name', placeLabel(p) || placeLabel(w ? { name: w.locationName } : null) || '–'));
+      row.appendChild(el('b', 'cv-city-temp', c ? `${r(c.temp)}°` : '–'));
+      if (hl) row.appendChild(el('span', 'cv-city-hl', w?.today ? `${r(w.today.max)}° / ${r(w.today.min)}°` : ''));
+      if (c?.description) row.title = c.description;
+      root.appendChild(row);
+      return { el: row, key: w?.placeKey ?? '' };
+    });
+    root.classList.toggle('has-hl', hl);
+    if (last) api.layout!(last);
+  };
+  /** A narrow box: a little smaller type (down to three quarters) before a place's name ends in "...". */
+  const shrinkNames = (wk: number): number => {
+    const names = [...root.querySelectorAll<HTMLElement>('.cv-city-name')];
+    const floor = wk * 0.75;
+    for (let i = 0; i < 6 && wk > floor && names.some((x) => x.scrollWidth > x.clientWidth + 1); i++) {
+      wk = Math.max(floor, wk * 0.94);
+      root.style.setProperty('--wk', wk.toFixed(3));
+    }
+    return wk;
+  };
+  const api: CanvasAdapter = {
+    mount(rt, e) {
+      root = rt;
+      env = e;
+      root.classList.add('cv-wx', 'cv-wx-cities');
+      build(true);
+    },
+    update: () => build(true),
+    layout(box) {
+      last = box;
+      const scale = Number(env.item().style?.scale) || 1;
+      for (const r0 of rows) r0.el.hidden = false;
+      const n = Math.max(1, rows.length);
+      const grid = props().layout === 'grid';
+      if (isMini(root)) return miniCities(root, box, scale);
+      root.classList.remove('is-mline', 'is-one');
+      if (grid) {
+        // the columns that make the tiles closest to square (a tile is about 12 by 11 rem at a type size of 1)
+        let cols = 1;
+        let best = 0;
+        for (let c = 1; c <= n; c++) {
+          const k = Math.min(box.h / box.rem / (11 * Math.ceil(n / c)), box.w / box.rem / (13 * c));
+          if (k > best) {
+            best = k;
+            cols = c;
+          }
+        }
+        root.style.setProperty('--cols', String(cols));
+        let wk = keepInBox(root, bigType(root, box, 11 * Math.ceil(n / cols), scale, 13 * cols, 3), scale);
+        shrinkNames(wk);
+        wk = parseFloat(root.style.getPropertyValue('--wk')) || wk;
+        shrinkToBox(root, wk);
+        return;
+      }
+      const lineW = props().highLow !== false ? 30 : 22;
+      // a line is about 3.5 rem high at a type size of 1 (the row and the gap under it)
+      const kOf = (c: number) => Math.min(box.h / box.rem / (3.5 * Math.ceil(n / c)), box.w / box.rem / (lineW * c + 4 * (c - 1)));
+      let cols = 1;
+      for (let c = 2; c <= Math.min(3, n); c++) if (kOf(c) > kOf(cols) * 1.15) cols = c;
+      root.classList.toggle('is-cols', cols > 1);
+      root.style.setProperty('--cols', String(cols));
+      const wk = keepInBox(root, bigType(root, box, 3.5 * Math.ceil(n / cols) + 1, scale, lineW * cols + 4 * (cols - 1), 3), scale);
+      shrinkToBox(root, shrinkNames(wk));
+    },
+    tick(t) {
+      if (t.minuteChanged) build();
+    },
+    data(topic) {
+      if (topic === 'weather') build(true);
+    },
+    empty: () => !places().some((p) => placeWeather(p)?.current),
+    destroy() {
+      root.textContent = '';
+    },
+  };
+  return api;
+}
+
+/**
+ * Tiempo en varias ciudades in a box only the fine grid has: one line of places (sky, temperature, name; no high and
+ * low), the type filling the height, as many places as fit whole (the rest left out, never cut in half).
+ */
+function miniCities(root: HTMLElement, box: AdapterBox, scale: number): void {
+  root.classList.remove('is-cols', 'is-grid');
+  root.classList.add('is-mline');
+  const h = innerH(root, box);
+  let wk = Math.min(1.6, Math.max(0.35, h / 3.4)) * scale;
+  root.style.setProperty('--wk', wk.toFixed(3));
+  const cells = [...root.querySelectorAll<HTMLElement>('.cv-city')];
+  for (let i = 0; i < 10 && wk > 0.35 && root.scrollHeight > root.clientHeight + 1; i++) {
+    wk *= 0.92;
+    root.style.setProperty('--wk', wk.toFixed(3));
+  }
+  const b = root.getBoundingClientRect();
+  // the room inside the card's padding
+  const right = b.right - (parseFloat(getComputedStyle(root).paddingRight) || 0);
+  const out = () => cells.some((c) => {
+    if (c.hidden) return false;
+    const q = c.getBoundingClientRect();
+    return q.right > right + 0.5 || q.bottom > b.bottom + 1;
+  }) || root.scrollWidth > root.clientWidth + 1;
+  root.classList.remove('is-one');
+  for (let i = cells.length - 1; i > 0 && out(); i--) cells[i].hidden = true;
+  // one place left and still too wide: its name may end in "...", then smaller type until it fits
+  if (out()) root.classList.add('is-one');
+  if (out()) shrinkToBox(root, wk);
+}
+
 export const WEATHER_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
+  'weather.cities': () => citiesAdapter(),
   'weather.now': () => weatherAdapter('cv-wx-now', drawNow, nowNominal),
   'weather.hourly': () => weatherAdapter('cv-wx-hourly', drawHourly, null, hourlyShape),
   'weather.forecast': () => weatherAdapter('cv-wx-forecast', drawForecast, null, forecastShape),

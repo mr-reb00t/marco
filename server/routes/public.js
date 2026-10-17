@@ -94,7 +94,8 @@ export function publicRouter({ version }) {
 
   r.get('/weather', async (req, res) => {
     try {
-      res.json(await getWeather({ lang: requestScreen(getConfig(), req).screen.screen.language }));
+      const screen = requestScreen(getConfig(), req).screen;
+      res.json(await getWeather({ lang: screen.screen.language, screen }));
     } catch (err) {
       res.status(502).json({ error: err.message });
     }

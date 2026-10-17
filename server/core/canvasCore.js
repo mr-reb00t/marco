@@ -5,6 +5,7 @@ import { isValidTimeZone } from './lib/tz.js';
 import { enabledWindows, nextWindowBoundary, windowState } from './schedules.js';
 import { cardErrorText, checkCard, cssProblem } from './cardTemplate.js';
 import { COIN_ID_RE, DATA_LIMITS, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
+import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
@@ -356,6 +357,10 @@ function inkProps(c, p, x, kind) {
   return out;
 }
 
+/** "Tiempo en varias ciudades": a new card's two places, and how it lays them out. */
+export const CITIES_DEFAULT = [{ name: 'London', lat: 51.507, lon: -0.128 }, { name: 'New York', lat: 40.713, lon: -74.006 }];
+export const CITIES_LAYOUTS = ['list', 'grid'];
+
 /** "Ir a pantalla": what the button shows (icon and text, the icon alone, the text alone). */
 export const NAV_SHOW = ['both', 'icon', 'text'];
 /** "Volver solo tras": minutes without a touch before a device that navigated goes back (0 = it stays). */
@@ -507,22 +512,43 @@ export const CANVAS_KINDS = {
   // ---- Tiempo
   'weather.now': {
     cat: 'weather', sizes: ['xs', 's', 'm'], def: 's', cells: [2, 2, 12, 8], side: true, edition: 'all', bigType: true,
-    defaults: () => ({ feelsLike: true, meta: true, indoor: false }),
+    defaults: () => ({ feelsLike: true, meta: true, indoor: false, place: null }),
     props: (c, p, x) => ({
       feelsLike: P.bool(c, `${p}.feelsLike`, x.feelsLike, true),
       meta: P.bool(c, `${p}.meta`, x.meta, true),
       indoor: P.bool(c, `${p}.indoor`, x.indoor, false),
+      // a place of its own (#11): null = the screen's ("Igual que la pantalla")
+      place: cleanPlace(c, `${p}.place`, x.place),
     }),
   },
   'weather.hourly': {
     cat: 'weather', sizes: ['w', 'l'], def: 'w', cells: [6, 2, 12, 8], side: true, edition: 'all',
-    defaults: () => ({ hours: 12 }),
-    props: (c, p, x) => ({ hours: P.oneOf(c, `${p}.hours`, x.hours, 12, [6, 12, 24]) }),
+    defaults: () => ({ hours: 12, place: null }),
+    props: (c, p, x) => ({ hours: P.oneOf(c, `${p}.hours`, x.hours, 12, [6, 12, 24]), place: cleanPlace(c, `${p}.place`, x.place) }),
   },
   'weather.forecast': {
     cat: 'weather', sizes: ['m', 'w', 't', 'l'], def: 'w', cells: [4, 2, 12, 8], side: true, edition: 'all',
-    defaults: () => ({ days: 5, layout: 'row' }),
-    props: (c, p, x) => ({ days: P.num(c, `${p}.days`, x.days, 5, 3, 7), layout: P.oneOf(c, `${p}.layout`, x.layout, 'row', ['row', 'column']) }),
+    defaults: () => ({ days: 5, layout: 'row', place: null }),
+    props: (c, p, x) => ({
+      days: P.num(c, `${p}.days`, x.days, 5, 3, 7),
+      layout: P.oneOf(c, `${p}.layout`, x.layout, 'row', ['row', 'column']),
+      place: cleanPlace(c, `${p}.place`, x.place),
+    }),
+  },
+  // "Tiempo en varias ciudades" (#11): 2 to 8 places, each with its icon, temperature, name and (optional) the day's
+  // high and low, in a list or a grid; one forecast per place, shared with every other card and screen showing it
+  'weather.cities': {
+    cat: 'weather', sizes: ['s', 'm', 'w', 't'], def: 'm', cells: [3, 2, 12, 8], side: true, edition: 'all',
+    defaults: () => ({ places: CITIES_DEFAULT.map((x) => ({ ...x })), highLow: true, layout: 'list' }),
+    props: (c, p, x) => {
+      let places = P.list(c, `${p}.places`, x.places, CITIES_MAX, (z, q) => cleanPlace(c, q, z)).filter(Boolean);
+      if (!places.length) places = CITIES_DEFAULT.map((y) => ({ ...y }));
+      return {
+        places,
+        highLow: P.bool(c, `${p}.highLow`, x.highLow, true),
+        layout: P.oneOf(c, `${p}.layout`, x.layout, 'list', CITIES_LAYOUTS),
+      };
+    },
   },
   // ---- Contenido y fotos
   message: {
@@ -1101,6 +1127,7 @@ const FINE_MIN = {
   'weather.now': [3, 1],
   'weather.hourly': [8, 2],
   'weather.forecast': [6, 2],
+  'weather.cities': [4, 1],
   'message': [4, 1],
   'todo': [4, 2],
   'news': [6, 1],

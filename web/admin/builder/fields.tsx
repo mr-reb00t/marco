@@ -12,6 +12,8 @@ import { FIELDS } from './fieldSpecs';
 import { HtmlEditor } from './HtmlEditor';
 import { ValueKeyInput } from './ValueKeyInput';
 import { CoinsField, FollowField, StocksKeyField, SymbolsField } from './DataPickers';
+import { PlaceChoice, PlaceList } from '../components/PlaceSearch';
+import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
 
 export interface FieldEnv {
   /** the kinds this server offers (a Rotativa picks its cards among them) */
@@ -410,6 +412,18 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
           return (
             <Field label={t(s.label)}>
               <Zones value={p.zones} onChange={(v) => put('zones', v, `${item.id}.zones`)} />
+            </Field>
+          );
+        if (s.type === 'place')
+          return (
+            <Field label={t(s.label)}>
+              <PlaceChoice value={p.place ?? null} inherit={t('Igual que la pantalla')} onChange={(v) => put('place', v)} />
+            </Field>
+          );
+        if (s.type === 'places')
+          return (
+            <Field label={t(s.label)} hint={t('De {min} a {max} lugares. Una pantalla muestra como mucho 8 lugares además del suyo.', { min: CITIES_MIN, max: CITIES_MAX })}>
+              <PlaceList value={p.places} min={CITIES_MIN} max={CITIES_MAX} onChange={(v) => put('places', v, `${item.id}.places`)} />
             </Field>
           );
         if (s.type === 'text')

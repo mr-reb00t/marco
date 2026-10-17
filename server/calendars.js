@@ -9,7 +9,7 @@ import { addDays, isoWithOffset, localDate, zonedMidnight, daysBetween } from '.
 import { hash } from './lib/text.js';
 import { t } from './core/lib/i18n.js';
 import { parseIcsText, expandEvents } from './ics.js';
-import { matchRule, normalizeAirbnbTitle, tidyTitle, translateHoliday, KIND_EMOJI } from './rules.js';
+import { matchRule, normalizeAirbnbTitle, tidyTitleWhy, translateHoliday, KIND_EMOJI } from './rules.js';
 import { applyEventRules } from './eventRules.js';
 import { expandLocalEvents, expandBirthdays, localSource, birthdaysSource } from './localEvents.js';
 import * as google from './google.js';
@@ -232,7 +232,7 @@ function toWire(e) {
  * With `detail: true` hidden events are kept and every event carries `hidden`, `originalTitle`, `applied`,
  * `iconRuleId`, `countdown`, `itemId` (used by the admin preview and countdowns); otherwise wire CalEvents.
  */
-export function buildSourceEvents(raws, source, { rules, eventRules = [], from, to, tz, lang, detail = false }) {
+export function buildSourceEvents(raws, source, { rules, eventRules = [], from, to, tz, lang, detail = false, tidyBirthdays = true }) {
   const fromMs = zonedMidnight(from, tz).getTime();
   const toExclDate = addDays(to, 1);
   const toMs = zonedMidnight(toExclDate, tz).getTime();
@@ -266,8 +266,16 @@ export function buildSourceEvents(raws, source, { rules, eventRules = [], from, 
     const emoji = r.emoji || style?.emoji || titleEmoji || icon?.emoji || source.emoji || KIND_EMOJI[source.kind] || '';
     const color = r.color || style?.color || icon?.color || source.color;
     const iconUsed = icon && ((!r.emoji && !style?.emoji && !titleEmoji && icon.emoji) || (!r.color && !style?.color && icon.color));
-    // Un-shout ALL CAPS and drop "Cumple de…" when 🎂 already says it, unless the user renamed it explicitly.
-    if (title === originalTitle) title = tidyTitle(title, { rule: icon, source, emoji }) || title;
+    // Un-shout ALL CAPS and drop "Cumple de…" when 🎂 already says it (unless birthdays.tidyTitles is off), unless the
+    // user renamed it explicitly. `titleWhy` tells the admin preview why the title changed.
+    let titleWhy = title !== originalTitle ? 'rule' : null;
+    if (!titleWhy) {
+      const tidy = tidyTitleWhy(title, { rule: icon, source, emoji, birthdayNames: tidyBirthdays });
+      if (tidy.title) {
+        title = tidy.title;
+        titleWhy = tidy.why;
+      }
+    }
 
     let start, end, multiDay;
     if (r.allDay) {
@@ -291,7 +299,7 @@ export function buildSourceEvents(raws, source, { rules, eventRules = [], from, 
     if (r.age !== undefined) ev.age = r.age;
     if (detail) {
       Object.assign(ev, {
-        hidden: ruled.hidden, originalTitle, applied: ruled.applied, iconRuleId: iconUsed ? icon.id : null,
+        hidden: ruled.hidden, originalTitle, titleWhy, applied: ruled.applied, iconRuleId: iconUsed ? icon.id : null,
         countdown: Boolean(r.countdown || style?.countdown), itemId: r.uid,
       });
     }
@@ -350,7 +358,7 @@ async function ensureSources(sources, window) {
 /** Build detailed (see buildSourceEvents `detail`) sorted events for the picked sources. */
 function computeDetailed(cfg, picked, { from, to, lang }) {
   const tz = cfg.datetime.timezone;
-  const opts = { rules: cfg.calendar.iconRules, eventRules: cfg.eventRules.items, from, to, tz, lang, detail: true };
+  const opts = { rules: cfg.calendar.iconRules, eventRules: cfg.eventRules.items, from, to, tz, lang, detail: true, tidyBirthdays: cfg.birthdays.tidyTitles !== false };
   const fromDate = new Date(zonedMidnight(from, tz).getTime() - DAY);
   const toDate = new Date(zonedMidnight(addDays(to, 1), tz).getTime() + DAY);
   const events = [];
@@ -440,7 +448,7 @@ export async function previewEvents({ from, to, screen = null, overrides = {} })
     for (const a of e.applied) ruleHits[a.ruleId] = (ruleHits[a.ruleId] || 0) + 1;
     return {
       ...toWire(e),
-      hidden: e.hidden, originalTitle: e.originalTitle, sourceName: names.get(e.sourceId) || e.sourceId,
+      hidden: e.hidden, originalTitle: e.originalTitle, titleWhy: e.titleWhy ?? null, sourceName: names.get(e.sourceId) || e.sourceId,
       applied: e.applied, iconRuleId: e.iconRuleId,
     };
   });

@@ -167,7 +167,7 @@ test('migration v1 → v2 keeps every value (global vs screens[0])', async () =>
   // v1 had no custom date pattern: it is back-filled with the default
   assert.deepEqual(s.datetime, { ...dtView, dateCustom: '{dddd}, {d} {mmmm} {yyyy}' });
   assert.deepEqual(v.datetime, { timezone });
-  assert.deepEqual(s.weather, { enabled: false, forecastDays: 3, showHourly: false, showPrecipChance: false });
+  assert.deepEqual(s.weather, { enabled: false, forecastDays: 3, showHourly: false, showPrecipChance: false, place: null });
   assert.equal(v.weather.locationName, 'Madrid');
   assert.equal(v.weather.units, 'imperial');
   assert.equal(v.weather.haIndoorTempEntity, 'sensor.t');

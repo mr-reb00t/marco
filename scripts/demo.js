@@ -46,6 +46,7 @@ const NL_DA = {
   'Football practice – Mateo': ['Voetbaltraining – Mateo', 'Fodboldtræning – Mateo'],
   'School trip to the science museum': ['Schoolreisje naar het wetenschapsmuseum', 'Skoleudflugt til videnskabsmuseet'],
   'School play': ['Schoolvoorstelling', 'Skolekomedie'],
+  'Miss Nora’s Birthday': ['Verjaardag van juf Nora', 'Lærer Noras fødselsdag'],
   'Beach house': ['Strandhuis', 'Sommerhuset'],
   'School & activities': ['School en activiteiten', 'Skole og aktiviteter'],
   'Public holidays': ['Feestdagen', 'Helligdage'],
@@ -140,6 +141,9 @@ function schoolFeed() {
       `DTEND;TZID=${TZ}:${ics(start)}T191500`, 'RRULE:FREQ=WEEKLY;BYDAY=TU,TH', `SUMMARY:${L('Football practice – Mateo', 'Fútbol – Mateo', 'Futebol – Mateo')}`, 'END:VEVENT'],
     ['BEGIN:VEVENT', 'UID:demo-trip@marco.invalid', `DTSTART;VALUE=DATE:${ics(D(11))}`, `DTEND;VALUE=DATE:${ics(D(12))}`,
       `SUMMARY:${L('School trip to the science museum', 'Excursión al museo de la ciencia', 'Visita de estudo ao museu da ciência')}`, 'END:VEVENT'],
+    // a birthday as calendars write it: Marco shows only the name next to the 🎂 (Cumpleaños, "Ordenar los títulos")
+    ['BEGIN:VEVENT', 'UID:demo-nora@marco.invalid', `DTSTART;VALUE=DATE:${ics(D(3))}`, `DTEND;VALUE=DATE:${ics(D(4))}`,
+      `SUMMARY:${L('Miss Nora’s Birthday', 'Cumpleaños de la profe Nora', 'Aniversário da professora Nora')}`, 'END:VEVENT'],
     ['BEGIN:VEVENT', 'UID:demo-play@marco.invalid', `DTSTART;TZID=${TZ}:${ics(D(17))}T183000`, `DTEND;TZID=${TZ}:${ics(D(17))}T200000`,
       `SUMMARY:${L('School play', 'Función del colegio', 'Teatro da escola')}`, 'END:VEVENT'],
   ].map((l) => l.join('\r\n'));

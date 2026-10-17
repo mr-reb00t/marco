@@ -70,7 +70,8 @@ export function mockConfig(show?: string): DisplayConfig {
     screenId: 's_main',
     slug: 'living-room',
     screen: { name: L('Living room', 'Salón', 'Sala'), language: DEMO_LANG, style: 'modern' },
-    weather: { locationName: L('Lisbon, Portugal', 'Lisboa, Portugal', 'Lisboa, Portugal') },
+    // ?wxplace=<name> → this screen shows the weather of another (made-up) place (#11)
+    weather: { locationName: L('Lisbon, Portugal', 'Lisboa, Portugal', 'Lisboa, Portugal'), ...(q.get('wxplace') ? { place: { name: q.get('wxplace')!, lat: 37.02, lon: -7.93 } } : {}) },
     // ?photos=0 → no background photo
     ...(q.get('photos') === '0' ? { background: { enabled: false } } : {}),
     // ?h12=1 → 12-hour clock
@@ -623,6 +624,34 @@ export function mockWeather(now = new Date(), wx?: string | null): WeatherRespon
     [w.current.code, w.current.description] = DEMO_WX[wx];
     if (wx === 'clear') w.current.isDay = true; // sun rays need daylight
   } else if (wx && Number.isFinite(Number(wx))) w.current.code = Number(wx);
+  return w;
+}
+
+/**
+ * The demo's weather at another place (#11): the same day shifted by a few degrees and another sky, picked from the
+ * place's coordinates so each place always looks the same.
+ */
+export function mockPlaceWeather(now: Date, place: { name: string; lat: number; lon: number }, key: string): WeatherResponse {
+  const w = baseWeather(now);
+  const seed = Math.abs(Math.round(place.lat * 37 + place.lon * 11));
+  // colder towards the poles, a little random
+  const shift = Math.round(12 - Math.abs(place.lat) * 0.35 + (seed % 7) - 3) - 7;
+  const skies = [0, 1, 2, 3, 61, 80, 71, 45];
+  const code = skies[seed % skies.length];
+  const sky: Record<number, string> = {
+    0: L('Clear sky', 'Despejado', 'Céu limpo'), 1: L('Mainly clear', 'Mayormente despejado', 'Céu pouco nublado'),
+    2: L('Partly cloudy', 'Parcialmente nublado', 'Parcialmente nublado'), 3: L('Overcast', 'Cubierto', 'Encoberto'),
+    61: L('Light rain', 'Lluvia ligera', 'Chuva fraca'), 80: L('Rain showers', 'Chubascos', 'Aguaceiros'),
+    71: L('Light snow', 'Nieve ligera', 'Neve fraca'), 45: L('Fog', 'Niebla', 'Nevoeiro'),
+  };
+  const add = (n: number) => Math.round((n + shift) * 10) / 10;
+  w.locationName = place.name;
+  w.placeKey = key;
+  w.current = { ...w.current, temp: add(w.current.temp), feelsLike: w.current.feelsLike === null ? null : add(w.current.feelsLike), code, description: sky[code], humidity: 40 + (seed % 45) };
+  w.today = { ...w.today, min: add(w.today.min), max: add(w.today.max) };
+  w.daily = w.daily.map((d, i) => ({ ...d, min: add(d.min), max: add(d.max), code: i === 0 ? code : skies[(seed + i) % skies.length] }));
+  w.hourly = w.hourly.map((h) => ({ ...h, temp: add(h.temp) }));
+  w.indoor = null;
   return w;
 }
 

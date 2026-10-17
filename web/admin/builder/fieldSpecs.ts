@@ -22,6 +22,10 @@ export type Spec =
   | { k: 'memberId'; type: 'member'; label: string }
   | { k: 'widgetId'; type: 'widget'; label: string }
   | { k: 'zones'; type: 'zones'; label: string }
+  /** a weather card's own place (null: the screen's) */
+  | { k: 'place'; type: 'place'; label: string }
+  /** the places of "Tiempo en varias ciudades" (2 to 8) */
+  | { k: 'places'; type: 'places'; label: string }
   | { k: string; type: 'text'; label: string; max: number; placeholder?: string; hint?: string }
   /** one Home Assistant entity of the kind's domains (canvasCore CANVAS_KINDS[kind].ha), or of `domains` */
   | { k: 'entity' | 'showWhen'; type: 'entity'; label: string; domains?: string[]; optional?: boolean; hint?: string }
@@ -50,6 +54,8 @@ export type Spec =
   /** a Rotativa's cards: each with its own kind and options (RotatorFields.tsx) */
   | { type: 'rotatorCards' };
 
+/** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
+const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
 const HIDE_PAST: Spec = { k: 'hidePast', type: 'bool', label: 'Ocultar lo que ya ha pasado' };
 const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
 const DATE_POS_FIELD: Spec = { k: 'datePos', type: 'seg', label: 'Posición de la fecha', opts: [{ v: 'above', l: 'Arriba' }, { v: 'below', l: 'Abajo' }] };
@@ -151,13 +157,20 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { type: 'note', text: 'Las cuentas atrás se crean en su propia sección.', go: { label: 'Ir a Cuentas atrás', route: 'countdowns' } },
   ],
   'weather.now': [
+    PLACE,
     { k: 'feelsLike', type: 'bool', label: 'Sensación térmica' },
     { k: 'meta', type: 'bool', label: 'Viento y humedad' },
   ],
-  'weather.hourly': [{ k: 'hours', type: 'seg', label: 'Horas', opts: [{ v: 6, l: '6' }, { v: 12, l: '12' }, { v: 24, l: '24' }] }],
+  'weather.hourly': [PLACE, { k: 'hours', type: 'seg', label: 'Horas', opts: [{ v: 6, l: '6' }, { v: 12, l: '12' }, { v: 24, l: '24' }] }],
   'weather.forecast': [
+    PLACE,
     { k: 'days', type: 'num', label: 'Días', min: 3, max: 7, unit: 'days' },
     { k: 'layout', type: 'seg', label: 'Orden', opts: [{ v: 'row', l: 'En fila' }, { v: 'column', l: 'En columna' }] },
+  ],
+  'weather.cities': [
+    { k: 'places', type: 'places', label: 'Lugares' },
+    { k: 'layout', type: 'seg', label: 'Forma', opts: [{ v: 'list', l: 'Lista' }, { v: 'grid', l: 'Cuadrícula' }] },
+    { k: 'highLow', type: 'bool', label: 'Máxima y mínima de hoy' },
   ],
   message: [
     { k: 'align', type: 'seg', label: 'Alineación', opts: [{ v: 'left', l: 'Izquierda' }, { v: 'center', l: 'Centro' }] },

@@ -211,3 +211,6 @@ export function readCanvasFile(
   | { ok: false; error: string; path?: string };
 /** The kind an item is sized as (a Rotativa: the range its cards allow too). */
 export function kindFor(item: { kind: string; props?: Record<string, unknown> } | null | undefined): CanvasKindDef;
+/** "Tiempo en varias ciudades": a new card's places, and its layouts. */
+export const CITIES_DEFAULT: { name: string; lat: number; lon: number }[];
+export const CITIES_LAYOUTS: ('list' | 'grid')[];

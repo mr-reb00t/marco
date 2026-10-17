@@ -49,6 +49,7 @@ export const KIND_META: Partial<Record<CanvasKind, KindMeta>> = {
   'weather.now': { name: 'Tiempo ahora', help: 'La temperatura y el cielo de este momento.', icon: 'sun', tags: 'ahora actual now current agora nu' },
   'weather.hourly': { name: 'Próximas horas', help: 'El tiempo de las próximas horas.', icon: 'cloud', tags: 'horas por hora hourly hours uur per uur time for time' },
   'weather.forecast': { name: 'Próximos días', help: 'La previsión de los próximos días.', icon: 'cloud', tags: 'días semana previsión forecast days previsão dagen dage' },
+  'weather.cities': { name: 'Tiempo en varias ciudades', help: 'El tiempo de ahora en dos a ocho lugares.', icon: 'globe', tags: 'ciudades lugares varias mundo cities places world cidades lugares steden plaatsen byer steder' },
   message: { name: 'Mensaje', help: 'El mensaje de esta pantalla.', icon: 'message', tags: 'mensaje texto nota message text note mensagem bericht tekst besked' },
   todo: { name: 'Lista de tareas', help: 'Las tareas de la lista de esta pantalla.', icon: 'checklist', tags: 'tareas pendientes lista compra todo tasks list shopping tarefas taken lijst opgaver liste' },
   news: { name: 'Noticias', help: 'Los titulares de tus fuentes de noticias.', icon: 'news', tags: 'noticias titulares rss news headlines notícias nieuws nyheder' },

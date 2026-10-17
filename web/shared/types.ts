@@ -512,9 +512,21 @@ export interface WeatherConfig {
   forecastDays: number;
   showHourly: boolean;
   showPrecipChance: boolean;
+  /**
+   * Per screen ("Ubicación de esta pantalla", #11): null = the household's place (locationName, lat, lon), or another
+   * place for every layout of this screen. Since 0.17; missing = null.
+   */
+  place?: WeatherPlace | null;
   haWeatherEntity: string;
   haIndoorTempEntity: string;
   haIndoorHumidityEntity: string;
+}
+
+/** A place for the weather: a name as the screen shows it and its coordinates (server/core/weatherPlaces.js). */
+export interface WeatherPlace {
+  name: string;
+  lat: number;
+  lon: number;
 }
 
 export interface NewsFeed {
@@ -792,7 +804,7 @@ export type CanvasCategory = 'time' | 'calendar' | 'weather' | 'content' | 'nav'
 export type CanvasKind =
   | 'clock.digital' | 'clock.analog' | 'clock.flip' | 'clock.world' | 'date'
   | 'calendar.month' | 'calendar.week' | 'calendar.agenda' | 'calendar.today' | 'calendar.next' | 'calendar.people' | 'countdowns'
-  | 'weather.now' | 'weather.hourly' | 'weather.forecast'
+  | 'weather.now' | 'weather.hourly' | 'weather.forecast' | 'weather.cities'
   | 'message' | 'todo' | 'news' | 'photo' | 'widget' | 'value' | 'spacer' | 'heading'
   // Rotativa: one slot that shows its cards one after another (RotatorProps)
   | 'rotator'
@@ -1466,6 +1478,24 @@ export interface WeatherResponse {
   indoor: { temp: number | null; humidity: number | null } | null;
   /** since 0.5; missing from older servers (then it is Open-Meteo) */
   source?: WeatherSource;
+  /** the place this answer is for (weatherPlaces.js placeKey); since 0.17 */
+  placeKey?: string;
+  /**
+   * The other places the screen shows (its weather cards with a place of their own, its cities cards), by placeKey.
+   * A place whose source failed is left out. Since 0.17.
+   */
+  places?: Record<string, WeatherResponse>;
+}
+
+/** POST /api/admin/weather/preview: at most 8 places and the language of the answer. */
+export interface WeatherPreviewRequest {
+  places: WeatherPlace[];
+  lang: Lang;
+}
+
+/** POST /api/admin/weather/preview: the weather of unsaved places (the admin preview), by placeKey. */
+export interface WeatherPreviewResponse {
+  places: Record<string, WeatherResponse>;
 }
 
 /** GET /api/admin/weather/key: the key itself is never sent back. */
@@ -2057,7 +2087,7 @@ export interface ScreenProfile {
   background: BackgroundConfig;
   calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'agendaDays'> & { sourceIds: string[] | null };
   datetime: Omit<DateTimeConfig, 'timezone'>;
-  weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance'>;
+  weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { enabled: boolean; rotateSec: number };
   todo: { enabled: boolean };
   message: MessageConfig;
@@ -2124,6 +2154,11 @@ export interface BirthdaysConfig {
   color: string;
   emoji: string;
   showAge: boolean;
+  /**
+   * Birthday titles from any calendar ("Astrid's Birthday") show only the name next to the 🎂 (default true). Off: the
+   * calendar's own title stays (ALL CAPS titles are still written in normal case). Since 0.17; missing = true.
+   */
+  tidyTitles?: boolean;
   /** privacy mode for birthdays (default 'keep') */
   privacy?: PrivacyMode;
   items: Birthday[];
@@ -2204,7 +2239,7 @@ export interface StoredConfig {
   screens: ScreenProfile[];
   calendar: { sources: CalendarSource[]; iconRules: IconRule[] };
   datetime: { timezone: string };
-  weather: Omit<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance'>;
+  weather: Omit<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { feeds: NewsFeed[]; maxItems: number };
   todo: { items: TodoItem[] };
   localEvents: LocalEventsConfig;
@@ -2254,6 +2289,12 @@ export interface PreviewEvent extends CalEvent {
   hidden: boolean;
   /** title before rename rules (after kind normalisation, e.g. Airbnb) */
   originalTitle: string;
+  /**
+   * Why the title on screen differs from originalTitle: 'rule' (a rename rule), 'birthday' (a recognised birthday:
+   * only the name is kept, birthdays.tidyTitles), 'caps' (an ALL CAPS title in normal case), null (it does not).
+   * Since 0.17; older servers leave it out.
+   */
+  titleWhy?: 'rule' | 'birthday' | 'caps' | null;
   sourceName: string;
   /** rules that changed this event, in evaluation order */
   applied: { ruleId: string; action: EventRuleAction }[];

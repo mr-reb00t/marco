@@ -5,11 +5,11 @@ import { dateKeyInTz, diffDays, formatDateLine, formatTime, keyToUTC, monthName,
 import { ctx } from '../../ctx';
 import { reducedMotion } from '../../dom';
 import { ICON } from '../../icons';
-import { state } from '../../store';
 import type { Tick } from '../../time';
 import { Clock } from '../clock';
 import { type AnalogFace, Dial } from '../clock-faces';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
+import { screenWeather } from '../../weatherPlaces';
 
 type Props = Record<string, any>;
 const props = (env: AdapterEnv) => env.item().props as Props;
@@ -50,7 +50,7 @@ export const typeCap = (root: HTMLElement): number => (root.dataset.room !== und
  * A text size above 100 % grows the type of a card that fills its box (a clock, the date) only as far as the box
  * holds it: measured like the cramped mark, never smaller than at 100 %. At 100 % and below nothing changes.
  */
-function keepInBox(root: HTMLElement, wk: number, scale: number): number {
+export function keepInBox(root: HTMLElement, wk: number, scale: number): number {
   if (scale <= 1) return wk;
   const floor = wk / scale;
   for (let i = 0; i < 4 && wk > floor; i++) {
@@ -71,7 +71,7 @@ function keepInBox(root: HTMLElement, wk: number, scale: number): number {
  * carries extra lines (the date's week number, sunrise and sunset): scale --wk down until it fits, as the cramped
  * mark measures it, so a card that does fit on screen is never marked "No cabe".
  */
-function shrinkToBox(root: HTMLElement, wk: number): number {
+export function shrinkToBox(root: HTMLElement, wk: number): number {
   for (let i = 0; i < 4; i++) {
     const h = root.clientHeight;
     const w = root.clientWidth;
@@ -438,7 +438,7 @@ export function dateCard(): CanvasAdapter {
   let mline = false;
   const render = (t: Tick, force = false) => {
     const p = props(env);
-    const w = state.weather?.today;
+    const w = screenWeather()?.today;
     applyInk(root, env);
     // the weekday takes the date colour too, unless the card has its own accent colour (the weekday's usual colour)
     root.classList.toggle('cv-dc-wd', !env.item().style?.accent);

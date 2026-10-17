@@ -109,6 +109,12 @@ export const DEMO_NL_DA: Record<string, [string, string]> = {
   'Thunderstorm': ['Onweer', 'Tordenvejr'],
   'NW': ['NW', 'NV'],
   'Partly cloudy': ['Half bewolkt', 'Delvis skyet'],
+  'Mainly clear': ['Overwegend helder', 'Overvejende klart'],
+  'Overcast': ['Bewolkt', 'Overskyet'],
+  'Light rain': ['Lichte regen', 'Let regn'],
+  'Rain showers': ['Regenbuien', 'Regnbyger'],
+  'Light snow': ['Lichte sneeuw', 'Let sne'],
+  'Fog': ['Mist', 'Tåge'],
   // news, countdowns, alerts
   'Reclaiming the space: how a small studio brings human presence back to the offices of a city that works from home': ['De ruimte terugwinnen: hoe een kleine studio weer leven brengt in de kantoren van een stad die thuiswerkt', 'Rummet tilbage: sådan bringer et lille studie liv tilbage til kontorerne i en by, der arbejder hjemmefra'],
   'Architects and neighbours talk about what the change means for the old town.': ['Architecten en buurtbewoners praten over wat de verandering betekent voor de oude binnenstad.', 'Arkitekter og naboer fortæller, hvad ændringen betyder for den gamle bydel.'],
