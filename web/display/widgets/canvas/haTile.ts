@@ -98,9 +98,14 @@ export function coverButtons(env: AdapterEnv, alias: string, s: HaState | null, 
   const armed = armedKey(env);
   const g = el('div', 'cv-ha-coverbtns');
   if (list.length !== 3) g.style.setProperty('--n', String(list.length));
+  // no stop button of its own (the line and the compact sizes show up and down only): while the cover moves, the
+  // button of the way it goes is the stop (■), when the cover takes one. Right after a tap too: the optimistic state
+  // (haFeed.ts) is 'opening' or 'closing' until Home Assistant says
+  const stopIn = !list.includes('stop') && live(env, s, 'stop');
   for (const c of list) {
     const on = (c === 'open' && s.state === 'opening') || (c === 'close' && s.state === 'closing');
-    g.append(ctlButton({ cls: 'cv-ha-cbtn', alias, control: c, live: true, icon: COVER_BTN[c][0], label: ctx.t(COVER_BTN[c][1]), on, armed: armed === `${alias}|${c}` }));
+    const k = on && stopIn ? 'stop' : c;
+    g.append(ctlButton({ cls: `cv-ha-cbtn${k !== c ? ' is-stop' : ''}`, alias, control: k, live: true, icon: COVER_BTN[k][0], label: ctx.t(COVER_BTN[k][1]), on, armed: armed === `${alias}|${k}` }));
   }
   return g;
 }

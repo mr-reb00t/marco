@@ -12,6 +12,9 @@ All notable changes to this project are documented here. The format is based on
 - Charts stay on the card at every size, in both chart styles. With *Below* and too little height for a band under the
   numbers, the chart moves behind them instead of being left out: *Sensor*, the large *Crypto* card and the
   electricity prices. In a narrow *Crypto* or *Stocks* list the sparklines move behind their rows instead of going.
+- A moving *Blind* can be stopped from cards that only show up and down (the line on the fine grid, an *Entity* line
+  of a blind). While it opens, the up button turns into stop; while it closes, the down button does, also right after
+  the tap. Only for blinds that can stop. Cards with their own stop button keep it.
 
 ## [0.16.3] - 2026-10-17
 
