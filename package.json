@@ -1,6 +1,6 @@
 {
   "name": "marco",
-  "version": "0.16.1",
+  "version": "0.16.2",
   "private": true,
   "type": "module",
   "description": "Self-hosted family wall calendar & dashboard for a Raspberry Pi kiosk or any browser: Google Calendar, iCal, weather, photos, announcements. A free, open-source DAKboard alternative.",

@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.2] - 2026-10-17
+
 ### Added
 - Weather of more than one place (#11).
   - Each screen can show the weather of its own place: *Weather* > *Location of this screen*, *Home* (as before) or
