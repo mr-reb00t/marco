@@ -5,10 +5,20 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- Custom screens always use the fine grid (24×16 cells, 16×24 on a portrait screen). Screens made on the normal grid
+  are converted and look the same: every card keeps its place and size, in both orientations, and the sidebar does
+  not change. A self-hosted Marco converts its config file once when it starts, after a backup of the file as it was.
+- The *Grid* setting is gone from *Page* in the editor, and so are the limits of the normal grid: every custom screen
+  takes up to 48 cards and 80 Home Assistant entities. *Density* stays. The status bar of the editor shows how many
+  cards the screen has, out of 48.
+- The size buttons of a card and the templates are in cells of the 24×16 grid; they look as before.
+
 ### Fixed
-- *Sensor* on the fine grid keeps its look (the name, the value in large type and today's curve) in boxes two or
-  three cells high, like 4×2, 5×3 or 8×3. Before, those boxes switched to the one-line look and the curve was gone,
-  while 4×4 still had it. Only a one-row line drops the curve now. A binary sensor is still drawn as a line.
+- *Sensor* keeps its look (the name, the value in large type and today's curve) in boxes three cells high or more,
+  like 5×3 or 8×3. Before, those boxes switched to the one-line look and the curve was gone, while 4×4 still had it.
+  A line one or two rows high (like the one-row line of the normal grid, 6×2 now) stays a line. A binary sensor is
+  still drawn as a line.
 - Charts stay on the card at every size, in both chart styles. With *Below* and too little height for a band under the
   numbers, the chart moves behind them instead of being left out: *Sensor*, the large *Crypto* card and the
   electricity prices. In a narrow *Crypto* or *Stocks* list the sparklines move behind their rows instead of going.

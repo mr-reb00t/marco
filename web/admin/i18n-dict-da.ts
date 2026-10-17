@@ -509,6 +509,7 @@ export const DA: Record<string, string> = {
   'Configuración importada': 'Indstillinger importeret',
   'Configuración importada: {list}': 'Indstillinger importeret: {list}',
   'Configuración migrada al formato multipantalla': 'Indstillingerne er flyttet til formatet med flere skærme',
+  'Pantallas personalizadas pasadas a la nueva cuadrícula (se ven igual)': 'Egne skærme flyttet til det nye gitter (de ser ens ud)',
   'Contiene': 'Indeholder',
   'Contraseña cambiada': 'Adgangskoden er ændret',
   'Copia de seguridad creada': 'Backup oprettet',

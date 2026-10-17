@@ -5,14 +5,24 @@ import type {
 
 export type Orientation = 'landscape' | 'portrait';
 
+/** Cells of the main area: 24×16 landscape, 16×24 portrait (every screen). */
 export const CANVAS_GRID: { landscape: { cols: number; rows: number }; portrait: { cols: number; rows: number } };
-export const CANVAS_GRID_IDS: CanvasGridId[];
-export const CANVAS_GRIDS: Record<CanvasGridId, { landscape: { cols: number; rows: number }; portrait: { cols: number; rows: number } }>;
+/** The legacy grid of screens saved before 0.17 (12×8, 8×12), converted when read. */
+export const LEGACY_GRID: { landscape: { cols: number; rows: number }; portrait: { cols: number; rows: number } };
+/** The value canvas.grid has in every saved screen. */
+export const CANVAS_GRID_ID: 'fine';
 export const CANVAS_DENSITIES: ('normal' | 'compact')[];
+/** Grid cells per legacy cell (2; 1 for the internal legacy unit 'normal'). */
 export function gridFactor(grid?: CanvasGridId | string | null): 1 | 2;
 export function gridDims(orientation?: Orientation | string, grid?: CanvasGridId | string | null): { cols: number; rows: number };
-export function canvasGrid(cv: { grid?: CanvasGridId | string } | null | undefined): CanvasGridId;
-export function convertCanvasGrid(cv: CanvasConfig, to: CanvasGridId): { ok: boolean; canvas: CanvasConfig; moved: string[]; resized: string[]; lost: string[]; over?: 'items' | 'haEntities' };
+/** Always 'fine'. */
+export function canvasGrid(cv?: unknown): 'fine';
+/** True for a stored canvas saved on the legacy grid (no `grid`, or 'normal'). */
+export function isLegacyCanvas(cv: unknown): boolean;
+/** A legacy canvas with every main-grid position and box doubled (the same look) and grid 'fine'; any other as it is. */
+export function upgradeCanvasGrid<T>(cv: T): T;
+/** The smallest box a kind is drawn in its full look at (twice its legacy smallest), in grid cells. */
+export function fullLookMin(kind: CanvasKind | string | CanvasKindDef, orientation?: Orientation | string): [number, number];
 export const ROTATOR_MAX: number;
 export const ROTATOR_MIN: number;
 export const ROTATOR_EVERY_DEFAULT: number;
@@ -34,11 +44,12 @@ export const CANVAS_BACKGROUNDS: CanvasConfig['background'][];
 export const CANVAS_SURFACES: ('glass' | 'solid' | 'none')[];
 export const CANVAS_RADII: ('m' | 'l' | 'xl')[];
 export type CanvasLimits = { items: number; side: number; haEntities: number; liveCameras: number };
+/** Caps per screen: 48 cards, 8 in the sidebar, 80 Home Assistant entities, one live camera. */
 export const CANVAS_LIMITS: CanvasLimits;
-/** The caps of a screen on the fine grid (48 cards, 80 Home Assistant entities). */
+/** @deprecated the same as CANVAS_LIMITS. */
 export const CANVAS_LIMITS_FINE: CanvasLimits;
-/** The caps of a screen on a grid. */
-export function canvasLimits(grid?: CanvasGridId | string | null): CanvasLimits;
+/** @deprecated CANVAS_LIMITS. */
+export function canvasLimits(grid?: unknown): CanvasLimits;
 export const CANVAS_ID_RE: RegExp;
 export const HA_ENTITY_RE: RegExp;
 export const VALUE_KEY_RE: RegExp;
@@ -70,7 +81,7 @@ export interface CanvasKindDef {
   def: CanvasSize;
   /** [min w, min h, max w, max h] in landscape cells (cellRange gives them per orientation) */
   cells: [number, number, number, number];
-  /** its smallest box on the fine grid, in fine cells (else twice its normal minimum) */
+  /** its smallest box in grid cells (else twice its legacy minimum) */
   fine?: [number, number];
   side: boolean;
   edition: 'all' | 'local';

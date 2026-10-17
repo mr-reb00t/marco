@@ -1048,7 +1048,13 @@ export function mergeDefaults(stored) {
     const keepStyle = (s) => (isObj(s.screen) && 'style' in s.screen ? s : { ...s, screen: { ...(isObj(s.screen) ? s.screen : {}), style: 'classic' } });
     // the same for compact busy days: screens saved before the option keep the month grid they had
     const keepGrid = (s) => (isObj(s.calendar) && 'compactBusyDays' in s.calendar ? s : { ...s, calendar: { ...(isObj(s.calendar) ? s.calendar : {}), compactBusyDays: false } });
-    out.screens = src.screens.map((s) => (isObj(s) ? merge(defaultScreenProfile({ id: s.id, slug: s.slug, name: s.name }), keepGrid(keepStyle(s))) : s));
+    // a Personalizado screen saved before 0.17 has no canvas.grid: it must stay without one (the 'fine' of the
+    // defaults would read its 12×8 positions as cells of the 24×16 grid), so sanitizeCanvas converts it
+    const legacyCanvas = (s, m) => {
+      if (isObj(s.canvas) && !('grid' in s.canvas) && isObj(m.canvas)) delete m.canvas.grid;
+      return m;
+    };
+    out.screens = src.screens.map((s) => (isObj(s) ? legacyCanvas(s, merge(defaultScreenProfile({ id: s.id, slug: s.slug, name: s.name }), keepGrid(keepStyle(s)))) : s));
   }
   return out;
 }

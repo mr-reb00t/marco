@@ -1,14 +1,15 @@
-// Personalizado, issue #9: "Cuadrícula" (the fine grid, 24×16), "Densidad" (compact) and the "Rotativa" (one slot
-// that shows its cards one after another). The model (canvasCore.js): ranges and sizes on both grids, the exact
-// conversion both ways, validation and limits, and every data path of a Rotativa's cards (Home Assistant aliases,
-// values, data cards, widgets, conditions, schedules, privacy, export). The builder's operations (model.ts) too.
+// Personalizado, issue #9: the grid of 24×16 cells (the fine grid, the only one since 0.17), "Densidad" (compact)
+// and the "Rotativa" (one slot that shows its cards one after another). The model (canvasCore.js): ranges and sizes
+// (twice the cells of the old 12×8 grid, smaller boxes for the compact look), validation and limits, and every data
+// path of a Rotativa's cards (Home Assistant aliases, values, data cards, widgets, conditions, schedules, privacy,
+// export). The builder's operations (model.ts) too. Screens of the old grid: canvas-legacy-grid.test.js.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as nodeModule from 'node:module';
 import {
-  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_LIMITS_FINE, canvasLimits, CANVAS_SIZE_IDS, CANVAS_TEMPLATES, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, ROTATOR_MAX, boxAllowed, boxOf, canvasCards,
-  canvasDataItems, canvasDefaults, canvasEventsNeed, canvasFromTemplate, canvasWidgetIds, cellRange, conditionHidden, convertCanvasGrid, defaultCanvas, defaultItemStyle,
-  deriveCanvasPortrait, exportCanvasFile, fitsAt, gridDims, itemAliases, kindFor, makeOccupancy, occupy, posCells, projectCanvas, readCanvasFile, rotatorKindOk, sanitizeCanvas,
+  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_LIMITS_FINE, canvasLimits, CANVAS_SIZE_IDS, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, LEGACY_GRID, ROTATOR_MAX, boxAllowed, boxOf, canvasCards,
+  canvasDataItems, canvasDefaults, canvasEventsNeed, canvasFromTemplate, canvasWidgetIds, cellRange, conditionHidden, defaultCanvas, defaultItemStyle,
+  exportCanvasFile, fitsAt, fullLookMin, gridDims, itemAliases, kindFor, makeOccupancy, occupy, posCells, projectCanvas, readCanvasFile, rotatorKindOk, sanitizeCanvas,
   scheduleHidden, sizeCells,
 } from '../core/canvasCore.js';
 import { aliasesFor, watchedEntities } from '../core/haCore.js';
@@ -47,14 +48,13 @@ const B = (x, y, w, h) => ({ zone: 'main', x, y, size: 'm', w, h });
 const item = (id, kind, pos, props = {}, extra = {}) => ({ id, kind, pos, style: defaultItemStyle(), props: { ...canvasDefaults(kind), ...props }, ...extra });
 const screen = (canvas, extra = {}) => ({ id: 's1', layout: { preset: 'canvas' }, screen: { orientation: 'auto' }, canvas, ...extra });
 
-/** True when no two main items share a cell on `o` (positions under `key`), on the canvas's grid. */
+/** True when no two main items share a cell on `o` (positions under `key`). */
 function noOverlap(cv, key = 'pos', o = 'landscape') {
-  const g = cv.grid === 'fine' ? 'fine' : 'normal';
-  const occ = makeOccupancy(o, g);
+  const occ = makeOccupancy(o);
   for (const it of cv.items) {
     const p = it[key];
     if (p?.zone !== 'main') continue;
-    const [w, h] = posCells(p, o, g);
+    const [w, h] = posCells(p, o);
     if (!fitsAt(occ, p.x, p.y, w, h)) return false;
     occupy(occ, it.id, p.x, p.y, w, h);
   }
@@ -63,191 +63,80 @@ function noOverlap(cv, key = 'pos', o = 'landscape') {
 
 // ---- the grid ---------------------------------------------------------------------------------------------------
 
-test('fine grid: twice the cells each way, every named size and range twice as many cells, and smaller line cards', () => {
-  assert.deepEqual(CANVAS_GRID, { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } }, 'the normal grid did not change');
-  assert.deepEqual(gridDims('landscape', 'fine'), { cols: 24, rows: 16 });
-  assert.deepEqual(gridDims('portrait', 'fine'), { cols: 16, rows: 24 });
-  assert.deepEqual(gridDims('landscape'), { cols: 12, rows: 8 });
+test('the grid: 24×16 cells (16×24 portrait), every named size and range twice the old cells, and smaller line cards', () => {
+  assert.deepEqual(CANVAS_GRID, { landscape: { cols: 24, rows: 16 }, portrait: { cols: 16, rows: 24 } });
+  assert.deepEqual(LEGACY_GRID, { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } }, 'the old grid, only read to convert');
+  assert.deepEqual(gridDims('landscape'), { cols: 24, rows: 16 });
+  assert.deepEqual(gridDims('portrait'), { cols: 16, rows: 24 });
   for (const s of CANVAS_SIZE_IDS) {
-    for (const o of ['landscape', 'portrait']) assert.deepEqual(sizeCells(s, o, 'fine'), sizeCells(s, o).map((n) => n * 2), `${s} ${o}`);
+    for (const o of ['landscape', 'portrait']) assert.deepEqual(sizeCells(s, o), sizeCells(s, o, 'normal').map((n) => n * 2), `${s} ${o}`);
   }
   for (const kind of Object.keys(CANVAS_KINDS)) {
     for (const o of ['landscape', 'portrait']) {
-      const n = cellRange(kind, o);
-      const f = cellRange(kind, o, 'fine');
-      assert.equal(f.maxW, Math.min(n.maxW * 2, gridDims(o, 'fine').cols), `${kind} ${o} maxW`);
-      assert.equal(f.maxH, Math.min(n.maxH * 2, gridDims(o, 'fine').rows), `${kind} ${o} maxH`);
-      // never smaller than half a normal cell's worth less, never larger than twice the normal minimum
+      const n = cellRange(kind, o, 'normal');
+      const f = cellRange(kind, o);
+      assert.equal(f.maxW, Math.min(n.maxW * 2, gridDims(o).cols), `${kind} ${o} maxW`);
+      assert.equal(f.maxH, Math.min(n.maxH * 2, gridDims(o).rows), `${kind} ${o} maxH`);
+      // never larger than twice the old minimum (every box of a converted screen is allowed), and the full look
+      // from there on (fullLookMin)
       assert.ok(f.minW <= n.minW * 2 && f.minH <= n.minH * 2, `${kind} ${o} min`);
-      if (!CANVAS_KINDS[kind].fine) assert.deepEqual([f.minW, f.minH], [n.minW * 2, n.minH * 2], `${kind} ${o}: twice the normal minimum`);
-      // every named size of the kind is a legal fine box
-      for (const s of CANVAS_KINDS[kind].sizes) assert.ok(boxAllowed(kind, ...sizeCells(s, o, 'fine'), o, 'fine'), `${kind} ${s} ${o}`);
+      assert.deepEqual(fullLookMin(kind, o), [n.minW * 2, n.minH * 2], `${kind} ${o} full look`);
+      if (!CANVAS_KINDS[kind].fine) assert.deepEqual([f.minW, f.minH], [n.minW * 2, n.minH * 2], `${kind} ${o}: twice the old minimum`);
+      // every named size of the kind is a legal box
+      for (const s of CANVAS_KINDS[kind].sizes) assert.ok(boxAllowed(kind, ...sizeCells(s, o), o), `${kind} ${s} ${o}`);
     }
   }
-  // the line cards (Entidad, Interruptor, Sensor, Luz, Clima, Persiana) half as high as today's 2×1 and down to two
-  // cells wide (#9), still readable (browser sweep)
+  // the line cards (Entidad, Interruptor, Sensor, Luz, Clima, Persiana) one row high and down to two cells wide (#9),
+  // still readable (browser sweep)
   for (const kind of ['ha.tile', 'ha.switch', 'ha.sensor', 'ha.light', 'ha.climate', 'ha.cover']) {
-    assert.ok(boxAllowed(kind, 4, 1, 'landscape', 'fine'), `${kind} 4×1 fine`);
-    assert.ok(boxAllowed(kind, 2, 1, 'landscape', 'fine'), `${kind} 2×1 fine`);
-    assert.equal(boxAllowed(kind, 1, 1, 'landscape', 'fine'), false, `${kind} 1×1 fine is too narrow`);
-    if (kind !== 'ha.cover') assert.ok(boxAllowed(kind, 2, 1), `${kind} 2×1 normal as before`);
+    assert.ok(boxAllowed(kind, 4, 1), `${kind} 4×1`);
+    assert.ok(boxAllowed(kind, 2, 1), `${kind} 2×1`);
+    assert.equal(boxAllowed(kind, 1, 1), false, `${kind} 1×1 is too narrow`);
+    if (kind !== 'ha.cover') assert.ok(boxAllowed(kind, 4, 2), `${kind} 4×2 (the old 2×1) as before`);
   }
-  // a box exactly twice a named size is stored as the name, as on the normal grid
-  assert.deepEqual(boxOf('todo', 6, 8, 'landscape', 'fine'), { size: 't' });
-  assert.deepEqual(boxOf('ha.tile', 4, 1, 'landscape', 'fine'), { size: 'row', w: 4, h: 1 });
-  assert.deepEqual(boxOf('ha.tile', 1, 1, 'landscape', 'fine'), { size: 'row', w: 2, h: 1 }, 'clamped to the fine minimum');
-  assert.deepEqual(posCells({ size: 'm' }, 'landscape', 'fine'), [8, 6]);
+  // a box exactly a named size is stored as the name
+  assert.deepEqual(boxOf('todo', 6, 8), { size: 't' });
+  assert.deepEqual(boxOf('ha.tile', 4, 1), { size: 'row', w: 4, h: 1 });
+  assert.deepEqual(boxOf('ha.tile', 1, 1), { size: 'row', w: 2, h: 1 }, 'clamped to the minimum');
+  assert.deepEqual(posCells({ size: 'm' }), [8, 6]);
 });
 
-test('settings: old screens have neither (Normal), they are kept only when chosen, and wrong values are errors', () => {
+test('settings: every canvas is on the grid ("fine"), the density is kept only when chosen, and wrong values are errors', () => {
   const before = canvasFromTemplate('bento');
-  assert.equal('grid' in before, false);
+  assert.equal(before.grid, 'fine');
   assert.equal('density' in before, false);
   const again = clean(structuredClone(before));
-  assert.deepEqual(again.cv, before, 'a screen saved before validates to the same thing');
+  assert.deepEqual(again.cv, before, 'a saved screen validates to the same thing');
   assert.deepEqual(again.errors, []);
-  const f = clean({ ...defaultCanvas(), grid: 'fine', density: 'compact' });
+  const f = clean({ ...defaultCanvas(), density: 'compact' });
   assert.equal(f.cv.grid, 'fine');
   assert.equal(f.cv.density, 'compact');
-  const n = clean({ ...defaultCanvas(), grid: 'normal', density: 'normal' });
-  assert.equal('grid' in n.cv, false, 'the default is not stored');
-  assert.equal('density' in n.cv, false);
-  const bad = clean({ ...defaultCanvas(), grid: 'huge', density: 'tiny' });
-  assert.deepEqual(bad.errors.map((e) => e.p).sort(), ['canvas.density', 'canvas.grid']);
-  assert.equal('grid' in bad.cv, false);
-  // a fine box of up to 24 cells is read; a normal grid clamps it to the kind's range (a warning)
-  const big = clean({ ...defaultCanvas(), grid: 'fine', items: [item('cv_aaaaaaa1', 'calendar.month', B(0, 0, 24, 16))] });
+  const n = clean({ ...defaultCanvas(), density: 'normal' });
+  assert.equal(n.cv.grid, 'fine');
+  assert.equal('density' in n.cv, false, 'the default is not stored');
+  const bad = clean({ ...defaultCanvas(), density: 'tiny' });
+  assert.deepEqual(bad.errors.map((e) => e.p), ['canvas.density']);
+  // grid: anything but 'fine' is a screen of the old grid, converted (canvas-legacy-grid.test.js), never an error
+  const old = clean({ ...defaultCanvas(), grid: 'huge', items: [item('cv_aaaaaaa1', 'date', B(1, 1, 3, 2))] });
+  assert.deepEqual(old.errors, []);
+  assert.deepEqual([old.cv.grid, old.cv.items[0].pos], ['fine', { zone: 'main', x: 2, y: 2, size: 's' }]);
+  // a box of up to 24 cells is read
+  const big = clean({ ...defaultCanvas(), items: [item('cv_aaaaaaa1', 'calendar.month', B(0, 0, 24, 16))] });
   assert.deepEqual(big.errors, []);
   assert.deepEqual(big.cv.items[0].pos, { zone: 'main', x: 0, y: 0, size: 'full' });
-  const clamp = clean({ ...defaultCanvas(), items: [item('cv_aaaaaaa1', 'calendar.month', B(0, 0, 24, 16))] });
-  assert.deepEqual(clamp.errors, []);
-  assert.deepEqual(clamp.cv.items[0].pos, { zone: 'main', x: 0, y: 0, size: 'full' });
-  assert.ok(clamp.warnings.length);
-  // a fine-only box saved on the fine grid stays; on the normal grid it is clamped up
-  const tile = clean({ ...defaultCanvas(), grid: 'fine', items: [item('cv_aaaaaaa1', 'ha.tile', B(0, 0, 4, 1), { entity: 'light.a' })] });
+  // a box only this grid has stays
+  const tile = clean({ ...defaultCanvas(), items: [item('cv_aaaaaaa1', 'ha.tile', B(0, 0, 4, 1), { entity: 'light.a' })] });
   assert.deepEqual(tile.cv.items[0].pos, { zone: 'main', x: 0, y: 0, size: 'row', w: 4, h: 1 });
-  // the projection carries both, so the display draws the grid and the density
+  // the projection carries both
   const p = projectCanvas(screen(f.cv));
   assert.equal(p.grid, 'fine');
   assert.equal(p.density, 'compact');
-  assert.equal('grid' in projectCanvas(screen(before)), false);
-});
-
-test('conversion: every template to the fine grid and back is exact, in both orientations, sidebar spans unchanged', () => {
-  for (const tpl of CANVAS_TEMPLATES) {
-    for (const auto of [true, false]) {
-      let cv = canvasFromTemplate(tpl.id);
-      if (!auto) {
-        // portrait arranged by hand: the derived arrangement made the owner's own
-        const placed = new Map(deriveCanvasPortrait(cv.items, cv.sidebar).placed.map((d) => [d.id, d.pos]));
-        cv = { ...cv, portraitAuto: false, items: cv.items.map((it) => ({ ...it, portrait: placed.get(it.id) ?? null })) };
-        cv = clean(cv).cv;
-      }
-      const up = convertCanvasGrid(cv, 'fine');
-      assert.ok(up.ok, tpl.id);
-      assert.deepEqual([up.moved, up.resized], [[], []], `${tpl.id}: nothing moves`);
-      assert.equal(up.canvas.grid, 'fine');
-      for (const it of up.canvas.items) {
-        const was = cv.items.find((x) => x.id === it.id);
-        for (const [key, o] of [['pos', 'landscape'], ['portrait', 'portrait']]) {
-          const a = was[key];
-          const b = it[key];
-          if (key === 'portrait' && auto) continue;
-          if (!a) {
-            assert.equal(b ?? null, a ?? null);
-            continue;
-          }
-          if (a.zone === 'side') assert.deepEqual(b, a, `${tpl.id}: sidebar unchanged`);
-          else {
-            assert.deepEqual([b.x, b.y], [a.x * 2, a.y * 2], `${tpl.id} ${key} origin`);
-            assert.deepEqual(posCells(b, o, 'fine'), posCells(a, o).map((n) => n * 2), `${tpl.id} ${key} box`);
-          }
-        }
-      }
-      // valid as saved, with no overlap, and the derived portrait of the fine grid is laid out on 16×24
-      const v = clean(structuredClone(up.canvas));
-      assert.deepEqual(v.errors, [], tpl.id);
-      assert.deepEqual(v.cv, up.canvas, `${tpl.id}: validation keeps the converted canvas as it is`);
-      assert.ok(noOverlap(v.cv) && (auto || noOverlap(v.cv, 'portrait', 'portrait')), tpl.id);
-      if (auto) {
-        const occ = makeOccupancy('portrait', 'fine');
-        for (const d of deriveCanvasPortrait(v.cv.items, v.cv.sidebar, 'fine').placed) {
-          if (d.pos.zone !== 'main') continue;
-          const [w, h] = posCells(d.pos, 'portrait', 'fine');
-          assert.ok(fitsAt(occ, d.pos.x, d.pos.y, w, h), `${tpl.id}: derived fine portrait`);
-          occupy(occ, d.id, d.pos.x, d.pos.y, w, h);
-        }
-      }
-      const down = convertCanvasGrid(up.canvas, 'normal');
-      assert.ok(down.ok);
-      assert.deepEqual([down.moved, down.resized], [[], []], `${tpl.id}: back with nothing moved`);
-      assert.deepEqual(down.canvas, cv, `${tpl.id}: back to exactly the screen it was`);
-    }
-  }
-});
-
-test('conversion back to normal: boxes only the fine grid has go to the nearest legal cells, with no overlap, and say so', () => {
-  const items = [
-    // four line cards half a row high, side by side in pairs
-    item('cv_aaaaaaa1', 'ha.tile', B(0, 0, 4, 1), { entity: 'light.a' }),
-    item('cv_aaaaaaa2', 'ha.tile', B(0, 1, 4, 1), { entity: 'light.b' }),
-    item('cv_aaaaaaa3', 'ha.sensor', B(4, 0, 4, 1), { entity: 'sensor.c' }),
-    item('cv_aaaaaaa4', 'ha.sensor', B(4, 1, 4, 1), { entity: 'sensor.d' }),
-    // an odd box: 7×5 fine cells
-    item('cv_aaaaaaa5', 'todo', B(9, 3, 7, 5)),
-    item('cv_aaaaaaa6', 'clock.digital', B(16, 0, 8, 6)),
-  ];
-  const fine = clean({ ...defaultCanvas(), grid: 'fine', sidebar: { side: 'left', size: 'normal', fill: 'glass' }, items: [...items, item('cv_aaaaaaa7', 'weather.now', { zone: 'side', order: 0, span: 3 })] });
-  assert.deepEqual(fine.errors, []);
-  const r = convertCanvasGrid(fine.cv, 'normal');
-  assert.ok(r.ok);
-  assert.equal('grid' in r.canvas, false);
-  assert.ok(noOverlap(r.canvas), 'no overlap');
-  const v = clean(structuredClone(r.canvas));
-  assert.deepEqual(v.errors, []);
-  assert.deepEqual(v.cv, r.canvas, 'a legal normal canvas as it is');
-  const pos = (id) => r.canvas.items.find((x) => x.id === id).pos;
-  // the clock was exactly twice a normal box: same place, same box
-  assert.deepEqual(pos('cv_aaaaaaa6'), { zone: 'main', x: 8, y: 0, size: 'm' });
-  // the side item keeps its span
-  assert.deepEqual(pos('cv_aaaaaaa7'), { zone: 'side', order: 0, span: 3 });
-  // the half-row tiles grew to the normal 2×1 and had to make room for each other
-  for (const id of ['cv_aaaaaaa1', 'cv_aaaaaaa2', 'cv_aaaaaaa3', 'cv_aaaaaaa4']) {
-    assert.deepEqual(posCells(pos(id), 'landscape'), [2, 1], id);
-    assert.ok(r.moved.includes(id) || r.resized.includes(id), `${id} is reported`);
-  }
-  assert.ok(r.resized.includes('cv_aaaaaaa5') || r.moved.includes('cv_aaaaaaa5'), 'the odd box is reported');
-  for (const id of r.resized) assert.ok(!r.moved.includes(id));
-  // to the fine grid again and back: stable from then on
-  const again = convertCanvasGrid(convertCanvasGrid(r.canvas, 'fine').canvas, 'normal');
-  assert.deepEqual(again.canvas, r.canvas);
-  // the same canvas twice: nothing to do
-  assert.deepEqual(convertCanvasGrid(r.canvas, 'normal'), { ok: true, canvas: r.canvas, moved: [], resized: [], lost: [] });
-});
-
-test('conversion back to normal: a card with no room at all is reported and nothing is changed', () => {
-  // 23 weather cards at the fine grid's smallest (3×2, a normal 2×2 each: 92 of the 96 normal cells) and a month
-  // calendar (8×6 fine, 4×3 normal): on the fine grid there is room to spare, on the normal one not for everything
-  const items = [item('cv_cal00001', 'calendar.month', B(0, 0, 8, 6))];
-  for (let i = 0; i < 23; i++) items.push(item(`cv_wx${String(i).padStart(6, '0')}`, 'weather.now', B(8 + (i % 5) * 3, Math.floor(i / 5) * 2, 3, 2)));
-  const fine = clean({ ...defaultCanvas(), grid: 'fine', items });
-  assert.deepEqual(fine.errors, []);
-  assert.equal(fine.cv.items.length, 24);
-  const r = convertCanvasGrid(fine.cv, 'normal');
-  assert.equal(r.ok, false);
-  assert.ok(r.lost.length >= 1);
-  // the builder refuses the switch, so the screen stays on the fine grid as it was
-  assert.equal(fine.cv.grid, 'fine');
-  // with room for every card it goes through
-  const fewer = clean({ ...defaultCanvas(), grid: 'fine', items: items.slice(0, 20) }).cv;
-  const ok = convertCanvasGrid(fewer, 'normal');
-  assert.ok(ok.ok);
-  assert.ok(noOverlap(ok.canvas));
+  assert.equal(projectCanvas(screen(before)).grid, 'fine');
 });
 
 // ---- the Rotativa -------------------------------------------------------------------------------------------------
 
-const rot = (id, cards, props = {}, extra = {}) => item(id, 'rotator', B(0, 0, 6, 3), { cards, ...props }, extra);
+const rot = (id, cards, props = {}, extra = {}) => item(id, 'rotator', B(0, 0, 12, 6), { cards, ...props }, extra);
 const card = (id, kind, props = {}) => ({ id, kind, props: { ...canvasDefaults(kind), ...props } });
 
 test('rotativa: its defaults validate, its cards get ids of their own, a range its cards allow, and what cannot go inside', () => {
@@ -264,12 +153,12 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   assert.ok(cards.every((c) => /^cv_[a-z0-9]{8}$/.test(c.id)));
   assert.notEqual(cards[0].id, cards[1].id);
   // ids that clash with an item or with each other get new ones
-  const clash = clean({ ...defaultCanvas(), items: [item('cv_xxxxxxx1', 'clock.digital', B(6, 0, 4, 3)), rot('cv_rrrrrrr1', [card('cv_xxxxxxx1', 'date'), card('cv_rrrrrrr1', 'date'), card('cv_ccccccc1', 'date'), card('cv_ccccccc1', 'date')])] });
+  const clash = clean({ ...defaultCanvas(), items: [item('cv_xxxxxxx1', 'clock.digital', B(12, 0, 8, 6)), rot('cv_rrrrrrr1', [card('cv_xxxxxxx1', 'date'), card('cv_rrrrrrr1', 'date'), card('cv_ccccccc1', 'date'), card('cv_ccccccc1', 'date')])] });
   const ids = canvasCards(clash.cv.items).map((x) => x.id);
   assert.equal(new Set(ids).size, ids.length, 'every card id is unique on the screen');
   assert.ok(ids.includes('cv_ccccccc1'));
   // "Cambiar cada": 5 to 120 seconds; the dots a boolean
-  const t = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, { everySec: 2 }), rot('cv_rrrrrrr2', d.cards, { everySec: 999 }, { pos: B(6, 0, 6, 3) })] });
+  const t = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, { everySec: 2 }), rot('cv_rrrrrrr2', d.cards, { everySec: 999 }, { pos: B(12, 0, 12, 6) })] });
   assert.deepEqual(t.cv.items.map((x) => x.props.everySec), [5, 120]);
   // never inside: another Rotativa, the spacer, the heading, the navigation cards
   for (const k of ['rotator', 'spacer', 'heading', 'nav.button', 'nav.pause', 'nav.progress', 'card']) assert.equal(rotatorKindOk(k), false, k);
@@ -288,33 +177,33 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   // a camera inside shows pictures; a deleted widget's card goes quietly
   const cam = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', [card('', 'ha.camera', { entity: 'camera.door', mode: 'live' }), card('', 'widget', { widgetId: 'gone' }), card('', 'widget', { widgetId: 'w1' })])] }, {}, { widgets: new Map([['w1', {}]]) });
   assert.deepEqual(cam.cv.items[0].props.cards.map((c) => [c.kind, c.props.mode ?? c.props.widgetId]), [['ha.camera', 'snapshot'], ['widget', 'w1']]);
-  // its range: what every one of its cards allows too (the hourly forecast needs 6 cells across)
+  // its range: what every one of its cards allows too (the largest of their minimums, the hourly strip's 8×2; its
+  // full look from 12×4, the hourly forecast's)
   const k = kindFor({ kind: 'rotator', props: d });
-  assert.deepEqual([cellRange(k).minW, cellRange(k).minH], [6, 2]);
-  // (on the fine grid: the largest of its cards' fine minimums, the hourly strip's 8×2)
-  assert.deepEqual([cellRange(k, 'landscape', 'fine').minW, cellRange(k, 'landscape', 'fine').minH], [8, 2]);
+  assert.deepEqual([cellRange(k).minW, cellRange(k).minH], [8, 2]);
+  assert.deepEqual(fullLookMin(k), [12, 4]);
   assert.deepEqual(cellRange(kindFor({ kind: 'rotator', props: { cards: [] } })), cellRange('rotator'), 'no cards: the kind itself');
   // so a box too small for its cards is grown on save
   const small = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, {}, { pos: B(0, 0, 3, 2) })] });
-  assert.deepEqual(posCells(small.cv.items[0].pos, 'landscape'), [6, 2]);
+  assert.deepEqual(posCells(small.cv.items[0].pos, 'landscape'), [8, 2]);
 });
 
 test('rotativa: its cards count towards the cap of cards, the cap of each kind and the Home Assistant entities', () => {
-  // 22 items and a Rotativa of three cards: 26 cards, two left out
-  const items = Array.from({ length: 22 }, (_, i) => item(`cv_ddddd${String(i).padStart(3, '0')}`, 'spacer', B(i % 12, Math.floor(i / 12), 1, 1)));
-  const a = clean({ ...defaultCanvas(), items: [...items, rot('cv_rrrrrrr1', [card('', 'date'), card('', 'date'), card('', 'date')], {}, { pos: B(0, 3, 6, 3) })] });
-  assert.ok(a.errors.some((e) => /too many items \(max 24\)/.test(e.m)));
+  // 46 items and a Rotativa of three cards: 50 cards, two left out
+  const items = Array.from({ length: 46 }, (_, i) => item(`cv_ddddd${String(i).padStart(3, '0')}`, 'spacer', B(i % 24, Math.floor(i / 24), 1, 1)));
+  const a = clean({ ...defaultCanvas(), items: [...items, rot('cv_rrrrrrr1', [card('', 'date'), card('', 'date'), card('', 'date')], {}, { pos: B(0, 4, 12, 6) })] });
+  assert.ok(a.errors.some((e) => /too many items \(max 48\)/.test(e.m)));
   assert.equal(canvasCards(a.cv.items).length, CANVAS_LIMITS.items);
   assert.equal(a.cv.items.at(-1).props.cards.length, 1);
   // two photo cards already: a third inside a Rotativa is one too many
-  const ph = clean({ ...defaultCanvas(), items: [item('cv_ppppppp1', 'photo', B(0, 0, 3, 2)), item('cv_ppppppp2', 'photo', B(3, 0, 3, 2)), rot('cv_rrrrrrr1', [card('', 'photo'), card('', 'date')], {}, { pos: B(0, 3, 6, 3) })] });
+  const ph = clean({ ...defaultCanvas(), items: [item('cv_ppppppp1', 'photo', B(0, 0, 6, 4)), item('cv_ppppppp2', 'photo', B(6, 0, 6, 4)), rot('cv_rrrrrrr1', [card('', 'photo'), card('', 'date')], {}, { pos: B(0, 6, 12, 6) })] });
   assert.ok(ph.errors.some((e) => /too many photo/.test(e.m)));
   assert.deepEqual(ph.cv.items[2].props.cards.map((c) => c.kind), ['date']);
-  // the entities of its cards count towards the 40 of a screen
-  const sensors = Array.from({ length: 39 }, (_, i) => item(`cv_eeeee${String(i).padStart(3, '0')}`, 'ha.sensor', B(0, 0, 2, 1), { entity: `sensor.s${i}` }));
-  const e = clean({ ...defaultCanvas(), items: [...sensors.slice(0, 20), rot('cv_rrrrrrr1', [card('', 'ha.sensor', { entity: 'sensor.x1' }), card('', 'ha.sensor', { entity: 'sensor.x2' })], {}, { pos: B(0, 3, 6, 3) })] });
-  assert.deepEqual(e.errors, []);
-  assert.equal(canvasCards(e.cv.items).length, 23);
+  // the entities of its cards count towards the 80 of a screen: 79 and two more, one too many
+  const sensors = Array.from({ length: 79 }, (_, i) => ({ entity: `sensor.s${i}`, name: '', interactive: false }));
+  const rooms = Array.from({ length: 14 }, (_, i) => item(`cv_eeeee${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 6, Math.floor(i / 4) * 3, 6, 3), { rows: sensors.slice(i * 6, i * 6 + 6) }));
+  const e = clean({ ...defaultCanvas(), items: [...rooms, rot('cv_rrrrrrr1', [card('', 'ha.sensor', { entity: 'sensor.x1' }), card('', 'ha.sensor', { entity: 'sensor.x2' })], {}, { pos: B(12, 12, 12, 4) })] });
+  assert.ok(e.errors.some((x) => /too many Home Assistant entities \(max 80\)/.test(x.m)), JSON.stringify(e.errors));
 });
 
 test('rotativa on Marco Cloud: no Home Assistant card inside, and the file import leaves them out', () => {
@@ -440,45 +329,34 @@ test('rotativa: privacy, hiding, schedules and conditions apply to its cards as 
 
 // ---- the builder ----------------------------------------------------------------------------------------------------
 
-test('builder: Cuadrícula converts with one undo step, the fine grid takes the smaller boxes, the cells follow it', ts, () => {
-  const cv = canvasFromTemplate('bento');
-  const up = M.setGrid(cv, 'fine');
-  assert.ok(up.ok);
-  assert.equal(up.moved + up.resized, 0);
-  assert.equal(M.gOf(up.cv), 'fine');
-  assert.ok(M.noOverlap(up.cv));
-  // a card on the fine grid can be half a normal row high (W and H steppers, the handle)
-  let c = { ...defaultCanvas(), grid: 'fine', items: [] };
+test('builder: the grid takes the smaller boxes, the cells follow it, and compact cards sit closer', ts, () => {
+  // a card can be one row high (W and H steppers, the handle)
+  let c = { ...defaultCanvas(), items: [] };
   const add = M.addItem(c, 'landscape', 'ha.tile', null, { entity: 'light.a' });
   assert.ok(add.ok);
   c = add.cv;
   const id = add.id;
   const p = M.placements(c, 'landscape').get(id);
-  assert.deepEqual(M.boxCells(p, 'landscape', 'fine'), [4, 4], 'its default size, twice the normal cells');
+  assert.deepEqual(M.boxCells(p, 'landscape'), [4, 4], 'its default size (xs)');
   const small = M.setCells(c, 'landscape', id, 4, 1);
   assert.ok(small.ok);
-  assert.deepEqual(M.boxCells(M.placements(small.cv, 'landscape').get(id), 'landscape', 'fine'), [4, 1]);
+  assert.deepEqual(M.boxCells(M.placements(small.cv, 'landscape').get(id), 'landscape'), [4, 1]);
   assert.ok(M.setCells(c, 'landscape', id, 2, 1).ok, 'two cells wide (#9)');
-  assert.equal(M.setCells(c, 'landscape', id, 1, 1).ok, false, 'not under the fine minimum');
-  assert.deepEqual(M.handleBox(small.cv, 'landscape', id, 30, 0.2), M.boxFor('ha.tile', 12, 1, 'landscape', 'fine'), 'the handle stops at the range');
-  // the overlay's cells: 24 columns over the same screen
-  const g = G.computeGeometry(up.cv, 'landscape');
-  assert.equal(g.grid, 'fine');
-  const one = G.cellBox(g, 'landscape', 0, 0, 1, 1);
-  const two = G.cellBox(G.computeGeometry(cv, 'landscape'), 'landscape', 0, 0, 1, 1);
-  assert.ok(one.w < two.w / 2 + 1 && one.w > two.w / 2 - 12);
-  // the same box on both grids is the same rectangle on the screen
-  const a = G.cellBox(g, 'landscape', 8, 0, 8, 6);
-  const b = G.cellBox(G.computeGeometry(cv, 'landscape'), 'landscape', 4, 0, 4, 3);
-  for (const k of ['x', 'y', 'w', 'h']) assert.ok(Math.abs(a[k] - b[k]) < 0.01, k);
+  assert.equal(M.setCells(c, 'landscape', id, 1, 1).ok, false, 'not under the minimum');
+  assert.deepEqual(M.handleBox(small.cv, 'landscape', id, 30, 0.2), M.boxFor('ha.tile', 12, 1, 'landscape'), 'the handle stops at the range');
+  // the named sizes of the size menu are in cells of this grid
+  assert.deepEqual(M.cellsOf('m', 'landscape'), [8, 6]);
+  assert.deepEqual(M.cellsOf('s', 'portrait'), [8, 4]);
+  // the overlay's cells: 24 columns from edge to edge
+  const cv = canvasFromTemplate('bento');
+  const g = G.computeGeometry(cv, 'landscape');
+  const first = G.cellBox(g, 'landscape', 0, 0, 1, 1);
+  const last = G.cellBox(g, 'landscape', 23, 15, 1, 1);
+  assert.ok(Math.abs(first.x - g.main.x) < 0.01 && Math.abs(last.x + last.w - (g.main.x + g.main.w)) < 0.01, JSON.stringify([first, last, g.main]));
+  assert.equal(G.cellAt(g, 'landscape', last.x + 1, last.y + 1).x, 23);
   // Densidad compacta: tighter gaps and edges in the overlay too
   const dense = G.computeGeometry({ ...cv, density: 'compact' }, 'landscape');
-  assert.ok(dense.main.gx < G.computeGeometry(cv, 'landscape').main.gx && dense.main.x < G.computeGeometry(cv, 'landscape').main.x);
-  // back to normal from a fine-only box: moved or resized, never overlapping
-  const down = M.setGrid(small.cv, 'normal');
-  assert.ok(down.ok);
-  assert.ok(down.moved + down.resized >= 1);
-  assert.ok(M.noOverlap(down.cv));
+  assert.ok(dense.main.gx < g.main.gx && dense.main.x < g.main.x);
 });
 
 test('builder: a Rotativa counts its cards, gets ids of its own when added or copied, and stays within what its cards allow', ts, () => {
@@ -497,9 +375,10 @@ test('builder: a Rotativa counts its cards, gets ids of its own when added or co
   assert.equal(new Set(all).size, all.length);
   assert.equal(M.cardCount(d.cv), 6);
   // its smallest box: what the hourly forecast needs
-  assert.equal(M.setCells(c, 'landscape', r.id, 3, 2).ok, false);
+  assert.equal(M.setCells(c, 'landscape', r.id, 6, 2).ok, false);
+  assert.equal(M.setCells(c, 'landscape', r.id, 8, 2).ok, true);
   // the cap counts the cards inside
-  const full = clean({ ...defaultCanvas(), items: Array.from({ length: 22 }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'spacer', B(i % 12, Math.floor(i / 12), 1, 1))) }).cv;
+  const full = clean({ ...defaultCanvas(), items: Array.from({ length: 46 }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'spacer', B(i % 24, Math.floor(i / 24), 1, 1))) }).cv;
   assert.equal(M.canAdd(full, 'rotator'), 'tooMany', 'a Rotativa of two cards needs three');
   assert.equal(M.canAdd(full, 'spacer'), null);
   // validation agrees with the editor
@@ -507,52 +386,29 @@ test('builder: a Rotativa counts its cards, gets ids of its own when added or co
   assert.deepEqual(v.errors, []);
 });
 
-test('the fine grid takes 48 cards and 80 Home Assistant entities; the normal grid keeps 24 and 40', () => {
-  // 49 sensors of 4×1 on the fine grid (room for 96): the 49th is one too many
+test('every screen takes 48 cards and 80 Home Assistant entities', () => {
+  // 49 sensors of 4×1 (room for 96): the 49th is one too many
   const sensors = (n, w, h, cols) => Array.from({ length: n }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'ha.sensor', B((i % cols) * w, Math.floor(i / cols) * h, w, h), { entity: `sensor.s${i}` }));
-  const fine = clean({ ...defaultCanvas(), grid: 'fine', items: sensors(49, 4, 1, 6) });
+  const fine = clean({ ...defaultCanvas(), items: sensors(49, 4, 1, 6) });
   assert.ok(fine.errors.some((e) => /too many items \(max 48\)/.test(e.m)), JSON.stringify(fine.errors));
   assert.equal(fine.cv.items.length, 48);
-  assert.equal(CANVAS_LIMITS_FINE.items, 48);
-  assert.equal(canvasLimits('fine').haEntities, 80);
-  assert.deepEqual(canvasLimits('normal'), CANVAS_LIMITS);
-  // the normal grid: still 24
-  const normal = clean({ ...defaultCanvas(), items: sensors(25, 2, 1, 6) });
-  assert.ok(normal.errors.some((e) => /too many items \(max 24\)/.test(e.m)));
-  assert.equal(normal.cv.items.length, 24);
-  // 81 entities on the fine grid (14 rooms of 6 rows = 84): the 81st is refused, 80 are kept
+  assert.equal(CANVAS_LIMITS.items, 48);
+  assert.equal(CANVAS_LIMITS.haEntities, 80);
+  // the names of 0.16 still answer, with the one set of caps
+  assert.equal(CANVAS_LIMITS_FINE, CANVAS_LIMITS);
+  assert.equal(canvasLimits('normal'), CANVAS_LIMITS);
+  // 81 entities (14 rooms of 6 rows = 84): the 81st is refused, 78 are kept (the room that crosses 80 is left out)
   const room = (i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 6, Math.floor(i / 4) * 4, 6, 4), { rows: Array.from({ length: 6 }, (_, j) => ({ entity: `light.r${i}_${j}`, name: '', interactive: true })) });
-  const many = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 14 }, (_, i) => room(i)) });
+  const many = clean({ ...defaultCanvas(), items: Array.from({ length: 14 }, (_, i) => room(i)) });
   assert.ok(many.errors.some((e) => /too many Home Assistant entities \(max 80\)/.test(e.m)), JSON.stringify(many.errors));
   assert.equal(new Set(many.cv.items.flatMap((it) => it.props.rows.map((r) => r.entity))).size, 78);
-  const ok = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 13 }, (_, i) => room(i)) });
+  const ok = clean({ ...defaultCanvas(), items: Array.from({ length: 13 }, (_, i) => room(i)) });
   assert.deepEqual(ok.errors, []);
-  // the same 13 rooms (78 entities) on the normal grid: past 40
-  const n13 = clean({ ...defaultCanvas(), items: Array.from({ length: 13 }, (_, i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 3, Math.floor(i / 4) * 3, 3, 3), room(i).props)) });
-  assert.ok(n13.errors.some((e) => /too many Home Assistant entities \(max 40\)/.test(e.m)));
 });
 
-test('back to the normal grid: refused while the screen has more than 24 cards or 40 entities', () => {
-  const thirty = { ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 30 }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'date', B((i % 8) * 3, Math.floor(i / 8) * 2, 3, 2))) };
-  const r = convertCanvasGrid(clean(thirty).cv, 'normal');
-  assert.equal(r.ok, false);
-  assert.equal(r.over, 'items');
-  const room = (i) => item(`cv_rooom${String(i).padStart(3, '0')}`, 'ha.room', B((i % 4) * 6, Math.floor(i / 4) * 6, 6, 6), { rows: Array.from({ length: 6 }, (_, j) => ({ entity: `light.r${i}_${j}`, name: '', interactive: true })) });
-  const rooms = clean({ ...defaultCanvas(), grid: 'fine', items: Array.from({ length: 8 }, (_, i) => room(i)) });
-  assert.deepEqual(rooms.errors, []);
-  const q = convertCanvasGrid(rooms.cv, 'normal');
-  assert.equal(q.ok, false);
-  assert.equal(q.over, 'haEntities');
-  // 24 cards: converts
-  const fit = convertCanvasGrid(clean({ ...thirty, items: thirty.items.slice(0, 24) }).cv, 'normal');
-  assert.equal(fit.ok, true);
-});
-
-test('builder: "N de 48 widgets" on the fine grid, and a 49th card is refused', ts, () => {
-  const fine = { ...defaultCanvas(), grid: 'fine' };
-  assert.equal(M.maxCards(fine), 48);
-  assert.equal(M.maxCards(defaultCanvas()), 24);
-  let cv = fine;
+test('builder: "N de 48 widgets" on every screen, and a 49th card is refused', ts, () => {
+  assert.equal(M.maxCards(defaultCanvas()), 48);
+  let cv = defaultCanvas();
   for (let i = 0; i < 48; i++) {
     const r = M.addItem(cv, 'landscape', 'spacer', { zone: 'main', drop: M.firstSpot(cv, 'landscape', 'spacer', 'xs') ?? { x: 0, y: 0, size: 'xs' } });
     assert.ok(r.ok, `card ${i + 1}: ${r.why}`);

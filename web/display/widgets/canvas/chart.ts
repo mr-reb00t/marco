@@ -37,7 +37,7 @@ function draw(root: HTMLElement, h: HaHistory, p: Props, box: AdapterBox | null)
   // "De fondo": the chart fills the card under the heading, edge to edge and down to its bottom edge, no axes (the
   // legend over it says the values now)
   const bg = chartStyleOf(p, 'below') === 'background';
-  // a box only the fine grid has (data-mini, widgets/canvas.ts): a sparkline, the values now on one line over it, no
+  // a small box (the compact look, data-mini, widgets/canvas.ts): a sparkline, the values now on one line over it, no
   // axes and no period
   const spark = root.dataset.mini !== undefined;
   root.classList.toggle('is-bg', bg);

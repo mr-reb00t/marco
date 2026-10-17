@@ -40,75 +40,75 @@ type Card = Raw & { states?: HaSlim[]; stat?: HaStatistic };
 
 const CARDS: Card[] = [
   // ---- Living room (columns 0 to 3)
-  { kind: 'heading', pos: B(0, 0, 4, 1), props: { title: 'Living room', icon: '🛋️' }, style: GLASS },
+  { kind: 'heading', pos: B(0, 0, 8, 2), props: { title: 'Living room', icon: '🛋️' }, style: GLASS },
   {
-    kind: 'ha.climate', pos: B(0, 1, 4, 3), props: { entity: 'climate.living_room', name: 'Thermostat', modes: ['off', 'heat', 'auto'] },
+    kind: 'ha.climate', pos: B(0, 2, 8, 6), props: { entity: 'climate.living_room', name: 'Thermostat', modes: ['off', 'heat', 'auto'] },
     style: T('#1f2340'),
     states: [{ d: 'climate', mode: 'heat', modes: ['off', 'heat', 'cool', 'auto'], action: 'heating', cur: 20.4, target: 21.5, lo: null, hi: null, min: 7, max: 30, step: 0.5, unit: 'C', hum: 46, fan: 'auto', fans: ['auto', 'low', 'high'], n: 'Thermostat' }],
   },
   {
-    kind: 'ha.light', pos: B(0, 4, 4, 2), props: { entity: 'light.tv_backlight', name: 'TV backlight' },
+    kind: 'ha.light', pos: B(0, 8, 8, 4), props: { entity: 'light.tv_backlight', name: 'TV backlight' },
     style: T('#341a52', '#c77dff'),
     states: [{ d: 'light', on: true, bri: 80, ct: null, rgb: [175, 82, 222], col: true, n: 'TV backlight' }],
   },
   {
-    kind: 'ha.media', pos: B(0, 6, 4, 2), props: { entity: 'media_player.living_room', name: 'Bookshelf speaker' },
+    kind: 'ha.media', pos: B(0, 12, 8, 4), props: { entity: 'media_player.living_room', name: 'Bookshelf speaker' },
     style: T('#2c1c3a', '#f49ac1'),
     states: [{ d: 'media', state: 'playing', title: 'Harbour Lights', artist: 'The Low Tides', vol: 0.32, art: true, source: 'Spotify', n: 'Bookshelf speaker' }],
   },
 
   // ---- Kitchen (columns 4 to 7)
-  { kind: 'heading', pos: B(4, 0, 4, 1), props: { title: 'Kitchen', icon: '🍳' }, style: GLASS },
+  { kind: 'heading', pos: B(8, 0, 8, 2), props: { title: 'Kitchen', icon: '🍳' }, style: GLASS },
   {
-    kind: 'ha.light', pos: B(4, 1, 4, 1), props: { entity: 'light.kitchen_pendants', name: 'Pendants' },
+    kind: 'ha.light', pos: B(8, 2, 8, 2), props: { entity: 'light.kitchen_pendants', name: 'Pendants' },
     style: T('#262a3e'),
     states: [{ d: 'light', on: true, bri: 72, ct: 3000, ctMin: 2200, ctMax: 6500, rgb: [255, 196, 137], n: 'Pendants' }],
   },
   {
-    kind: 'ha.tile', pos: B(4, 2, 2, 1), props: { entity: 'switch.coffee_machine', name: 'Coffee' },
+    kind: 'ha.tile', pos: B(8, 4, 4, 2), props: { entity: 'switch.coffee_machine', name: 'Coffee' },
     style: T('#16302f', '#6fd6c2'),
     states: [{ d: 'switch', on: true, dc: 'outlet', n: 'Coffee' }],
   },
   {
-    kind: 'ha.sensor', pos: B(6, 2, 2, 1), props: { entity: 'sensor.fridge_temperature', name: 'Fridge', decimals: 1 },
+    kind: 'ha.sensor', pos: B(12, 4, 4, 2), props: { entity: 'sensor.fridge_temperature', name: 'Fridge', decimals: 1 },
     style: T('#10324a', '#7fd3ff'),
     states: [{ d: 'sensor', v: '3.8', num: 3.8, unit: '°C', dc: 'temperature', n: 'Fridge' }],
   },
   {
-    kind: 'ha.cover', pos: B(4, 3, 4, 3), props: { entity: 'cover.kitchen_blind', name: 'Window blind' },
+    kind: 'ha.cover', pos: B(8, 6, 8, 6), props: { entity: 'cover.kitchen_blind', name: 'Window blind' },
     style: T('#1b2a3c', '#9cc8ff'),
     states: [{ d: 'cover', state: 'closing', pos: 50, readOnly: false, n: 'Window blind' }],
   },
   {
-    kind: 'ha.gauge', pos: B(4, 6, 2, 2), props: { entity: 'sensor.kitchen_humidity', name: 'Humidity', decimals: 0, min: 0, max: 100, thresholds: [60, 75] },
+    kind: 'ha.gauge', pos: B(8, 12, 4, 4), props: { entity: 'sensor.kitchen_humidity', name: 'Humidity', decimals: 0, min: 0, max: 100, thresholds: [60, 75] },
     style: T('#0f3330'),
     states: [{ d: 'sensor', v: '52', num: 52, unit: '%', dc: 'humidity', n: 'Humidity' }],
   },
   {
-    kind: 'ha.statistic', pos: B(6, 6, 2, 2), props: { entity: 'sensor.kitchen_energy', stat: 'change', period: 'today', name: 'Kitchen energy', decimals: 1 },
+    kind: 'ha.statistic', pos: B(12, 12, 4, 4), props: { entity: 'sensor.kitchen_energy', stat: 'change', period: 'today', name: 'Kitchen energy', decimals: 1 },
     style: T('#24204a', '#a59bff'),
     states: [{ d: 'sensor', v: '1043.6', num: 1043.6, unit: 'kWh', dc: 'energy', n: 'Kitchen energy' }],
     stat: { stat: 'change', period: 'today', value: 2.38, unit: 'kWh' },
   },
 
   // ---- Outside (columns 8 to 11)
-  { kind: 'heading', pos: B(8, 0, 4, 1), props: { title: 'Outside', icon: '🌳' }, style: GLASS },
+  { kind: 'heading', pos: B(16, 0, 8, 2), props: { title: 'Outside', icon: '🌳' }, style: GLASS },
   {
-    kind: 'ha.camera', pos: B(8, 1, 4, 3), props: { entity: 'camera.driveway', everySec: 5, label: true },
+    kind: 'ha.camera', pos: B(16, 2, 8, 6), props: { entity: 'camera.driveway', everySec: 5, label: true },
     states: [{ d: 'other', v: 'streaming', n: 'Driveway' }],
   },
   {
-    kind: 'ha.tile', pos: B(8, 4, 2, 1), props: { entity: 'binary_sensor.garden_motion', name: 'Garden' },
+    kind: 'ha.tile', pos: B(16, 8, 4, 2), props: { entity: 'binary_sensor.garden_motion', name: 'Garden' },
     style: T('#12332a', '#5fe3a1'),
     states: [{ d: 'binary', on: true, dc: 'motion', n: 'Garden' }],
   },
   {
-    kind: 'ha.tile', pos: B(10, 4, 2, 1), props: { entity: 'binary_sensor.back_door', name: 'Back door' },
+    kind: 'ha.tile', pos: B(20, 8, 4, 2), props: { entity: 'binary_sensor.back_door', name: 'Back door' },
     style: T('#262a3e'),
     states: [{ d: 'binary', on: false, dc: 'door', n: 'Back door' }],
   },
   {
-    kind: 'ha.chart', pos: B(8, 5, 4, 3),
+    kind: 'ha.chart', pos: B(16, 10, 8, 6),
     props: { series: [{ entity: 'sensor.solar_power', label: 'Solar', color: '#ffc23d' }, { entity: 'sensor.home_power', label: 'Usage', color: '#5ad1c8' }], period: '24h', type: 'area', chartStyle: 'background' },
     style: T('#0e2236'),
   },

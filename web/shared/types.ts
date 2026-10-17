@@ -899,13 +899,17 @@ export interface CanvasConfig {
   perf: 'auto' | 'low';
   /** the portrait arrangement is derived from the landscape one */
   portraitAuto: boolean;
-  /** "Cuadrícula": 'fine' has twice the cells each way (24×16, 16×24); absent = 'normal' (12×8, 8×12) */
+  /**
+   * Always 'fine' (24×16, 16×24) once saved. Deprecated: absent or 'normal' marks a screen saved before 0.17 on the
+   * legacy 12×8 grid, which the server converts when it reads it (positions and boxes doubled, the same look).
+   */
   grid?: CanvasGridId;
   /** "Densidad": 'compact' has tighter gaps, less padding and smaller titles; absent = 'normal' */
   density?: 'normal' | 'compact';
   items: CanvasItem[];
 }
 
+/** 'normal': the legacy grid, only in screens saved before 0.17 (read and converted). */
 export type CanvasGridId = 'normal' | 'fine';
 
 /** One card of a Rotativa: a kind of its own with its own props (validated by that kind). */

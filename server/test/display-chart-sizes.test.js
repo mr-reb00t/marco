@@ -1,15 +1,15 @@
 // Every card of Personalizado that draws a chart (the Sensor with today's curve, binary sensors beside it, Gráfica,
-// Cripto, Bolsa with its sparklines, the electricity prices widget) at every box from its smallest up to 12×8 fine
-// cells (6×4 on the normal grid), on the fine grid and on the normal one, with the chart under the numbers ("Debajo")
-// and behind them ("De fondo"): wherever the card is two rows high or more its chart is drawn and seen (an element of
-// some area, not hidden), the card is never marked "No cabe" and no text is cut by its edge. A Sensor 5×3 on the fine
-// grid drew the one-line look with no curve while 4×4 had it (the boxes three fine rows high are drawn like the 'row'
-// size). Skipped without a browser (set CHROME_PATH).
+// Cripto, Bolsa with its sparklines, the electricity prices widget) at every box from its smallest up to 12×8 cells,
+// with the chart under the numbers ("Debajo") and behind them ("De fondo"): wherever the card is two rows high or more
+// its chart is drawn and seen (an element of some area, not hidden), the card is never marked "No cabe" and no text is
+// cut by its edge. A Sensor 5×3 drew the one-line look with no curve while 4×4 had it (the boxes three rows high are
+// drawn like the 'row' size); a Sensor drawn like the 'row' size two rows high stays the line it was on the old 12×8
+// grid (one row there), so a screen made there looks the same. Skipped without a browser (set CHROME_PATH).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cellRange } from '../core/canvasCore.js';
+import { cellRange, lookSize } from '../core/canvasCore.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -47,20 +47,21 @@ const KINDS = {
   },
 };
 
-/** Every w×h of `kind` from its smallest up to 12×8 cells of the fine grid (6×4 of the normal one). */
-function boxes(kind, grid) {
-  const r = cellRange(kind, 'landscape', grid);
-  const f = grid === 'fine' ? 2 : 1;
+/** Every w×h of `kind` from its smallest up to 12×8 cells. */
+function boxes(kind) {
+  const r = cellRange(kind, 'landscape');
   const out = [];
-  for (let h = r.minH; h <= Math.min(r.maxH, 4 * f); h++) for (let w = r.minW; w <= Math.min(r.maxW, 6 * f); w++) out.push([w, h]);
+  for (let h = r.minH; h <= Math.min(r.maxH, 8); h++) for (let w = r.minW; w <= Math.min(r.maxW, 12); w++) out.push([w, h]);
   return out;
 }
+/** A Sensor drawn as a line: one row, or two rows like the 'row' size (the old grid's one-row line). */
+const sensorLine = (kind, w, h) => kind === 'ha.sensor' && (h === 1 || (h === 2 && lookSize(kind, w, h, 'landscape') === 'row'));
 
 /**
- * In the page: the copies of `kind` at w×h on `grid`, two across and two down, laid over the demo's config the way
+ * In the page: the copies of `kind` at w×h, two across and two down, laid over the demo's config the way
  * the admin preview does; once each has drawn, what each shows.
  */
-const DRAW = (kind, grid, w, h, variants, from, chartSel) => `(async () => {
+const DRAW = (kind, w, h, variants, from, chartSel) => `(async () => {
   const cc = await import('/@fs${ROOT}/server/core/canvasCore.js');
   const store = await import('/display/store.ts');
   const pause = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -72,11 +73,11 @@ const DRAW = (kind, grid, w, h, variants, from, chartSel) => `(async () => {
     const v = variants[n % variants.length];
     items.push({
       id: 'cv_chs' + String(items.length).padStart(5, '0'), kind: ${JSON.stringify(kind)},
-      pos: { zone: 'main', x: x * ${w}, y: y * ${h}, size: cc.lookSize(${JSON.stringify(kind)}, ${w}, ${h}, 'landscape', ${JSON.stringify(grid)}), w: ${w}, h: ${h} },
+      pos: { zone: 'main', x: x * ${w}, y: y * ${h}, size: cc.lookSize(${JSON.stringify(kind)}, ${w}, ${h}, 'landscape'), w: ${w}, h: ${h} },
       style: cc.defaultItemStyle(), props: { ...cc.canvasDefaults(${JSON.stringify(kind)}), ...v.props },
     });
   }
-  const raw = { ...cc.defaultCanvas(), background: 'ambient', touch: true, grid: ${JSON.stringify(grid)}, items };
+  const raw = { ...cc.defaultCanvas(), background: 'ambient', touch: true, items };
   const canvas = cc.sanitizeCanvas({ err() {}, warn() {} }, 'canvas', raw, { widgets: new Map([['w_demo_prices', {}]]) }, {});
   const projected = cc.projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation: 'landscape' }, canvas }, {});
   // the prices widget with its chart on (its automatic view shows the price alone on a card of this size)
@@ -131,22 +132,23 @@ describe('chart cards at every size, both chart styles, in a browser', { skip: !
     await web?.close();
   });
 
-  for (const grid of ['fine', 'normal']) {
+  {
     for (const [kind, spec] of Object.entries(KINDS)) {
-      test(`${kind}, ${grid} grid: the chart at every box two rows high or more, nothing cramped or cut`, { timeout: 900_000 }, async () => {
-        const [w0, h0] = boxes(kind, grid)[0];
-        const p = await browser.page(`${web.url}/?demo=1&lite=1&now=2026-03-04T10:43&lang=es&preset=canvas&shot=size:${kind}:${w0}x${h0}:landscape:none:ambient${grid === 'fine' ? ':fine' : ''}`, { width: 1920, height: 1080 });
+      test(`${kind}: the chart at every box two rows high or more, nothing cramped or cut`, { timeout: 900_000 }, async () => {
+        const [w0, h0] = boxes(kind)[0];
+        const p = await browser.page(`${web.url}/?demo=1&lite=1&now=2026-03-04T10:43&lang=es&preset=canvas&shot=size:${kind}:${w0}x${h0}:landscape:none:ambient`, { width: 1920, height: 1080 });
         const bad = [];
         try {
           await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 800)))');
-          for (const [w, h] of boxes(kind, grid)) {
+          for (const [w, h] of boxes(kind)) {
             for (let from = 0; from < spec.variants.length; from += 4) {
-              const cards = await p.eval(DRAW(kind, grid, w, h, spec.variants, from, spec.chart));
+              const cards = await p.eval(DRAW(kind, w, h, spec.variants, from, spec.chart));
               if (!cards.length) bad.push(`${w}x${h}: no cards`);
               for (const c of cards) {
                 const v = spec.variants[(from + c.i) % spec.variants.length];
                 const label = `${w}x${h} ${JSON.stringify(v.props.chartStyle ?? v.props.entity)}${v.props.type ? ` ${v.props.type}` : ''}${v.props.layout ? ` ${v.props.layout}` : ''}`;
-                if (v.chart && h >= 2 && !c.chart) bad.push(`${label}: no chart`);
+                if (v.chart && h >= 2 && !sensorLine(kind, w, h) && !c.chart) bad.push(`${label}: no chart`);
+                if (sensorLine(kind, w, h) && c.chart) bad.push(`${label}: a line has no chart`);
                 if (c.cramped) bad.push(`${label}: No cabe`);
                 if (c.cut.length) bad.push(`${label}: cuts ${c.cut.join(', ')}`);
               }

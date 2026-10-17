@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   VALUE_KEY_RE, CANVAS_GRID, CANVAS_KINDS, DESIGN_TEMPLATES, canvasFromDesign, projectCanvas, CANVAS_KIND_IDS, CANVAS_LIMITS, CANVAS_SIZES, CANVAS_TEMPLATES, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS,
   canvasDefaults, canvasFromTemplate, cssProblem, defaultCanvas, defaultItemStyle, deriveCanvasPortrait, newCanvasId, normalizeGlassJs, sanitizeCanvas, sizeCells,
-  boxAllowed, boxOf, cellRange, lookSize, posCells,
+  boxAllowed, boxOf, cellRange, fullLookMin, lookSize, posCells,
 } from '../core/canvasCore.js';
 import { validateConfig, mergeDefaults, LAYOUT_PRESETS } from '../core/validate.js';
 import { defaultConfig, defaultScreenProfile, SCREEN_ONLY_KEYS } from '../core/defaults.js';
@@ -76,14 +76,17 @@ test('registry: every kind of the spec and of the owner amendments is reserved, 
   for (const k of ['clock.digital', 'calendar.month', 'value', 'photo', 'widget', 'family.routines', 'meals.week', 'heading']) assert.ok(CLOUD_CANVAS_KINDS.includes(k), k);
 });
 
-test('size table: landscape 12×8, portrait 8×12, every size fits both grids', () => {
-  assert.deepEqual(CANVAS_GRID, { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } });
-  assert.deepEqual(sizeCells('m', 'landscape'), [4, 3]);
-  assert.deepEqual(sizeCells('band', 'portrait'), [8, 3]);
-  assert.deepEqual(sizeCells('full', 'landscape'), [12, 8]);
-  for (const [name, s] of Object.entries(CANVAS_SIZES)) {
-    assert.ok(s.landscape[0] <= 12 && s.landscape[1] <= 8, name);
-    assert.ok(s.portrait[0] <= 8 && s.portrait[1] <= 12, name);
+test('size table: the grid is 24×16 (16×24 portrait), every named size fits it', () => {
+  assert.deepEqual(CANVAS_GRID, { landscape: { cols: 24, rows: 16 }, portrait: { cols: 16, rows: 24 } });
+  assert.deepEqual(sizeCells('m', 'landscape'), [8, 6]);
+  assert.deepEqual(sizeCells('band', 'portrait'), [16, 6]);
+  assert.deepEqual(sizeCells('full', 'landscape'), [24, 16]);
+  assert.deepEqual(sizeCells('full', 'portrait'), [16, 24]);
+  for (const name of Object.keys(CANVAS_SIZES)) {
+    const [lw, lh] = sizeCells(name, 'landscape');
+    const [pw, ph] = sizeCells(name, 'portrait');
+    assert.ok(lw <= 24 && lh <= 16, name);
+    assert.ok(pw <= 16 && ph <= 24, name);
   }
 });
 
@@ -93,7 +96,7 @@ test('defaults: an inert canvas on every screen, back-filled for configs saved b
   assert.deepEqual(defaultScreenProfile().canvas, defaultCanvas());
   assert.deepEqual(defaultCanvas(), {
     v: 1, background: 'ambient', dim: 0.15, scrim: 'uniform', color: null, sidebar: { side: 'none', size: 'normal', fill: 'glass' },
-    defaults: { surface: 'glass', radius: 'l' }, touch: false, swipe: false, perf: 'auto', portraitAuto: true, items: [],
+    defaults: { surface: 'glass', radius: 'l' }, touch: false, swipe: false, perf: 'auto', portraitAuto: true, grid: 'fine', items: [],
   });
   const c = defaultConfig();
   delete c.screens[0].canvas;
@@ -126,26 +129,26 @@ test('validateConfig: the canvas preset is Modern only, items keep their ids, er
 });
 
 test('sizes: a size the kind does not allow becomes its default; boxes are clamped inside the grid', () => {
-  const { c, out } = run({ items: [item('clock.digital', M(0, 0, 'full')), item('weather.now', M(11, 7, 's'))] });
+  const { c, out } = run({ items: [item('clock.digital', M(0, 0, 'full')), item('weather.now', M(22, 14, 's'))] });
   assert.equal(out.items[0].pos.size, 'm');
   assert.ok(c.warnings.some((w) => w.path.endsWith('.size')));
-  // s is 3×2: x 11 → 9, y 7 → 6
-  assert.deepEqual(out.items[1].pos, M(9, 6, 's'));
+  // s is 6×4: x 22 → 18, y 14 → 12
+  assert.deepEqual(out.items[1].pos, M(18, 12, 's'));
   assertNoOverlap(out.items);
 });
 
 test('overlap: a later item moves to the nearest free spot with a warning; with no room it is dropped with an error', () => {
-  const { c, out } = run({ items: [item('clock.digital', M(0, 0, 'm')), item('clock.digital', M(1, 1, 'm'))] });
+  const { c, out } = run({ items: [item('clock.digital', M(0, 0, 'm')), item('clock.digital', M(2, 2, 'm'))] });
   assert.equal(out.items.length, 2);
   assertNoOverlap(out.items);
-  assert.deepEqual(out.items[1].pos, M(1, 3, 'm'));
+  assert.deepEqual(out.items[1].pos, M(2, 6, 'm'));
   assert.ok(c.warnings.some((w) => /moved/.test(w.message)));
   // a full-screen calendar leaves no room for anything else
   const full = run({ items: [item('calendar.month', M(0, 0, 'full')), item('clock.digital', M(0, 0, 'm'))] });
   assert.equal(full.out.items.length, 1);
   assert.ok(full.c.errors.some((e) => e.path === 'canvas.items[1]' && /no free space/.test(e.message)), JSON.stringify(full.c.errors));
   // the result is the same every time (the server, the admin and the display agree)
-  const again = run({ items: [item('clock.digital', M(0, 0, 'm')), item('clock.digital', M(1, 1, 'm'))] });
+  const again = run({ items: [item('clock.digital', M(0, 0, 'm')), item('clock.digital', M(2, 2, 'm'))] });
   assert.deepEqual(again.out.items.map((i) => i.pos), out.items.map((i) => i.pos));
 });
 
@@ -166,12 +169,13 @@ test('ids: cv_ + 8 characters, unique per screen; invalid or repeated ones get a
   for (const id of ids) assert.match(id, /^cv_[a-z0-9]{8}$/);
 });
 
-test('caps: 24 items, 2 photos, 4 cameras, one live camera, 40 Home Assistant entities', () => {
+test('caps: 48 items, 2 photos, 4 cameras, one live camera, 80 Home Assistant entities', () => {
+  assert.deepEqual(CANVAS_LIMITS, { items: 48, side: 8, haEntities: 80, liveCameras: 1 });
   const many = [];
-  for (let i = 0; i < 26; i++) many.push(item('spacer', M(0, 0, 'xs')));
+  for (let i = 0; i < 50; i++) many.push(item('spacer', M(0, 0, 'xs')));
   const r = run({ items: many });
   assert.ok(r.out.items.length <= CANVAS_LIMITS.items);
-  assert.ok(r.c.errors.some((e) => /max 24/.test(e.message)));
+  assert.ok(r.c.errors.some((e) => /max 48/.test(e.message)));
   const photos = run({ items: [item('photo', M(0, 0, 's')), item('photo', M(3, 0, 's')), item('photo', M(6, 0, 's'))] });
   assert.equal(photos.out.items.length, 2);
   assert.ok(photos.c.errors.some((e) => /max 2/.test(e.message)));
@@ -181,9 +185,9 @@ test('caps: 24 items, 2 photos, 4 cameras, one live camera, 40 Home Assistant en
   const noLive = run({ items: [cam('camera.a')] }, {}, { cameraLive: false });
   assert.equal(noLive.out.items[0].props.mode, 'snapshot');
   const rooms = [];
-  for (let i = 0; i < 8; i++) rooms.push(item('ha.room', M(0, 0, 'm'), { props: { title: '', rows: [0, 1, 2, 3, 4, 5].map((n) => ({ entity: `light.l${i}_${n}`, name: '', interactive: true })) } }));
+  for (let i = 0; i < 14; i++) rooms.push(item('ha.room', M(0, 0, 'm'), { props: { title: '', rows: [0, 1, 2, 3, 4, 5].map((n) => ({ entity: `light.l${i}_${n}`, name: '', interactive: true })) } }));
   const ents = run({ items: rooms });
-  assert.ok(ents.c.errors.some((e) => /max 40/.test(e.message)), JSON.stringify(ents.c.errors));
+  assert.ok(ents.c.errors.some((e) => /max 80/.test(e.message)), JSON.stringify(ents.c.errors));
 });
 
 test('props: dangling calendars, members and widgets are dropped quietly; time zones are checked', () => {
@@ -310,10 +314,10 @@ test('canvas fields: enums, colours, numbers clamped; an unknown version resets 
 // Portrait derivation golden fixtures: the landscape layouts of the templates, arranged for a portrait screen.
 const PORTRAIT_GOLDEN = {
   // the next-events band no longer fits under the forecast: left out of the portrait view
-  calendarWeather: { placed: [['calendar.month', 0, 0, 'xl'], ['clock.digital', 0, 6, 'm'], ['weather.now', 4, 6, 'm'], ['weather.forecast', 0, 9, 'w']], omitted: ['calendar.next'] },
-  bedroom: { placed: [['clock.analog', 0, 0, 'xl'], ['calendar.agenda', 0, 6, 's'], ['weather.now', 4, 6, 'xs']], omitted: [] },
+  calendarWeather: { placed: [['calendar.month', 0, 0, 'xl'], ['clock.digital', 0, 12, 'm'], ['weather.now', 8, 12, 'm'], ['weather.forecast', 0, 18, 'w']], omitted: ['calendar.next'] },
+  bedroom: { placed: [['clock.analog', 0, 0, 'xl'], ['calendar.agenda', 0, 12, 's'], ['weather.now', 8, 12, 'xs']], omitted: [] },
   halfHalf: { placed: [['calendar.month', 0, 0, 'full']], omitted: [], side: 3 },
-  // the month alone, the whole grid on both orientations (8×12 on a portrait screen)
+  // the month alone, the whole grid on both orientations (16×24 on a portrait screen)
   calendarOnly: { placed: [['calendar.month', 0, 0, 'full']], omitted: [] },
 };
 
@@ -477,70 +481,72 @@ test('flexible sizes: every kind has a range in cells that holds all its named s
       }
     }
   }
-  // the owner's examples: tall and narrow lists, full-width strips, small Casa tiles, readable clocks
-  for (const kind of ['todo', 'calendar.agenda', 'birthdays', 'family.routines', 'meals.week', 'countdowns']) assert.ok(boxAllowed(kind, 3, 6) || boxAllowed(kind, 6, 6), kind);
-  assert.ok(boxAllowed('todo', 3, 6) && boxAllowed('calendar.agenda', 3, 6) && boxAllowed('birthdays', 3, 6) && boxAllowed('family.routines', 3, 6));
-  for (const kind of ['news', 'stocks', 'weather.forecast', 'highlights', 'message', 'countdowns', 'calendar.week', 'calendar.month', 'calendar.agenda']) assert.ok(boxAllowed(kind, 12, 2) || boxAllowed(kind, 12, 3), `${kind} full width`);
-  for (const kind of ['ha.switch', 'ha.light', 'ha.tile', 'ha.sensor']) assert.ok(boxAllowed(kind, 2, 1), `${kind} 2×1`);
+  // the owner's examples (in cells of the 24×16 grid): tall and narrow lists, full-width strips, small Casa tiles,
+  // readable clocks
+  for (const kind of ['todo', 'calendar.agenda', 'birthdays', 'family.routines', 'meals.week', 'countdowns']) assert.ok(boxAllowed(kind, 6, 12) || boxAllowed(kind, 12, 12), kind);
+  assert.ok(boxAllowed('todo', 6, 12) && boxAllowed('calendar.agenda', 6, 12) && boxAllowed('birthdays', 6, 12) && boxAllowed('family.routines', 6, 12));
+  for (const kind of ['news', 'stocks', 'weather.forecast', 'highlights', 'message', 'countdowns', 'calendar.week', 'calendar.month', 'calendar.agenda']) assert.ok(boxAllowed(kind, 24, 4) || boxAllowed(kind, 24, 6), `${kind} full width`);
+  for (const kind of ['ha.switch', 'ha.light', 'ha.tile', 'ha.sensor']) assert.ok(boxAllowed(kind, 4, 2) && boxAllowed(kind, 2, 1), `${kind} 4×2 and 2×1`);
   // cards grow down and sideways where the room is used: faces in a big grid or a list, rewards and meals as tiles,
   // the week's meals as a list of days in a narrow card, more cities, events and hours, larger Casa tiles
-  for (const kind of ['family.members', 'family.rewards', 'family.points', 'family.chores', 'meals.today', 'birthdays', 'countdowns', 'news', 'message', 'announcement', 'clock.world', 'weather.now', 'weather.hourly', 'weather.forecast']) assert.ok(boxAllowed(kind, 12, 8), `${kind} 12×8`);
-  for (const kind of ['meals.week', 'family.members', 'todo', 'family.rewards', 'meals.today']) assert.ok(boxAllowed(kind, 3, 8), `${kind} 3×8`);
-  assert.ok(boxAllowed('calendar.next', 12, 6) && boxAllowed('date', 12, 6) && boxAllowed('value', 8, 6) && boxAllowed('market', 8, 8));
-  assert.ok(boxAllowed('ha.tile', 2, 4) && boxAllowed('ha.switch', 6, 4) && boxAllowed('ha.sensor', 8, 4) && boxAllowed('ha.gauge', 8, 6) && boxAllowed('ha.statistic', 8, 6) && boxAllowed('ha.scene', 12, 6) && boxAllowed('ha.media', 8, 8));
-  // the minimums stay as they were
-  assert.deepEqual([cellRange('family.members').minW, cellRange('family.members').minH], [3, 2]);
-  assert.equal(boxAllowed('meals.week', 2, 8), false);
-  assert.ok(boxAllowed('ha.cover', 2, 2));
-  assert.equal(boxAllowed('clock.digital', 1, 1), false);
-  assert.equal(boxAllowed('clock.flip', 2, 1), false);
-  assert.equal(boxAllowed('todo', 12, 2), false, 'past its largest width');
-  assert.equal(boxAllowed('todo', 2.5, 4), false, 'whole cells only');
-  // portrait: at most 8 wide, a full-height kind takes all 12 rows
-  assert.deepEqual([cellRange('calendar.month', 'portrait').maxW, cellRange('calendar.month', 'portrait').maxH], [8, 12]);
+  for (const kind of ['family.members', 'family.rewards', 'family.points', 'family.chores', 'meals.today', 'birthdays', 'countdowns', 'news', 'message', 'announcement', 'clock.world', 'weather.now', 'weather.hourly', 'weather.forecast']) assert.ok(boxAllowed(kind, 24, 16), `${kind} 24×16`);
+  for (const kind of ['meals.week', 'family.members', 'todo', 'family.rewards', 'meals.today']) assert.ok(boxAllowed(kind, 6, 16), `${kind} 6×16`);
+  assert.ok(boxAllowed('calendar.next', 24, 12) && boxAllowed('date', 24, 12) && boxAllowed('value', 16, 12) && boxAllowed('market', 16, 16));
+  assert.ok(boxAllowed('ha.tile', 4, 8) && boxAllowed('ha.switch', 12, 8) && boxAllowed('ha.sensor', 16, 8) && boxAllowed('ha.gauge', 16, 12) && boxAllowed('ha.statistic', 16, 12) && boxAllowed('ha.scene', 24, 12) && boxAllowed('ha.media', 16, 16));
+  // the smallest boxes (the compact look below twice the old minimum, fullLookMin)
+  assert.deepEqual([cellRange('family.members').minW, cellRange('family.members').minH], [4, 1]);
+  assert.deepEqual(fullLookMin('family.members'), [6, 4]);
+  assert.equal(boxAllowed('meals.week', 4, 16), false);
+  assert.ok(boxAllowed('ha.cover', 4, 4));
+  assert.equal(boxAllowed('clock.digital', 2, 1), false);
+  assert.equal(boxAllowed('clock.flip', 3, 1), false);
+  assert.equal(boxAllowed('todo', 24, 4), false, 'past its largest width');
+  assert.equal(boxAllowed('todo', 4.5, 8), false, 'whole cells only');
+  // portrait: at most 16 wide, a full-height kind takes all 24 rows
+  assert.deepEqual([cellRange('calendar.month', 'portrait').maxW, cellRange('calendar.month', 'portrait').maxH], [16, 24]);
 });
 
 test('flexible sizes: a box is stored as its named size when it is one, else with its own w and h and the named size it looks like', () => {
-  assert.deepEqual(boxOf('todo', 3, 4), { size: 't' });
-  assert.deepEqual(boxOf('todo', 3, 6), { size: 't', w: 3, h: 6 });
-  assert.deepEqual(boxOf('ha.switch', 2, 1), { size: 'row', w: 2, h: 1 });
-  assert.deepEqual(boxOf('ha.light', 5, 2), { size: 's', w: 5, h: 2 });
+  assert.deepEqual(boxOf('todo', 6, 8), { size: 't' });
+  assert.deepEqual(boxOf('todo', 6, 12), { size: 't', w: 6, h: 12 });
+  assert.deepEqual(boxOf('ha.switch', 4, 2), { size: 'row', w: 4, h: 2 });
+  assert.deepEqual(boxOf('ha.light', 10, 4), { size: 's', w: 10, h: 4 });
   // clamped to the range
-  assert.deepEqual(boxOf('todo', 1, 20), { size: 't', w: 3, h: 8 });
+  assert.deepEqual(boxOf('todo', 1, 40), { size: 's', w: 4, h: 16 });
   // the look: the largest named size inside the box, else the one sticking out least
-  assert.equal(lookSize('weather.forecast', 8, 2), 'w');
-  assert.equal(lookSize('calendar.agenda', 4, 6), 't');
-  assert.equal(lookSize('calendar.agenda', 6, 3), 'm');
-  assert.equal(lookSize('ha.tile', 2, 1), 'row');
-  assert.deepEqual(posCells({ size: 'm' }), [4, 3]);
+  assert.equal(lookSize('weather.forecast', 16, 4), 'w');
+  assert.equal(lookSize('calendar.agenda', 8, 12), 't');
+  assert.equal(lookSize('calendar.agenda', 12, 6), 'm');
+  assert.equal(lookSize('ha.tile', 4, 2), 'row');
+  assert.deepEqual(posCells({ size: 'm' }), [8, 6]);
   assert.deepEqual(posCells({ size: 'm', w: 5, h: 2 }), [5, 2]);
-  assert.deepEqual(posCells({ size: 's' }, 'portrait'), [4, 2]);
+  assert.deepEqual(posCells({ size: 's' }, 'portrait'), [8, 4]);
 });
 
 test('flexible sizes: validation keeps boxes of their own, clamps them to the kind, refuses what is not whole cells, and never overlaps', () => {
-  const a = item('todo', { zone: 'main', x: 0, y: 0, size: 't', w: 3, h: 6 });
-  const b = item('news', { zone: 'main', x: 3, y: 0, size: 'w', w: 9, h: 2 });
+  const a = item('todo', { zone: 'main', x: 0, y: 0, size: 't', w: 6, h: 12 });
+  const b = item('news', { zone: 'main', x: 6, y: 0, size: 'w', w: 18, h: 4 });
   // exactly a named size: stored as the name
-  const c = item('weather.now', { zone: 'main', x: 3, y: 2, size: 'xs', w: 3, h: 2 });
-  // too large for a switch (6×4 at most): clamped (a warning, not an error)
-  const d = item('ha.switch', { zone: 'main', x: 6, y: 2, size: 's', w: 6, h: 6 });
+  const c = item('weather.now', { zone: 'main', x: 6, y: 4, size: 'xs', w: 6, h: 4 });
+  // too large for a switch (12×8 at most): clamped (a warning, not an error)
+  const d = item('ha.switch', { zone: 'main', x: 12, y: 4, size: 's', w: 12, h: 12 });
   // overlapping the to-do list: moved to the nearest free spot with its own box
-  const e = item('ha.sensor', { zone: 'main', x: 1, y: 1, size: 'row', w: 2, h: 1 });
+  const e = item('ha.sensor', { zone: 'main', x: 2, y: 2, size: 'row', w: 4, h: 2 });
   let { c: col, out } = run({ items: [a, b, c, d, e] });
   assert.deepEqual(col.errors, []);
   const by = (it) => out.items.find((x) => x.id === it.id).pos;
-  assert.deepEqual(by(a), { zone: 'main', x: 0, y: 0, size: 't', w: 3, h: 6 });
-  assert.deepEqual(by(b), { zone: 'main', x: 3, y: 0, size: 'w', w: 9, h: 2 });
-  assert.deepEqual(by(c), { zone: 'main', x: 3, y: 2, size: 's' });
-  assert.deepEqual(posCells(by(d)), [6, 4]);
+  assert.deepEqual(by(a), { zone: 'main', x: 0, y: 0, size: 't', w: 6, h: 12 });
+  assert.deepEqual(by(b), { zone: 'main', x: 6, y: 0, size: 'w', w: 18, h: 4 });
+  assert.deepEqual(by(c), { zone: 'main', x: 6, y: 4, size: 's' });
+  assert.deepEqual(posCells(by(d)), [12, 8]);
   assert.ok(col.warnings.some((w) => /not allowed for ha\.switch/.test(w.message)));
-  assert.deepEqual(posCells(by(e)), [2, 1]);
-  assert.ok(by(e).x >= 3 || by(e).y >= 6);
+  assert.deepEqual(posCells(by(e)), [4, 2]);
+  assert.ok(by(e).x >= 6 || by(e).y >= 12);
   assertNoOverlap(out.items);
   // only one of w and h, or a fraction: an error, and the named size is used
-  ({ c: col, out } = run({ items: [item('todo', { zone: 'main', x: 0, y: 0, size: 't', w: 3 }), item('todo', { zone: 'main', x: 4, y: 0, size: 't', w: 2.5, h: 4 })] }));
+  ({ c: col, out } = run({ items: [item('todo', { zone: 'main', x: 0, y: 0, size: 't', w: 6 }), item('todo', { zone: 'main', x: 8, y: 0, size: 't', w: 4.5, h: 8 })] }));
   assert.equal(col.errors.length, 2);
-  assert.deepEqual(out.items.map((i) => i.pos), [{ zone: 'main', x: 0, y: 0, size: 't' }, { zone: 'main', x: 4, y: 0, size: 't' }]);
+  assert.deepEqual(out.items.map((i) => i.pos), [{ zone: 'main', x: 0, y: 0, size: 't' }, { zone: 'main', x: 8, y: 0, size: 't' }]);
   // a screen saved before flexible sizes comes back exactly as it was
   for (const t of CANVAS_TEMPLATES) {
     const cv = canvasFromTemplate(t.id);
@@ -550,24 +556,24 @@ test('flexible sizes: validation keeps boxes of their own, clamps them to the ki
   }
 });
 
-test('flexible sizes: portrait keeps a box of its own (at most 8 wide), a hand-made portrait one is checked like landscape, the display gets w and h', () => {
-  const items = [item('news', { zone: 'main', x: 0, y: 0, size: 'w', w: 12, h: 2 }), item('todo', { zone: 'main', x: 0, y: 2, size: 't', w: 3, h: 6 }), item('clock.digital', { zone: 'main', x: 3, y: 2, size: 'm' })];
+test('flexible sizes: portrait keeps a box of its own (at most 16 wide), a hand-made portrait one is checked like landscape, the display gets w and h', () => {
+  const items = [item('news', { zone: 'main', x: 0, y: 0, size: 'w', w: 24, h: 4 }), item('todo', { zone: 'main', x: 0, y: 4, size: 't', w: 6, h: 12 }), item('clock.digital', { zone: 'main', x: 6, y: 4, size: 'm' })];
   const { placed, omitted } = deriveCanvasPortrait(items);
   assert.deepEqual(omitted, []);
   const pos = new Map(placed.map((p) => [p.id, p.pos]));
-  assert.deepEqual(posCells(pos.get(items[0].id), 'portrait'), [8, 2]);
-  assert.deepEqual(posCells(pos.get(items[1].id), 'portrait'), [3, 6]);
+  assert.deepEqual(posCells(pos.get(items[0].id), 'portrait'), [16, 4]);
+  assert.deepEqual(posCells(pos.get(items[1].id), 'portrait'), [6, 12]);
   // the clock keeps its named size, as before
   assert.equal(pos.get(items[2].id).size, 'm');
   assert.equal(pos.get(items[2].id).w, undefined);
-  // a hand-made portrait box past 8 columns is clamped there
-  const hand = { ...structuredClone(items[1]), portrait: { zone: 'main', x: 0, y: 0, size: 't', w: 9, h: 12 } };
+  // a hand-made portrait box past 16 columns is clamped there
+  const hand = { ...structuredClone(items[1]), portrait: { zone: 'main', x: 0, y: 0, size: 't', w: 18, h: 24 } };
   const { c: col, out } = run({ portraitAuto: false, items: [hand] });
   assert.deepEqual(col.errors, []);
-  assert.deepEqual(posCells(out.items[0].portrait, 'portrait'), [8, 12]);
+  assert.deepEqual(posCells(out.items[0].portrait, 'portrait'), [16, 24]);
   // the display config carries the boxes as they are
   const cv = run({ items }).out;
   const proj = projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation: 'auto' }, canvas: cv }, {});
-  assert.deepEqual(proj.items[1].pos, { zone: 'main', x: 0, y: 2, size: 't', w: 3, h: 6 });
-  assert.deepEqual(posCells(proj.items[0].portrait, 'portrait'), [8, 2]);
+  assert.deepEqual(proj.items[1].pos, { zone: 'main', x: 0, y: 4, size: 't', w: 6, h: 12 });
+  assert.deepEqual(posCells(proj.items[0].portrait, 'portrait'), [16, 4]);
 });

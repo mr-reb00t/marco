@@ -123,13 +123,13 @@ async function withApp(fn, { mutate = () => {} } = {}) {
     ...defaultCanvas(),
     items: [
       item('cv_tile0001', 'ha.tile', M(0, 0, 'xs'), { entity: 'light.kitchen' }),
-      item('cv_sens0001', 'ha.sensor', M(2, 0, 'xs'), { entity: 'sensor.living_temp', sparkline: true }),
-      item('cv_sens0002', 'ha.sensor', M(4, 0, 'xs'), { entity: 'sensor.outdoor_temp' }),
-      item('cv_room0001', 'ha.room', M(6, 0, 'm'), { title: 'Hall', rows: [{ entity: 'binary_sensor.front_door', name: '', interactive: true }] }),
-      item('cv_chrt0001', 'ha.chart', M(0, 3, 'm'), { series: [{ entity: 'sensor.living_temp', label: '', color: null }], period: '24h' }),
-      item('cv_chrt0002', 'ha.chart', M(4, 3, 'm'), { series: [{ entity: 'sensor.outdoor_temp', label: 'Fuera', color: null }], period: '7d' }),
-      item('cv_medi0001', 'ha.media', M(0, 6, 'w'), { entity: 'media_player.living' }),
-      item('cv_medi0002', 'ha.media', M(6, 6, 'w'), { entity: 'media_player.cdn' }),
+      item('cv_sens0001', 'ha.sensor', M(4, 0, 'xs'), { entity: 'sensor.living_temp', sparkline: true }),
+      item('cv_sens0002', 'ha.sensor', M(8, 0, 'xs'), { entity: 'sensor.outdoor_temp' }),
+      item('cv_room0001', 'ha.room', M(12, 0, 'm'), { title: 'Hall', rows: [{ entity: 'binary_sensor.front_door', name: '', interactive: true }] }),
+      item('cv_chrt0001', 'ha.chart', M(0, 6, 'm'), { series: [{ entity: 'sensor.living_temp', label: '', color: null }], period: '24h' }),
+      item('cv_chrt0002', 'ha.chart', M(8, 6, 'm'), { series: [{ entity: 'sensor.outdoor_temp', label: 'Fuera', color: null }], period: '7d' }),
+      item('cv_medi0001', 'ha.media', M(0, 12, 'w'), { entity: 'media_player.living' }),
+      item('cv_medi0002', 'ha.media', M(12, 12, 'w'), { entity: 'media_player.cdn' }),
     ],
   };
   const hall = defaultScreenProfile({ id: 's_hall', slug: 'hall', name: 'Hall' });
@@ -533,13 +533,13 @@ function touchScreen(c) {
   // room for them: the charts and the second player go
   main.canvas.items = main.canvas.items.filter((x) => !['cv_chrt0001', 'cv_chrt0002', 'cv_medi0002'].includes(x.id));
   main.canvas.items.push(
-    item('cv_ligh0001', 'ha.light', M(0, 3, 's'), { entity: 'light.desk' }),
-    item('cv_gara0001', 'ha.cover', M(3, 3, 'xs'), { entity: 'cover.garage' }),
-    item('cv_blnd0001', 'ha.cover', M(5, 3, 'xs'), { entity: 'cover.blind' }),
-    { ...item('cv_door0001', 'ha.switch', M(8, 3, 'xs'), { entity: 'switch.garage_door' }), ack: true },
-    item('cv_door0002', 'ha.switch', M(10, 3, 'xs'), { entity: 'switch.relay' }),
-    item('cv_clim0001', 'ha.climate', M(6, 6, 's'), { entity: 'climate.living' }),
-    { ...item('cv_noto0001', 'ha.switch', M(10, 0, 'xs'), { entity: 'switch.hall' }), interactive: false },
+    item('cv_ligh0001', 'ha.light', M(0, 6, 's'), { entity: 'light.desk' }),
+    item('cv_gara0001', 'ha.cover', M(6, 6, 'xs'), { entity: 'cover.garage' }),
+    item('cv_blnd0001', 'ha.cover', M(10, 6, 'xs'), { entity: 'cover.blind' }),
+    { ...item('cv_door0001', 'ha.switch', M(16, 6, 'xs'), { entity: 'switch.garage_door' }), ack: true },
+    item('cv_door0002', 'ha.switch', M(20, 6, 'xs'), { entity: 'switch.relay' }),
+    item('cv_clim0001', 'ha.climate', M(12, 12, 's'), { entity: 'climate.living' }),
+    { ...item('cv_noto0001', 'ha.switch', M(20, 0, 'xs'), { entity: 'switch.hall' }), interactive: false },
   );
   // the room's only row may not be touched
   main.canvas.items.find((x) => x.id === 'cv_room0001').props.rows = [{ entity: 'switch.hall', name: '', interactive: false }];
@@ -725,21 +725,21 @@ function featureScreen(c) {
   main.canvas.touch = true;
   main.canvas.items = [
     item('cv_valv0001', 'ha.tile', M(0, 0, 's'), { entity: 'valve.garden' }),
-    item('cv_watr0001', 'ha.tile', M(3, 0, 's'), { entity: 'valve.main_water' }),
-    { ...item('cv_watr0002', 'ha.tile', M(6, 0, 's'), { entity: 'valve.main_water' }), ack: true },
-    item('cv_gasv0001', 'ha.tile', M(9, 0, 's'), { entity: 'valve.gas' }),
-    item('cv_sele0001', 'ha.tile', M(0, 2, 's'), { entity: 'select.dishwasher' }),
-    item('cv_numb0001', 'ha.tile', M(3, 2, 's'), { entity: 'number.timer' }),
-    item('cv_numb0002', 'ha.tile', M(6, 2, 's'), { entity: 'input_number.boiler' }),
-    item('cv_vacu0001', 'ha.tile', M(9, 2, 's'), { entity: 'vacuum.robot' }),
-    item('cv_updt0001', 'ha.tile', M(0, 4, 's'), { entity: 'update.core' }),
-    item('cv_ligh0002', 'ha.tile', M(3, 4, 's'), { entity: 'light.desk', features: ['toggle', 'colorTemp'] }),
-    item('cv_gate0001', 'ha.tile', M(6, 4, 's'), { entity: 'cover.front_gate' }),
-    item('cv_stat0001', 'ha.statistic', M(9, 4, 's'), { entity: 'sensor.energy', stat: 'change', period: 'today' }),
-    item('cv_stat0002', 'ha.statistic', M(0, 6, 's'), { entity: 'sensor.energy', stat: 'max', period: 'week' }),
-    item('cv_gaug0001', 'ha.gauge', M(3, 6, 's'), { entity: 'number.timer', min: 0, max: 120 }),
-    { ...item('cv_cond0001', 'ha.tile', M(6, 6, 's'), { entity: 'switch.hall' }), when: { src: 'ha', entity: 'binary_sensor.front_door', op: 'eq', value: 'on' } },
-    { ...item('cv_cond0002', 'heading', M(9, 6, 's'), { title: 'Puerta' }), when: { src: 'ha', entity: 'binary_sensor.front_door', op: 'ne', value: 'on' } },
+    item('cv_watr0001', 'ha.tile', M(6, 0, 's'), { entity: 'valve.main_water' }),
+    { ...item('cv_watr0002', 'ha.tile', M(12, 0, 's'), { entity: 'valve.main_water' }), ack: true },
+    item('cv_gasv0001', 'ha.tile', M(18, 0, 's'), { entity: 'valve.gas' }),
+    item('cv_sele0001', 'ha.tile', M(0, 4, 's'), { entity: 'select.dishwasher' }),
+    item('cv_numb0001', 'ha.tile', M(6, 4, 's'), { entity: 'number.timer' }),
+    item('cv_numb0002', 'ha.tile', M(12, 4, 's'), { entity: 'input_number.boiler' }),
+    item('cv_vacu0001', 'ha.tile', M(18, 4, 's'), { entity: 'vacuum.robot' }),
+    item('cv_updt0001', 'ha.tile', M(0, 8, 's'), { entity: 'update.core' }),
+    item('cv_ligh0002', 'ha.tile', M(6, 8, 's'), { entity: 'light.desk', features: ['toggle', 'colorTemp'] }),
+    item('cv_gate0001', 'ha.tile', M(12, 8, 's'), { entity: 'cover.front_gate' }),
+    item('cv_stat0001', 'ha.statistic', M(18, 8, 's'), { entity: 'sensor.energy', stat: 'change', period: 'today' }),
+    item('cv_stat0002', 'ha.statistic', M(0, 12, 's'), { entity: 'sensor.energy', stat: 'max', period: 'week' }),
+    item('cv_gaug0001', 'ha.gauge', M(6, 12, 's'), { entity: 'number.timer', min: 0, max: 120 }),
+    { ...item('cv_cond0001', 'ha.tile', M(12, 12, 's'), { entity: 'switch.hall' }), when: { src: 'ha', entity: 'binary_sensor.front_door', op: 'eq', value: 'on' } },
+    { ...item('cv_cond0002', 'heading', M(18, 12, 's'), { title: 'Puerta' }), when: { src: 'ha', entity: 'binary_sensor.front_door', op: 'ne', value: 'on' } },
   ];
 }
 

@@ -34,7 +34,7 @@ function message(): CanvasAdapter {
       render();
     },
     update: () => render(),
-    // a box only the fine grid has: the words whole, as large as the box holds them (down to a small size), else on
+    // a small box (the compact look): the words whole, as large as the box holds them (down to a small size), else on
     // one line that slides to show the rest (the marquee of the titles)
     layout(b) {
       root.classList.remove('is-mline');
@@ -88,7 +88,7 @@ function todo(): CanvasAdapter {
       render();
     },
     update: () => render(),
-    // a box only the fine grid has: smaller rows on one line each, the heading only when there is room, and as many
+    // a small box (the compact look): smaller rows on one line each, the heading only when there is room, and as many
     // rows as fit whole (the open ones come first)
     layout(b) {
       const rows = [...box.querySelectorAll<HTMLElement>('li')];
@@ -330,7 +330,7 @@ function value(): CanvasAdapter {
     fitWidth(root, root.querySelector('.cv-val-num'), wk);
   };
   /**
-   * One fine row high: the label and the value side by side on one line ("hace 5 min" left out), the value as large
+   * One row high: the label and the value side by side on one line ("hace 5 min" left out), the value as large
    * as the height allows; the label gives way first (its "..."), then goes when too little of it would show.
    */
   const fitLine = (box: AdapterBox) => {

@@ -65,7 +65,7 @@ function fitList(root: HTMLElement, list: HTMLElement | null, sel: string, first
 }
 
 /**
- * A box one fine row high (only the fine grid has it, widgets/canvas.ts miniMark): the card is one line, its rows side
+ * A box one row high (the compact look, widgets/canvas.ts miniMark): the card is one line, its rows side
  * by side (styles-canvas-mini.css).
  */
 const isLine = (root: HTMLElement) => root.dataset.mini !== undefined && root.dataset.mh === '1';
@@ -591,7 +591,7 @@ function highlights(): CanvasAdapter {
     layout(b) {
       // pills of about 30rem side by side in a wide card, two in a small one
       const wide = b.w / b.rem;
-      // one fine row high: one line of pills, as many as about 24rem each gives
+      // one row high: one line of pills, as many as about 24rem each gives
       if (isLine(root)) {
         root.classList.add('is-row');
         return build(Math.min(4, Math.max(1, Math.floor(onScreen(root, b)[0] / 24))));

@@ -136,7 +136,7 @@ test('conditions: validation, Valor only on Marco Cloud, the entity counts towar
     ...defaultCanvas(),
     items: [
       item('cv_a0000001', 'clock.digital', M(0, 0, 'm'), {}, { when: { src: 'ha', entity: 'binary_sensor.door', op: 'eq', value: 'on' } }),
-      item('cv_a0000002', 'heading', M(4, 0, 'w'), { title: 'x' }, { when: { src: 'value', key: 'washer', op: 'eq', value: 'done' } }),
+      item('cv_a0000002', 'heading', M(8, 0, 'w'), { title: 'x' }, { when: { src: 'value', key: 'washer', op: 'eq', value: 'done' } }),
     ],
   };
   const cloud = collector();
@@ -152,13 +152,13 @@ test('conditions: validation, Valor only on Marco Cloud, the entity counts towar
   assert.ok(watchedEntities({ screens: [scr] }).has('binary_sensor.door'), 'mirrored so the server can decide');
   assert.equal(aliasesFor(scr).size, 0, 'but never an alias: the display never learns it');
   // the cap of Home Assistant entities counts it
-  const many = { ...defaultCanvas(), items: Array.from({ length: 20 }, (_, i) => item(`cv_t${String(i).padStart(7, '0')}`, 'ha.tile', M((i % 6) * 2, Math.floor(i / 6) * 2, 'xs'), { entity: `light.l${i}` }, { when: { src: 'ha', entity: `binary_sensor.b${i}`, op: 'eq', value: 'on' } })) };
-  many.items.push(item('cv_clock001', 'clock.digital', M(8, 6, 's'), {}, { when: { src: 'ha', entity: 'binary_sensor.one_more', op: 'eq', value: 'on' } }));
+  const many = { ...defaultCanvas(), items: Array.from({ length: 40 }, (_, i) => item(`cv_t${String(i).padStart(7, '0')}`, 'ha.tile', { zone: 'main', x: (i % 12) * 2, y: Math.floor(i / 12), size: 'row', w: 2, h: 1 }, { entity: `light.l${i}` }, { when: { src: 'ha', entity: `binary_sensor.b${i}`, op: 'eq', value: 'on' } })) };
+  many.items.push(item('cv_clock001', 'clock.digital', M(16, 12, 's'), {}, { when: { src: 'ha', entity: 'binary_sensor.one_more', op: 'eq', value: 'on' } }));
   const cap = collector();
   const capped = sanitizeCanvas(cap, 'canvas', many, {}, {});
-  assert.ok(cap.errors.some((e) => e.includes('items[20].when') && e.includes('too many Home Assistant entities')));
-  assert.equal(capped.items.filter((it) => it.when?.entity).length, 20, '40 entities: 20 lights and 20 conditions');
-  assert.equal(capped.items.find((it) => it.id === 'cv_clock001').when.entity, '', 'the 41st is left out');
+  assert.ok(cap.errors.some((e) => e.includes('items[40].when') && e.includes('too many Home Assistant entities')));
+  assert.equal(capped.items.filter((it) => it.when?.entity).length, 40, '80 entities: 40 lights and 40 conditions');
+  assert.equal(capped.items.find((it) => it.id === 'cv_clock001').when.entity, '', 'the 81st is left out');
 });
 
 test('conditionMet: equals, not equals, above, below; numbers as numbers; nothing known never shows', () => {
@@ -188,10 +188,10 @@ test('conditionMet: equals, not equals, above, below; numbers as numbers; nothin
 test('conditionHidden and the projection: only { src } reaches a display; hidden items get no states and no values', () => {
   const items = [
     item('cv_a0000001', 'ha.tile', M(0, 0, 'xs'), { entity: 'light.a' }, { when: { src: 'ha', entity: 'binary_sensor.door', op: 'eq', value: 'on' } }),
-    item('cv_a0000002', 'value', M(2, 0, 's'), { key: 'solar' }, { when: { src: 'value', key: 'washer', op: 'eq', value: 'done' } }),
-    item('cv_a0000003', 'ha.tile', M(5, 0, 'xs'), { entity: 'light.b' }),
-    item('cv_a0000004', 'clock.digital', M(7, 0, 's'), {}, { when: { src: 'ha', entity: '', op: 'eq', value: 'on' } }),
-    item('cv_a0000005', 'heading', M(0, 2, 'w'), { title: 'x' }, { hidden: true, when: { src: 'ha', entity: 'binary_sensor.door', op: 'eq', value: 'on' } }),
+    item('cv_a0000002', 'value', M(4, 0, 's'), { key: 'solar' }, { when: { src: 'value', key: 'washer', op: 'eq', value: 'done' } }),
+    item('cv_a0000003', 'ha.tile', M(10, 0, 'xs'), { entity: 'light.b' }),
+    item('cv_a0000004', 'clock.digital', M(14, 0, 's'), {}, { when: { src: 'ha', entity: '', op: 'eq', value: 'on' } }),
+    item('cv_a0000005', 'heading', M(0, 4, 'w'), { title: 'x' }, { hidden: true, when: { src: 'ha', entity: 'binary_sensor.door', op: 'eq', value: 'on' } }),
   ];
   const scr = screen(items);
   const states = { 'binary_sensor.door': 'off' };

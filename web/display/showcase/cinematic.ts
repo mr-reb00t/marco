@@ -27,9 +27,9 @@ export const CINEMATIC_KEY = 'show.cinematic';
 export const CINEMATIC: Fixture = {
   canvas: { background: 'photo', dim: 0.12, scrim: 'topBottom', touch: true },
   items: [
-    { kind: 'clock.digital', pos: B(0, 0, 5, 3), style: BARE, props: { weight: 'light', showDate: true, dateFormat: 'long', datePos: 'below' } },
-    { kind: 'weather.now', pos: B(8, 0, 4, 2), style: { ...BARE, scale: 1.45 }, props: { meta: false, feelsLike: false } },
-    { kind: 'calendar.next', pos: B(4, 6, 4, 2), style: CLEAR, props: { count: 2, sourceIds: ['c_fam'] } },
-    { kind: 'ha.media', pos: B(8, 6, 4, 2), style: CLEAR, props: { entity: 'media_player.living_room', name: 'Living room' } },
+    { kind: 'clock.digital', pos: B(0, 0, 10, 6), style: BARE, props: { weight: 'light', showDate: true, dateFormat: 'long', datePos: 'below' } },
+    { kind: 'weather.now', pos: B(16, 0, 8, 4), style: { ...BARE, scale: 1.45 }, props: { meta: false, feelsLike: false } },
+    { kind: 'calendar.next', pos: B(8, 12, 8, 4), style: CLEAR, props: { count: 2, sourceIds: ['c_fam'] } },
+    { kind: 'ha.media', pos: B(16, 12, 8, 4), style: CLEAR, props: { entity: 'media_player.living_room', name: 'Living room' } },
   ],
 };

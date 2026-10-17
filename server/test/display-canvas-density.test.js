@@ -1,14 +1,14 @@
-// Personalizado, issue #9 in a browser: every card at boxes of its own on the fine grid (24×16, 16×24) and in
-// Densidad compacta, at the smallest, the largest and boxes in between (canvasCore cellRange on each grid, the fine
-// minimums included), with no "No cabe" and no text cut by the card's edge, the way display-canvas-flex.test.js checks
-// the normal grid. Every kind's fine minimum (its compact look, data-mini) and the largest box still below its normal
-// smallest are drawn in both densities, landscape, portrait and next to a wide sidebar. And the Rotativa on the
-// screen: one card on show at a time, its dots, the next card after its seconds, no fade in lite mode. Skipped
+// Personalizado, issue #9 in a browser: every card at boxes of its own on the grid (24×16, 16×24) and in Densidad
+// compacta, at the smallest, the largest and boxes in between (canvasCore cellRange, the small minimums included),
+// with no "No cabe" and no text cut by the card's edge, the way display-canvas-flex.test.js checks the boxes a screen
+// of the old 12×8 grid had. Every kind's minimum (its compact look, data-mini) and the largest box still below its full
+// look (fullLookMin) are drawn in both densities, landscape, portrait and next to a wide sidebar. And the Rotativa on
+// the screen: one card on show at a time, its dots, the next card after its seconds, no fade in lite mode. Skipped
 // without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CANVAS_KINDS, canvasDefaults, cellRange, kindFor } from '../core/canvasCore.js';
+import { CANVAS_KINDS, canvasDefaults, cellRange, fullLookMin, kindFor } from '../core/canvasCore.js';
 import { flexSamples } from './flexSizes.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
@@ -16,23 +16,23 @@ import { findChrome, launchChrome, startWeb } from './browser.js';
 const CHECK = eval(fs.readFileSync(new URL('./display-canvas-flex.test.js', import.meta.url), 'utf8').match(/const CHECK = (`[\s\S]*?`);/)[1]);
 
 /**
- * The samples of a kind on the fine grid: flexSamples, then the largest box still smaller than its normal smallest
+ * The samples of a kind: flexSamples over its whole range, then the largest box still smaller than its full look
  * (the last box drawn in its compact look), "WxH", when that is a box of its own the kind allows.
  */
 function fineSamples(kind, o) {
   const list = flexSamples(kind, o, 'fine');
   const k = kind === 'rotator' ? kindFor({ kind, props: canvasDefaults(kind) }) : kind;
-  const f = cellRange(k, o, 'fine');
-  const n = cellRange(k, o, 'normal');
-  const w = Math.max(f.minW, Math.min(f.maxW, n.minW * 2 - 1));
-  const h = Math.max(f.minH, Math.min(f.maxH, n.minH * 2 - 1));
+  const f = cellRange(k, o);
+  const [fw, fh] = fullLookMin(k, o);
+  const w = Math.max(f.minW, Math.min(f.maxW, fw - 1));
+  const h = Math.max(f.minH, Math.min(f.maxH, fh - 1));
   return [...list, `${w}x${h}`];
 }
-/** True when a w×h fine box of `kind` is drawn in its compact look (canvas.ts miniMark). */
+/** True when a w×h box of `kind` is drawn in its compact look (canvas.ts miniMark). */
 function isMini(kind, o, cells) {
   const [w, h] = cells.split('x').map(Number);
-  const n = cellRange(kind, o, 'normal');
-  return w < n.minW * 2 || h < n.minH * 2;
+  const [fw, fh] = fullLookMin(kind, o);
+  return w < fw || h < fh;
 }
 
 const LAND = { width: 1920, height: 1080 };
@@ -55,8 +55,8 @@ const PASSES = [
     { o: 'portrait', side: 'none', size: PORT, pick: (l) => [l[0], l[6]].filter(Boolean) },
     { o: 'landscape', side: 'left', size: LAND, pick: (l) => [l[0], l[5], l[6]].filter(Boolean) },
   ] },
-  // the normal grid in Densidad compacta: the smallest and the largest boxes
-  { flags: 'compact', grid: 'normal', screens: [
+  // the boxes of a screen made on the old grid, in Densidad compacta: the smallest and the largest
+  { flags: 'compact', grid: 'legacy', screens: [
     { o: 'landscape', side: 'none', size: LAND, pick: (l) => [l[0], l[1], l[3]].filter(Boolean) },
     { o: 'portrait', side: 'none', size: PORT, pick: (l) => [l[0]] },
   ] },
@@ -81,7 +81,7 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
       const jobs = [];
       for (const kind of kinds) {
         for (const sc of pass.screens) {
-          const list = pass.grid === 'fine' ? fineSamples(kind, sc.o) : flexSamples(kind, sc.o, pass.grid);
+          const list = pass.grid === 'fine' ? fineSamples(kind, sc.o) : flexSamples(kind, sc.o);
           for (const sz of new Set(sc.pick(list))) jobs.push({ shot: `size:${kind}:${sz}:${sc.o}:${sc.side}:ambient:${pass.flags}`, size: sc.size, kind, o: sc.o, sz, grid: pass.grid });
         }
       }
@@ -100,12 +100,12 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
               if (c.cut.length) bad.push(`${j.shot}: cuts ${c.cut.join(', ')}`);
             }
             // the compact look exactly on the boxes only the fine grid has (a Rotativa's cards: on their slides)
-            const mini = j.grid === 'fine' && j.kind !== 'rotator' && isMini(j.kind, j.o, j.sz);
+            const mini = j.kind !== 'rotator' && isMini(j.kind, j.o, j.sz);
             const marks = await p.eval(`[...document.querySelectorAll('.cv-item:not([hidden]) > .cv-card > .cv-body')].map((b) => b.dataset.mini !== undefined)`);
             if (j.kind !== 'rotator' && marks.some((m) => m !== mini)) bad.push(`${j.shot}: data-mini ${marks.join(',')}, expected ${mini}`);
-            // the grid and the density reached the page
-            const ok = await p.eval(`(() => { const a = document.getElementById('app'); return a.classList.contains('cv-fine') === ${pass.grid === 'fine'} && a.classList.contains('cv-dense') === ${pass.flags.includes('compact')}; })()`);
-            if (!ok) bad.push(`${j.shot}: grid or density classes missing`);
+            // the density reached the page
+            const ok = await p.eval(`document.getElementById('app').classList.contains('cv-dense') === ${pass.flags.includes('compact')}`);
+            if (!ok) bad.push(`${j.shot}: density class missing`);
             const errors = p.errors().map((e) => JSON.stringify(e.params)).filter((s) => !/vite|Vite/.test(s));
             if (errors.length) bad.push(`${j.shot}: ${errors.join(' ')}`);
           } finally {
@@ -117,7 +117,7 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
     });
   }
 
-  test('the fine grid draws 24×16 cells over the same screen, and compact cards sit closer', async () => {
+  test('the grid is 24×16 cells over the screen, a named size the rectangle it always was, and compact cards sit closer', async () => {
     const at = async (flags) => {
       const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=size:clock.digital:m:landscape:none:ambient${flags ? `:${flags}` : ''}`, LAND);
       try {
@@ -126,19 +126,19 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
           const c = document.getElementById('canvas');
           const cs = getComputedStyle(c);
           const r = [...document.querySelectorAll('.cv-item')].map((e) => e.getBoundingClientRect());
-          return { cols: cs.gridTemplateColumns.split(' ').length, rows: cs.gridTemplateRows.split(' ').length, gap: parseFloat(cs.columnGap), w: r[0].width, h: r[0].height, x2: r[1]?.left ?? 0, x1: r[0].right };
+          const inner = c.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          return { cols: cs.gridTemplateColumns.split(' ').length, rows: cs.gridTemplateRows.split(' ').length, gap: parseFloat(cs.columnGap), inner, w: r[0].width, h: r[0].height, x2: r[1]?.left ?? 0, x1: r[0].right };
         })()`);
       } finally {
         await p.close();
       }
     };
     const normal = await at('');
-    const fine = await at('fine');
     const dense = await at('compact');
-    assert.deepEqual([normal.cols, normal.rows], [12, 8]);
-    assert.deepEqual([fine.cols, fine.rows], [24, 16]);
-    // a named size is the same rectangle on both grids
-    assert.ok(Math.abs(normal.w - fine.w) < 1 && Math.abs(normal.h - fine.h) < 1, JSON.stringify({ normal, fine }));
+    assert.deepEqual([normal.cols, normal.rows], [24, 16]);
+    // a medium card is 4×3 cells of the old 12×8 grid: a third of the width less the gaps, as before
+    const cw = (normal.inner - 11 * normal.gap) / 12;
+    assert.ok(Math.abs(normal.w - (4 * cw + 3 * normal.gap)) < 1.5, JSON.stringify({ normal, cw }));
     // Densidad compacta: half the gap between cards, and larger cards in the same cells
     assert.ok(dense.gap < normal.gap * 0.6 && dense.w > normal.w, JSON.stringify({ normal, dense }));
   });
@@ -153,7 +153,7 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
       still: e.querySelector('.cv-rot').classList.contains('no-motion'),
       kinds: [...e.querySelectorAll('.cv-rot-slide > *')].length > 0,
     }))`;
-    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=size:rotator:12x4:landscape:none:ambient:fine:compact`, LAND);
+    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=size:rotator:12x4:landscape:none:ambient:compact`, LAND);
     try {
       await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1500)))');
       const a = await p.eval(state);
@@ -174,7 +174,7 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
       await p.close();
     }
     // lite mode: the cards change with no fade
-    const q = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=size:rotator:12x4:landscape:none:ambient:fine`, LAND);
+    const q = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=size:rotator:12x4:landscape:none:ambient`, LAND);
     try {
       await q.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 900)))');
       for (const r of await q.eval(state)) {

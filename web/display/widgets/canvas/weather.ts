@@ -64,7 +64,7 @@ function weatherAdapter(cls: string, draw: (root: HTMLElement, w: WeatherRespons
       last = box;
       // today's high and low once on a screen: a forecast on it already opens with today's row
       if (cls === 'cv-wx-now') root.classList.toggle('no-hl', !!(root.closest('#app') ?? document).querySelector('.cv-wx-forecast'));
-      // a box only the fine grid has: one line (or a small block) of its own (miniNow, miniStrip)
+      // a small box (the compact look): one line (or a small block) of its own (miniNow, miniStrip)
       if (root.dataset.mini !== undefined) {
         if (cls === 'cv-wx-now') return miniNow(root, box, Number(env.item().style?.scale) || 1);
         return miniStrip(root, box);
@@ -192,7 +192,7 @@ const isCut = (e: HTMLElement | null): boolean => !!e && !!e.offsetParent && e.s
 const overflows = (root: HTMLElement): boolean => root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1;
 
 /**
- * Tiempo ahora in a box only the fine grid has (data-mini): the icon, the temperature and the sky in one line, or the
+ * Tiempo ahora in a small box (the compact look, data-mini): the icon, the temperature and the sky in one line, or the
  * sky under them in a box about as high as wide; the details, the high and low and the place are left out. The type
  * fills the height, and gets smaller until the line fits; the sky goes first when it would read as a stub.
  */
@@ -201,7 +201,7 @@ function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
   const h = box.h / box.rem;
   const stack = h >= 9 && box.h > box.w * 0.55;
   root.classList.toggle('is-mstack', stack);
-  // a block three fine cells or more each way (#9): what the larger card shows, in smaller type
+  // a block three cells or more each way (#9): what the larger card shows, in smaller type
   if (stack && Number(root.dataset.mw) >= 3 && Number(root.dataset.mh) >= 3 && miniRich(root, box, scale)) return;
   let wk = Math.min(2.4, Math.max(0.4, h / (stack ? 10.4 : 7.2))) * scale;
   root.style.setProperty('--wk', wk.toFixed(3));
@@ -218,7 +218,7 @@ const RICH = ['is-mrich', 'm-noloc', 'm-nohl', 'm-nolabel', 'm-nometa'];
 const RICH_STEPS = [[], ['m-noloc'], ['m-noloc', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nometa']];
 
 /**
- * Tiempo ahora in a block only the fine grid has: the icon and the temperature over the sky, the high and low, the
+ * Tiempo ahora in a small block (the compact look): the icon and the temperature over the sky, the high and low, the
  * place and the details, like the card a size up, with type from the height made smaller until it fits; when it does
  * not fit at a size that still reads, the place goes, then the labels, the high and low and the details. False when
  * even the sky with the details does not fit (the small block of miniNow then).
@@ -244,7 +244,7 @@ function miniRich(root: HTMLElement, box: AdapterBox, scale: number): boolean {
 }
 
 /**
- * Por horas and Previsión in a box only the fine grid has: a strip of small hours or days (time or day, icon,
+ * Por horas and Previsión in a small box (the compact look): a strip of small hours or days (time or day, icon,
  * temperature; the chance of rain and the low only when there is room), as many as fit whole.
  */
 function miniStrip(root: HTMLElement, box: AdapterBox): void {
@@ -370,7 +370,7 @@ type CityRow = { el: HTMLElement; key: string };
  * "Tiempo en varias ciudades": a row (list) or a tile (grid) per place, with its sky, its temperature now, its name and
  * (highLow) the day's high and low. Laid out like the world clock: the rows in one column, or in two or three side by
  * side when a wide box gives them larger type; a grid has as many columns as make its tiles closest to square. In a box
- * only the fine grid has (data-mini) it is one line of places (sky, temperature, name), as many as fit whole.
+ * in a small box (the compact look, data-mini) it is one line of places (sky, temperature, name), as many as fit whole.
  */
 function citiesAdapter(): CanvasAdapter {
   let env: AdapterEnv;
@@ -473,7 +473,7 @@ function citiesAdapter(): CanvasAdapter {
 }
 
 /**
- * Tiempo en varias ciudades in a box only the fine grid has: one line of places (sky, temperature, name; no high and
+ * Tiempo en varias ciudades in a small box (the compact look): one line of places (sky, temperature, name; no high and
  * low), the type filling the height, as many places as fit whole (the rest left out, never cut in half).
  */
 function miniCities(root: HTMLElement, box: AdapterBox, scale: number): void {

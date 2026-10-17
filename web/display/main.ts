@@ -390,8 +390,8 @@ function applyLayout(): void {
     ...(preset === 'canvas' && cfg.canvas
       ? [
           `cv-side-${sidebarSide(cfg.canvas, portrait)}`, `cv-fill-${cfg.canvas.sidebar.fill}`, `cv-bg-${cfg.canvas.background}`, `cv-scrim-${cfg.canvas.scrim ?? 'uniform'}`,
-          // "Cuadrícula fina" and "Densidad compacta" (styles-canvas.css)
-          cfg.canvas.grid === 'fine' ? 'cv-fine' : '', cfg.canvas.density === 'compact' ? 'cv-dense' : '',
+          // "Densidad compacta" (styles-canvas.css)
+          cfg.canvas.density === 'compact' ? 'cv-dense' : '',
         ]
       : []),
   ].filter(Boolean).join(' ');

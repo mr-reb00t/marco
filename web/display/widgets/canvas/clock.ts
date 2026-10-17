@@ -112,11 +112,11 @@ export function shrinkLine(el: HTMLElement | null): void {
   if (size) el.style.fontSize = `${Math.max(size * 0.7, (size * room) / w * 0.98).toFixed(1)}px`;
 }
 
-/** A box only the fine grid has (canvas.ts miniMark): the compact look of the clocks and the date. */
+/** A small box (canvas.ts miniMark): the compact look of the clocks and the date. */
 export const isMini = (root: HTMLElement): boolean => root.dataset.mini !== undefined;
 
 /**
- * Type of a card in a box only the fine grid has: like bigType, from the box's height and width, but with no floor
+ * Type of a card in a small box (the compact look): like bigType, from the box's height and width, but with no floor
  * (bigType never goes under 0.6, too large for a line half a normal row high), then shrunk until it fits.
  */
 function miniType(root: HTMLElement, box: AdapterBox, nominalRem: number, nominalW: number, scale: number): number {
@@ -171,7 +171,7 @@ export function digitalClock(): CanvasAdapter {
     layout(box) {
       fitBox = box;
       const mini = isMini(root);
-      // a line (one row of the fine grid): the time with the date beside it, or alone when the date does not fit
+      // a line (one row): the time with the date beside it, or alone when the date does not fit
       const line = mini && box.h < box.w / 2;
       root.classList.toggle('is-mline', line);
       root.classList.remove('is-mnodate');
@@ -302,7 +302,7 @@ export function flipClock(): CanvasAdapter {
     layout(box) {
       fitBox = box;
       if (isMini(root)) {
-        // a line (one row of the fine grid): the digits alone; a small block: the digits and the date, smaller
+        // a line (one row): the digits alone; a small block: the digits and the date, smaller
         const line = box.h < box.w / 2.5;
         root.classList.toggle('is-mnodate', line);
         const wk = miniType(root, box, props(env).showDate && !line ? 15 : 11, 33, scaleOf(env));
@@ -406,7 +406,7 @@ export function worldClock(): CanvasAdapter {
         wk = Math.max(floor, wk * 0.94);
         root.style.setProperty('--wk', wk.toFixed(3));
       }
-      // a box only the fine grid has: smaller type than bigType's floor when the cities need it
+      // a small box (the compact look): smaller type than bigType's floor when the cities need it
       if (isMini(root)) shrinkToBox(root, wk);
     },
     tick(t) {
@@ -434,7 +434,7 @@ export function dateCard(): CanvasAdapter {
   let root: HTMLElement;
   let env: AdapterEnv;
   let key = '';
-  // a line in a box only the fine grid has: "Vie 16 oct" (layout() decides)
+  // a line in a small box (the compact look): "Vie 16 oct" (layout() decides)
   let mline = false;
   const render = (t: Tick, force = false) => {
     const p = props(env);

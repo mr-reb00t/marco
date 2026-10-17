@@ -509,6 +509,7 @@ export const NL: Record<string, string> = {
   'Configuración importada': 'Instellingen geïmporteerd',
   'Configuración importada: {list}': 'Instellingen geïmporteerd: {list}',
   'Configuración migrada al formato multipantalla': 'Instellingen omgezet naar het formaat met meerdere schermen',
+  'Pantallas personalizadas pasadas a la nueva cuadrícula (se ven igual)': 'Eigen schermen omgezet naar het nieuwe raster (ze zien er hetzelfde uit)',
   'Contiene': 'Bevat',
   'Contraseña cambiada': 'Wachtwoord gewijzigd',
   'Copia de seguridad creada': 'Back-up gemaakt',

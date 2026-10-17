@@ -1,7 +1,8 @@
 /*
- * Personalizado on the fine grid: the compact look of a card in a box only the fine grid has (smaller than its kind's
- * smallest box on the normal grid). The controller marks its body data-mini, with data-mw / data-mh its width and
- * height in fine cells (widgets/canvas.ts miniMark), so nothing here touches a box the normal grid allows.
+ * Personalizado: the compact look of a card in a small box (smaller than its kind's full look, canvasCore
+ * fullLookMin: twice its smallest box on the legacy 12×8 grid). The controller marks its body data-mini, with
+ * data-mw / data-mh its width and height in cells (widgets/canvas.ts miniMark), so nothing here touches a box a
+ * screen made on the legacy grid has.
  */
 
 /* ---- time and calendar ---- */
@@ -87,7 +88,7 @@
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].no-cond .cv-wx-side { display: none; }
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack { flex-direction: column; gap: calc(0.3rem * var(--wk, 1)); }
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack .cv-wx-side { max-width: 100%; align-items: center; }
-/* ... and in a block three fine cells or more each way (miniRich): the high and low, the place and the details as well,
+/* ... and in a block three cells or more each way (miniRich): the high and low, the place and the details as well,
    smaller, each left out in turn when it does not fit (m-noloc, m-nolabel, m-nohl, m-nometa) */
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich { gap: calc(0.5rem * var(--wk, 1)); text-align: center; }
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich .cv-wx-side { gap: 0; }
@@ -124,21 +125,21 @@
 #app.preset-canvas .cv-todo[data-mini] .todo li .ico { width: 1em; height: 1em; }
 #app.preset-canvas .cv-todo[data-mini] .todo .card-h { font-size: 1.4rem; margin-bottom: 0.2rem; }
 
-/* Valor one fine row high: the label and the value on one line (content.ts fitLine) */
+/* Valor one row high: the label and the value on one line (content.ts fitLine) */
 #app.preset-canvas .cv-value.is-mline[data-mini] { flex-direction: row; align-items: center; justify-content: space-between; gap: max(0.8rem, calc(1.2rem * var(--wk, 1))); }
 #app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-head { flex: 0 1 auto; font-size: calc(2.2rem * var(--wk, 1)); }
 #app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-num { flex: none; align-self: center; }
 #app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-icon { flex: none; }
 #app.preset-canvas .cv-value.is-mline.no-label[data-mini] .cv-val-head { flex: none; }
 
-/* Noticias one fine row high: the headline alone on one line (it slides to its end, like every headline) */
+/* Noticias one row high: the headline alone on one line (it slides to its end, like every headline) */
 #app.preset-canvas .cv-news[data-mini][data-mh='1'] .news-stage { inset: 0.3rem 1.6rem; }
 #app.preset-canvas .cv-news[data-mini][data-mh='1'] :is(.news-h, .news-sum) { display: none; }
 #app.preset-canvas .cv-news[data-mini][data-mh='1'] .news-title { font-size: 2.1rem; line-height: 1.25; display: block; white-space: nowrap; }
 #app.preset-canvas .cv-value.is-mline[data-mini] .cv-val-note, #app.preset-canvas .cv-value.is-mline.no-label[data-mini] .cv-val-label { display: none; }
 
 /* ---- family ---- */
-/* One fine row high (canvas/family.ts isLine): the rows side by side on one line, "+N" after them (fitAcross), the
+/* One row high (canvas/family.ts isLine): the rows side by side on one line, "+N" after them (fitAcross), the
    last row left shrinking with its text ending in … */
 #app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam { flex-direction: row; align-items: center; gap: 1rem; }
 #app.preset-canvas .cv-body[data-mini][data-mh='1'].cv-fam > .kf-list,
@@ -257,23 +258,23 @@
 #app.preset-canvas .cv-body[data-mini].cvf-week .km-col.is-today { box-shadow: 0 0 0 0.3rem rgb(var(--accent-rgb) / 0.14); }
 
 /* ---- data cards, Rotativa, HTML and Tarjeta ---- */
-/* Cripto one fine cell high: one coin on one line (badge, name, sparkline, price and change), each coin in turn */
+/* Cripto one cell high: one coin on one line (badge, name, sparkline, price and change), each coin in turn */
 #app.preset-canvas .cv-dt.is-line[data-mini] { justify-content: center; }
 #app.preset-canvas .cv-dt.is-line[data-mini] :is(.cv-mk-row, .cv-st-row) { flex: none; display: flex; align-items: center; gap: 0.6em; }
 #app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-who { flex: 0 1 auto; gap: 0.45em; min-width: 1.75em; }
-/* Bolsa as a list one fine cell high: the symbol always, its name while it fits */
+/* Bolsa as a list one cell high: the symbol always, its name while it fits */
 #app.preset-canvas .cv-dt.is-line[data-mini] .cv-st-who { flex: 0 1 auto; gap: 0.45em; min-width: max-content; }
 #app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-spark { flex: 1 1 3em; min-width: 2.6em; height: 1.5em; }
 #app.preset-canvas .cv-dt.is-line[data-mini] .cv-mk-val { flex: none; margin-left: auto; flex-direction: row; align-items: baseline; gap: 0.5em; }
 /* HTML card in a small box: its "set it up" note smaller, with less room around it */
 #app.preset-canvas .cv-html[data-mini] .cv-html-note { padding: 0.4rem 0.6rem; font-size: calc(1.4rem * var(--cv-scale, 1)); line-height: 1.2; }
-/* Rotativa one fine cell high: its dots in a column at the right edge, not under the line */
+/* Rotativa one cell high: its dots in a column at the right edge, not under the line */
 #app.preset-canvas .cv-rot.has-dots[data-mini][data-mh='1'] > .cv-rot-slide { bottom: 0; right: 1.2rem; }
 #app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots { left: auto; top: 0; bottom: 0; right: 0.7rem; flex-direction: column; align-items: center; gap: 0.35rem; }
 #app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots i { width: 0.5rem; height: 0.5rem; }
 
 /* ---- Casa (Home Assistant) ---- */
-/* the line two fine cells wide (haTile.ts fitTile): the name over the state, no icon */
+/* the line two cells wide (haTile.ts fitTile): the name over the state, no icon */
 #app.preset-canvas .cv-ha-tile-card.is-mnarrow[data-mini] .cv-ha-tile > .cv-ha-ico, #app.preset-canvas .cv-ha-tile-card.no-lico .cv-ha-tile > .cv-ha-ico { display: none; }
 /* the media player on one line: the art as high as the card, the title and where it plays, play or pause at the end */
 #app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player { gap: 0.7em; }
@@ -324,7 +325,7 @@
 #app.preset-canvas .cv-ha-scenecard[data-mini][data-mw] .cv-ha-scene .cv-ha-ico { width: 1.8em; height: 1.8em; padding: 0.35em; }
 #app.preset-canvas .cv-ha-scenecard.no-ico[data-mini][data-mw] .cv-ha-scene :is(.cv-ha-ico, .cv-ha-emoji) { display: none; }
 
-/* Tiempo en varias ciudades on the fine grid: one line of places (sky, temperature, name), as many as fit */
+/* Tiempo en varias ciudades in the compact look: one line of places (sky, temperature, name), as many as fit */
 #app.preset-canvas .cv-body.cv-wx-cities[data-mini] { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: space-around; gap: calc(1.4rem * var(--wk, 1)); overflow: hidden; }
 #app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city { display: flex; flex: none; width: auto; max-width: none; margin: 0; gap: calc(0.4rem * var(--wk, 1)); font-size: calc(1.8rem * var(--wk, 1)); }
 #app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city-icon svg { width: calc(2.6rem * var(--wk, 1)); height: calc(2.6rem * var(--wk, 1)); }

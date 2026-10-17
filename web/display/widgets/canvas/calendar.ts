@@ -113,7 +113,7 @@ function grid(): CanvasAdapter {
     },
     update: () => render(),
     layout(b) {
-      // a box only the fine grid has: drawn as in a small box of the normal grid (some 40 by 34 rem for the month,
+      // a small box (the compact look): drawn as in a small box (some 40 by 34 rem for the month,
       // 46 by 20 for the week), scaled down to its box, never under 60 % (the card's own text size on top)
       if (root.dataset.mini !== undefined) {
         const [nw, nh] = env.item().kind === 'calendar.month' ? [40, 34] : [46, 20];
@@ -246,7 +246,7 @@ function agenda(): CanvasAdapter {
 function view(kind: 'today' | 'people'): CanvasAdapter {
   let env: AdapterEnv;
   let root: HTMLElement;
-  // a box only the fine grid has: a line per event (Today) or per person (Per person), views.ts renderMini*
+  // a small box (the compact look): a line per event (Today) or per person (Per person), views.ts renderMini*
   let mini = false;
   const render = () => {
     const t = env.now();
@@ -499,7 +499,7 @@ function countdowns(): CanvasAdapter {
     const rows = [...card.querySelectorAll<HTMLElement>('.cd')];
     for (const r of rows) r.style.removeProperty('display');
     if (!root.clientHeight) return;
-    // a card one row of the fine grid high: one countdown, the nearest
+    // a card one row high: one countdown, the nearest
     if (root.dataset.mini !== undefined && root.dataset.mh === '1') rows.slice(1).forEach((r) => (r.style.display = 'none'));
     for (let i = rows.length - 1; i > 0 && (root.scrollHeight > root.clientHeight + 2 || root.scrollWidth > root.clientWidth + 2); i--) rows[i].style.display = 'none';
   };
@@ -522,7 +522,7 @@ function countdowns(): CanvasAdapter {
     },
     update: () => render(),
     layout(box) {
-      // a box only the fine grid has: one line per countdown (emoji, title ending in …, days), as many as fit
+      // a small box (the compact look): one line per countdown (emoji, title ending in …, days), as many as fit
       const mini = root.dataset.mini !== undefined;
       root.classList.toggle('is-mline', mini);
       root.classList.toggle('is-narrow', !mini && box.w / box.rem < 40);

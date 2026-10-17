@@ -23,16 +23,16 @@ const ITEMS: Raw[] = [
   // the hero: four weeks with Mum's work in purple too (it fills the Mondays), the cards a touch smaller so a busy
   // day like today (Elena's birthday, the client call, the dentist, football) shows all four without taking turns
   {
-    kind: 'calendar.month', pos: B(0, 0, 9, 8),
+    kind: 'calendar.month', pos: B(0, 0, 18, 16),
     props: { sourceIds: ['c_fam', 'c_kids', 'c_work', 'c_bday', 'c_hol'], eventStyle: 'cards', weeks: 4, maxEventsPerDay: 4 },
     style: { scale: 0.9 },
   },
   // today and tomorrow for the family in detail, without the birthdays (Elena's is on the month already) and without
   // the work call, which is the next thing coming up just under it
-  { kind: 'calendar.agenda', pos: B(9, 0, 3, 3), props: { sourceIds: ['c_fam', 'c_kids', 'c_hol'], days: 2, compact: true } },
-  { kind: 'calendar.next', pos: B(9, 3, 3, 2), props: { sourceIds: FAMILY, relative: true } },
+  { kind: 'calendar.agenda', pos: B(18, 0, 6, 6), props: { sourceIds: ['c_fam', 'c_kids', 'c_hol'], days: 2, compact: true } },
+  { kind: 'calendar.next', pos: B(18, 6, 6, 4), props: { sourceIds: FAMILY, relative: true } },
   // the note reads from the left, beside its heart, like a note on the fridge
-  { kind: 'message', pos: B(9, 5, 3, 3), props: { align: 'left' } },
+  { kind: 'message', pos: B(18, 10, 6, 6), props: { align: 'left' } },
 ];
 
 export const EVERYDAY: { canvas: Partial<CanvasConfig>; items: Raw[] } = {

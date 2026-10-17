@@ -9,31 +9,32 @@ import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
-/** Cells of the main area: 12×8 on a landscape screen, 8×12 on a portrait one (the Normal grid). */
-export const CANVAS_GRID = { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } };
-
 /**
- * "Cuadrícula" (canvas.grid): 'normal' (CANVAS_GRID, every screen saved before) or 'fine', twice as many cells each
- * way (24×16 landscape, 16×24 portrait). A fine cell is half a normal one, so every named size and every kind's range
- * is twice as many fine cells (the same box on the screen), except where a kind can go smaller (`fine` in
- * CANVAS_KINDS: its smallest box in fine cells). Sidebar spans do not change.
+ * Cells of the main area: 24×16 on a landscape screen, 16×24 on a portrait one. Every screen is on this grid (once
+ * called the fine grid). Screens saved before 0.17 were on a grid of half as many cells each way (12×8, 8×12, the
+ * legacy 'normal' grid): they are converted when read (upgradeCanvasGrid), every position and box doubled, so they
+ * look exactly the same. The tables below (CANVAS_SIZES, each kind's `cells`) are still written in those legacy
+ * cells, the unit of the sizes the cards were designed for; every function here answers in grid cells.
  */
-export const CANVAS_GRID_IDS = ['normal', 'fine'];
-export const CANVAS_GRIDS = {
-  normal: CANVAS_GRID,
-  fine: { landscape: { cols: 24, rows: 16 }, portrait: { cols: 16, rows: 24 } },
-};
+export const CANVAS_GRID = { landscape: { cols: 24, rows: 16 }, portrait: { cols: 16, rows: 24 } };
+/** The legacy grid of screens saved before 0.17 (canvas.grid absent or 'normal'): read only, to convert them. */
+export const LEGACY_GRID = { landscape: { cols: 12, rows: 8 }, portrait: { cols: 8, rows: 12 } };
+/** The one value canvas.grid has in a saved screen ('fine'; absent or 'normal' = a legacy screen, see above). */
+export const CANVAS_GRID_ID = 'fine';
+const CANVAS_GRIDS = { normal: LEGACY_GRID, fine: CANVAS_GRID };
 /** "Densidad" (canvas.density): 'normal' or 'compact' (tighter gaps, less padding inside the cards, smaller titles). */
 export const CANVAS_DENSITIES = ['normal', 'compact'];
-/** Cells of one normal cell on a grid (1 or 2). */
-export const gridFactor = (grid) => (grid === 'fine' ? 2 : 1);
-const gridOf = (grid) => (grid === 'fine' ? 'fine' : 'normal');
-/** { cols, rows } of the main area on an orientation and a grid. */
-export function gridDims(orientation = 'landscape', grid = 'normal') {
+/** Grid cells in one legacy cell (2), or 1 when `grid` is 'normal' (the legacy unit itself, internal). */
+export const gridFactor = (grid) => (grid === 'normal' ? 1 : 2);
+const gridOf = (grid) => (grid === 'normal' ? 'normal' : 'fine');
+/** { cols, rows } of the main area on an orientation (`grid` 'normal': the legacy grid, internal). */
+export function gridDims(orientation = 'landscape', grid = 'fine') {
   return CANVAS_GRIDS[gridOf(grid)][orientation === 'portrait' ? 'portrait' : 'landscape'];
 }
-/** The grid of a canvas (screens saved before the setting existed are 'normal'). */
-export const canvasGrid = (cv) => gridOf(cv?.grid);
+/** The grid of a canvas: always 'fine' (kept so callers written for two grids still read). */
+export const canvasGrid = () => 'fine';
+/** True when a stored canvas is on the legacy grid (saved before 0.17: no `grid`, or 'normal'). */
+export const isLegacyCanvas = (cv) => isObj(cv) && cv.grid !== CANVAS_GRID_ID;
 
 /**
  * Named sizes: [w, h] in cells per orientation. An item stores one of them, and when its box is not exactly a named
@@ -71,15 +72,15 @@ export const CANVAS_SCRIMS = ['uniform', 'topBottom', 'edges'];
 /** Corners: square ('sq'), soft ('m', kept for screens saved with it; the editor offers sq, l, xl), round, rounder. */
 export const CANVAS_RADII = ['sq', 'm', 'l', 'xl'];
 
-/** Caps per screen (the normal grid). */
-export const CANVAS_LIMITS = { items: 24, side: 8, haEntities: 40, liveCameras: 1 };
 /**
- * Caps of a screen on the fine grid: twice the cards (its cards can be a quarter of the size), and twice the Home
- * Assistant entities, so the cap per card stays the same. Each kind's own cap (perScreen) does not change.
+ * Caps per screen: 48 cards (the cards inside a Rotativa count), 8 in the sidebar, 80 Home Assistant entities, one
+ * live camera. Each kind's own cap (perScreen) comes on top.
  */
-export const CANVAS_LIMITS_FINE = { ...CANVAS_LIMITS, items: 48, haEntities: 80 };
-/** The caps of a screen on a grid ('normal' or 'fine'). */
-export const canvasLimits = (grid) => (grid === 'fine' ? CANVAS_LIMITS_FINE : CANVAS_LIMITS);
+export const CANVAS_LIMITS = { items: 48, side: 8, haEntities: 80, liveCameras: 1 };
+/** @deprecated the same as CANVAS_LIMITS (there is one grid). */
+export const CANVAS_LIMITS_FINE = CANVAS_LIMITS;
+/** @deprecated CANVAS_LIMITS, whatever the grid. */
+export const canvasLimits = () => CANVAS_LIMITS;
 
 export const CANVAS_ID_RE = /^cv_[a-z0-9]{8}$/;
 export const HA_ENTITY_RE = /^[a-z_]{1,64}\.[a-z0-9_]{1,200}$/;
@@ -109,8 +110,8 @@ export function needsConfirm(domain, attrs, entityId = '', name = '') {
   return [id, fname, String(name || '')].some((x) => x && DOORLIKE_RE.test(x));
 }
 
-/** [w, h] of a size on an orientation (and a grid: twice the cells on the fine one). */
-export function sizeCells(size, orientation = 'landscape', grid = 'normal') {
+/** [w, h] in grid cells of a named size on an orientation (twice the legacy cells of CANVAS_SIZES). */
+export function sizeCells(size, orientation = 'landscape', grid = 'fine') {
   const s = CANVAS_SIZES[size] ?? CANVAS_SIZES.m;
   const c = s[orientation === 'portrait' ? 'portrait' : 'landscape'];
   const f = gridFactor(grid);
@@ -121,24 +122,25 @@ const orientOf = (o) => (o === 'portrait' ? 'portrait' : 'landscape');
 const kindOf = (kind) => (typeof kind === 'string' ? CANVAS_KINDS[kind] : kind);
 
 /**
- * The smallest and largest box of a kind on an orientation, in cells: the kind's `cells` (written for landscape; on a
- * portrait screen at most 8 wide, and a kind that may take the whole height takes all 12 rows), widened to hold every
- * named size of the kind on that orientation, never past the grid.
+ * The smallest and largest box of a kind on an orientation, in grid cells: from the kind's `fine` smallest box (else
+ * twice its legacy `cells`) to twice its legacy largest (`cells` are written for landscape; on a portrait screen at
+ * most 16 wide, and a kind that may take the whole height takes all 24 rows), widened to hold every named size of the
+ * kind on that orientation, never past the grid.
  */
-export function cellRange(kind, orientation = 'landscape', grid = 'normal') {
+export function cellRange(kind, orientation = 'landscape', grid = 'fine') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
   const g = gridOf(grid);
   const f = gridFactor(g);
   const { cols, rows } = gridDims(o, g);
-  const [a, b, c, d] = k?.cells ?? [1, 1, CANVAS_GRID.landscape.cols, CANVAS_GRID.landscape.rows];
-  // on the fine grid: twice the cells, or the kind's own smallest fine box (a line card half as high)
+  const [a, b, c, d] = k?.cells ?? [1, 1, LEGACY_GRID.landscape.cols, LEGACY_GRID.landscape.rows];
+  // twice the legacy cells, or the kind's own smallest box (a line card one row high); 'normal': the legacy cells
   const fa = f === 2 && k?.fine ? k.fine[0] : a * f;
   const fb = f === 2 && k?.fine ? k.fine[1] : b * f;
   let minW = Math.min(fa, cols);
   let minH = Math.min(fb, rows);
   let maxW = Math.min(c * f, cols);
-  let maxH = o === 'portrait' && d >= CANVAS_GRID.landscape.rows ? rows : Math.min(d * f, rows);
+  let maxH = o === 'portrait' && d >= LEGACY_GRID.landscape.rows ? rows : Math.min(d * f, rows);
   for (const s of k?.sizes ?? []) {
     const [w, h] = sizeCells(s, o, g);
     minW = Math.min(minW, w);
@@ -149,8 +151,18 @@ export function cellRange(kind, orientation = 'landscape', grid = 'normal') {
   return { minW, minH, maxW, maxH };
 }
 
+/**
+ * The smallest box a kind is drawn in its full look at, [w, h] in grid cells: twice its smallest legacy box. A box
+ * smaller than that either way (only the grid of 0.17 has those) is drawn in the kind's compact look
+ * (widgets/canvas.ts miniMark). Every box of a converted legacy screen is at least this, so it looks as it did.
+ */
+export function fullLookMin(kind, orientation = 'landscape') {
+  const r = cellRange(kind, orientation, 'normal');
+  return [r.minW * 2, r.minH * 2];
+}
+
 /** [w, h] of a main-grid position: its own w and h when it has them, else its named size's. */
-export function posCells(pos, orientation = 'landscape', grid = 'normal') {
+export function posCells(pos, orientation = 'landscape', grid = 'fine') {
   if (pos && Number.isInteger(pos.w) && Number.isInteger(pos.h)) return [pos.w, pos.h];
   return sizeCells(pos?.size, orientation, grid);
 }
@@ -159,7 +171,7 @@ export function posCells(pos, orientation = 'landscape', grid = 'normal') {
  * The named size a w×h box of `kind` is drawn like (cards lay out by it, then fit the real box): the largest of the
  * kind's sizes that fits inside the box (ties: the closer shape); when none does, the one that sticks out least.
  */
-export function lookSize(kind, w, h, orientation = 'landscape', grid = 'normal') {
+export function lookSize(kind, w, h, orientation = 'landscape', grid = 'fine') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
   const sizes = k?.sizes ?? CANVAS_SIZE_IDS;
@@ -183,7 +195,7 @@ export function lookSize(kind, w, h, orientation = 'landscape', grid = 'normal')
  * A w×h box of `kind` as stored: clamped to its range; a box that is exactly one of its named sizes is stored as
  * that name alone (so every screen saved before keeps its shape), any other as { size: its look, w, h }.
  */
-export function boxOf(kind, w, h, orientation = 'landscape', grid = 'normal') {
+export function boxOf(kind, w, h, orientation = 'landscape', grid = 'fine') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
   const r = cellRange(k, o, grid);
@@ -197,7 +209,7 @@ export function boxOf(kind, w, h, orientation = 'landscape', grid = 'normal') {
 }
 
 /** True when a box of w×h cells is within the range of `kind` on an orientation (and a grid). */
-export function boxAllowed(kind, w, h, orientation = 'landscape', grid = 'normal') {
+export function boxAllowed(kind, w, h, orientation = 'landscape', grid = 'fine') {
   const r = cellRange(kind, orientation, grid);
   return Number.isInteger(w) && Number.isInteger(h) && w >= r.minW && w <= r.maxW && h >= r.minH && h <= r.maxH;
 }
@@ -1033,7 +1045,7 @@ export function canvasCards(items) {
 
 /**
  * The kind an item is sized as: its kind, except a Rotativa with cards, whose range is the part every one of its
- * cards allows too (the largest of their smallest boxes, on both grids, and the smallest of their largest), with the
+ * cards allows too (the largest of their smallest boxes, in legacy cells and in grid cells, and the smallest of their largest), with the
  * named sizes of a Rotativa that fall inside it, so each card always has room for itself. Takes the place of the
  * kind wherever a box is worked out (cellRange, boxOf, lookSize accept it).
  */
@@ -1056,13 +1068,13 @@ export function kindFor(item) {
   c = Math.max(c, a);
   d = Math.max(d, b);
   const inside = (s) => {
-    const [w, h] = sizeCells(s, 'landscape');
+    const [w, h] = sizeCells(s, 'landscape', 'normal');
     return w >= a && h >= b && w <= c && h <= d;
   };
   let sizes = k.sizes.filter(inside);
   if (!sizes.length) sizes = CANVAS_SIZE_IDS.filter((s) => s !== 'row' && inside(s)).slice(0, 1);
   if (!sizes.length) return k;
-  const area = (s) => sizeCells(s, 'landscape')[0] * sizeCells(s, 'landscape')[1];
+  const area = (s) => sizeCells(s, 'landscape', 'normal')[0] * sizeCells(s, 'landscape', 'normal')[1];
   const def = sizes.includes(k.def) ? k.def : [...sizes].sort((x, y) => Math.abs(area(x) - area(k.def)) - Math.abs(area(y) - area(k.def)))[0];
   return { ...k, cells: [a, b, c, d], fine: [Math.min(fa, a * 2), Math.min(fb, b * 2)], sizes, def };
 }
@@ -1106,9 +1118,10 @@ function haKind(sizes, def, cells, domains, { controls = false, one = true, bigT
 export { cssProblem };
 
 /**
- * The smallest box of each kind on the fine grid, in fine cells (cellRange; null: twice its normal smallest). A box
- * smaller than twice its normal smallest is drawn in the kind's compact look (a line, a strip or a small block:
- * widgets/canvas.ts miniMark, styles-canvas-mini.css). None is larger than it was, so every saved box stays valid.
+ * The smallest box of each kind, in grid cells (cellRange; null: twice its legacy smallest). A box smaller than twice
+ * its legacy smallest (fullLookMin) is drawn in the kind's compact look (a line, a strip or a small block:
+ * widgets/canvas.ts miniMark, styles-canvas-mini.css). None is larger than twice the legacy one, so every box of a
+ * converted screen stays valid and keeps its full look.
  * Each is checked to read whole in the browser sweeps (display-canvas-density.test.js).
  */
 const FINE_MIN = {
@@ -1194,7 +1207,7 @@ export function defaultItemStyle() {
 export function defaultCanvas() {
   return {
     v: 1, background: 'ambient', dim: 0.15, scrim: 'uniform', color: null, sidebar: { side: 'none', size: 'normal', fill: 'glass' },
-    defaults: { surface: 'glass', radius: 'l' }, touch: false, swipe: false, perf: 'auto', portraitAuto: true, items: [],
+    defaults: { surface: 'glass', radius: 'l' }, touch: false, swipe: false, perf: 'auto', portraitAuto: true, grid: CANVAS_GRID_ID, items: [],
   };
 }
 
@@ -1213,7 +1226,7 @@ export function newCanvasId(taken = new Set()) {
 // ---- placement ---------------------------------------------------------------------------------------------------
 
 /** Occupancy of a grid: cells[y][x] = item id or null. */
-export function makeOccupancy(orientation = 'landscape', grid = 'normal') {
+export function makeOccupancy(orientation = 'landscape', grid = 'fine') {
   const { cols, rows } = gridDims(orientation, grid);
   return { cols, rows, orientation, grid: gridOf(grid), cells: Array.from({ length: rows }, () => new Array(cols).fill(null)) };
 }
@@ -1343,7 +1356,7 @@ function readPos(c, p, raw) {
   const int = (v) => (typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : 0);
   if (raw.zone !== undefined && raw.zone !== 'main') c.err(`${p}.zone`, 'must be one of main, side');
   const pos = { zone: 'main', x: int(raw.x), y: int(raw.y), size: typeof raw.size === 'string' ? raw.size : '' };
-  // a box of its own: w and h in whole cells (placeMain clamps them to the kind's range; 24 on the fine grid)
+  // a box of its own: w and h in whole cells (placeMain clamps them to the kind's range)
   if (raw.w !== undefined || raw.h !== undefined) {
     const cell = (v) => Number.isInteger(v) && v >= 1 && v <= 24;
     if (cell(raw.w) && cell(raw.h)) {
@@ -1360,7 +1373,7 @@ function readPos(c, p, raw) {
  * moves to the nearest free spot (with a warning). With no free spot at all it is dropped (an error). Returns the
  * ids that were dropped.
  */
-function placeMain(c, list, orientation, key, grid = 'normal') {
+function placeMain(c, list, orientation, key, grid = 'fine') {
   const occ = makeOccupancy(orientation, grid);
   const dropped = new Set();
   for (const { item, path } of list) {
@@ -1453,6 +1466,8 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     warnOf(c, `${p}.v`, 'unknown canvas version, reset');
     return D;
   }
+  // a screen saved before 0.17, on the legacy grid: converted first (the same look), then read like any other
+  raw = upgradeCanvasGrid(raw);
   const allowed = new Set(opts.canvasKinds ?? DEFAULT_CANVAS_KINDS);
   const haControls = opts.haControls !== false;
   // conditions on Home Assistant only where its cards are allowed (never on Marco Cloud); Valor ones everywhere
@@ -1467,11 +1482,10 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   };
   // the photo cannot be both behind the whole screen and in the sidebar alone
   if (sidebar.fill === 'photo' && background === 'photo') sidebar.fill = 'glass';
-  // "Cuadrícula" and "Densidad": kept only when not the default, so a screen saved before stays as it was
-  const grid = P.oneOf(c, `${p}.grid`, raw.grid, 'normal', CANVAS_GRID_IDS);
+  // the grid (always 'fine' once converted above) and "Densidad" (kept only when not the default)
+  const grid = CANVAS_GRID_ID;
   const density = P.oneOf(c, `${p}.density`, raw.density, 'normal', CANVAS_DENSITIES);
-  // the caps of its grid (the fine grid holds twice the cards)
-  const LIM = canvasLimits(grid);
+  const LIM = CANVAS_LIMITS;
   const out = {
     v: 1,
     background,
@@ -1488,7 +1502,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     swipe: P.bool(c, `${p}.swipe`, raw.swipe, D.swipe),
     perf: P.oneOf(c, `${p}.perf`, raw.perf, D.perf, ['auto', 'low']),
     portraitAuto: P.bool(c, `${p}.portraitAuto`, raw.portraitAuto, D.portraitAuto),
-    ...(grid === 'fine' ? { grid } : {}),
+    grid,
     ...(density === 'compact' ? { density } : {}),
     items: [],
   };
@@ -1501,7 +1515,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   const entities = new Set();
   let live = 0;
   const items = [];
-  // every card counts towards the grid's cap of cards (canvasLimits), the cards inside a Rotativa too
+  // every card counts towards the cap of cards (CANVAS_LIMITS), the cards inside a Rotativa too
   let cards = 0;
   rawItems.forEach((x, i) => {
     const q = `${p}.items[${i}]`;
@@ -1839,12 +1853,12 @@ export function haEntitiesOf(item) {
 
 /**
  * The portrait arrangement derived from the landscape one (canvas.portraitAuto): main items by (y, x) at the first
- * free spot of the 8×12 grid (16×24 on the fine one), keeping their size (their own box at most the grid's width,
+ * free spot of the 16×24 grid, keeping their size (their own box at most the grid's width,
  * else their named size, else the kind's default, else 's'); sidebar items keep their place
  * in the stack. Deterministic, so the admin, the server and the display agree. Returns { placed: [{ id, pos }],
  * omitted: [id] } (items that do not fit).
  */
-export function deriveCanvasPortrait(items, _sidebar, grid = 'normal') {
+export function deriveCanvasPortrait(items, _sidebar, grid = 'fine') {
   const g = gridOf(grid);
   const occ = makeOccupancy('portrait', g);
   const placed = [];
@@ -1871,116 +1885,36 @@ export function deriveCanvasPortrait(items, _sidebar, grid = 'normal') {
   return { placed, omitted };
 }
 
-// ---- the grid of a screen ("Cuadrícula") --------------------------------------------------------------------------
+// ---- screens saved on the legacy grid ----------------------------------------------------------------------------
 
 /**
- * A canvas on another grid ('normal' or 'fine'), in both orientations (a portrait arranged by hand too; a derived
- * one follows by itself). To the fine grid every position and box doubles: the screen looks exactly the same. Back to
- * the normal grid each box is halved to the nearest whole cells its kind allows (a box only the fine grid has grows
- * to the kind's smallest), and the cards are placed again in reading order, each at its halved spot when free, else
- * at the nearest free one (`moved`); a card with no room at all keeps its kind's smallest box when that fits
- * somewhere, else it is left out of portrait, or the change is refused (`ok: false`, `lost`). Sidebar spans do not
- * change. Returns { ok, canvas, moved: [ids], resized: [ids] (a box that is not twice whole normal cells), lost: [ids] }.
+ * A stored canvas on the grid of 0.17. A legacy one (saved before: no `grid`, or 'normal', 12×8 and 8×12 cells) gets
+ * every main-grid position and box doubled, in both orientations (a portrait arranged by hand too), and grid 'fine':
+ * the same rectangles on the screen, so it looks exactly as it did. Sidebar spans, the cards inside a Rotativa and
+ * everything else stay. Any other canvas comes back as it is, so it is idempotent. It reads raw input too (a file,
+ * an old client): what is not a number is left for the validation. Never changes its argument.
  */
-export function convertCanvasGrid(cv0, to) {
-  const target = gridOf(to);
-  const from = canvasGrid(cv0);
-  const cv = structuredClone(cv0);
-  const moved = new Set();
-  const resized = new Set();
-  const lost = [];
-  if (from === target) return { ok: true, canvas: cv, moved: [], resized: [], lost };
-  // back to the normal grid: refused while the screen has more cards or Home Assistant entities than it allows there
-  if (target === 'normal') {
-    const ents = new Set();
-    for (const it of cv.items) {
-      for (const e of haEntitiesOf(it)) ents.add(e);
-      if (it.when?.src === 'ha' && it.when.entity) ents.add(it.when.entity);
-    }
-    const over = canvasCards(cv.items).length > CANVAS_LIMITS.items ? 'items' : ents.size > CANVAS_LIMITS.haEntities ? 'haEntities' : '';
-    if (over) return { ok: false, canvas: cv, moved: [], resized: [], lost, over };
-  }
-  if (target === 'fine') cv.grid = 'fine';
-  else delete cv.grid;
-  const keys = [['pos', 'landscape'], ...(cv.portraitAuto ? [] : [['portrait', 'portrait']])];
-  for (const [key, o] of keys) {
-    if (target === 'fine') {
-      for (const it of cv.items) {
-        const p = it[key];
-        if (p?.zone !== 'main') continue;
-        p.x *= 2;
-        p.y *= 2;
-        if (Number.isInteger(p.w)) {
-          p.w *= 2;
-          p.h *= 2;
-        }
-      }
-      continue;
-    }
-    // in reading order first; when some card finds no room, once more with the largest boxes first (they leave the
-    // small ones the gaps), each still as near as it can be to its halved spot
-    const all = cv.items.filter((it) => it[key]?.zone === 'main');
-    const want = new Map(all.map((it) => {
+export function upgradeCanvasGrid(cv) {
+  if (!isLegacyCanvas(cv)) return cv;
+  const out = { ...cv, grid: CANVAS_GRID_ID };
+  if (!Array.isArray(cv.items)) return out;
+  const num = (v) => typeof v === 'number' && Number.isFinite(v);
+  out.items = cv.items.map((it) => {
+    if (!isObj(it)) return it;
+    const x = { ...it };
+    for (const key of ['pos', 'portrait']) {
       const p = it[key];
-      const k = kindFor(it);
-      const [fw, fh] = posCells(p, o, 'fine');
-      const box = boxOf(k, Math.max(1, Math.round(fw / 2)), Math.max(1, Math.round(fh / 2)), o, 'normal');
-      return [it.id, { k, fw, fh, box, x: Math.round(p.x / 2), y: Math.round(p.y / 2) }];
-    }));
-    const place = (order, pack = false) => {
-      const occ = makeOccupancy(o, 'normal');
-      const res = new Map();
-      const miss = [];
-      for (const it of order) {
-        const wv = want.get(it.id);
-        const [w, h] = posCells(wv.box, o, 'normal');
-        const x = Math.min(Math.max(0, wv.x), occ.cols - w);
-        const y = Math.min(Math.max(0, wv.y), occ.rows - h);
-        const free = (bw, bh, ax, ay) => (pack ? firstFree(occ, bw, bh) : fitsAt(occ, ax, ay, bw, bh) ? { x: ax, y: ay } : nearestFree(occ, ax, ay, bw, bh));
-        let spot = free(w, h, x, y);
-        let use = wv.box;
-        if (!spot) {
-          // no room at that size: its smallest box, nearest to where it was
-          const r = cellRange(wv.k, o, 'normal');
-          use = boxOf(wv.k, r.minW, r.minH, o, 'normal');
-          const [mw, mh] = posCells(use, o, 'normal');
-          spot = free(mw, mh, Math.min(x, occ.cols - mw), Math.min(y, occ.rows - mh));
-        }
-        if (!spot) {
-          miss.push(it.id);
-          continue;
-        }
-        const [uw, uh] = posCells(use, o, 'normal');
-        occupy(occ, it.id, spot.x, spot.y, uw, uh);
-        res.set(it.id, { spot, use, moved: spot.x !== x || spot.y !== y || use !== wv.box });
-      }
-      return { res, miss };
-    };
-    const reading = [...all].sort((a, b) => a[key].y - b[key].y || a[key].x - b[key].x);
-    let done = place(reading);
-    if (done.miss.length) {
-      const area = (it) => posCells(want.get(it.id).box, o, 'normal').reduce((m, n) => m * n, 1);
-      const bigFirst = [...reading].sort((a, b) => area(b) - area(a));
-      // then packed from the top left, the largest first (the last resort: the order of the screen may change)
-      for (const next of [place(bigFirst), place(bigFirst, true)]) if (next.miss.length < done.miss.length) done = next;
+      if (!isObj(p) || p.zone === 'side') continue;
+      const q = { ...p };
+      if (num(q.x)) q.x = Math.round(q.x) * 2;
+      if (num(q.y)) q.y = Math.round(q.y) * 2;
+      // a box of its own (whole cells; the legacy grid was at most 12 wide or high, larger ones were clamped there)
+      for (const n of ['w', 'h']) if (Number.isInteger(q[n]) && q[n] >= 1 && q[n] <= 24) q[n] = Math.min(q[n], 12) * 2;
+      x[key] = q;
     }
-    for (const it of all) {
-      const got = done.res.get(it.id);
-      if (!got) {
-        if (key === 'portrait') {
-          it.portrait = null;
-          moved.add(it.id);
-        } else lost.push(it.id);
-        continue;
-      }
-      const wv = want.get(it.id);
-      if (got.moved) moved.add(it.id);
-      const [uw, uh] = posCells(got.use, o, 'normal');
-      if (uw * 2 !== wv.fw || uh * 2 !== wv.fh) resized.add(it.id);
-      it[key] = { zone: 'main', x: got.spot.x, y: got.spot.y, ...got.use };
-    }
-  }
-  return { ok: lost.length === 0, canvas: cv, moved: [...moved], resized: [...resized].filter((id) => !moved.has(id)), lost };
+    return x;
+  });
+  return out;
 }
 
 // ---- projection --------------------------------------------------------------------------------------------------
@@ -2058,7 +1992,8 @@ export function itemAliases(item) {
  */
 export function projectCanvas(screen, opts = {}) {
   if (screen?.layout?.preset !== 'canvas') return null;
-  const cv = screen.canvas ?? defaultCanvas();
+  // (a canvas stored on the legacy grid and not read through the validation yet: converted here too)
+  const cv = upgradeCanvasGrid(screen.canvas ?? defaultCanvas());
   const allowed = new Set(opts.canvasKinds ?? DEFAULT_CANVAS_KINDS);
   const priv = !!opts.isPrivate;
   const haControls = opts.haControls !== false;
@@ -2067,7 +2002,7 @@ export function projectCanvas(screen, opts = {}) {
   // private, and a display the server trusts (`trusted` false: open mode from outside the local network)
   const taps = !!cv.touch && !priv && opts.trusted !== false;
   const names = new Map((opts.screens ?? []).map((s) => [s.id, s.name]));
-  const derived = cv.portraitAuto ? new Map(deriveCanvasPortrait(cv.items, cv.sidebar, canvasGrid(cv)).placed.map((d) => [d.id, d.pos])) : null;
+  const derived = cv.portraitAuto ? new Map(deriveCanvasPortrait(cv.items, cv.sidebar).placed.map((d) => [d.id, d.pos])) : null;
   const members = new Map((opts.members ?? []).map((m) => [m.id, m.calendarId ?? null]));
   // the schedules decide at `now` in the screen's zone; the display asks again at the next change (`next`)
   const now = opts.now ?? new Date();
@@ -2182,7 +2117,8 @@ const S = (order, span) => ({ zone: 'side', order, span });
 const NONE = { surface: 'none' };
 
 /**
- * Starting points of the builder (data only). Items have no ids: canvasFromTemplate gives them fresh ones.
+ * Starting points of the builder (data only), positions in grid cells (24×16). Items have no ids: canvasFromTemplate
+ * gives them fresh ones.
  * `requires.ha`: offered only with Home Assistant connected. Names are Spanish keys of the admin dictionaries.
  */
 export const CANVAS_TEMPLATES = [
@@ -2192,10 +2128,10 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient',
       items: [
         { kind: 'calendar.month', pos: M(0, 0, 'xl') },
-        { kind: 'clock.digital', pos: M(8, 0, 'm') },
-        { kind: 'weather.now', pos: M(8, 3, 'm') },
-        { kind: 'weather.forecast', pos: M(0, 6, 'w') },
-        { kind: 'calendar.next', pos: M(6, 6, 'w') },
+        { kind: 'clock.digital', pos: M(16, 0, 'm') },
+        { kind: 'weather.now', pos: M(16, 6, 'm') },
+        { kind: 'weather.forecast', pos: M(0, 12, 'w') },
+        { kind: 'calendar.next', pos: M(12, 12, 'w') },
       ],
     },
   },
@@ -2205,14 +2141,14 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient',
       items: [
         { kind: 'calendar.agenda', pos: M(0, 0, 't') },
-        { kind: 'todo', pos: M(3, 0, 't') },
-        { kind: 'clock.digital', pos: M(6, 0, 's') },
-        { kind: 'weather.now', pos: M(9, 0, 's') },
-        { kind: 'countdowns', pos: M(6, 2, 'w') },
-        { kind: 'calendar.next', pos: M(0, 4, 'w') },
-        { kind: 'weather.forecast', pos: M(6, 4, 'w') },
-        { kind: 'message', pos: M(0, 6, 'w') },
-        { kind: 'news', pos: M(6, 6, 'w') },
+        { kind: 'todo', pos: M(6, 0, 't') },
+        { kind: 'clock.digital', pos: M(12, 0, 's') },
+        { kind: 'weather.now', pos: M(18, 0, 's') },
+        { kind: 'countdowns', pos: M(12, 4, 'w') },
+        { kind: 'calendar.next', pos: M(0, 8, 'w') },
+        { kind: 'weather.forecast', pos: M(12, 8, 'w') },
+        { kind: 'message', pos: M(0, 12, 'w') },
+        { kind: 'news', pos: M(12, 12, 'w') },
       ],
     },
   },
@@ -2221,9 +2157,9 @@ export const CANVAS_TEMPLATES = [
     canvas: {
       background: 'photo',
       items: [
-        { kind: 'clock.digital', pos: M(0, 6, 'w'), style: NONE },
-        { kind: 'calendar.next', pos: M(6, 6, 's') },
-        { kind: 'weather.now', pos: M(10, 6, 'xs'), style: NONE },
+        { kind: 'clock.digital', pos: M(0, 12, 'w'), style: NONE },
+        { kind: 'calendar.next', pos: M(12, 12, 's') },
+        { kind: 'weather.now', pos: M(20, 12, 'xs'), style: NONE },
       ],
     },
   },
@@ -2252,9 +2188,9 @@ export const CANVAS_TEMPLATES = [
     canvas: {
       background: 'solid', color: '#0a0a0f',
       items: [
-        { kind: 'clock.analog', pos: M(2, 0, 'xl'), style: NONE, props: { face: 'minimal', seconds: false } },
-        { kind: 'calendar.agenda', pos: M(2, 6, 's'), props: { days: 2, compact: true } },
-        { kind: 'weather.now', pos: M(8, 6, 'xs'), style: NONE },
+        { kind: 'clock.analog', pos: M(4, 0, 'xl'), style: NONE, props: { face: 'minimal', seconds: false } },
+        { kind: 'calendar.agenda', pos: M(4, 12, 's'), props: { days: 2, compact: true } },
+        { kind: 'weather.now', pos: M(16, 12, 'xs'), style: NONE },
       ],
     },
   },
@@ -2264,12 +2200,12 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient',
       items: [
         { kind: 'clock.digital', pos: M(0, 0, 'm') },
-        { kind: 'ha.climate', pos: M(4, 0, 'm') },
-        { kind: 'ha.light', pos: M(8, 0, 'xs') },
-        { kind: 'ha.light', pos: M(10, 0, 'xs') },
-        { kind: 'ha.light', pos: M(8, 2, 'xs') },
-        { kind: 'ha.chart', pos: M(0, 3, 'w') },
-        { kind: 'ha.camera', pos: M(6, 4, 'l') },
+        { kind: 'ha.climate', pos: M(8, 0, 'm') },
+        { kind: 'ha.light', pos: M(16, 0, 'xs') },
+        { kind: 'ha.light', pos: M(20, 0, 'xs') },
+        { kind: 'ha.light', pos: M(16, 4, 'xs') },
+        { kind: 'ha.chart', pos: M(0, 6, 'w') },
+        { kind: 'ha.camera', pos: M(12, 8, 'l') },
       ],
     },
   },
@@ -2279,15 +2215,15 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient',
       items: [
         { kind: 'clock.digital', pos: M(0, 0, 'm') },
-        { kind: 'calendar.month', pos: M(4, 0, 'l') },
-        { kind: 'weather.now', pos: M(10, 0, 'xs') },
-        { kind: 'date', pos: M(10, 2, 'xs') },
-        { kind: 'calendar.agenda', pos: M(0, 3, 'm'), props: { days: 3, compact: true } },
-        { kind: 'weather.forecast', pos: M(4, 4, 'w') },
-        { kind: 'calendar.next', pos: M(10, 4, 'xs') },
-        { kind: 'todo', pos: M(0, 6, 's') },
-        { kind: 'news', pos: M(3, 6, 'w') },
-        { kind: 'countdowns', pos: M(9, 6, 's') },
+        { kind: 'calendar.month', pos: M(8, 0, 'l') },
+        { kind: 'weather.now', pos: M(20, 0, 'xs') },
+        { kind: 'date', pos: M(20, 4, 'xs') },
+        { kind: 'calendar.agenda', pos: M(0, 6, 'm'), props: { days: 3, compact: true } },
+        { kind: 'weather.forecast', pos: M(8, 8, 'w') },
+        { kind: 'calendar.next', pos: M(20, 8, 'xs') },
+        { kind: 'todo', pos: M(0, 12, 's') },
+        { kind: 'news', pos: M(6, 12, 'w') },
+        { kind: 'countdowns', pos: M(18, 12, 's') },
       ],
     },
   },
@@ -2296,9 +2232,9 @@ export const CANVAS_TEMPLATES = [
     canvas: {
       background: 'photo', dim: 0.25,
       items: [
-        { kind: 'clock.digital', pos: M(0, 4, 'l'), style: NONE, props: { weight: 'light' } },
-        { kind: 'calendar.next', pos: M(6, 6, 'w'), props: { count: 2 } },
-        { kind: 'weather.now', pos: M(10, 0, 'xs'), style: NONE, props: { meta: false } },
+        { kind: 'clock.digital', pos: M(0, 8, 'l'), style: NONE, props: { weight: 'light' } },
+        { kind: 'calendar.next', pos: M(12, 12, 'w'), props: { count: 2 } },
+        { kind: 'weather.now', pos: M(20, 0, 'xs'), style: NONE, props: { meta: false } },
       ],
     },
   },
@@ -2336,11 +2272,11 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'photo' },
       items: [
         { kind: 'clock.digital', pos: M(0, 0, 'w') },
-        { kind: 'weather.now', pos: M(6, 0, 's') },
-        { kind: 'calendar.next', pos: M(9, 0, 's') },
-        { kind: 'calendar.agenda', pos: M(0, 2, 'xl') },
-        { kind: 'weather.forecast', pos: M(8, 2, 't') },
-        { kind: 'countdowns', pos: M(8, 6, 's') },
+        { kind: 'weather.now', pos: M(12, 0, 's') },
+        { kind: 'calendar.next', pos: M(18, 0, 's') },
+        { kind: 'calendar.agenda', pos: M(0, 4, 'xl') },
+        { kind: 'weather.forecast', pos: M(16, 4, 't') },
+        { kind: 'countdowns', pos: M(16, 12, 's') },
       ],
     },
   },
@@ -2398,14 +2334,14 @@ export const CANVAS_TEMPLATES = [
       background: 'ambient',
       items: [
         { kind: 'clock.digital', pos: M(0, 0, 's') },
-        { kind: 'message', pos: M(3, 0, 'w') },
-        { kind: 'weather.now', pos: M(9, 0, 's') },
-        { kind: 'todo', pos: M(0, 2, 't') },
-        { kind: 'countdowns', pos: M(3, 2, 't'), props: { style: 'cards' } },
-        { kind: 'birthdays', pos: M(6, 2, 't') },
-        { kind: 'calendar.agenda', pos: M(9, 2, 't'), props: { days: 3, compact: true } },
-        { kind: 'weather.forecast', pos: M(0, 6, 'w') },
-        { kind: 'calendar.next', pos: M(6, 6, 'w') },
+        { kind: 'message', pos: M(6, 0, 'w') },
+        { kind: 'weather.now', pos: M(18, 0, 's') },
+        { kind: 'todo', pos: M(0, 4, 't') },
+        { kind: 'countdowns', pos: M(6, 4, 't'), props: { style: 'cards' } },
+        { kind: 'birthdays', pos: M(12, 4, 't') },
+        { kind: 'calendar.agenda', pos: M(18, 4, 't'), props: { days: 3, compact: true } },
+        { kind: 'weather.forecast', pos: M(0, 12, 'w') },
+        { kind: 'calendar.next', pos: M(12, 12, 'w') },
       ],
     },
   },
@@ -2414,9 +2350,9 @@ export const CANVAS_TEMPLATES = [
     canvas: {
       background: 'photo',
       items: [
-        { kind: 'clock.digital', pos: M(2, 0, 'xl'), style: NONE },
-        { kind: 'calendar.next', pos: M(0, 6, 'w'), props: { count: 3 } },
-        { kind: 'weather.forecast', pos: M(6, 6, 'w') },
+        { kind: 'clock.digital', pos: M(4, 0, 'xl'), style: NONE },
+        { kind: 'calendar.next', pos: M(0, 12, 'w'), props: { count: 3 } },
+        { kind: 'weather.forecast', pos: M(12, 12, 'w') },
       ],
     },
   },
@@ -2425,9 +2361,9 @@ export const CANVAS_TEMPLATES = [
     canvas: {
       background: 'solid', color: '#000000',
       items: [
-        { kind: 'clock.digital', pos: M(2, 0, 'xl'), style: NONE, props: { weight: 'light', showDate: false } },
-        { kind: 'calendar.next', pos: M(2, 6, 'w'), style: NONE },
-        { kind: 'weather.now', pos: M(8, 6, 'xs'), style: NONE, props: { meta: false, feelsLike: false } },
+        { kind: 'clock.digital', pos: M(4, 0, 'xl'), style: NONE, props: { weight: 'light', showDate: false } },
+        { kind: 'calendar.next', pos: M(4, 12, 'w'), style: NONE },
+        { kind: 'weather.now', pos: M(16, 12, 'xs'), style: NONE, props: { meta: false, feelsLike: false } },
       ],
     },
   },
@@ -2461,14 +2397,14 @@ export const CANVAS_TEMPLATES = [
       background: 'solid', defaults: { surface: 'solid', radius: 'l' },
       items: [
         { kind: 'clock.digital', pos: M(0, 0, 's') },
-        { kind: 'highlights', pos: M(3, 0, 'w') },
-        { kind: 'weather.now', pos: M(9, 0, 's') },
-        { kind: 'calendar.agenda', pos: M(0, 2, 't'), props: { days: 1 } },
-        { kind: 'family.routines', pos: M(3, 2, 'l') },
-        { kind: 'meals.today', pos: M(9, 2, 's') },
-        { kind: 'family.chores', pos: M(9, 4, 't') },
-        { kind: 'countdowns', pos: M(0, 6, 's') },
-        { kind: 'family.members', pos: M(3, 6, 'w') },
+        { kind: 'highlights', pos: M(6, 0, 'w') },
+        { kind: 'weather.now', pos: M(18, 0, 's') },
+        { kind: 'calendar.agenda', pos: M(0, 4, 't'), props: { days: 1 } },
+        { kind: 'family.routines', pos: M(6, 4, 'l') },
+        { kind: 'meals.today', pos: M(18, 4, 's') },
+        { kind: 'family.chores', pos: M(18, 8, 't') },
+        { kind: 'countdowns', pos: M(0, 12, 's') },
+        { kind: 'family.members', pos: M(6, 12, 'w') },
       ],
     },
   },
@@ -2505,6 +2441,7 @@ export function canvasFromTemplate(id, refs = {}, opts = {}) {
   const raw = {
     ...defaultCanvas(),
     ...structuredClone(tpl.canvas),
+    grid: CANVAS_GRID_ID,
     sidebar: { ...defaultCanvas().sidebar, ...(tpl.canvas.sidebar ?? {}) },
     items: tpl.canvas.items.filter((it) => allowed.has(it.kind)).map((it) => {
       const id2 = newCanvasId(taken);

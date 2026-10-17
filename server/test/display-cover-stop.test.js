@@ -52,7 +52,7 @@ describe('a cover with up and down only: the moving button stops it, in a browse
     }
   };
 
-  for (const [what, shot] of [['Persiana, the fine grid line', 'size:ha.cover:8x2:landscape:none:ambient:fine'], ['Entidad line of a cover', 'size:ha.tile:row']]) {
+  for (const [what, shot] of [['Persiana, the fine grid line', 'size:ha.cover:8x2:landscape:none:ambient'], ['Entidad line of a cover', 'size:ha.tile:row']]) {
     test(`${what}: opening shows the stop on the up button, closing on the down button`, async () => {
       await open(shot, async (p) => {
         const before = await p.eval(BUTTONS);

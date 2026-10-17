@@ -292,7 +292,7 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
       wrap.append(lb);
     }
   }
-  // the line of a climate in a box only the fine grid has: − the target + at its end while the width allows them
+  // the line of a climate in a small box (the compact look): − the target + at its end while the width allows them
   // (fitTile takes them out), and the temperature now as its state (short, so the name keeps the room)
   if (size === 'row' && root.dataset.mini !== undefined && s?.d === 'climate' && s.mode !== 'off' && s.target !== null && live(env, s, 'setpoint')) {
     const st = stepRow(env, alias, 'setpoint', s.step, `${fmtNum(s.target, s.step < 1 ? 1 : 0)}°`);
@@ -322,10 +322,10 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
   const tall = root.dataset.room !== undefined && box.zone === 'main' && box.size !== 'row' && box.h > box.w * 1.05;
   root.classList.toggle('is-tall', tall);
   const nominal = tall ? 13 + rowsFor(box.size) * 5.6 : box.size === 'xs' ? 9.5 : box.size === 'row' ? 4.5 : 5.5 + Math.max(1, rowsFor(box.size)) * 5.6;
-  // the line two fine cells wide (#9): no icon, the name over the state, the type from the height as on a wider line
+  // the line two cells wide (#9): no icon, the name over the state, the type from the height as on a wider line
   const narrow = box.size === 'row' && root.dataset.mini !== undefined && Number(root.dataset.mw) <= 2;
   root.classList.toggle('is-mnarrow', narrow);
-  // a line much narrower than its height wants (4×2 on the fine grid, 2×1 on the normal one): the name over the
+  // a line much narrower than its height wants (4×2): the name over the
   // state, the type from the height, the same for every card of that box whatever its name (#9)
   const deep = !narrow && box.size === 'row' && box.zone === 'main' && box.w / 22 < (box.h / nominal) * 0.8 && belowRow(root);
   let wk = deep
@@ -393,8 +393,8 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
 }
 
 /**
- * True when the card's box is fewer cells wide than the line's own size (3 of 12 columns, 4 of 8 in portrait; twice
- * that on the fine grid): only such boxes take the stacked line, so a line of its own size looks as it always did.
+ * True when the card's box is fewer cells wide than the line's own size (6 of 24 columns, 8 of 16 in portrait): only
+ * such boxes take the stacked line, so a line of its own size looks as it always did.
  */
 function belowRow(root: HTMLElement): boolean {
   const w = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[0]);
@@ -493,7 +493,7 @@ export function growToFill(root: HTMLElement, max = 1.4, scale = 1): void {
 }
 
 /**
- * The Indicador and the Estadística on one line (a box only the fine grid has, styles-canvas-mini.css): the number
+ * The Indicador and the Estadística on one line (a small box in the compact look, styles-canvas-mini.css): the number
  * as high as the line allows on the left, never more than about half the width, the name (and the bar or what the
  * number is) beside it.
  */

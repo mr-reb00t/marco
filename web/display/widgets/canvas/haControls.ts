@@ -232,7 +232,7 @@ function climatePower(env: AdapterEnv, alias: string, s: HaState | null, c: Clim
 }
 
 function drawClimate(root: HTMLElement, env: AdapterEnv): void {
-  // one line (a box only the fine grid has, whatever size it is drawn like): the line, − the target + at its end
+  // one line (a small box in the compact look, whatever size it is drawn like): the line, − the target + at its end
   if (miniLine(root)) root.dataset.size = 'row';
   root.classList.toggle('cv-ha-tile-card', sizeOf(root) === 'row');
   root.classList.remove('has-under');
@@ -365,7 +365,7 @@ function shutter(alias: string, pos: number, lv: boolean): HTMLElement {
  * takes (up, stop, down) at every size: on the Mini alone in one row, on the small one under a wide position slider,
  * from the medium one up beside a shutter that shows and sets the position. Without touch the position only.
  */
-/** A Persiana in a box only the fine grid has, one or two cells high: drawn as the line (its buttons below leave the name too small). */
+/** A Persiana in a small box in the compact look, one or two cells high: drawn as the line (its buttons below leave the name too small). */
 const coverLine = (root: HTMLElement): boolean => root.dataset.mini !== undefined && Number(root.dataset.mh) <= 2;
 
 function drawCover(root: HTMLElement, env: AdapterEnv): void {
@@ -373,7 +373,7 @@ function drawCover(root: HTMLElement, env: AdapterEnv): void {
   const alias = aliasOf(p.entity);
   const s = env.ha.state(alias);
   const cv = s?.d === 'cover' ? s : null;
-  // one line (a box only the fine grid has, one or two cells high): the Entidad card's line, with up and down at
+  // one line (a small box in the compact look, one or two cells high): the Entidad card's line, with up and down at
   // its end (two cells high: the name over the state, larger, #9)
   const line = coverLine(root);
   root.classList.toggle('cv-ha-tile-card', line);
@@ -500,7 +500,7 @@ export const HA_CONTROL_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Ca
   'ha.scene': () => haAdapter('cv-ha-ctl-card cv-ha-scenecard', (p) => ((p.buttons ?? []) as Props[]).map((b) => aliasOf(b.entity)).filter(Boolean), drawScenes, (root, box, env) => {
     // as many columns as the buttons need to fit the height (a button is at least 4.8rem high)
     const n = Math.max(1, ((env.item().props as Props).buttons ?? []).length);
-    // a box only the fine grid has (one to three cells high): the buttons as chips in as many rows as the height
+    // a small box (the compact look, one to three cells high): the buttons as chips in as many rows as the height
     // holds, the names on one line shortened with … (and no icon when a chip is narrow), so each scene still reads
     if (root.dataset.mini !== undefined) {
       const rows = Math.min(n, Math.max(1, Math.floor((box.h / box.rem + 0.5) / 5.2)));

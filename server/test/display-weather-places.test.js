@@ -81,7 +81,7 @@ describe('weather of several places, in a browser', { skip: !chrome && 'no Chrom
 
   test('fine grid: the cities card in one row shows as many whole places as fit', async () => {
     for (const [cells, min] of [['4x1', 1], ['8x1', 2], ['12x1', 2]]) {
-      const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=size:weather.cities:${cells}:landscape:none:ambient:fine&lang=en`, LAND);
+      const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=size:weather.cities:${cells}:landscape:none:ambient&lang=en`, LAND);
       try {
         await p.eval(settle);
         const cards = await p.eval(`[...document.querySelectorAll('.cv-wx-cities')].map((e) => {

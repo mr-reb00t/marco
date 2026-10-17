@@ -96,18 +96,18 @@ test('empty cards: a drop on a spacer replaces it, an empty card of its own move
   const cv = {
     ...defaultCanvas(),
     items: [
-      it('cv_agenda01', 'calendar.agenda', 0, 0, 't'), it('cv_today001', 'calendar.today', 0, 4, 't'), it('cv_clock001', 'clock.digital', 9, 0, 's'),
-      it('cv_wxnow001', 'weather.now', 9, 2, 's'), it('cv_annou001', 'announcement', 3, 2, 'w'), it('cv_space001', 'spacer', 4, 4, 's'),
-      it('cv_forec001', 'weather.forecast', 3, 6, 'w'), it('cv_cdown001', 'countdowns', 9, 6, 's'),
+      it('cv_agenda01', 'calendar.agenda', 0, 0, 't'), it('cv_today001', 'calendar.today', 0, 8, 't'), it('cv_clock001', 'clock.digital', 18, 0, 's'),
+      it('cv_wxnow001', 'weather.now', 18, 4, 's'), it('cv_annou001', 'announcement', 6, 4, 'w'), it('cv_space001', 'spacer', 8, 8, 's'),
+      it('cv_forec001', 'weather.forecast', 6, 12, 'w'), it('cv_cdown001', 'countdowns', 18, 12, 's'),
     ],
   };
   // without knowing what is empty: no room, and the cards in the way are named
-  assert.equal(M.resolveMain(cv, 'landscape', 'm', 3, 3), null);
-  assert.deepEqual(M.occupantsAt(cv, 'landscape', 3, 3, 4, 3).sort(), ['cv_annou001', 'cv_space001']);
+  assert.equal(M.resolveMain(cv, 'landscape', 'm', 6, 6), null);
+  assert.deepEqual(M.occupantsAt(cv, 'landscape', 6, 6, 8, 6).sort(), ['cv_annou001', 'cv_space001']);
   const voids = M.voidIds(cv, new Set(['cv_annou001', 'cv_cdown001']));
   assert.deepEqual([...voids].sort(), ['cv_annou001', 'cv_cdown001', 'cv_space001']);
   // dropped there: the spacer goes, the announcement keeps its settings and moves to the nearest free spot
-  const drop = M.resolveMain(cv, 'landscape', 'm', 3, 3, { at: { x: 5, y: 4 }, voids });
+  const drop = M.resolveMain(cv, 'landscape', 'm', 6, 6, { at: { x: 10, y: 8 }, voids });
   assert.ok(drop?.replace);
   assert.deepEqual(drop.replace.remove, ['cv_space001']);
   assert.deepEqual(drop.replace.move.map((m) => m.id), ['cv_annou001']);
@@ -118,7 +118,7 @@ test('empty cards: a drop on a spacer replaces it, an empty card of its own move
   assert.ok(M.itemOf(after, 'cv_annou001'));
   assert.equal(after.items.length, cv.items.length);
   // moving the clock card onto them works the same way
-  const mv = M.resolveMain(cv, 'landscape', 's', 4, 4, { id: 'cv_clock001', at: { x: 5, y: 4 }, voids });
+  const mv = M.resolveMain(cv, 'landscape', 's', 8, 8, { id: 'cv_clock001', at: { x: 10, y: 8 }, voids });
   assert.deepEqual(mv.replace.remove, ['cv_space001']);
   valid(ok(M.applyMain(cv, 'landscape', 'cv_clock001', mv)));
   // a tap-to-add with no free spot takes the place of an empty card too (and says so through r.drop.replace)
@@ -126,10 +126,10 @@ test('empty cards: a drop on a spacer replaces it, an empty card of its own move
   valid(ok(add));
   assert.ok(add.drop.replace);
   // a card that shows something is never replaced: the weather is not empty
-  assert.equal(M.resolveMain(cv, 'landscape', 'm', 8, 2, { voids: new Set(['cv_space001']) })?.replace?.move.some((m) => m.id === 'cv_wxnow001') ?? false, false);
+  assert.equal(M.resolveMain(cv, 'landscape', 'm', 16, 4, { voids: new Set(['cv_space001']) })?.replace?.move.some((m) => m.id === 'cv_wxnow001') ?? false, false);
   // an empty card with nowhere to go is not deleted: no room
-  const tight = { ...cv, items: [...cv.items, it('cv_fill0001', 'message', 3, 0, 'w')] };
-  const d2 = M.resolveMain(tight, 'landscape', 'm', 3, 3, { at: { x: 4, y: 3 }, voids: new Set(['cv_annou001']) });
+  const tight = { ...cv, items: [...cv.items, it('cv_fill0001', 'message', 6, 0, 'w')] };
+  const d2 = M.resolveMain(tight, 'landscape', 'm', 6, 6, { at: { x: 8, y: 6 }, voids: new Set(['cv_annou001']) });
   assert.equal(d2, null);
 });
 
@@ -176,9 +176,9 @@ test('sidebar: items move in and out with their size mapped, reorder, spans cycl
   valid(cv);
   // back to the main grid, and the sidebar off moves what is left
   // a large clock finds no room for its large size; the weather card (span 4: its largest, m) does
-  assert.equal(M.toMain(cv, 'landscape', clock, 8, 0).why, 'noRoom');
-  cv = ok(M.toMain(cv, 'landscape', wx, 8, 0));
-  assert.deepEqual(M.itemOf(cv, wx).pos, { zone: 'main', x: 8, y: 0, size: 'm' });
+  assert.equal(M.toMain(cv, 'landscape', clock, 16, 0).why, 'noRoom');
+  cv = ok(M.toMain(cv, 'landscape', wx, 16, 0));
+  assert.deepEqual(M.itemOf(cv, wx).pos, { zone: 'main', x: 16, y: 0, size: 'm' });
   const off = ok(M.setSidebarSide(cv, 'none', 'move'));
   assert.ok(off.items.every((i) => i.pos.zone === 'main'));
   valid(off);
@@ -267,6 +267,14 @@ test('drafts: one key per household and screen, old ones dropped, all of them on
     D.saveDraft('h1', 's_1', { at: Date.now(), canvas: cv });
     assert.ok(D.loadDraft('h1', 's_1'));
     assert.equal(D.loadDraft('h2', 's_1'), null, 'another household never sees it');
+    assert.deepEqual(D.loadDraft('h1', 's_1').canvas, cv, 'a draft of today comes back as it was');
+    // a draft an editor kept before 0.17, on the old 12×8 grid: read on today's grid, every box doubled
+    const old = { ...cv, items: [{ id: 'cv_old00001', kind: 'date', pos: { zone: 'main', x: 3, y: 2, size: 's' }, style: {}, props: {} }] };
+    delete old.grid;
+    D.saveDraft('h1', 's_3', { at: Date.now(), canvas: old });
+    const up = D.loadDraft('h1', 's_3').canvas;
+    assert.equal(up.grid, 'fine');
+    assert.deepEqual(up.items[0].pos, { zone: 'main', x: 6, y: 4, size: 's' });
     D.saveDraft('h1', 's_2', { at: Date.now() - D.DRAFT_TTL_MS - 1, canvas: cv });
     D.pruneDrafts();
     assert.equal(mem.has('marco.canvasDraft.h1.s_2'), false);
@@ -281,9 +289,14 @@ test('geometry: cells, the pointer cell and the sidebar slots line up with the d
   const cv = defaultCanvas();
   const g = G.computeGeometry(cv, 'landscape');
   const a = G.cellBox(g, 'landscape', 0, 0, 1, 1);
-  const b = G.cellBox(g, 'landscape', 11, 7, 1, 1);
+  const b = G.cellBox(g, 'landscape', 23, 15, 1, 1);
   assert.ok(Math.abs(a.x - 24) < 0.6 && Math.abs(b.x + b.w - (1920 - 24)) < 0.6, JSON.stringify([a, b]));
-  for (const [x, y] of [[0, 0], [5, 3], [11, 7]]) {
+  // two cells and their gap are exactly one cell of the old 12×8 grid (a converted screen looks the same)
+  const gap = G.cellBox(g, 'landscape', 1, 0, 1, 1).x - a.x - a.w;
+  const old = (1920 - 48 - 11 * gap) / 12;
+  const two = G.cellBox(g, 'landscape', 2, 2, 2, 2);
+  assert.ok(Math.abs(two.w - old) < 0.6 && Math.abs(two.x - (24 + old + gap)) < 0.6, JSON.stringify([two, old, gap]));
+  for (const [x, y] of [[0, 0], [10, 6], [23, 15]]) {
     const c = G.cellBox(g, 'landscape', x, y, 1, 1);
     assert.deepEqual(G.cellAt(g, 'landscape', c.x + c.w / 2, c.y + c.h / 2), { x, y, inside: true });
   }
@@ -393,27 +406,28 @@ test('flexible sizes: W and H steppers, the corner handle (nearest legal box, ne
   let cv = defaultCanvas();
   const a = M.addItem(cv, 'landscape', 'todo', { zone: 'main', drop: { x: 0, y: 0, size: 't' } });
   cv = ok(a);
-  const b = M.addItem(cv, 'landscape', 'news', { zone: 'main', drop: { x: 5, y: 0, size: 'w' } });
+  const b = M.addItem(cv, 'landscape', 'news', { zone: 'main', drop: { x: 10, y: 0, size: 'w' } });
   cv = ok(b);
-  // H + 1, + 1: a box of its own (3×6), then back to the named size
-  cv = ok(M.setCells(cv, 'landscape', a.id, 3, 5));
-  cv = ok(M.setCells(cv, 'landscape', a.id, 3, 6));
-  assert.deepEqual(M.itemOf(cv, a.id).pos, { zone: 'main', x: 0, y: 0, size: 't', w: 3, h: 6 });
+  // H + 1, + 1: a box of its own (6×10), then 6×12
+  cv = ok(M.setCells(cv, 'landscape', a.id, 6, 9));
+  cv = ok(M.setCells(cv, 'landscape', a.id, 6, 10));
+  cv = ok(M.setCells(cv, 'landscape', a.id, 6, 12));
+  assert.deepEqual(M.itemOf(cv, a.id).pos, { zone: 'main', x: 0, y: 0, size: 't', w: 6, h: 12 });
   valid(cv);
-  assert.deepEqual(M.boxCells(M.itemOf(cv, a.id).pos, 'landscape'), [3, 6]);
-  // past the kind's range: refused with 'limit' (the to-do list is at most 6 wide and 8 high)
-  assert.equal(M.setCells(cv, 'landscape', a.id, 3, 9).why, 'limit');
-  assert.equal(M.setCells(cv, 'landscape', a.id, 2, 6).why, 'limit');
+  assert.deepEqual(M.boxCells(M.itemOf(cv, a.id).pos, 'landscape'), [6, 12]);
+  // past the kind's range: refused with 'limit' (the to-do list is 4×2 to 12×16)
+  assert.equal(M.setCells(cv, 'landscape', a.id, 6, 17).why, 'limit');
+  assert.equal(M.setCells(cv, 'landscape', a.id, 3, 12).why, 'limit');
   // wider into the news card: kept at its origin is impossible, so it goes to the nearest free spot, never over it
-  const w = M.setCells(cv, 'landscape', a.id, 6, 6);
+  const w = M.setCells(cv, 'landscape', a.id, 12, 12);
   if (w.ok) valid(w.cv);
   // the handle: dragged over the news card, the legal box nearest to the pointer that leaves it alone
-  const box = M.handleBox(cv, 'landscape', a.id, 8, 6);
-  assert.deepEqual(M.boxCells(box, 'landscape'), [5, 6]);
+  const box = M.handleBox(cv, 'landscape', a.id, 16, 12);
+  assert.deepEqual(M.boxCells(box, 'landscape'), [10, 12]);
   cv = ok(M.applyBox(cv, 'landscape', a.id, box));
   valid(cv);
   // dragged past the smallest: the smallest
-  assert.deepEqual(M.boxCells(M.handleBox(cv, 'landscape', a.id, 1, 1), 'landscape'), [3, 2]);
+  assert.deepEqual(M.boxCells(M.handleBox(cv, 'landscape', a.id, 1, 1), 'landscape'), [4, 2]);
   // the same box again changes nothing
   assert.equal(M.applyBox(cv, 'landscape', a.id, M.itemOf(cv, a.id).pos).ok, false);
   // a tap on the handle steps the named sizes, from about the box's area
@@ -425,31 +439,33 @@ test('flexible sizes: W and H steppers, the corner handle (nearest legal box, ne
   assert.deepEqual(M.itemOf(n, a.id).pos, { ...M.itemOf(cv, a.id).pos, y: 1 });
   valid(n);
   // Ajustar tamaño: the content is 1.4 times taller than the box: the smallest larger box with room
-  let small = ok(M.setCells(cv, 'landscape', a.id, 3, 3));
+  let small = ok(M.setCells(cv, 'landscape', a.id, 6, 6));
   const f = ok(M.fitContent(small, 'landscape', a.id, { w: 1, h: 1.4 }));
-  assert.deepEqual(M.boxCells(M.itemOf(f, a.id).pos, 'landscape'), [3, 5]);
+  assert.deepEqual(M.boxCells(M.itemOf(f, a.id).pos, 'landscape'), [6, 9]);
   valid(f);
   // nothing larger has room: say so
   const full = ok(M.addItem(defaultCanvas(), 'landscape', 'ha.switch', { zone: 'main', drop: { x: 0, y: 0, size: 'xs' } }));
   let packed = full;
-  for (let x = 2; x < 12; x += 2) for (let y = 0; y < 8; y += 2) packed = ok(M.addItem(packed, 'landscape', 'spacer', { zone: 'main', drop: { x, y, size: 'xs' } }));
-  for (const y of [2, 4, 6]) packed = ok(M.addItem(packed, 'landscape', 'spacer', { zone: 'main', drop: { x: 0, y, size: 'xs' } }));
+  for (let x = 4; x < 24; x += 4) for (let y = 0; y < 16; y += 4) packed = ok(M.addItem(packed, 'landscape', 'spacer', { zone: 'main', drop: { x, y, size: 'xs' } }));
+  for (const y of [4, 8, 12]) packed = ok(M.addItem(packed, 'landscape', 'spacer', { zone: 'main', drop: { x: 0, y, size: 'xs' } }));
   assert.equal(M.fitContent(packed, 'landscape', M.tabOrder(full, 'landscape')[0]).why, 'noBigger');
   // a swap only between cards that take the same cells
-  small = ok(M.setCells(cv, 'landscape', a.id, 6, 2));
+  small = ok(M.setCells(cv, 'landscape', a.id, 12, 4));
   const pa = M.itemOf(small, a.id).pos;
   const pb = M.itemOf(small, b.id).pos;
   const sw = M.resolveMain(small, 'landscape', pa, pb.x, pb.y, { id: a.id, at: { x: pb.x, y: pb.y } });
-  assert.equal(sw?.swap, b.id, 'a 6×2 to-do list and a 6×2 news card swap places');
-  small = ok(M.setCells(small, 'landscape', a.id, 5, 2));
+  assert.equal(sw?.swap, b.id, 'a 12×4 to-do list and a 12×4 news card swap places');
+  small = ok(M.setCells(small, 'landscape', a.id, 10, 4));
   const pa2 = M.itemOf(small, a.id).pos;
-  assert.notEqual(M.resolveMain(small, 'landscape', pa2, pb.x, pb.y, { id: a.id, at: { x: pb.x, y: pb.y } })?.swap, b.id, 'a 5×2 one does not');
+  assert.notEqual(M.resolveMain(small, 'landscape', pa2, pb.x, pb.y, { id: a.id, at: { x: pb.x, y: pb.y } })?.swap, b.id, 'a 10×4 one does not');
   // portrait drawn from a box of its own keeps it, and editing portrait copies it
   const pc = M.editPortrait(cv);
   assert.deepEqual(M.boxCells(M.itemOf(pc, a.id).portrait, 'portrait'), M.boxCells(M.itemOf(cv, a.id).pos, 'landscape'));
   assert.ok(M.noOverlap(pc));
-  // into the sidebar: its rows make the span
-  assert.equal(M.spanForBox({ size: 't', w: 3, h: 6 }, 'landscape'), 4);
+  // into the sidebar: its height makes the span (two rows each, the unit of the spans)
+  assert.equal(M.spanForBox({ size: 't', w: 6, h: 12 }, 'landscape'), 4);
+  assert.equal(M.spanForBox({ size: 't', w: 6, h: 6 }, 'landscape'), 3);
+  assert.equal(M.spanForBox({ size: 'row', w: 4, h: 2 }, 'landscape'), 2);
   assert.equal(M.spanForBox({ size: 'row', w: 2, h: 1 }, 'landscape'), 2);
 });
 

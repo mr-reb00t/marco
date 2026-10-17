@@ -6,8 +6,8 @@ import { EventEmitter } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { defaultConfig, DEFAULT_ICON_RULES } from './core/defaults.js';
 import { validateConfig, mergeDefaults, migrateConfig, isV1 } from './core/validate.js';
-import { backupBeforeSave } from './backups.js';
-import { startCanvasGlassOnSave } from './core/canvasCore.js';
+import { backupBeforeSave, writeBackup } from './backups.js';
+import { isLegacyCanvas, startCanvasGlassOnSave } from './core/canvasCore.js';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -90,6 +90,19 @@ function loadConfig() {
   // Back-fill new keys from defaults, then sanitise. Invalid stored values fall back to defaults (logged).
   const { value, errors } = validateConfig(mergeDefaults(migrateConfig(raw)));
   if (errors.length) console.warn('[store] config had invalid values (defaults used):', errors.map((e) => `${e.path}: ${e.message}`).join('; '));
+  // Personalizado screens saved before 0.17 on the legacy 12×8 grid: validateConfig converted them (positions and
+  // boxes doubled, the same look); the file is written converted once, after a backup of the file as it was
+  const legacyGrid = !migrate && Array.isArray(raw.screens) && raw.screens.some((s) => s && typeof s === 'object' && s.canvas && isLegacyCanvas(s.canvas));
+  if (legacyGrid) {
+    try {
+      const b = writeBackup(raw, 'save');
+      writeFileAtomic(paths.config, JSON.stringify(value, null, 2));
+      console.log(`[store] custom screens converted to the 24×16 grid (they look the same); previous file in backups/${b?.id ?? ''}`);
+      migratedOnLoad = { ...(migratedOnLoad || {}), canvasGrid: 'fine' };
+    } catch (err) {
+      console.error('[store] custom screen grid conversion could not be persisted:', err.message);
+    }
+  }
   if (legacyAccess && !migrate) {
     try {
       writeFileAtomic(paths.config, JSON.stringify(value, null, 2));

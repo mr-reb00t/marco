@@ -26,11 +26,11 @@ function config(items, canvas = {}, mutate = () => {}) {
 
 const HA_ITEMS = () => [
   item('ha.light', M(0, 0, 's'), { entity: 'light.kitchen_ceiling', name: 'Cocina' }),
-  item('ha.room', M(3, 0, 'm'), { title: 'Salón', rows: [{ entity: 'switch.living_lamp', name: '', interactive: true }, { entity: 'sensor.living_temperature', name: '', interactive: false }] }),
-  item('ha.chart', M(7, 0, 'm'), { series: [{ entity: 'sensor.outdoor_temperature', label: 'Fuera', color: null }] }),
-  item('ha.camera', M(0, 3, 'l'), { entity: 'camera.front_door', showWhen: 'binary_sensor.front_motion' }),
-  item('ha.scene', M(6, 3, 's'), { buttons: [{ entity: 'scene.movie_night', label: 'Cine', icon: '' }] }),
-  item('html', M(9, 3, 's'), { html: '<b>{{t}}</b>', css: '', bind: [{ name: 't', entity: 'sensor.attic_temperature' }], refreshSec: 60 }),
+  item('ha.room', M(6, 0, 'm'), { title: 'Salón', rows: [{ entity: 'switch.living_lamp', name: '', interactive: true }, { entity: 'sensor.living_temperature', name: '', interactive: false }] }),
+  item('ha.chart', M(14, 0, 'm'), { series: [{ entity: 'sensor.outdoor_temperature', label: 'Fuera', color: null }] }),
+  item('ha.camera', M(0, 6, 'l'), { entity: 'camera.front_door', showWhen: 'binary_sensor.front_motion' }),
+  item('ha.scene', M(12, 6, 's'), { buttons: [{ entity: 'scene.movie_night', label: 'Cine', icon: '' }] }),
+  item('html', M(18, 6, 's'), { html: '<b>{{t}}</b>', css: '', bind: [{ name: 't', entity: 'sensor.attic_temperature' }], refreshSec: 60 }),
 ];
 const ENTITIES = ['light.kitchen_ceiling', 'switch.living_lamp', 'sensor.living_temperature', 'sensor.outdoor_temperature', 'camera.front_door', 'binary_sensor.front_motion', 'scene.movie_night', 'sensor.attic_temperature'];
 
@@ -87,7 +87,7 @@ test('touch: the screen switch, ANDed with the server allowing controls and the 
 });
 
 test('private screens: Home Assistant, cameras, values, per person and custom cards become neutral placeholders', () => {
-  const v = config([...HA_ITEMS(), item('value', M(6, 7, 'xs'), { key: 'solar.today' }), item('clock.digital', M(8, 6, 's'))]);
+  const v = config([...HA_ITEMS(), item('value', M(12, 14, 'xs'), { key: 'solar.today' }), item('clock.digital', M(16, 12, 's'))]);
   const priv = displayConfig(v, v.screens[0], { privacy: { status: { active: true, until: null, reason: 'manual' }, next: null } }).canvas;
   for (const it of priv.items) {
     if (it.kind === 'clock.digital') {
@@ -103,7 +103,7 @@ test('private screens: Home Assistant, cameras, values, per person and custom ca
 });
 
 test('kinds the server does not allow are sent as disabled placeholders (the last line of defence)', () => {
-  const v = config([item('ha.light', M(0, 0, 's'), { entity: 'light.a' }), item('clock.digital', M(4, 0, 'm'))]);
+  const v = config([item('ha.light', M(0, 0, 's'), { entity: 'light.a' }), item('clock.digital', M(8, 0, 'm'))]);
   const out = displayConfig(v, v.screens[0], { canvasKinds: CLOUD_CANVAS_KINDS }).canvas;
   assert.equal(out.items[0].disabled, 'feature');
   assert.deepEqual(out.items[0].props, {});
@@ -140,7 +140,7 @@ test('reconcile key: v changes with what an item draws, and only then', () => {
   const a = item('clock.digital', M(0, 0, 'm'));
   const v1 = config([a]);
   const v2 = config([{ ...a, props: { ...a.props, seconds: true } }]);
-  const v3 = config([{ ...a, pos: M(4, 0, 'm') }]);
+  const v3 = config([{ ...a, pos: M(8, 0, 'm') }]);
   const key = (v) => displayConfig(v, v.screens[0]).canvas.items[0].v;
   assert.equal(key(v1), key(config([a])));
   assert.notEqual(key(v1), key(v2));
@@ -148,17 +148,17 @@ test('reconcile key: v changes with what an item draws, and only then', () => {
 });
 
 test('portrait: derived while automatic, the stored arrangement otherwise', () => {
-  const a = item('calendar.month', M(4, 0, 'xl'));
+  const a = item('calendar.month', M(8, 0, 'xl'));
   const b = item('clock.digital', M(0, 0, 'm'));
   const auto = config([a, b]);
   const pa = displayConfig(auto, auto.screens[0]).canvas.items;
   // derived by (y, x): the clock (x 0) first
   assert.deepEqual(pa.find((i) => i.kind === 'clock.digital').portrait, M(0, 0, 'm'));
-  assert.deepEqual(pa.find((i) => i.kind === 'calendar.month').portrait, M(0, 3, 'xl'));
-  const manual = config([{ ...a, portrait: M(0, 0, 'xl') }, { ...b, portrait: M(0, 6, 'm') }], { portraitAuto: false });
+  assert.deepEqual(pa.find((i) => i.kind === 'calendar.month').portrait, M(0, 6, 'xl'));
+  const manual = config([{ ...a, portrait: M(0, 0, 'xl') }, { ...b, portrait: M(0, 12, 'm') }], { portraitAuto: false });
   const pm = displayConfig(manual, manual.screens[0]).canvas.items;
   assert.deepEqual(pm.find((i) => i.kind === 'calendar.month').portrait, M(0, 0, 'xl'));
-  assert.deepEqual(pm.find((i) => i.kind === 'clock.digital').portrait, M(0, 6, 'm'));
+  assert.deepEqual(pm.find((i) => i.kind === 'clock.digital').portrait, M(0, 12, 'm'));
 });
 
 test('events range: the longest look-ahead of the calendar items, at most six weeks', () => {
@@ -166,7 +166,7 @@ test('events range: the longest look-ahead of the calendar items, at most six we
   assert.equal(canvasEventsNeed({ items: [item('clock.digital', M(0, 0, 'm'))] }), 0);
   assert.equal(canvasEventsNeed({ items: [item('calendar.agenda', M(0, 0, 'm'), { days: 14 })] }), 15);
   assert.equal(canvasEventsNeed({ items: [item('calendar.month', M(0, 0, 'l'), { weeks: 'auto' })] }), 42);
-  assert.equal(canvasEventsNeed({ items: [item('calendar.month', M(0, 0, 'l'), { weeks: 2 }), item('calendar.people', M(0, 4, 'l'), { days: 3 })] }), 21);
+  assert.equal(canvasEventsNeed({ items: [item('calendar.month', M(0, 0, 'l'), { weeks: 2 }), item('calendar.people', M(0, 8, 'l'), { days: 3 })] }), 21);
 });
 
 test('projectCanvas is a function of the config only (the admin preview runs it too)', () => {

@@ -307,7 +307,7 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     const d = env.data.get(item0.id) as MarketData | null | undefined;
     const coins = d?.coins?.length ? d.coins : coinSkeleton(p);
     // a box past the named sizes with one coin: the big price and its chart rather than one line of a list
-    // a box one fine cell high (the fine grid only): one coin on one line, each in turn like the big card
+    // a box one cell high (the compact look): one coin on one line, each in turn like the big card
     const line = isLine(root);
     const big = !line && (p.layout === 'big' || b.box?.size === 'xs' || (root.dataset.room !== undefined && coins.length === 1));
     if ((big || line) && coins.length) idx %= coins.length;
@@ -381,10 +381,10 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
   });
 }
 
-/** A box one fine cell high (the fine grid only, widgets/canvas.ts miniMark): the card on one line. */
+/** A box one cell high (the compact look, widgets/canvas.ts miniMark): the card on one line. */
 const isLine = (root: HTMLElement) => root.dataset.mini !== undefined && root.dataset.mh === '1';
 
-/** The one line of a card one fine cell high, with its sparkline in the middle (`s`, when there is one). */
+/** The one line of a card one cell high, with its sparkline in the middle (`s`, when there is one). */
 function drawLineRow(root: HTMLElement, s: SVGSVGElement | null | undefined, cls: string): HTMLElement {
   root.classList.add('is-line');
   const row = el('div', cls);
@@ -786,7 +786,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
     root.classList.remove('is-line');
     delete root.dataset.pages;
     if (line && !ticker) {
-      // a list one fine cell high: one quote on one line, each in turn (tick)
+      // a list one cell high: one quote on one line, each in turn (tick)
       const q = quotes[page % Math.max(1, quotes.length)];
       if (!q) return;
       if (quotes.length > 1) root.dataset.pages = String(quotes.length);
@@ -802,7 +802,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       return;
     }
     if (ticker && b.box) {
-      // the line grows with the card's height, within reason (one fine cell high: about half of it)
+      // the line grows with the card's height, within reason (one cell high: about half of it)
       const px = (line ? Math.max(b.box.rem * 1.4, Math.min(b.box.h * 0.4, b.box.rem * 2.6)) : Math.max(b.box.rem * 1.6, Math.min(b.box.h * 0.17, b.box.rem * 3.6))) * (Number(it.style?.scale) || 1);
       root.style.setProperty('--tk', `${px.toFixed(1)}px`);
     }
@@ -859,7 +859,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       } else {
         // no motion: the quotes in pages that fit, one after another (tick)
         const kids = [...track.children] as HTMLElement[];
-        // a box only the fine grid has: a quote wider than the line gets smaller type, so each page shows it whole
+        // a small box (the compact look): a quote wider than the line gets smaller type, so each page shows it whole
         if (root.dataset.mini !== undefined) {
           const widest = Math.max(...kids.map((k) => k.getBoundingClientRect().width));
           const tk = parseFloat(root.style.getPropertyValue('--tk')) || 0;

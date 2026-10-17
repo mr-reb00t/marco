@@ -10,8 +10,8 @@
 // - A card with nothing to show (no message, no countdowns) keeps its cell but is not drawn (.is-empty).
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
-import type { Announcement, CanvasGridId, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, canvasGrid, cellRange, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, GlassConfig } from '../../shared/types';
+import { CANVAS_KINDS, fullLookMin, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -117,11 +117,11 @@ const SPREAD = new Set(['meals.week', 'countdowns', 'birthdays', 'todo', 'meals.
  * many times its box holds the largest one's area (at most twice), so a full-screen list is not a small block in the
  * middle while every saved card of a named size looks as before.
  */
-export function roomFactor(kind: string, w: number, h: number, orientation: 'landscape' | 'portrait', grid: CanvasGridId = 'normal'): number {
+export function roomFactor(kind: string, w: number, h: number, orientation: 'landscape' | 'portrait'): number {
   const sizes = (CANVAS_KINDS as Record<string, { sizes: string[] }>)[kind]?.sizes ?? [];
   let mw = 0, mh = 0, ma = 0;
   for (const s of sizes) {
-    const [sw, sh] = sizeCells(s, orientation, grid);
+    const [sw, sh] = sizeCells(s, orientation);
     mw = Math.max(mw, sw);
     mh = Math.max(mh, sh);
     ma = Math.max(ma, sw * sh);
@@ -131,14 +131,14 @@ export function roomFactor(kind: string, w: number, h: number, orientation: 'lan
 }
 
 /**
- * A box only the fine grid has (smaller than its kind's smallest box on the normal grid, in either direction): the
- * card's compact look. data-mini on the body, with data-mw / data-mh its width and height in fine cells, so each
- * kind's CSS (and its adapter) can draw a line, a strip or a small block. Never on the normal grid, never in the
- * sidebar: every box the normal grid allows looks exactly as before.
+ * A small box (smaller than its kind's full look in either direction, canvasCore fullLookMin): the card's compact
+ * look. data-mini on the body, with data-mw / data-mh its width and height in cells, so each kind's CSS (and its
+ * adapter) can draw a line, a strip or a small block. Never in the sidebar, never on a box a screen made on the
+ * legacy 12×8 grid has: those look exactly as before.
  */
-export function miniMark(body: HTMLElement, kind: string, cells: [number, number] | null, orientation: 'landscape' | 'portrait', grid: CanvasGridId): void {
-  const r = cells && grid === 'fine' && CANVAS_KINDS[kind as keyof typeof CANVAS_KINDS] ? cellRange(kind, orientation, 'normal') : null;
-  const mini = !!r && !!cells && (cells[0] < r.minW * 2 || cells[1] < r.minH * 2);
+export function miniMark(body: HTMLElement, kind: string, cells: [number, number] | null, orientation: 'landscape' | 'portrait'): void {
+  const r = cells && CANVAS_KINDS[kind as keyof typeof CANVAS_KINDS] ? fullLookMin(kind, orientation) : null;
+  const mini = !!r && !!cells && (cells[0] < r[0] || cells[1] < r[1]);
   if (!mini) {
     delete body.dataset.mini;
     delete body.dataset.mw;
@@ -322,7 +322,7 @@ export class Canvas {
     this.screen = cfg;
     this.portrait = portrait;
     this.main.hidden = false;
-    const grid = gridDims(portrait ? 'portrait' : 'landscape', canvasGrid(cv));
+    const grid = gridDims(portrait ? 'portrait' : 'landscape');
     this.main.style.setProperty('--cv-cols', String(grid.cols));
     this.main.style.setProperty('--cv-rows', String(grid.rows));
     const side = sidebarSide(cv, portrait);
@@ -423,11 +423,6 @@ export class Canvas {
     this.look();
   }
 
-  /** The grid of the canvas on screen. */
-  private get grid(): CanvasGridId {
-    return canvasGrid(this.cv);
-  }
-
   /** Fit one card (or one card of a Rotativa) to its body. */
   private fitOne(e: Entry, rem: number): void {
     // before measuring: a zoomed body reports its box in its own (zoomed) pixels
@@ -438,10 +433,10 @@ export class Canvas {
     const pos = posFor(e.item, this.portrait);
     // a box past every named size of its kind: cards may lay out for the extra room (data-room, styles-canvas-room.css)
     const o = this.portrait ? 'portrait' : 'landscape';
-    const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o, this.grid), o, this.grid) : 1;
+    const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o), o) : 1;
     if (room > 1) e.body.dataset.room = '';
     else delete e.body.dataset.room;
-    miniMark(e.body, e.kind, pos?.zone === 'main' ? posCells(pos, o, this.grid) : null, o, this.grid);
+    miniMark(e.body, e.kind, pos?.zone === 'main' ? posCells(pos, o) : null, o);
     e.adapter.layout?.({ w, h, rem, size: pos?.zone === 'main' ? pos.size : 'side', zone: e.zone });
     // (a compact look is made for its small box: it is not zoomed up, so its rows never get shorter to grow)
     if (FILL[e.kind] && e.body.dataset.mini === undefined) this.fillBox(e, rem, pos?.zone === 'main' ? pos.size : 'side');
@@ -469,9 +464,9 @@ export class Canvas {
     const box = b.getBoundingClientRect();
     if (!box.height || !box.width || (e.parent ? b : e.el).classList.contains('is-empty')) return;
     const pos = posFor(e.item, this.portrait);
-    const [cw, ch] = pos?.zone === 'main' ? posCells(pos, this.portrait ? 'portrait' : 'landscape', this.grid) : [0, 0];
+    const [cw, ch] = pos?.zone === 'main' ? posCells(pos, this.portrait ? 'portrait' : 'landscape') : [0, 0];
     // (the week's meals as a list of days: a narrow box no named size of it has)
-    const room = Math.max(cw ? roomFactor(e.kind, cw, ch, this.portrait ? 'portrait' : 'landscape', this.grid) : 1, b.querySelector('.cvf-mlist') ? 1.5 : 1);
+    const room = Math.max(cw ? roomFactor(e.kind, cw, ch, this.portrait ? 'portrait' : 'landscape') : 1, b.querySelector('.cvf-mlist') ? 1.5 : 1);
     // cards that grow only in a box past their named sizes (their named sizes look as before)
     if (room <= 1 && (e.kind === 'family.chores' || e.kind === 'meals.week')) {
       applyScale(e);
@@ -692,7 +687,7 @@ export class Canvas {
     const s = e.el.style;
     if (pos.zone === 'main') {
       e.zone = 'main';
-      const [w, h] = posCells(pos, this.portrait ? 'portrait' : 'landscape', this.grid);
+      const [w, h] = posCells(pos, this.portrait ? 'portrait' : 'landscape');
       s.gridColumn = `${pos.x + 1} / span ${w}`;
       s.gridRow = `${pos.y + 1} / span ${h}`;
       // the named size it is drawn like, and its cells (a box of its own is any w×h within the kind's range)

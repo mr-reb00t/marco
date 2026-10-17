@@ -487,8 +487,6 @@ const ROWS: [string, string, string, string, string][] = [
   ['Corta', 'Short', 'Curta', 'Kort', 'Kort'],
   ['Grosor', 'Weight', 'Espessura', 'Dikte', 'Tykkelse'],
   ['Delgada', 'Thin', 'Fina', 'Dun', 'Tynd'],
-  // "Cuadrícula": Normal or Fina (the fine grid, twice the cells each way)
-  ['Fina', 'Fine', 'Fina', 'Fijn', 'Fin'],
   ['Gruesa', 'Bold', 'Grossa', 'Dik', 'Fed'],
   ['Esfera', 'Face', 'Mostrador', 'Wijzerplaat', 'Urskive'],
   ['Clásica', 'Classic', 'Clássico', 'Klassiek', 'Klassisk'],
@@ -1545,23 +1543,9 @@ const ROWS: [string, string, string, string, string][] = [
     'De editor tekent het scherm in de vorm van dit venster, zodat het eruitziet als daar.',
     'Editoren tegner skærmen i dette vindues form, så den ser ud som dér.',
   ],
-  // "Cuadrícula", "Densidad" and the Rotativa (#9)
+  // "Densidad" and the Rotativa (#9); 'Cuadrícula' is the grid layout of Tiempo en varias ciudades
   ['Cuadrícula', 'Grid', 'Grelha', 'Raster', 'Gitter'],
   ['Densidad', 'Density', 'Densidade', 'Dichtheid', 'Tæthed'],
-  [
-    'Normal: 12×8 cuadros. Fina tiene el doble en cada sentido, para más tarjetas y más pequeñas.',
-    'Normal: 12×8 cells. Fine has twice as many each way, for more and smaller cards.',
-    'Normal: 12×8 quadrados. A fina tem o dobro em cada sentido, para mais cartões e mais pequenos.',
-    'Normaal: 12×8 vakken. Fijn heeft er in elke richting twee keer zoveel, voor meer en kleinere kaarten.',
-    'Normal: 12×8 felter. Fin har dobbelt så mange hver vej, til flere og mindre kort.',
-  ],
-  [
-    'Fina: 24×16 cuadros, para más tarjetas y más pequeñas. Al volver a Normal, cada tarjeta va al cuadro más cercano.',
-    'Fine: 24×16 cells, for more and smaller cards. Back to Normal, each card goes to the nearest cell.',
-    'Fina: 24×16 quadrados, para mais cartões e mais pequenos. Ao voltar a Normal, cada cartão vai para o quadrado mais próximo.',
-    'Fijn: 24×16 vakken, voor meer en kleinere kaarten. Terug naar Normaal gaat elke kaart naar het dichtstbijzijnde vak.',
-    'Fin: 24×16 felter, til flere og mindre kort. Tilbage til Normal går hvert kort til det nærmeste felt.',
-  ],
   [
     'Compacta junta más las tarjetas y deja menos margen dentro de ellas.',
     'Compact puts the cards closer together and leaves less padding inside them.',
@@ -1569,52 +1553,6 @@ const ROWS: [string, string, string, string, string][] = [
     'Compact zet de kaarten dichter bij elkaar en laat minder ruimte binnenin.',
     'Kompakt sætter kortene tættere sammen og giver mindre luft inden i dem.',
   ],
-  [
-    'Cuadrícula fina: cada cuadro es la mitad de uno normal.',
-    'Fine grid: each cell is half of a normal one.',
-    'Grelha fina: cada quadrado é metade de um normal.',
-    'Fijn raster: elk vak is de helft van een normaal vak.',
-    'Fint gitter: hvert felt er halvdelen af et normalt.',
-  ],
-  ['Cuadrícula fina', 'Fine grid', 'Grelha fina', 'Fijn raster', 'Fint gitter'],
-  ['Cuadrícula normal', 'Normal grid', 'Grelha normal', 'Normaal raster', 'Normalt gitter'],
-  ['Cambiar en Página', 'Change it in Page', 'Mudar em Página', 'Wijzigen bij Pagina', 'Skift under Side'],
-  [
-    'No caben todas las tarjetas en la cuadrícula normal. Quita alguna o hazlas más pequeñas y vuelve a probar.',
-    'Not every card fits on the normal grid. Remove some or make them smaller and try again.',
-    'Nem todos os cartões cabem na grelha normal. Tira algum ou torna-os mais pequenos e tenta de novo.',
-    'Niet alle kaarten passen op het normale raster. Haal er een paar weg of maak ze kleiner en probeer het opnieuw.',
-    'Ikke alle kort kan være i det normale gitter. Fjern nogle eller gør dem mindre, og prøv igen.',
-  ],
-  [
-    'La cuadrícula normal admite {n} widgets como máximo. Quita alguno y vuelve a probar.',
-    'The normal grid takes at most {n} widgets. Remove some and try again.',
-    'A grelha normal admite no máximo {n} widgets. Tira algum e tenta de novo.',
-    'Het normale raster past hoogstens {n} widgets. Haal er een paar weg en probeer het opnieuw.',
-    'Det normale gitter kan højst have {n} widgets. Fjern nogle, og prøv igen.',
-  ],
-  [
-    'La cuadrícula normal admite {n} entidades de Home Assistant como máximo. Quita alguna y vuelve a probar.',
-    'The normal grid takes at most {n} Home Assistant entities. Remove some and try again.',
-    'A grelha normal admite no máximo {n} entidades do Home Assistant. Tira alguma e tenta de novo.',
-    'Het normale raster past hoogstens {n} Home Assistant-entiteiten. Haal er een paar weg en probeer het opnieuw.',
-    'Det normale gitter kan højst have {n} Home Assistant-enheder. Fjern nogle, og prøv igen.',
-  ],
-  [
-    'Cuadrícula fina: el doble de cuadros en cada sentido. Todo sigue en su sitio y ahora puedes hacer las tarjetas más pequeñas.',
-    'Fine grid: twice the cells each way. Everything stays where it was, and now cards can be smaller.',
-    'Grelha fina: o dobro dos quadrados em cada sentido. Tudo fica no seu lugar e agora os cartões podem ser mais pequenos.',
-    'Fijn raster: twee keer zoveel vakken in elke richting. Alles blijft op zijn plek en kaarten kunnen nu kleiner.',
-    'Fint gitter: dobbelt så mange felter hver vej. Alt bliver, hvor det var, og nu kan kortene være mindre.',
-  ],
-  [
-    'Cuadrícula normal: {n} tarjetas han cambiado de sitio o de tamaño para caber.',
-    'Normal grid: {n} cards moved or changed size to fit.',
-    'Grelha normal: {n} cartões mudaram de lugar ou de tamanho para caber.',
-    'Normaal raster: {n} kaarten zijn verplaatst of van formaat veranderd om te passen.',
-    'Normalt gitter: {n} kort er flyttet eller har skiftet størrelse for at passe.',
-  ],
-  ['Cuadrícula normal: todo sigue en su sitio.', 'Normal grid: everything stays where it was.', 'Grelha normal: tudo fica no seu lugar.', 'Normaal raster: alles blijft op zijn plek.', 'Normalt gitter: alt bliver, hvor det var.'],
   ['Rotativa', 'Rotating card', 'Rotativo', 'Wisselkaart', 'Skiftekort'],
   [
     'Varias tarjetas en un mismo hueco, una tras otra cada pocos segundos.',
@@ -1652,7 +1590,6 @@ export const DA_BUILDER: Record<string, string> = Object.fromEntries(ROWS.map((r
 
 /** Singular forms (t() with n = 1): Spanish key → [es, en, pt, nl, da]. */
 const ONE: [string, string, string, string, string, string][] = [
-  ['Cuadrícula normal: {n} tarjetas han cambiado de sitio o de tamaño para caber.', 'Cuadrícula normal: 1 tarjeta ha cambiado de sitio o de tamaño para caber.', 'Normal grid: 1 card moved or changed size to fit.', 'Grelha normal: 1 cartão mudou de lugar ou de tamanho para caber.', 'Normaal raster: 1 kaart is verplaatst of van formaat veranderd om te passen.', 'Normalt gitter: 1 kort er flyttet eller har skiftet størrelse for at passe.'],
   ['{n} widgets', '1 widget', '1 widget', '1 widget', '1 widget', '1 widget'],
   ['{n} entidades', '1 entidad', '1 entity', '1 entidade', '1 entiteit', '1 enhed'],
   ['{n} widgets no caben enteros', '1 widget no cabe entero', '1 widget does not fit', '1 widget não cabe inteiro', '1 widget past niet helemaal', '1 widget er der ikke plads til'],

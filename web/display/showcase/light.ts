@@ -19,14 +19,14 @@ const B = (x: number, y: number, w: number, h: number) => ({ zone: 'main' as con
 const CALENDARS = ['c_fam', 'c_kids', 'c_bday', 'c_hol', 'c_work'];
 
 const ITEMS: Raw[] = [
-  { kind: 'clock.digital', pos: B(0, 0, 4, 2), props: { showDate: false } },
-  { kind: 'weather.now', pos: B(4, 0, 4, 2), props: { feelsLike: false }, style: { color: '#e4efff' } },
-  { kind: 'todo', pos: B(8, 0, 4, 4), props: { maxRows: 7, showDone: true }, style: { color: '#fff5d9' } },
-  { kind: 'calendar.week', pos: B(0, 2, 8, 3), props: { sourceIds: CALENDARS } },
-  { kind: 'ha.climate', pos: B(0, 5, 4, 3), props: { entity: 'climate.office', name: 'Office' }, style: { color: '#fff0e4' } },
-  { kind: 'ha.cover', pos: B(4, 5, 4, 3), props: { entity: 'cover.kitchen_blind', name: 'Kitchen blind', showState: false } },
-  { kind: 'ha.light', pos: B(8, 4, 4, 2), props: { entity: 'light.desk_lamp', name: 'Desk lamp', showState: false, row: 'brightness' }, style: { scale: 1.25 } },
-  { kind: 'ha.light', pos: B(8, 6, 4, 2), props: { entity: 'light.kitchen_shelf', name: 'Kitchen shelf' } },
+  { kind: 'clock.digital', pos: B(0, 0, 8, 4), props: { showDate: false } },
+  { kind: 'weather.now', pos: B(8, 0, 8, 4), props: { feelsLike: false }, style: { color: '#e4efff' } },
+  { kind: 'todo', pos: B(16, 0, 8, 8), props: { maxRows: 7, showDone: true }, style: { color: '#fff5d9' } },
+  { kind: 'calendar.week', pos: B(0, 4, 16, 6), props: { sourceIds: CALENDARS } },
+  { kind: 'ha.climate', pos: B(0, 10, 8, 6), props: { entity: 'climate.office', name: 'Office' }, style: { color: '#fff0e4' } },
+  { kind: 'ha.cover', pos: B(8, 10, 8, 6), props: { entity: 'cover.kitchen_blind', name: 'Kitchen blind', showState: false } },
+  { kind: 'ha.light', pos: B(16, 8, 8, 4), props: { entity: 'light.desk_lamp', name: 'Desk lamp', showState: false, row: 'brightness' }, style: { scale: 1.25 } },
+  { kind: 'ha.light', pos: B(16, 12, 8, 4), props: { entity: 'light.kitchen_shelf', name: 'Kitchen shelf' } },
 ];
 
 export const SHOW_LIGHT: { canvas: Partial<CanvasConfig>; items: Raw[] } = {

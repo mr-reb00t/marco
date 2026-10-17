@@ -25,14 +25,14 @@ const STOCKS = [{ sym: 'SPY', name: 'S&P 500' }, { sym: 'AAPL', name: 'Apple' },
 export const DATA_SHOWCASE: { canvas: Partial<CanvasConfig>; items: Raw[]; orientation?: 'portrait' | 'landscape' } = {
   canvas: { background: 'ambient' },
   items: [
-    { kind: 'clock.digital', pos: B(0, 0, 4, 2) },
-    { kind: 'news', pos: B(4, 0, 4, 2) },
-    { kind: 'weather.now', pos: B(8, 0, 4, 2) },
-    { kind: 'market', pos: B(0, 2, 6, 3), props: { coins: [{ id: 'bitcoin', currency: 'usd' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' }, style: { scale: 1.6 } },
-    { kind: 'market', pos: B(6, 2, 6, 3), props: { coins: [{ id: 'ethereum', currency: 'usd' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' }, style: { scale: 1.6 } },
-    { kind: 'sports', pos: B(0, 5, 4, 3), props: { follow: [{ type: 'team', league: 'eng.1', team: '359', name: 'Premier League' }, { type: 'league', league: 'nba', name: '' }], max: 3 }, style: { scale: 1.3 } },
-    { kind: 'stocks', pos: B(4, 5, 4, 3), props: { symbols: STOCKS, layout: 'list' } },
-    { kind: 'market', pos: B(8, 5, 4, 3), props: { coins: [{ id: 'solana', currency: 'usd' }, { id: 'ripple', currency: 'usd' }, { id: 'cardano', currency: 'usd' }, { id: 'dogecoin', currency: 'usd' }], layout: 'list', range: '7d', chart: 'line' }, style: { scale: 1.3 } },
+    { kind: 'clock.digital', pos: B(0, 0, 8, 4) },
+    { kind: 'news', pos: B(8, 0, 8, 4) },
+    { kind: 'weather.now', pos: B(16, 0, 8, 4) },
+    { kind: 'market', pos: B(0, 4, 12, 6), props: { coins: [{ id: 'bitcoin', currency: 'usd' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' }, style: { scale: 1.6 } },
+    { kind: 'market', pos: B(12, 4, 12, 6), props: { coins: [{ id: 'ethereum', currency: 'usd' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' }, style: { scale: 1.6 } },
+    { kind: 'sports', pos: B(0, 10, 8, 6), props: { follow: [{ type: 'team', league: 'eng.1', team: '359', name: 'Premier League' }, { type: 'league', league: 'nba', name: '' }], max: 3 }, style: { scale: 1.3 } },
+    { kind: 'stocks', pos: B(8, 10, 8, 6), props: { symbols: STOCKS, layout: 'list' } },
+    { kind: 'market', pos: B(16, 10, 8, 6), props: { coins: [{ id: 'solana', currency: 'usd' }, { id: 'ripple', currency: 'usd' }, { id: 'cardano', currency: 'usd' }, { id: 'dogecoin', currency: 'usd' }], layout: 'list', range: '7d', chart: 'line' }, style: { scale: 1.3 } },
   ],
 };
 

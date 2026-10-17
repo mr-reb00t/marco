@@ -204,7 +204,7 @@ export function haAdapter(cls: string, aliases: (p: Props) => string[], draw: (r
     layout(box) {
       // a box of its own much taller than wide (2×5): some cards show more under it (the climate's modes)
       const shape = box.zone === 'main' && box.h >= box.w * 1.8 ? 'tall' : '';
-      // a box one fine row high and two cells wide (#9, only the fine grid has it): drawn as the line, in portrait too
+      // a box one row high and two cells wide (#9): drawn as the line, in portrait too
       if (root.dataset.mini !== undefined && root.dataset.mh === '1' && Number(root.dataset.mw) <= 2) box = { ...box, size: 'row' };
       last = box;
       root.dataset.size = box.size;
@@ -230,7 +230,7 @@ export function haAdapter(cls: string, aliases: (p: Props) => string[], draw: (r
 }
 
 /**
- * A box one fine cell high that only the fine grid has (data-mini, widgets/canvas.ts miniMark): the card's one-line
+ * A box one cell high (the compact look, data-mini, widgets/canvas.ts miniMark): the card's one-line
  * look (the media player, the cover, the climate, the scenes, the gauge, the statistic).
  */
 export const miniLine = (root: HTMLElement): boolean => root.dataset.mini !== undefined && root.dataset.mh === '1';
@@ -316,7 +316,7 @@ function fitSensor(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
 }
 
 /**
- * The value and its unit inside the card in a narrow box (two fine cells wide): measured on the words themselves,
+ * The value and its unit inside the card in a narrow box (two cells wide): measured on the words themselves,
  * since the line they sit on is as wide as the card and never reads as too wide.
  */
 function valueInside(root: HTMLElement): void {
@@ -337,14 +337,14 @@ function valueInside(root: HTMLElement): void {
 }
 
 /**
- * A box drawn like the one-line size ('row') that is two fine cells high or more (4×2, 5×3, 8×3 on the fine grid):
- * the room of a small card, not of a line. The sensor keeps its own look there (the name, the value in big type and
- * today's curve), as it has at 4×4, so the curve never goes as the box gets wider.
+ * A box drawn like the one-line size ('row') that is three cells high or more (5×3, 8×3): the room of a small card,
+ * not of a line. The sensor keeps its own look there (the name, the value in big type and today's curve), as it has
+ * at 4×4, so the curve never goes as the box gets wider. Two rows high (the one-row size of the old 12×8 grid, 6×2
+ * now) it stays the line it always was.
  */
 function rowsOnFine(root: HTMLElement): boolean {
-  if (!root.closest('.cv-fine')) return false;
   const h = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[1]);
-  return h >= 2;
+  return h >= 3;
 }
 
 function sensorAdapter(): CanvasAdapter {
@@ -514,7 +514,7 @@ function mediaAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     }
     const txt = el('div', 'cv-ha-txt');
     // a small look in a box wider than the small size (4×2): the whole row of controls, as on the wide card
-    // one line (a box only the fine grid has): the art, the title and play or pause, as on the small card
+    // one line (a small box, the compact look): the art, the title and play or pause, as on the small card
     const line = miniLine(root);
     const size = line ? 's' : root.dataset.size === 's' && root.classList.contains('is-roomy') ? 'w' : root.dataset.size || 'w';
     const playing = !!(m && m.title && m.state !== 'off' && m.state !== 'idle' && m.state !== 'standby');
@@ -597,7 +597,7 @@ export const HA_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdap
     // rows in two columns when one does not hold them and the card is wide enough
     root.classList.remove('is-2col');
     const sc = Number(env.item().style?.scale) || 1;
-    // a box only the fine grid has: the tighter rows (styles-canvas-mini.css), each about 2.9 lines of text high
+    // a small box (the compact look): the tighter rows (styles-canvas-mini.css), each about 2.9 lines of text high
     if (root.dataset.mini !== undefined) {
       bigType(root, box, rows * 2.9 + (p.title ? 2.2 : 0), sc, 22);
       return;

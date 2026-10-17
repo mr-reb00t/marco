@@ -568,7 +568,7 @@ it back.
 ## Custom screens
 
 *Layout → Custom* lets you build a screen yourself. Pick a template (or *Copy my current design* to start from the one
-you have, or *Calendar only* for one big calendar), then drag cards from the palette onto a 12×8 grid (8×12 on a
+you have, or *Calendar only* for one big calendar), then drag cards from the palette onto a 24×16 grid (16×24 on a
 portrait screen): clocks, the month, the week, the agenda, the weather, photos, countdowns, the family cards, your
 Home Assistant devices, crypto, sports and stocks, a value you send from anywhere, or a bit of your own HTML.
 

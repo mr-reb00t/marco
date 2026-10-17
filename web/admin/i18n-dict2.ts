@@ -105,6 +105,7 @@ export const ROWS2: [string, string, string][] = [
   ['Configuración importada', 'Settings imported', 'Configuração importada'],
   ['Configuración importada: {list}', 'Settings imported: {list}', 'Configuração importada: {list}'],
   ['Configuración migrada al formato multipantalla', 'Settings migrated to the multi-screen format', 'Configuração migrada para o formato multi-ecrã'],
+  ['Pantallas personalizadas pasadas a la nueva cuadrícula (se ven igual)', 'Custom screens moved to the new grid (they look the same)', 'Ecrãs personalizados passados para a nova grelha (veem-se iguais)'],
   ['Contiene', 'Contains', 'Contém'],
   ['Contraseña cambiada', 'Password changed', 'Palavra-passe alterada'],
   ['Copia de seguridad creada', 'Backup created', 'Cópia de segurança criada'],

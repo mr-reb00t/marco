@@ -21,20 +21,20 @@ const B = (x: number, y: number, w: number, h: number) => ({ zone: 'main' as con
 export const SHOW_BENTO: Fixture = {
   canvas: { background: 'solid', color: '#000000', touch: true },
   items: [
-    { kind: 'clock.analog', pos: B(0, 0, 3, 3), props: { showDate: true }, style: { accent: '#ff9f0a' } },
-    { kind: 'photo', pos: B(3, 0, 6, 4), props: { fit: 'cover' } },
-    { kind: 'todo', pos: B(9, 0, 3, 6), props: { maxRows: 8 }, style: { surface: 'solid', color: '#123a2a', accent: '#4cd98a' } },
+    { kind: 'clock.analog', pos: B(0, 0, 6, 6), props: { showDate: true }, style: { accent: '#ff9f0a' } },
+    { kind: 'photo', pos: B(6, 0, 12, 8), props: { fit: 'cover' } },
+    { kind: 'todo', pos: B(18, 0, 6, 12), props: { maxRows: 8 }, style: { surface: 'solid', color: '#123a2a', accent: '#4cd98a' } },
     // one-line cards (the demo states go by domain and order: the first binary sensor is a closed door, the second
     // motion detected; the first light is on at 70 % in a warm white; the first thermostat is heating)
-    { kind: 'ha.sensor', pos: B(0, 3, 3, 1), props: { entity: 'binary_sensor.front_door', name: 'Front door' } },
-    { kind: 'ha.sensor', pos: B(0, 4, 3, 1), props: { entity: 'binary_sensor.hallway_motion', name: 'Hallway' }, style: { accent: '#8ab4ff' } },
-    { kind: 'ha.light', pos: B(0, 5, 3, 1), props: { entity: 'light.sofa_lamp', name: 'Sofa lamp' } },
-    { kind: 'ha.climate', pos: B(3, 4, 3, 2), props: { entity: 'climate.living_room', name: 'Living room' } },
+    { kind: 'ha.sensor', pos: B(0, 6, 6, 2), props: { entity: 'binary_sensor.front_door', name: 'Front door' } },
+    { kind: 'ha.sensor', pos: B(0, 8, 6, 2), props: { entity: 'binary_sensor.hallway_motion', name: 'Hallway' }, style: { accent: '#8ab4ff' } },
+    { kind: 'ha.light', pos: B(0, 10, 6, 2), props: { entity: 'light.sofa_lamp', name: 'Sofa lamp' } },
+    { kind: 'ha.climate', pos: B(6, 8, 6, 4), props: { entity: 'climate.living_room', name: 'Living room' } },
     // the next two events without the birthdays (football practice now, the school trip tomorrow)
-    { kind: 'calendar.next', pos: B(6, 4, 3, 2), props: { count: 2, sourceIds: ['c_fam', 'c_kids', 'c_hol', 'c_work'] }, style: { surface: 'solid', color: '#2c2a6b', accent: '#ffb340' } },
+    { kind: 'calendar.next', pos: B(12, 8, 6, 4), props: { count: 2, sourceIds: ['c_fam', 'c_kids', 'c_hol', 'c_work'] }, style: { surface: 'solid', color: '#2c2a6b', accent: '#ffb340' } },
     // a touch under 100 %: grown to its box the headline would otherwise end a pixel short and show an ellipsis
-    { kind: 'news', pos: B(0, 6, 8, 2), style: { scale: 0.96 } },
-    { kind: 'ha.media', pos: B(8, 6, 4, 2), props: { entity: 'media_player.kitchen', name: 'Kitchen speaker' }, style: { surface: 'solid', color: '#4a1f2c', accent: '#f4a261' } },
+    { kind: 'news', pos: B(0, 12, 16, 4), style: { scale: 0.96 } },
+    { kind: 'ha.media', pos: B(16, 12, 8, 4), props: { entity: 'media_player.kitchen', name: 'Kitchen speaker' }, style: { surface: 'solid', color: '#4a1f2c', accent: '#f4a261' } },
   ],
 };
 

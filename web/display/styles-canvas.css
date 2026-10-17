@@ -94,10 +94,10 @@
 /* "Densidad compacta": tighter gaps between the cards, less padding inside them and slightly smaller titles (the
    cards fit their content to the box as always; widgets/canvas.ts and the builder's geometry.ts read the same sizes) */
 .style-modern #app#app.preset-canvas.cv-dense { --cv-gap: 0.6rem; --cv-edge: 1.4rem; --cv-edge-x: 1.2rem; --cv-pad: 1rem 1.3rem; --cv-pad-none: 0.4rem; --cv-tpad: 1rem 1.3rem 0; --cv-tsize: 1.4rem; }
-/* "Cuadrícula fina": a card one fine row high (half a normal row, a line with an icon, a name and a state) keeps
-   little padding above and below; every box the normal grid also has looks exactly as before */
-.style-modern #app#app.preset-canvas.cv-fine .cv-item[data-cells$='x1'] { --cv-pad: 0.3rem 1.4rem; --cv-pad-none: 0.2rem 0.6rem; }
-.style-modern #app#app.preset-canvas.cv-fine.cv-dense .cv-item[data-cells$='x1'] { --cv-pad: 0.2rem 1rem; }
+/* a card one row high (a line with an icon, a name and a state) keeps little padding above and below; no box of a
+   screen made on the legacy grid is one row high, so those look exactly as before */
+.style-modern #app#app.preset-canvas .cv-item[data-cells$='x1'] { --cv-pad: 0.3rem 1.4rem; --cv-pad-none: 0.2rem 0.6rem; }
+.style-modern #app#app.preset-canvas.cv-dense .cv-item[data-cells$='x1'] { --cv-pad: 0.2rem 1rem; }
 
 /* ------------------------------------------------------------------------------- cards */
 #app.preset-canvas .cv-item { position: relative; display: flex; min-width: 0; min-height: 0; }

@@ -14,7 +14,7 @@ import { gesture } from './dnd';
 import { cellAt, cellBox, computeGeometry, inSide, mainBox, sideBox, sideIndexAt, sideTracks, type Box, type Geometry } from './geometry';
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, kindName } from './kinds';
 import {
-  addItem, applyBox, applyMain, boxCells, boxFor, fitSpan, gOf, grid, sizingOf, handleBox, itemOf, occupantsAt, placements, rangeOf, voidIds, readOnly, reorderSide, resize, resolveMain,
+  addItem, applyBox, applyMain, boxCells, boxFor, fitSpan, grid, sizingOf, handleBox, itemOf, occupantsAt, placements, rangeOf, voidIds, readOnly, reorderSide, resize, resolveMain,
   sideOf, sideStack, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
 } from './model';
 
@@ -94,8 +94,6 @@ export function Stage(props: {
   pin?: { item: string; card: string } | null;
 }) {
   const { cv, orient } = props;
-  // the canvas's grid ("Cuadrícula"): every cell below is one of its cells
-  const G = gOf(cv);
   // the frame is as large as the screen it stands for (its own text size, cells and fit), then scaled to the stage
   const W = props.frameSize?.w ?? (orient === 'portrait' ? 1080 : 1920);
   const H = props.frameSize?.h ?? (orient === 'portrait' ? 1920 : 1080);
@@ -208,7 +206,7 @@ export function Stage(props: {
       const p = !!d.portrait;
       const want = live.current.orient === 'portrait';
       if (p !== want) return;
-      setReported({ W: d.screen.w, H: d.screen.h, main: d.main, side: d.side, row: !!d.row, strip: null, grid: gOf(live.current.cv) });
+      setReported({ W: d.screen.w, H: d.screen.h, main: d.main, side: d.side, row: !!d.row, strip: null });
       const cr = new Set<string>(d.items.filter((x: any) => x && typeof x.id === 'string' && x.cramped === true).map((x: any) => x.id as string));
       setCramped((old) => (old.size === cr.size && [...cr].every((x) => old.has(x)) ? old : cr));
       const nb = new Set<string>(d.items.filter((x: any) => x && typeof x.id === 'string' && x.noBlur === true).map((x: any) => x.id as string));
@@ -230,8 +228,7 @@ export function Stage(props: {
     const r = reported;
     if (!r || r.W !== W || r.H !== H || !!r.side !== !!mine.side || (mine.side && r.row !== mine.row)) return mine;
     if (mine.side && r.side && Math.abs(r.side.w * r.side.h - mine.side.w * mine.side.h) > 0.08 * mine.side.w * mine.side.h) return mine;
-    // the cells of the canvas's own grid (a switch of Cuadrícula is drawn at once, before the frame reports again)
-    return { ...r, strip: mine.strip, grid: mine.grid };
+    return { ...r, strip: mine.strip };
   }, [cv, orient, reported, props.fontScale, W, H]);
 
   const pl = useMemo(() => placements(cv, orient), [cv, orient]);
@@ -249,8 +246,8 @@ export function Stage(props: {
   const voidsOf = (c: CanvasConfig) => voidIds(c, empty);
   /** Names of the cards on a box of the main grid (what is in the way of a drop). */
   const namesAt = (c: CanvasConfig, x: number, y: number, size: CellsBox | CanvasSize, except?: string) => {
-    const [w, h] = boxCells(size, orient, G);
-    const { cols: gc, rows: gr } = grid(orient, G);
+    const [w, h] = boxCells(size, orient);
+    const { cols: gc, rows: gr } = grid(orient);
     const cx = Math.min(Math.max(0, x), gc - w);
     const cy = Math.min(Math.max(0, y), gr - h);
     return occupantsAt(c, orient, cx, cy, w, h, except).map((id) => {
@@ -292,26 +289,26 @@ export function Stage(props: {
       if (!k.side) return { zone: 'side', index, ok: false };
       if (from?.zone === 'side') return { zone: 'side', index, ok: true };
       const size: CellsBox = from?.zone === 'main' ? from : { size: sz.def };
-      return { zone: 'side', index, ok: !!fitSpan(c, orient, spanForBox(size, orient, G), what.id) };
+      return { zone: 'side', index, ok: !!fitSpan(c, orient, spanForBox(size, orient), what.id) };
     }
     const cell = cellAt(geo, orient, px, py);
     if (!cell.inside) return null;
     const size: CellsBox | CanvasSize = from?.zone === 'main' ? from : from?.zone === 'side' ? sizeForSpan(sz, from.span) : sz.def;
-    const [w, h] = boxCells(size, orient, G);
+    const [w, h] = boxCells(size, orient);
     const g = what.grab && from?.zone === 'main' ? what.grab : { x: Math.floor(w / 2), y: Math.floor(h / 2) };
     const drop = resolveMain(c, orient, size, cell.x - g.x, cell.y - g.y, { id: what.id, at: cell, voids: voidsOf(c) });
     // a new card that does not fit there at its usual size goes in at the largest smaller box that does (any w×h
     // within its range, a named size first at the same area; it can be changed afterwards), as a tap on its palette
     // tile already does
     if (!drop && !from) {
-      const r = rangeOf(sz, orient, G);
+      const r = rangeOf(sz, orient);
       const smaller: [number, number, boolean][] = [];
       for (let w2 = r.minW; w2 <= Math.min(w, r.maxW); w2++) {
-        for (let h2 = r.minH; h2 <= Math.min(h, r.maxH); h2++) if (w2 * h2 < w * h) smaller.push([w2, h2, boxFor(sz, w2, h2, orient, G).w === undefined]);
+        for (let h2 = r.minH; h2 <= Math.min(h, r.maxH); h2++) if (w2 * h2 < w * h) smaller.push([w2, h2, boxFor(sz, w2, h2, orient).w === undefined]);
       }
       smaller.sort((a, b) => b[0] * b[1] - a[0] * a[1] || Number(b[2]) - Number(a[2]) || Math.abs(a[0] - a[1]) - Math.abs(b[0] - b[1]));
       for (const [w2, h2] of smaller) {
-        const z = boxFor(sz, w2, h2, orient, G);
+        const z = boxFor(sz, w2, h2, orient);
         const d = resolveMain(c, orient, z, cell.x - Math.floor(w2 / 2), cell.y - Math.floor(h2 / 2), { at: cell, voids: voidsOf(c) });
         if (d) return { zone: 'main', drop: d, cell, size: z, inWay: [] };
       }
@@ -327,8 +324,8 @@ export function Stage(props: {
         const label = tg.drop.swap ? t('Cambiar de sitio') : rp?.move.length ? t('Ocupa el sitio de una tarjeta vacía') : rp ? t('Sustituye el espacio vacío') : undefined;
         return { box: mainBox(geo, orient, { zone: 'main', ...tg.drop }), ok: true, label };
       }
-      const [w, h] = boxCells(tg.size, orient, G);
-      const { cols, rows } = grid(orient, G);
+      const [w, h] = boxCells(tg.size, orient);
+      const { cols, rows } = grid(orient);
       const label = tg.inWay.length ? `${t('No hay sitio para este tamaño')} · ${t('En ese hueco está: {names}', { names: tg.inWay.join(', ') })}` : t('No hay sitio para este tamaño');
       return { box: cellBox(geo, orient, Math.min(Math.max(0, tg.cell.x - Math.floor(w / 2)), cols - w), Math.min(Math.max(0, tg.cell.y - Math.floor(h / 2)), rows - h), w, h), ok: false, label };
     }
@@ -499,8 +496,8 @@ export function Stage(props: {
           setGhost({ box: cellBox(geo, orient, at.x, at.y, tw, th), ok: false, label: t('No hay sitio para este tamaño') });
           return;
         }
-        const [w, h] = boxCells(best, orient, G);
-        const r = rangeOf(sizingOf(it), orient, G);
+        const [w, h] = boxCells(best, orient);
+        const r = rangeOf(sizingOf(it), orient);
         // at the kind's edge the label says so
         const edge = tw > r.maxW || th > r.maxH ? ` · ${t('máximo')}` : tw < r.minW || th < r.minH ? ` · ${t('mínimo')}` : '';
         setGhost({ box: cellBox(geo, orient, at.x, at.y, w, h), ok: true, label: `${w}×${h}${edge}` });
@@ -509,8 +506,8 @@ export function Stage(props: {
         setGhost(null);
         setBusy(false);
         if (!want || at.zone !== 'main') return;
-        const [w0, h0] = boxCells(at, orient, G);
-        const [w1, h1] = boxCells(want, orient, G);
+        const [w0, h0] = boxCells(at, orient);
+        const [w1, h1] = boxCells(want, orient);
         if (w0 === w1 && h0 === h1) return;
         const r = applyBox(live.current.cv, orient, id, want);
         if (r.ok) live.current.commit(r, 'size');
@@ -556,7 +553,7 @@ export function Stage(props: {
 
   const order = tabOrder(cv, orient);
   const showCells = busy || !!props.placing;
-  const { cols, rows } = grid(orient, G);
+  const { cols, rows } = grid(orient);
   const sel = props.selected && pl.get(props.selected) ? props.selected : null;
   const selBox = sel ? boxOf(sel) : null;
   const selPos = sel ? pl.get(sel) : null;
@@ -565,7 +562,7 @@ export function Stage(props: {
     const p = pl.get(id);
     if (!p) return '';
     if (p.zone === 'side') return t(SPAN_LABEL[String(p.span)]);
-    const [w, h] = boxCells(p, orient, G);
+    const [w, h] = boxCells(p, orient);
     return p.w === undefined ? `${t(SIZE_LABEL[p.size])} · ${w}×${h}` : `${w}×${h}`;
   };
 

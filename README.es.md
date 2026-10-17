@@ -600,7 +600,7 @@ copia reciente la recupera.
 
 *Diseño → Personalizado* te deja montar la pantalla a tu gusto. Elige una plantilla (o *Copiar mi diseño actual* para
 partir del que ya tienes, o *Solo calendario* para un calendario grande) y arrastra tarjetas desde la paleta a una
-cuadrícula de 12×8 (8×12 en vertical): relojes, el mes, la semana, la agenda, el tiempo, fotos, cuentas atrás, las
+cuadrícula de 24×16 (16×24 en vertical): relojes, el mes, la semana, la agenda, el tiempo, fotos, cuentas atrás, las
 tarjetas de la familia, tus aparatos de Home Assistant, cripto, deportes y bolsa, un valor que envías desde donde
 quieras o un poco de HTML propio.
 

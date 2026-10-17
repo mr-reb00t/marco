@@ -14,14 +14,14 @@ const B = (x: number, y: number, w: number, h: number) => ({ zone: 'main' as con
 
 // arranged by hand for portrait (8×12); the landscape boxes keep the same story on a 12×8 screen
 const ITEMS: Raw[] = [
-  { kind: 'clock.digital', pos: B(0, 0, 4, 2), portrait: B(0, 0, 4, 2), props: { showDate: false } },
-  { kind: 'weather.now', pos: B(4, 0, 4, 2), portrait: B(4, 0, 4, 2), style: { scale: 1.1 } },
-  { kind: 'meals.today', pos: B(0, 2, 8, 3), portrait: B(0, 2, 8, 3) },
-  { kind: 'todo', pos: B(8, 0, 4, 6), portrait: B(0, 5, 4, 5), props: { maxRows: 12, showDone: true } },
-  { kind: 'calendar.agenda', pos: B(0, 5, 4, 3), portrait: B(4, 5, 4, 3), props: { days: 1, sourceIds: ['c_fam', 'c_kids', 'c_bday', 'c_work'] }, style: { scale: 1.15 } },
-  { kind: 'ha.gauge', pos: B(8, 6, 4, 2), portrait: B(0, 10, 4, 2), props: { entity: 'sensor.kitchen_timer', name: 'Oven timer', decimals: 0, min: 0, max: 45 }, style: { accent: '#7fd3ff' } },
-  { kind: 'ha.light', pos: B(4, 5, 4, 2), portrait: B(4, 8, 4, 2), props: { entity: 'light.kitchen_island', name: 'Island strip' } },
-  { kind: 'ha.light', pos: B(4, 7, 4, 1), portrait: B(4, 10, 4, 2), props: { entity: 'light.kitchen_pendants', name: 'Pendants', showState: false, row: 'brightness' } },
+  { kind: 'clock.digital', pos: B(0, 0, 8, 4), portrait: B(0, 0, 8, 4), props: { showDate: false } },
+  { kind: 'weather.now', pos: B(8, 0, 8, 4), portrait: B(8, 0, 8, 4), style: { scale: 1.1 } },
+  { kind: 'meals.today', pos: B(0, 4, 16, 6), portrait: B(0, 4, 16, 6) },
+  { kind: 'todo', pos: B(16, 0, 8, 12), portrait: B(0, 10, 8, 10), props: { maxRows: 12, showDone: true } },
+  { kind: 'calendar.agenda', pos: B(0, 10, 8, 6), portrait: B(8, 10, 8, 6), props: { days: 1, sourceIds: ['c_fam', 'c_kids', 'c_bday', 'c_work'] }, style: { scale: 1.15 } },
+  { kind: 'ha.gauge', pos: B(16, 12, 8, 4), portrait: B(0, 20, 8, 4), props: { entity: 'sensor.kitchen_timer', name: 'Oven timer', decimals: 0, min: 0, max: 45 }, style: { accent: '#7fd3ff' } },
+  { kind: 'ha.light', pos: B(8, 10, 8, 4), portrait: B(8, 16, 8, 4), props: { entity: 'light.kitchen_island', name: 'Island strip' } },
+  { kind: 'ha.light', pos: B(8, 14, 8, 2), portrait: B(8, 20, 8, 4), props: { entity: 'light.kitchen_pendants', name: 'Pendants', showState: false, row: 'brightness' } },
 ];
 
 export const PORTRAIT_LAYOUT: { canvas: Partial<CanvasConfig>; items: Raw[]; orientation: 'portrait' } = {

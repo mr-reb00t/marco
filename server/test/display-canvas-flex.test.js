@@ -110,14 +110,14 @@ describe('every card at boxes of its own size, in a browser', { skip: !chrome &&
     const bad = [];
     // [kind, box, a class the card takes there (or ''), the least share of the height its content takes]
     const CASES = [
-      ['family.members', '12x8', '', 0.3], ['family.members', '3x8', 'is-tall', 0.6],
-      ['family.rewards', '12x8', 'is-tiles', 0.4], ['family.rewards', '3x8', 'is-tall', 0.5],
-      ['family.points', '12x8', 'is-tiles', 0.4], ['meals.today', '12x8', 'is-tiles', 0.35], ['meals.today', '12x2', 'is-row', 0.4],
-      ['meals.week', '3x8', '', 0.5], ['birthdays', '12x8', '', 0.5], ['birthdays', '12x2', 'is-cols', 0.4], ['countdowns', '12x8', '', 0.5],
-      ['family.chores', '12x8', 'is-cols', 0.5], ['news', '12x8', 'is-big', 0.5], ['message', '12x8', '', 0.4], ['todo', '8x8', '', 0.5],
-      ['weather.now', '2x8', 'is-stack', 0.4], ['weather.hourly', '6x8', 'is-grid', 0.5], ['weather.forecast', '3x8', 'is-column', 0.5],
-      ['clock.world', '3x8', 'is-stack', 0.3], ['calendar.next', '2x6', 'is-stack', 0.2], ['date', '12x6', '', 0.5],
-      ['ha.tile', '2x4', 'is-tall', 0.5], ['ha.switch', '6x4', '', 0.35], ['ha.statistic', '8x6', '', 0.3], ['ha.media', '8x8', '', 0.25], ['market', '8x8', 'is-big', 0.5],
+      ['family.members', '24x16', '', 0.3], ['family.members', '6x16', 'is-tall', 0.6],
+      ['family.rewards', '24x16', 'is-tiles', 0.4], ['family.rewards', '6x16', 'is-tall', 0.5],
+      ['family.points', '24x16', 'is-tiles', 0.4], ['meals.today', '24x16', 'is-tiles', 0.35], ['meals.today', '24x4', 'is-row', 0.4],
+      ['meals.week', '6x16', '', 0.5], ['birthdays', '24x16', '', 0.5], ['birthdays', '24x4', 'is-cols', 0.4], ['countdowns', '24x16', '', 0.5],
+      ['family.chores', '24x16', 'is-cols', 0.5], ['news', '24x16', 'is-big', 0.5], ['message', '24x16', '', 0.4], ['todo', '16x16', '', 0.5],
+      ['weather.now', '4x16', 'is-stack', 0.4], ['weather.hourly', '12x16', 'is-grid', 0.5], ['weather.forecast', '6x16', 'is-column', 0.5],
+      ['clock.world', '6x16', 'is-stack', 0.3], ['calendar.next', '4x12', 'is-stack', 0.2], ['date', '24x12', '', 0.5],
+      ['ha.tile', '4x8', 'is-tall', 0.5], ['ha.switch', '12x8', '', 0.35], ['ha.statistic', '16x12', '', 0.3], ['ha.media', '16x16', '', 0.25], ['market', '16x16', 'is-big', 0.5],
     ];
     for (const [kind, box, cls, least] of CASES) {
       const cards = await look(`size:${kind}:${box}:landscape`, ROOM);
@@ -144,16 +144,16 @@ describe('every card at boxes of its own size, in a browser', { skip: !chrome &&
     const names = await look('size:ha.tile:xs:landscape', `[...document.querySelectorAll('.cv-ha-tile .cv-ha-txt')].map((t) => [!!t.querySelector('.cv-ha-state')?.textContent, getComputedStyle(t.querySelector('.cv-ha-name')).whiteSpace])`);
     assert.ok(names.length);
     for (const [state, ws] of names) assert.equal(ws, state ? 'nowrap' : 'normal');
-    // a line card in a narrow box (2×1): the name keeps more than a letter or two (the state goes under it)
+    // a line card in a narrow box (4×2, the old 2×1): the name keeps more than a letter or two (the state goes under it)
     for (const k of ['ha.sensor', 'ha.switch']) {
-      const shown = await look(`size:${k}:2x1:landscape`, `[...document.querySelectorAll('.cv-ha-tile .cv-ha-name')].map((n) => n.clientWidth / parseFloat(getComputedStyle(n).fontSize))`);
-      assert.ok(shown.length && shown.every((em) => em >= 3), `${k} 2×1: name ${shown.map((x) => x.toFixed(1)).join(', ')} em`);
+      const shown = await look(`size:${k}:4x2:landscape`, `[...document.querySelectorAll('.cv-ha-tile .cv-ha-name')].map((n) => n.clientWidth / parseFloat(getComputedStyle(n).fontSize))`);
+      assert.ok(shown.length && shown.every((em) => em >= 3), `${k} 4×2: name ${shown.map((x) => x.toFixed(1)).join(', ')} em`);
     }
     // the Interruptor in a box wider than its named size: the type grows a little
-    const grow = await look('size:ha.switch:4x2:landscape', `[...document.querySelectorAll('.cv-ha-switchcard')].map((b) => parseFloat(b.style.getPropertyValue('--cv-grow')) || 1)`);
+    const grow = await look('size:ha.switch:8x4:landscape', `[...document.querySelectorAll('.cv-ha-switchcard')].map((b) => parseFloat(b.style.getPropertyValue('--cv-grow')) || 1)`);
     assert.ok(grow.length && grow.every((g) => g > 1.1 && g <= 1.4), String(grow));
     // a light that is off: its colours dimmed; a lit one: full colour
-    const sw = await look('size:ha.light:6x2:landscape', `[...document.querySelectorAll('.cv-ha-light')].filter((b) => b.querySelector('.cv-swatch')).map((b) => [b.dataset.tone, parseFloat(getComputedStyle(b.querySelector('.cv-swatch')).opacity)])`);
+    const sw = await look('size:ha.light:12x4:landscape', `[...document.querySelectorAll('.cv-ha-light')].filter((b) => b.querySelector('.cv-swatch')).map((b) => [b.dataset.tone, parseFloat(getComputedStyle(b.querySelector('.cv-swatch')).opacity)])`);
     assert.ok(sw.some(([t]) => t === 'off') && sw.some(([t]) => t === 'on'), JSON.stringify(sw));
     for (const [t, o] of sw) assert.ok(t === 'off' ? o < 0.6 : o === 1, `${t}: ${o}`);
     // the thermostat at 150 %: every mode chip whole, the dial as large as at 100 %

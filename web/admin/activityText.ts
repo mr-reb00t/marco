@@ -87,6 +87,7 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
     case 'config.exported':
       return { icon: 'download', text: d.secrets ? t('Configuración exportada (con secretos)') : t('Configuración exportada') };
     case 'config.migrated':
+      if (d.canvasGrid && !d.from && !d.displayAccess) return { icon: 'wand', text: t('Pantallas personalizadas pasadas a la nueva cuadrícula (se ven igual)') };
       return d.from
         ? { icon: 'wand', text: t('Configuración migrada al formato multipantalla') }
         : { icon: 'wand', text: t('Instalación existente: pantallas en modo abierto (sin clave). Recomendado: enlaces privados.') };

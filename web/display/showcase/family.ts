@@ -21,17 +21,17 @@ const B = (x: number, y: number, w: number, h: number) => ({ zone: 'main' as con
 export const SHOW_FAMILY: { canvas: Partial<CanvasConfig>; items: Raw[]; orientation?: 'portrait' | 'landscape' } = {
   canvas: { background: 'solid', color: '#f3e9dd' },
   items: [
-    { kind: 'family.members', pos: B(0, 0, 5, 2), props: { memberIds: ['m_lucia', 'm_mateo', 'm_sofia'] } },
-    { kind: 'clock.digital', pos: B(5, 0, 3, 2), style: { color: '#ffe2cf' } },
-    { kind: 'weather.now', pos: B(8, 0, 4, 2), style: { scale: 1.3, color: '#2f74c9' } },
-    { kind: 'family.routines', pos: B(0, 2, 3, 4), props: { memberId: 'm_lucia' }, style: { scale: 0.85 } },
-    { kind: 'family.routines', pos: B(3, 2, 3, 4), props: { memberId: 'm_mateo' }, style: { scale: 0.8 } },
-    { kind: 'family.routines', pos: B(6, 2, 3, 4), props: { memberId: 'm_sofia' }, style: { scale: 0.95 } },
-    { kind: 'family.rewards', pos: B(9, 2, 3, 2), props: { max: 2 } },
-    { kind: 'countdowns', pos: B(9, 4, 3, 2), props: { max: 2 }, style: { scale: 1.2, color: '#fbefc6' } },
-    { kind: 'meals.week', pos: B(0, 6, 6, 2), props: { days: 5 } },
-    { kind: 'family.chores', pos: B(6, 6, 3, 2), props: { memberIds: ['m_mama', 'm_papa', 'm_abuela'] }, style: { scale: 0.9 } },
-    { kind: 'birthdays', pos: B(9, 6, 3, 2), props: { max: 3 }, style: { color: '#ffdbe6' } },
+    { kind: 'family.members', pos: B(0, 0, 10, 4), props: { memberIds: ['m_lucia', 'm_mateo', 'm_sofia'] } },
+    { kind: 'clock.digital', pos: B(10, 0, 6, 4), style: { color: '#ffe2cf' } },
+    { kind: 'weather.now', pos: B(16, 0, 8, 4), style: { scale: 1.3, color: '#2f74c9' } },
+    { kind: 'family.routines', pos: B(0, 4, 6, 8), props: { memberId: 'm_lucia' }, style: { scale: 0.85 } },
+    { kind: 'family.routines', pos: B(6, 4, 6, 8), props: { memberId: 'm_mateo' }, style: { scale: 0.8 } },
+    { kind: 'family.routines', pos: B(12, 4, 6, 8), props: { memberId: 'm_sofia' }, style: { scale: 0.95 } },
+    { kind: 'family.rewards', pos: B(18, 4, 6, 4), props: { max: 2 } },
+    { kind: 'countdowns', pos: B(18, 8, 6, 4), props: { max: 2 }, style: { scale: 1.2, color: '#fbefc6' } },
+    { kind: 'meals.week', pos: B(0, 12, 12, 4), props: { days: 5 } },
+    { kind: 'family.chores', pos: B(12, 12, 6, 4), props: { memberIds: ['m_mama', 'm_papa', 'm_abuela'] }, style: { scale: 0.9 } },
+    { kind: 'birthdays', pos: B(18, 12, 6, 4), props: { max: 3 }, style: { color: '#ffdbe6' } },
   ],
 };
 

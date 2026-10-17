@@ -4,6 +4,7 @@
 // other's drafts. Drafts older than 7 days are dropped, and every draft goes on sign-out. Storage may be missing or
 // full (private windows): every access is wrapped and the editor works without it.
 import type { CanvasConfig } from '../../shared/types';
+import { upgradeCanvasGrid } from '../../../server/core/canvasCore.js';
 
 /** A screen's orientation setting (screen.orientation). */
 export type ScreenOrientation = 'auto' | 'landscape' | 'portrait';
@@ -51,7 +52,8 @@ export function loadDraft(tenant: string | null | undefined, screenId: string, n
       s.removeItem(draftKey(tenant, screenId));
       return null;
     }
-    return d;
+    // a draft kept by an editor before 0.17, on the old 12×8 grid: on the grid of today, the same look
+    return { ...d, canvas: upgradeCanvasGrid(d.canvas) };
   } catch {
     return null;
   }

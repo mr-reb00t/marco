@@ -925,43 +925,41 @@ cells) and gets no states, values or data; a paused window does not count and no
 canvas block carries `next`, the ISO time a window of one of its items starts or ends next, and the display asks for
 its config again a few seconds after it. The schedule itself never reaches a display.
 
-**Sizes.** A Personalizado item on the main grid (12×8 cells on a landscape screen, 8×12 on a portrait one, twice as
-many on the fine grid: see *Grid and density*) has a
-position `{ zone: "main", x, y, size }` where `size` is a named size (`xs`, `s`, `m`, `w`, `t`, `l`, `xl`, `band`, `full`,
-`row`, `sq`; `CANVAS_SIZES` gives their cells per orientation). It may also carry its own `w` and `h`, whole cells
-from 1 to 12: then the box is `w`×`h` and `size` is the named size it is drawn like (the largest of its kind's sizes
-that fits in the box). Each kind has a range, `CANVAS_KINDS[kind].cells` = `[min w, min h, max w, max h]` in landscape
-cells, widened to hold its named sizes (`cellRange(kind, orientation)`: on a portrait screen at most 8 wide, and a
-kind that may take the whole height takes all 12 rows). Saving clamps a box to its kind's range (a warning), stores a
-box that is exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell
-(an error; the named size is used). Screens saved before keep their named sizes and look the same. The portrait view
-drawn from the landscape one keeps a box of its own (at most 8 wide) before it tries the named sizes. The display
-config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or `fill`).
+**Sizes.** A Personalizado item on the main grid (24×16 cells on a landscape screen, 16×24 on a portrait one;
+`CANVAS_GRID`, `gridDims(orientation)`) has a position `{ zone: "main", x, y, size }` where `size` is a named size
+(`xs`, `s`, `m`, `w`, `t`, `l`, `xl`, `band`, `full`, `row`, `sq`; `sizeCells(size, orientation)` gives their cells,
+`CANVAS_SIZES` holds them in cells of the old 12×8 grid, half as many each way). It may also carry its own `w` and `h`,
+whole cells from 1 to 24: then the box is `w`×`h` and `size` is the named size it is drawn like (the largest of its
+kind's sizes that fits in the box). Each kind has a range (`cellRange(kind, orientation)`): from its smallest box
+(`CANVAS_KINDS[kind].fine`, else twice the first two numbers of `CANVAS_KINDS[kind].cells`, which are written in old
+cells) to twice its largest, widened to hold its named sizes; on a portrait screen at most 16 wide, and a kind that may
+take the whole height takes all 24 rows. A box smaller than twice the kind's old smallest (`fullLookMin(kind,
+orientation)`) is drawn in a compact look. Saving clamps a box to its kind's range (a warning), stores a box that is
+exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell (an error; the
+named size is used). The portrait view drawn from the landscape one keeps a box of its own (at most 16 wide) before it
+tries the named sizes. The display config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or
+`fill`). A screen takes up to 48 cards (a Rotativa's cards count) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
+kind's own cap comes on top).
 
-**Grid and density.** A canvas may carry `grid` and `density`, both written only when they are not the default (a
-screen saved before has neither and is drawn exactly as before). `grid: "fine"` doubles the cells each way (24×16 on a
-landscape screen, 16×24 on a portrait one; `CANVAS_GRIDS`, `gridDims(orientation, grid)`): every `x`, `y`, `w` and `h`
-of the main grid is then in fine cells, a named size is twice its cells (`sizeCells(size, orientation, grid)`), and
-each kind's range is twice its normal one (`cellRange(kind, orientation, grid)`), except that some kinds may go smaller
-(`CANVAS_KINDS[kind].fine`, their smallest box in fine cells: a line card half a normal row high, a small block a
-quarter of a normal cell; a box smaller than the kind's normal smallest is drawn in a compact look). `w` and `h` are
-whole cells from 1 to 24. Sidebar spans are the same on both grids. A screen on the fine grid takes up to 48 cards and
-80 Home Assistant entities (`canvasLimits(grid)`: `CANVAS_LIMITS` 24 and 40, `CANVAS_LIMITS_FINE`); each kind's own cap
-is the same on both grids.
-`convertCanvasGrid(canvas, "fine" | "normal")` converts a canvas in both orientations: to the fine grid every position
-and box doubles; back to the normal one each box is halved to the nearest cells its kind allows and the cards are
-placed again with no overlap, and the answer lists the cards that `moved`, were `resized` or found no room (`lost`, and
-then `ok: false`; also `ok: false` with `over: "items"` or `"haEntities"` while the canvas has more cards or entities than
-the normal grid takes). `density: "compact"` draws the cards with tighter gaps, less padding and smaller titles. The display
-config carries both.
+**Grid and density.** Every canvas is on the 24×16 grid, and a saved one carries `grid: "fine"`. `grid` is deprecated:
+it is accepted on input for older clients and never changes the grid, but a canvas without it, or with `"normal"` (or
+any other value), is read as one saved before 0.17 on the old grid of 12×8 cells (8×12 portrait). Such a canvas is
+converted when it is read, by the validation (`sanitizeCanvas`, so every save, the config import and the screen file
+import), by the display projection (`projectCanvas`) and by `upgradeCanvasGrid(canvas)`: every `x`, `y`, `w` and `h`
+of the main grid is doubled, in both orientations (a portrait arranged by hand too), sidebar spans and everything else
+stay, so the screen looks exactly the same; it is saved with `grid: "fine"` from then on, and converting again changes
+nothing. A self-hosted server also rewrites its config file converted once at start, after a backup of the file as it
+was (`config-<time>-r<revision>-save.json`). `canvasLimits(grid)`, `CANVAS_LIMITS_FINE` and `canvasGrid(canvas)` are
+kept for older code and answer the one grid. `density: "compact"` (written only when chosen) draws the cards with
+tighter gaps, less padding and smaller titles. The display config carries both.
 
 **Rotativa.** The kind `rotator` (category *Contenido*, every edition, at most 4 per screen) is one slot that shows its
 cards one after another: `{ cards: [{ id, kind, props }], everySec, dots }`. `cards` holds 2 to 6 cards (at most 6;
 the editor keeps at least 2), each a kind of its own validated by that kind (`rotatorKindOk`: never another `rotator`,
 `spacer`, `heading` or a navigation card; a kind the server does not allow is refused, so on Marco Cloud no Home
 Assistant card); each card has an id like an item's, unique on the screen. `everySec` is 5 to 120 (default 10), `dots`
-a boolean (default true). The cards count towards the cards of a screen (24, 48 on the fine grid) and towards each kind's own
-cap, their entities towards the screen's (40, 80 on the fine grid), and the box of a Rotativa is kept within what all its cards allow
+a boolean (default true). The cards count towards the cards of a screen (48) and towards each kind's own
+cap, their entities towards the screen's (80), and the box of a Rotativa is kept within what all its cards allow
 (`kindFor(item)`). A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
 (`canvasCards(items)`), so a card inside gets its Home Assistant states under aliases of its own id (`<cardId>:<n>`),
 its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch

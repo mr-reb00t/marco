@@ -303,7 +303,7 @@ export function fitPeopleView(root: HTMLElement): void {
   }
   }
 
-// ---- the compact Today and Per person (a Personalizado card in a box only the fine grid has) ----------------------
+// ---- the compact Today and Per person (a Personalizado card in a small box, the compact look) ----------------------
 
 /** One line of an event: its time (none for an all-day one), its emoji and its title (ending in …). */
 function miniRow(e: NEvent, nowMs: number, cfg: DisplayConfig, tm = ''): string {
