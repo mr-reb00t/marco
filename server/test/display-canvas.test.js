@@ -598,10 +598,12 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
   });
 
   // the camera cards outside lite mode (in lite a picture comes every 10 s at the fastest)
-  async function openCams(q, ms) {
+  // `until`: on a slow machine, wait (up to 10 s more) until it is true
+  async function openCams(q, ms, until = '') {
     const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=cameras&lang=en&${q}`, { width: 1920, height: 1080 });
     try {
       await p.eval(`new Promise((r) => setTimeout(r, ${ms}))`);
+      for (let i = 0; until && i < 50 && !(await p.eval(until)); i++) await p.eval('new Promise((r) => setTimeout(r, 200))');
       const value = await p.eval(`(() => [...document.querySelectorAll('.cv-item[data-kind="ha.camera"]')].map((e) => {
         const b = e.querySelector('.cv-body');
         return { cls: b.className, empty: e.classList.contains('is-empty'), label: b.querySelector('.cv-cam-label').hidden ? '' : b.querySelector('.cv-cam-label').textContent,
@@ -616,7 +618,9 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
   }
 
   test('Cámara cards: a picture with its name, a whole picture, live falls back to pictures in the demo, the sensor hides one', async () => {
-    let { value: v, errors } = await openCams('', 1500);
+    // every card's first picture shown
+    const pictures = `[...document.querySelectorAll('.cv-item[data-kind="ha.camera"] .cv-body')].every((b) => b.classList.contains('has-frame') && [...b.querySelectorAll('.cv-cam-img.on')].some((i) => i.naturalWidth > 100))`;
+    let { value: v, errors } = await openCams('', 1500, pictures);
     assert.deepEqual(errors, []);
     assert.equal(v.length, 3);
     for (const c of v) {
