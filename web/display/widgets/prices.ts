@@ -204,6 +204,8 @@ export class PriceCard {
   private sig = '';
   /** the room ('WxH size') where the next-24-hours list had fewer than MIN_ROWS rows: the price now is drawn there */
   private nextTooSmall = '';
+  /** The room (roomKey) in which a Personalizado card's chart under the price had too little height: drawn behind it. */
+  private chartTooSmall = '';
   /**
    * The tall chart (rows) in this room: 2 with the price now and the lowest / average / highest, 1 without those
    * three figures, 0 with the price now in the header only; -1: not even then MIN_ROWS rows, the wide chart instead.
@@ -364,9 +366,19 @@ export class PriceCard {
     const k = this.place === 'full' ? 1.9 : SCALE[this.w.size] ?? 1;
     // the list: header, price, lowest / average / highest and at least MIN_ROWS hours
     const need = mode === 'nowchart' ? 22 : mode === 'chart' ? 16 : mode === 'next' ? 30 : mode === 'rows' ? 12 : 0;
-    if (this.place !== 'full' && need && this.maxH < need * rem * k) mode = 'now';
+    // (a Personalizado card too short for its chart under the price: the bars behind the price instead, "De fondo",
+    // so the chart stays on the card whichever style it has)
+    const inCanvas = !!this.el.parentElement?.classList.contains('uw-in-canvas');
+    let under = false;
+    if (this.place !== 'full' && need && this.maxH < need * rem * k) {
+      under = (mode === 'nowchart' || mode === 'chart') && inCanvas;
+      mode = under ? 'nowchart' : 'now';
+    } else if (inCanvas && (mode === 'nowchart' || mode === 'chart') && this.chartTooSmall === room) {
+      under = true;
+      mode = 'nowchart';
+    }
     if (mode === 'next' && this.place !== 'full' && this.nextTooSmall === this.roomKey()) mode = 'now';
-    const sig = JSON.stringify([this.data?.fetchedAt, this.data?.grid?.fetchedAt, this.data?.stale, this.failed, o, mode, this.rowsFit.level, this.maxW, this.maxH, this.w.name, this.w.size, ctx.lang, ctx.tz, this.backdrop, Math.floor(now / (o?.resolution === 'quarter' ? 900_000 : 3600_000))]);
+    const sig = JSON.stringify([this.data?.fetchedAt, this.data?.grid?.fetchedAt, this.data?.stale, this.failed, o, mode, this.rowsFit.level, this.maxW, this.maxH, this.w.name, this.w.size, ctx.lang, ctx.tz, this.backdrop, under, Math.floor(now / (o?.resolution === 'quarter' ? 900_000 : 3600_000))]);
     if (tick && sig === this.sig) return;
     this.sig = sig;
     const m = this.model(now);
@@ -392,7 +404,7 @@ export class PriceCard {
     const chart = mode === 'chart' || mode === 'nowchart' || mode === 'full';
     // "De fondo" (a Personalizado card): the bars behind the price now, from under it to the card's bottom edge, the
     // card as large as its box
-    const behind = this.backdrop && (mode === 'nowchart' || mode === 'full');
+    const behind = (this.backdrop || under) && (mode === 'nowchart' || mode === 'full');
     card.classList.toggle('pw--bg', behind);
     card.style.width = '';
     card.style.height = '';
@@ -795,6 +807,13 @@ export class PriceCard {
     if (!box.isConnected) return;
     const W = Math.floor(box.clientWidth);
     const H = Math.floor(box.clientHeight);
+    if (W >= 40 && H < 30 && this.el.parentElement?.classList.contains('uw-in-canvas') && this.chartTooSmall !== this.roomKey()) {
+      // the price took the height the chart had: behind the price instead (draw)
+      this.chartTooSmall = this.roomKey();
+      this.sig = '';
+      this.draw();
+      return;
+    }
     if (W < 40 || H < 30) return;
     const fs = parseFloat(getComputedStyle(box).fontSize) || 12;
     const bars = m.bars;

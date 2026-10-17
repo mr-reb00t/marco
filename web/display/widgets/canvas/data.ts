@@ -75,6 +75,23 @@ function rowBg(row: HTMLElement, pts: [number, number][], tone: string, area: bo
 }
 
 /**
+ * The sparklines of a list that no longer fit beside the name and the price: behind their rows instead (the chart
+ * stays on the card, as a "De fondo" row's does, only in the row's own height).
+ */
+function sparksBehind(root: HTMLElement): void {
+  for (const h of root.querySelectorAll<HTMLElement>(':is(.cv-mk-row, .cv-st-row) > .cv-mk-spark')) {
+    const row = h.parentElement as HTMLElement;
+    const s = h.querySelector('svg');
+    h.remove();
+    if (!s) continue;
+    const bg = el('div', 'cv-bgchart cv-dt-rowbg');
+    bg.appendChild(s);
+    row.classList.add('has-bgchart');
+    row.appendChild(bg);
+  }
+}
+
+/**
  * A list with its charts behind (each row a band): the text grows (up to `max` times) until it takes about half of
  * the shortest band, the other half left for the chart under it. Never so far that something is cut.
  */
@@ -342,7 +359,7 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     } else if (b.box) {
       const list = root.querySelector<HTMLElement>('.cv-mk-list');
       ladder(root, [
-        sideways(root, () => root.querySelectorAll('.cv-mk-spark').forEach((x) => x.remove())),
+        sideways(root, () => sparksBehind(root)),
         sideways(root, () => root.classList.add('no-name')),
         dropRow(root, list, '.cv-mk-row'),
         dkStep(root, 0.9), dkStep(root, 0.8), dkStep(root, 0.7),
@@ -425,7 +442,8 @@ function drawList(root: HTMLElement, coins: MarketCoinData[], chart: 'line' | 'a
     const val = el('div', 'cv-mk-val');
     val.append(el('b', 'cv-mk-p', fmtPrice(c.price, c.cur)), changeChip(c.ch));
     row.appendChild(val);
-    if (behind) rowBg(row, c.pts, trend(c.ch), chart === 'area');
+    // (a card too narrow for it beside the numbers: behind the row, never none)
+    if (behind || (chart !== 'none' && !withSpark)) rowBg(row, c.pts, trend(c.ch), behind && chart === 'area');
     list.appendChild(row);
   }
   root.classList.toggle('is-bg', behind);
@@ -434,8 +452,8 @@ function drawList(root: HTMLElement, coins: MarketCoinData[], chart: 'line' | 'a
 
 /**
  * The large card in its box: the price as big as the height allows, then, while something does not fit, the period
- * moves up beside the name as a small pill, the lowest and highest go, the price gets smaller, the chart goes, the
- * name goes (the badge keeps the symbol), smaller still.
+ * moves up beside the name as a small pill, the lowest and highest go, the price gets smaller, the chart under it
+ * moves behind it, the name goes (the badge keeps the symbol), smaller still.
  */
 function fitBig(root: HTMLElement, box: AdapterBox, scale: number): void {
   const wk0 = fitWidth(root, root.querySelector('.cv-mk-price'), bigType(root, box, 9, scale));
@@ -467,7 +485,13 @@ function fitBig(root: HTMLElement, box: AdapterBox, scale: number): void {
     },
     () => root.querySelector('.cv-mk-minmax')?.remove(),
     wk(0.85), wk(0.72),
-    () => root.querySelector('.cv-mk-chart')?.remove(),
+    // the band under the numbers goes, and its chart moves behind them (placeBg): it stays on the card
+    () => {
+      const band = root.querySelector('.cv-mk-chart');
+      if (!band) return;
+      band.remove();
+      root.classList.add('is-bg', 'has-bgchart');
+    },
     sideways(root, () => root.classList.add('no-name')),
     wk(0.6), wk(0.5), wk(0.4),
   ]);
@@ -499,7 +523,8 @@ function drawBig(root: HTMLElement, c: MarketCoinData | undefined, n: number, id
   root.append(head, line, changeChip(c.ch));
   const ys = c.pts.map((x) => x[1]);
   const tall = !box || box.h / box.rem >= 9;
-  if (chart !== 'none' && style === 'background' && c.pts.length >= 2) {
+  // a card too short for a band under the numbers draws its chart behind them, whichever style: never none
+  if (chart !== 'none' && (style === 'background' || !tall) && c.pts.length >= 2) {
     // behind the text: a band of room for it under the numbers where the card is tall enough (the chart itself is
     // drawn once the card is fitted, placeBg), the lowest and highest in the bottom corner
     root.classList.add('is-bg', 'has-bgchart');
@@ -790,7 +815,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       const list = root.querySelector<HTMLElement>('.cv-st-list');
       ladder(root, [
         sideways(root, () => root.querySelectorAll('.cv-mk-val.is-inline').forEach((x) => x.classList.remove('is-inline'))),
-        sideways(root, () => root.querySelectorAll('.cv-mk-spark').forEach((x) => x.remove())),
+        sideways(root, () => sparksBehind(root)),
         sideways(root, () => root.classList.add('no-name')),
         dropRow(root, list, '.cv-st-row'),
         dkStep(root, 0.9), dkStep(root, 0.8), dkStep(root, 0.7),
@@ -882,7 +907,8 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       const val = el('div', `cv-mk-val${!box || box.w / rem >= 30 ? ' is-inline' : ''}`);
       val.append(el('b', 'cv-mk-p', fmtPrice(q.price)), changeChip(q.ch));
       row.appendChild(val);
-      if (behind) rowBg(row, q.pts, trend(q.ch), true);
+      // (a card too narrow for it beside the numbers: behind the row, never none)
+      if (behind || (withSpark && !sp)) rowBg(row, q.pts, trend(q.ch), behind);
       list.appendChild(row);
     }
     root.classList.toggle('is-bg', behind);

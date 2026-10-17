@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- *Sensor* on the fine grid keeps its look (the name, the value in large type and today's curve) in boxes two or
+  three cells high, like 4×2, 5×3 or 8×3. Before, those boxes switched to the one-line look and the curve was gone,
+  while 4×4 still had it. Only a one-row line drops the curve now. A binary sensor is still drawn as a line.
+- Charts stay on the card at every size, in both chart styles. With *Below* and too little height for a band under the
+  numbers, the chart moves behind them instead of being left out: *Sensor*, the large *Crypto* card and the
+  electricity prices. In a narrow *Crypto* or *Stocks* list the sparklines move behind their rows instead of going.
+
 ## [0.16.3] - 2026-10-17
 
 ### Changed

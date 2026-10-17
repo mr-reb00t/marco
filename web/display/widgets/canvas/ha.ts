@@ -300,15 +300,16 @@ function sparkline(root: HTMLElement, h: HaHistory | null, decimals: number, int
 
 /**
  * The value of a sensor as large as its box allows. With its curve in a band under it, the value is sized for the
- * upper 60 % of the card; a band then left with less than a fifth of the card's height goes, and the value is sized
- * again for the whole card.
+ * upper 60 % of the card; a band then left with less than a fifth of the card's height moves behind the value (the
+ * "De fondo" look), so the curve stays, and the value is sized again for the whole card.
  */
 function fitSensor(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
   const size = (band: boolean) => fitWidth(root, root.querySelector('.cv-ha-sfoot'), bigType(root, box, band ? 11.5 / 0.6 : 11.5, Number(env.item().style?.scale) || 1, 14, typeCap(root)));
   const band = root.querySelector<HTMLElement>(':scope > .cv-ha-band');
   size(!!band);
   if (band && (band.clientHeight < Math.max(box.rem * 2.6, root.clientHeight * 0.2) || root.scrollHeight > root.clientHeight + 1)) {
-    band.remove();
+    band.className = 'cv-bgchart cv-ha-spark';
+    root.classList.add('has-bgchart');
     size(false);
   }
   valueInside(root);
@@ -335,6 +336,17 @@ function valueInside(root: HTMLElement): void {
   }
 }
 
+/**
+ * A box drawn like the one-line size ('row') that is two fine cells high or more (4×2, 5×3, 8×3 on the fine grid):
+ * the room of a small card, not of a line. The sensor keeps its own look there (the name, the value in big type and
+ * today's curve), as it has at 4×4, so the curve never goes as the box gets wider.
+ */
+function rowsOnFine(root: HTMLElement): boolean {
+  if (!root.closest('.cv-fine')) return false;
+  const h = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[1]);
+  return h >= 2;
+}
+
 function sensorAdapter(): CanvasAdapter {
   // today's curve: kept between draws, asked for again when the item changes or every 5 minutes
   let hist: HaHistory | null = null;
@@ -346,7 +358,7 @@ function sensorAdapter(): CanvasAdapter {
     // the one-line size, and a binary sensor at any size (motion, a door, water): drawn like an Entidad card, the
     // icon in its state colour, the name, what it says and when it changed
     const st0 = env.ha.state(aliasOf((env.item().props as Props).entity));
-    const tileLike = root.dataset.size === 'row' || st0?.d === 'binary';
+    const tileLike = (root.dataset.size === 'row' && !rowsOnFine(root)) || st0?.d === 'binary';
     root.classList.toggle('cv-ha-tile-card', tileLike);
     if (tileLike) return drawTile(root, env);
     const it = env.item();
