@@ -5,6 +5,29 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- Smaller cards on the fine grid (#9). Screens saved before look exactly the same: only new, smaller boxes are allowed.
+  - *Entity*, *Light*, *Switch*, *Climate*, *Blind* and *Sensor* now go down to 2×1 fine cells (they stopped at 4×1,
+    3×1 for *Blind*). At 3×1 the card keeps its icon, name and state on one line. At 2×1 the icon is left out and the
+    name sits over the state, in the same type size as a wider card, so it still reads from across the room.
+  - *Weather now* in a box of 3×3 fine cells or more shows what the bigger card shows (the sky, today's high and
+    low, the place, feels like, humidity and wind) in smaller type, instead of only the icon, the temperature and the
+    sky. When something does not fit it is left out in this order: the place, the labels, the high and low, the
+    details.
+- A line card (*Entity*, *Light*, *Switch*, *Climate*, *Sensor*) in a box narrower than its usual line, like 4×2 on
+  the fine grid or 2×1 on the normal grid, puts the name over the state and takes its type size from the height, so
+  it is as large as on a full line. Before, the type got smaller with the width, and every card of that size took the
+  size of the one with the longest name. Lines of the usual width or wider look the same as before.
+- *Blind* in a box only the fine grid has, two cells high (3×2, 4×2): drawn as the line, with its name and state in
+  readable type and up and down at its end when there is room (from 4×2). Before, the buttons filled the card and the
+  name was tiny. Where the buttons do not fit, a tap on the card opens or closes the blind, as before.
+
+### Fixed
+- Home Assistant cards of the same type and size share one type size, so they line up. A card with its own *Text
+  size* (say 70 %) no longer makes the others smaller, and a *Blind* line with its buttons no longer shrinks the
+  lights next to it.
+- Tests: the camera card test waits for the first picture instead of a fixed time (it failed on a slow CI runner).
+
 ## [0.16.2] - 2026-10-17
 
 ### Added

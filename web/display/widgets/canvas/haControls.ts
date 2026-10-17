@@ -365,13 +365,17 @@ function shutter(alias: string, pos: number, lv: boolean): HTMLElement {
  * takes (up, stop, down) at every size: on the Mini alone in one row, on the small one under a wide position slider,
  * from the medium one up beside a shutter that shows and sets the position. Without touch the position only.
  */
+/** A Persiana in a box only the fine grid has, one or two cells high: drawn as the line (its buttons below leave the name too small). */
+const coverLine = (root: HTMLElement): boolean => root.dataset.mini !== undefined && Number(root.dataset.mh) <= 2;
+
 function drawCover(root: HTMLElement, env: AdapterEnv): void {
   const p = env.item().props as Props;
   const alias = aliasOf(p.entity);
   const s = env.ha.state(alias);
   const cv = s?.d === 'cover' ? s : null;
-  // one line (a box only the fine grid has): the Entidad card's line, with up and down at its end
-  const line = miniLine(root);
+  // one line (a box only the fine grid has, one or two cells high): the Entidad card's line, with up and down at
+  // its end (two cells high: the name over the state, larger, #9)
+  const line = coverLine(root);
   root.classList.toggle('cv-ha-tile-card', line);
   if (line) {
     root.dataset.size = 'row';
@@ -489,7 +493,7 @@ export const HA_CONTROL_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Ca
     }
   }),
   'ha.cover': () => haAdapter('cv-ha-ctl-card cv-ha-cover', (p) => [aliasOf(p.entity)].filter(Boolean), drawCover, (root, box, env) => {
-    if (miniLine(root)) return fitTile(root, { ...box, size: 'row' }, env);
+    if (coverLine(root)) return fitTile(root, { ...box, size: 'row' }, env);
     fitBy((z) => (z === 'xs' ? 13 : z === 'm' ? 13 : 12), 22)(root, box, env);
     if (box.size !== 'row') growToFill(root, 1.4, scaleOf(env));
   }),

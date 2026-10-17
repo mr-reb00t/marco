@@ -84,16 +84,18 @@ test('fine grid: twice the cells each way, every named size and range twice as m
       for (const s of CANVAS_KINDS[kind].sizes) assert.ok(boxAllowed(kind, ...sizeCells(s, o, 'fine'), o, 'fine'), `${kind} ${s} ${o}`);
     }
   }
-  // the line cards (Entidad, Interruptor, Sensor, Luz) half as high as today's 2×1, still readable (browser sweep)
-  for (const kind of ['ha.tile', 'ha.switch', 'ha.sensor', 'ha.light']) {
+  // the line cards (Entidad, Interruptor, Sensor, Luz, Clima, Persiana) half as high as today's 2×1 and down to two
+  // cells wide (#9), still readable (browser sweep)
+  for (const kind of ['ha.tile', 'ha.switch', 'ha.sensor', 'ha.light', 'ha.climate', 'ha.cover']) {
     assert.ok(boxAllowed(kind, 4, 1, 'landscape', 'fine'), `${kind} 4×1 fine`);
-    assert.equal(boxAllowed(kind, 3, 1, 'landscape', 'fine'), false, `${kind} 3×1 fine is too narrow`);
-    assert.ok(boxAllowed(kind, 2, 1), `${kind} 2×1 normal as before`);
+    assert.ok(boxAllowed(kind, 2, 1, 'landscape', 'fine'), `${kind} 2×1 fine`);
+    assert.equal(boxAllowed(kind, 1, 1, 'landscape', 'fine'), false, `${kind} 1×1 fine is too narrow`);
+    if (kind !== 'ha.cover') assert.ok(boxAllowed(kind, 2, 1), `${kind} 2×1 normal as before`);
   }
   // a box exactly twice a named size is stored as the name, as on the normal grid
   assert.deepEqual(boxOf('todo', 6, 8, 'landscape', 'fine'), { size: 't' });
   assert.deepEqual(boxOf('ha.tile', 4, 1, 'landscape', 'fine'), { size: 'row', w: 4, h: 1 });
-  assert.deepEqual(boxOf('ha.tile', 1, 1, 'landscape', 'fine'), { size: 'row', w: 4, h: 1 }, 'clamped to the fine minimum');
+  assert.deepEqual(boxOf('ha.tile', 1, 1, 'landscape', 'fine'), { size: 'row', w: 2, h: 1 }, 'clamped to the fine minimum');
   assert.deepEqual(posCells({ size: 'm' }, 'landscape', 'fine'), [8, 6]);
 });
 
@@ -456,7 +458,8 @@ test('builder: Cuadrícula converts with one undo step, the fine grid takes the 
   const small = M.setCells(c, 'landscape', id, 4, 1);
   assert.ok(small.ok);
   assert.deepEqual(M.boxCells(M.placements(small.cv, 'landscape').get(id), 'landscape', 'fine'), [4, 1]);
-  assert.equal(M.setCells(c, 'landscape', id, 3, 1).ok, false, 'not under the fine minimum');
+  assert.ok(M.setCells(c, 'landscape', id, 2, 1).ok, 'two cells wide (#9)');
+  assert.equal(M.setCells(c, 'landscape', id, 1, 1).ok, false, 'not under the fine minimum');
   assert.deepEqual(M.handleBox(small.cv, 'landscape', id, 30, 0.2), M.boxFor('ha.tile', 12, 1, 'landscape', 'fine'), 'the handle stops at the range');
   // the overlay's cells: 24 columns over the same screen
   const g = G.computeGeometry(up.cv, 'landscape');

@@ -197,10 +197,12 @@ const overflows = (root: HTMLElement): boolean => root.scrollHeight > root.clien
  * fills the height, and gets smaller until the line fits; the sky goes first when it would read as a stub.
  */
 function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
-  root.classList.remove('is-stack', 'is-big', 'is-centred', 'no-cond');
+  root.classList.remove('is-stack', 'is-big', 'is-centred', 'no-cond', ...RICH);
   const h = box.h / box.rem;
   const stack = h >= 9 && box.h > box.w * 0.55;
   root.classList.toggle('is-mstack', stack);
+  // a block three fine cells or more each way (#9): what the larger card shows, in smaller type
+  if (stack && Number(root.dataset.mw) >= 3 && Number(root.dataset.mh) >= 3 && miniRich(root, box, scale)) return;
   let wk = Math.min(2.4, Math.max(0.4, h / (stack ? 10.4 : 7.2))) * scale;
   root.style.setProperty('--wk', wk.toFixed(3));
   const cond = root.querySelector<HTMLElement>('.cv-wx-cond');
@@ -209,6 +211,36 @@ function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
     wk *= 0.92;
     root.style.setProperty('--wk', wk.toFixed(3));
   }
+}
+
+const RICH = ['is-mrich', 'm-noloc', 'm-nohl', 'm-nolabel', 'm-nometa'];
+/** What a block leaves out, one step at a time, until it fits: the place, the high and low, the labels, the details. */
+const RICH_STEPS = [[], ['m-noloc'], ['m-noloc', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nometa']];
+
+/**
+ * Tiempo ahora in a block only the fine grid has: the icon and the temperature over the sky, the high and low, the
+ * place and the details, like the card a size up, with type from the height made smaller until it fits; when it does
+ * not fit at a size that still reads, the place goes, then the labels, the high and low and the details. False when
+ * even the sky with the details does not fit (the small block of miniNow then).
+ */
+function miniRich(root: HTMLElement, box: AdapterBox, scale: number): boolean {
+  const h = innerH(root, box);
+  const floor = 0.62 * Math.min(1, scale);
+  const lines = '.cv-wx-cond, .cv-wx-hl, .cv-wx-loc';
+  const fits = () => !overflows(root) && ![...root.querySelectorAll<HTMLElement>(lines)].some(isCut);
+  for (const step of RICH_STEPS) {
+    root.classList.remove(...RICH);
+    root.classList.add('is-mrich', ...step);
+    let wk = Math.min(1.8, Math.max(floor, h / 14)) * scale;
+    root.style.setProperty('--wk', wk.toFixed(3));
+    for (let i = 0; i < 20 && !fits() && wk > floor; i++) {
+      wk = Math.max(floor, wk * 0.93);
+      root.style.setProperty('--wk', wk.toFixed(3));
+    }
+    if (fits()) return true;
+  }
+  root.classList.remove(...RICH);
+  return false;
 }
 
 /**

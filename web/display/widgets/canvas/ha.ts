@@ -110,7 +110,12 @@ function share(root: HTMLElement, box: AdapterBox, kind: string): void {
   const ownGrow = parseFloat(root.style.getPropertyValue('--cv-grow')) || 1;
   // (a sensor with its curve in a band under the value is sized for less height: a family of its own)
   const band = root.querySelector(':scope > .cv-ha-band') ? '|band' : '';
-  const key = `${root.classList.contains('cv-ha-tile-card') ? 'tile' : kind}${band}|${box.zone}|${Math.round(box.w)}x${Math.round(box.h)}`;
+  // (a line with buttons at its end, a Persiana's up and down or a climate's − +, leaves its words less room: a
+  // family of its own too, so it never makes the lights beside it smaller)
+  const btns = root.querySelector('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line') ? '|btns' : '';
+  // (and a card with a text size of its own is never matched with the others: its own size is what was asked for)
+  const scale = parseFloat(root.style.getPropertyValue('--cv-scale')) || 1;
+  const key = `${root.classList.contains('cv-ha-tile-card') ? 'tile' : kind}${band}${btns}|${scale}|${box.zone}|${Math.round(box.w)}x${Math.round(box.h)}`;
   const old = sharedKey.get(root);
   if (old && old !== key) shared.get(old)?.delete(root);
   sharedKey.set(root, key);
@@ -199,6 +204,8 @@ export function haAdapter(cls: string, aliases: (p: Props) => string[], draw: (r
     layout(box) {
       // a box of its own much taller than wide (2×5): some cards show more under it (the climate's modes)
       const shape = box.zone === 'main' && box.h >= box.w * 1.8 ? 'tall' : '';
+      // a box one fine row high and two cells wide (#9, only the fine grid has it): drawn as the line, in portrait too
+      if (root.dataset.mini !== undefined && root.dataset.mh === '1' && Number(root.dataset.mw) <= 2) box = { ...box, size: 'row' };
       last = box;
       root.dataset.size = box.size;
       if (shape) root.dataset.shape = shape;
@@ -303,6 +310,28 @@ function fitSensor(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
   if (band && (band.clientHeight < Math.max(box.rem * 2.6, root.clientHeight * 0.2) || root.scrollHeight > root.clientHeight + 1)) {
     band.remove();
     size(false);
+  }
+  valueInside(root);
+}
+
+/**
+ * The value and its unit inside the card in a narrow box (two fine cells wide): measured on the words themselves,
+ * since the line they sit on is as wide as the card and never reads as too wide.
+ */
+function valueInside(root: HTMLElement): void {
+  const big = root.querySelector<HTMLElement>('.cv-ha-big');
+  if (!big || !root.clientWidth) return;
+  const cs = getComputedStyle(root);
+  const r0 = root.getBoundingClientRect();
+  const left = r0.left + (parseFloat(cs.paddingLeft) || 0);
+  const right = r0.right - (parseFloat(cs.paddingRight) || 0);
+  for (let i = 0; i < 4; i++) {
+    const range = document.createRange();
+    range.selectNodeContents(big);
+    const w = range.getBoundingClientRect();
+    if (w.right <= right + 0.5 || w.width <= 0) return;
+    const wk = parseFloat(root.style.getPropertyValue('--wk')) || 1;
+    root.style.setProperty('--wk', Math.max(0.3, (wk * (right - left)) / (w.right - left) * 0.97).toFixed(3));
   }
 }
 

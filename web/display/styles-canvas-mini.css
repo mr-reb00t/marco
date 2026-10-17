@@ -87,6 +87,19 @@
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].no-cond .cv-wx-side { display: none; }
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack { flex-direction: column; gap: calc(0.3rem * var(--wk, 1)); }
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mstack .cv-wx-side { max-width: 100%; align-items: center; }
+/* ... and in a block three fine cells or more each way (miniRich): the high and low, the place and the details as well,
+   smaller, each left out in turn when it does not fit (m-noloc, m-nolabel, m-nohl, m-nometa) */
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich { gap: calc(0.5rem * var(--wk, 1)); text-align: center; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich .cv-wx-side { gap: 0; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich .cv-wx-temp { font-size: calc(4.6rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich .cv-wx-icon svg { width: calc(4.2rem * var(--wk, 1)); height: calc(4.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich :is(.cv-wx-hl, .cv-wx-loc) { display: block; max-width: 100%; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich .cv-wx-meta { display: flex; justify-content: center; max-width: 100%; gap: calc(0.3rem * var(--wk, 1)) calc(1rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.no-hl .cv-wx-hl,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-nohl .cv-wx-hl,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-noloc .cv-wx-loc,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-nometa .cv-wx-meta,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-nolabel .cv-wx-meta em { display: none; }
 
 /* Por horas and Previsión: a strip of small hours or days (miniStrip) */
 #app.preset-canvas .cv-body:is(.cv-wx-hourly, .cv-wx-forecast)[data-mini] { gap: 0; }
@@ -260,6 +273,8 @@
 #app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots i { width: 0.5rem; height: 0.5rem; }
 
 /* ---- Casa (Home Assistant) ---- */
+/* the line two fine cells wide (haTile.ts fitTile): the name over the state, no icon */
+#app.preset-canvas .cv-ha-tile-card.is-mnarrow[data-mini] .cv-ha-tile > .cv-ha-ico, #app.preset-canvas .cv-ha-tile-card.no-lico .cv-ha-tile > .cv-ha-ico { display: none; }
 /* the media player on one line: the art as high as the card, the title and where it plays, play or pause at the end */
 #app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player { gap: 0.7em; }
 #app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-art { width: 100cqh; height: 100cqh; border-radius: 0.6em; }

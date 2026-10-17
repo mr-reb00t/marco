@@ -317,7 +317,15 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
   const tall = root.dataset.room !== undefined && box.zone === 'main' && box.size !== 'row' && box.h > box.w * 1.05;
   root.classList.toggle('is-tall', tall);
   const nominal = tall ? 13 + rowsFor(box.size) * 5.6 : box.size === 'xs' ? 9.5 : box.size === 'row' ? 4.5 : 5.5 + Math.max(1, rowsFor(box.size)) * 5.6;
-  let wk = bigType(root, box, nominal, scaleOf(env), tall ? 12 : box.size === 'xs' ? 11 : box.size === 'row' ? 22 : 24, typeCap(root));
+  // the line two fine cells wide (#9): no icon, the name over the state, the type from the height as on a wider line
+  const narrow = box.size === 'row' && root.dataset.mini !== undefined && Number(root.dataset.mw) <= 2;
+  root.classList.toggle('is-mnarrow', narrow);
+  // a line much narrower than its height wants (4×2 on the fine grid, 2×1 on the normal one): the name over the
+  // state, the type from the height, the same for every card of that box whatever its name (#9)
+  const deep = !narrow && box.size === 'row' && box.zone === 'main' && box.w / 22 < (box.h / nominal) * 0.8 && belowRow(root);
+  let wk = deep
+    ? bigType(root, box, 6.8, scaleOf(env), 14, typeCap(root))
+    : bigType(root, box, nominal, scaleOf(env), tall ? 12 : box.size === 'xs' ? 11 : box.size === 'row' ? (narrow ? 11 : 22) : 24, typeCap(root));
   const over = () => root.scrollHeight > root.clientHeight + 1;
   if (!root.clientHeight) return;
   const wk0 = wk;
@@ -351,21 +359,44 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
   smaller(0.5);
   // the line of a cover: up and down only while the name keeps a word or so beside them
   const lb = box.size === 'row' ? root.querySelector<HTMLElement>('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line') : null;
+  // the stacked line with buttons at its end: the icon gives the name its room, so the buttons can stay
+  root.classList.toggle('no-lico', deep && !!lb);
   if (lb) {
     const name = root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-name');
     const em = name ? parseFloat(getComputedStyle(name).fontSize) || 16 : 16;
-    if (name && name.scrollWidth > name.clientWidth + 1 && name.clientWidth < em * 5) {
+    // the stacked line: by the room beside the buttons (not by the name), so every card of a box looks the same
+    const txt = root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-txt');
+    const short = deep ? !!txt && txt.clientWidth < em * 4.5 : !!name && name.scrollWidth > name.clientWidth + 1 && name.clientWidth < em * 5;
+    if (short) {
       lb.remove();
+      root.classList.remove('no-lico');
       smaller(0.5);
     }
   }
   // the line in a narrow box (2×1): when the state leaves the name only a letter or two, the state goes under the
   // name instead of beside it, so the name reads
-  if (box.size === 'row') stackLine(root, () => smaller(0.5));
+  if (narrow || deep) {
+    if (narrow) root.querySelector('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line')?.remove();
+    root.classList.toggle('is-stack', !!root.querySelector('.cv-ha-tile .cv-ha-state')?.textContent);
+    smaller(0.5);
+    if (deep) return;
+  } else if (box.size === 'row') stackLine(root, () => smaller(0.5));
   // a narrow box of its own (two cells of a wide sidebar): the type a little smaller until the name reads, since
   // the icon beside it grows with the type and leaves the name a letter or two
   else if (narrowName(root, wk)) return;
   growToFill(root, root.dataset.room !== undefined ? 2.2 : 1.4, scaleOf(env));
+}
+
+/**
+ * True when the card's box is fewer cells wide than the line's own size (3 of 12 columns, 4 of 8 in portrait; twice
+ * that on the fine grid): only such boxes take the stacked line, so a line of its own size looks as it always did.
+ */
+function belowRow(root: HTMLElement): boolean {
+  const w = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[0]);
+  const grid = root.closest<HTMLElement>('#canvas');
+  if (!w || !grid) return false;
+  const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+  return w < (cols % 12 === 0 ? cols / 4 : cols / 2);
 }
 
 /**
