@@ -120,7 +120,9 @@ transparency, blur and a light edge:
 - **Automatic emoji:** 🎂 birthdays, ✈️ flights, 🩺 doctor, 🎒 school, ⚽ sports, 🍽️ dinners, 💼 meetings, 🏖️
   holidays, 🚗 car, 🐾 vet and more, from editable keyword rules (35 categories with about 800 keywords in English,
   Spanish, Portuguese, Dutch and Danish out of the box).
-- **Birthdays with age:** "🎂 Grandma Isabel (72)", from a birthdays calendar or entered in the admin.
+- **Birthdays with age:** "🎂 Grandma Isabel (72)", from a birthdays calendar or entered in the admin. Titles
+  from your calendars are tidied to just the name ("Astrid's Birthday" shows as "🎂 Astrid"); turn off *Tidy birthday
+  titles* to keep them as they are.
 - **Vacation-rental feeds** (Airbnb "Reserved", Booking, or property-management tools that publish titles like
   `🏠 Guest - 4p+1m` and `Adults/Children/Infants` description lines): check-in → check-out bars across the days,
   guests as 🧑🏻🧒🏻👶🏻🐶 icons, 🚪 check-outs, "Check-in today" highlights and blocked dates you can hide.
@@ -130,6 +132,7 @@ transparency, blur and a light edge:
   [Open-Meteo](https://open-meteo.com/) (no API key, with a choice of forecast model: ECMWF, DWD ICON, NOAA GFS,
   Météo-France, UK Met Office and more), [MET Norway](https://api.met.no/) (no API key) or
   [Pirate Weather](https://pirateweather.net/) (your own free key). The screens credit the source in small type.
+  Each screen can show the weather of its own place, and a Custom screen can show several places at once.
   Add your own [Home Assistant](https://www.home-assistant.io/) weather entity and indoor sensors; animated rain/snow, or an optional
   realistic effect with drops on the glass, layered snow and sun rays on clear days (the photo is never blurred).
 - **News ticker** from any RSS/Atom feed, a to-do list and a message of the day.
@@ -577,6 +580,13 @@ what each kind of card can show well. Pull the corner handle to resize it; a tag
 drag, and cards never overlap. Set its content, size and look (glass, a solid colour or no card) in the panel on the
 right. *Preview* shows the real screen before you save, and *Cancel* leaves it as it was.
 
+Cards can also be very small. Nearly every card has a compact look for a tiny box: a light, a switch or a sensor on
+one line, the clock or the next event as a strip, the forecast as a row of icons, a sparkline for a chart. A screen
+takes up to 48 cards, and *Density → Compact* puts them closer together, for the dense dashboards people bring over
+from Home Assistant.
+
+![A dense Custom screen in Compact density: the clock in a warm colour, the date, a rotating weather card, birthdays, countdowns, the weather in five places along the top, and Living room, Kitchen and Outside with lights, thermostat, music, blinds, sensors with their curves, a gauge, energy, a chart, a camera, scenes and the front door lock](docs/screenshots/display-custom-dense.webp)
+
 ![A Custom screen with Home Assistant by room: lights, thermostat, blind, camera, door, music, an energy chart and sensors](docs/screenshots/display-custom-home.webp)
 
 | | |
@@ -599,6 +609,16 @@ A few things worth knowing:
   hours, and can be hidden without deleting it. The editor marks why a card is hidden right now.
 - Each calendar card picks which of the screen's calendars it shows, so one screen can have the school calendar on
   the left and the family's on the right.
+- **Rotating card:** one spot that shows 2 to 6 cards in turn, every few seconds, with a soft fade. Any card can go
+  in it; the next days and the next hours sharing one box is where it starts.
+- **Weather in several places:** each screen can show the weather of its own place (*Weather → Location of this
+  screen*), each weather card can have a place of its own, and the *Weather in several cities* card shows 2 to 8
+  places at once, as a list, a grid or a single row. Every place is fetched once and shared by all the screens.
+- **Touch screens:** the *Navigation* cards are buttons to another screen of the house (*Go to screen*, or *Home*),
+  *Pause carousel* and *Carousel progress*. With touch on, a swipe left or right moves the carousel to the next or
+  the previous screen. After a few minutes without a touch the screen goes back to what it usually shows.
+- The clocks and the date card take their own *Time colour* and *Date colour*, and charts (a sensor's curve, crypto,
+  electricity prices) sit *Below* the numbers or in the *Background* behind them.
 - Landscape and portrait: the portrait view is worked out from the landscape one until you change it yourself.
 - *Export this screen* saves the layout as a file without anything personal (no calendars, people, entities or
   photos); after an import you pick those again.
@@ -606,6 +626,10 @@ A few things worth knowing:
   between them (*System → Carousels*). A home screen, the family's morning and the data screen can take turns on one
   wall; every TV on the same carousel switches at the same moment.
 - Custom is a Modern design. Modern, Classic, Kids and their layouts stay exactly as they were.
+
+| | |
+|---|---|
+| ![Weather in several places: the screen's own weather, a card for the beach house, the next days at the lake cabin and the ski lodge, and the Weather in several cities card as a list and as a grid](docs/screenshots/display-custom-places.webp) | ![A touch screen with navigation cards: buttons to the Today, Photos, Agenda and Kitchen screens, Pause, Home and the carousel's progress bar next to the clock, the weather and the agenda](docs/screenshots/display-custom-nav.webp) |
 
 <img src="docs/screenshots/display-custom-portrait.webp" width="280" align="right" alt="Custom screen in portrait: a kitchen tablet with the clock, the weather, today's meals, the shopping list, today, an oven timer and two lights">
 

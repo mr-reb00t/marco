@@ -125,7 +125,8 @@ color de la foto, transparencia, desenfoque y borde de luz:
   vacaciones, 🚗 coche, 🐾 veterinario y más, a partir de reglas de palabras clave editables (35 categorías con unas
   800 palabras clave en inglés, español, portugués, neerlandés y danés de serie).
 - **Cumpleaños con edad:** "🎂 Abuela Isabel (72)", desde un calendario de cumpleaños o introducidos en la
-  administración.
+  administración. Los títulos de tus calendarios se quedan solo con el nombre ("Cumpleaños de Ana" sale como
+  "🎂 Ana"); desactiva *Ordenar los títulos de cumpleaños* para dejarlos como vienen.
 - **Fuentes de alquiler vacacional** (el "Reserved" de Airbnb, Booking o herramientas de gestión de alojamientos que
   publican títulos como `🏠 Guest - 4p+1m` y líneas de descripción `Adults/Children/Infants`): barras de entrada →
   salida a lo largo de los días, huéspedes como iconos 🧑🏻🧒🏻👶🏻🐶, 🚪 salidas, avisos destacados de "Entrada hoy" y
@@ -136,7 +137,8 @@ color de la foto, transparencia, desenfoque y borde de luz:
   [Open-Meteo](https://open-meteo.com/) (sin clave de API y con modelo a elegir: ECMWF, DWD ICON, NOAA GFS,
   Météo-France, UK Met Office y más), [MET Norway](https://api.met.no/) (sin clave) o
   [Pirate Weather](https://pirateweather.net/) (con tu propia clave gratuita). Las pantallas indican la fuente en letra
-  pequeña. También tu propia entidad de tiempo y sensores interiores de [Home Assistant](https://www.home-assistant.io/);
+  pequeña. Cada pantalla puede mostrar el tiempo de su propio lugar, y una pantalla personalizada, varios lugares a la
+  vez. También tu propia entidad de tiempo y sensores interiores de [Home Assistant](https://www.home-assistant.io/);
   lluvia/nieve animadas.
 - **Teletipo de noticias** desde cualquier fuente RSS/Atom, una lista de tareas y un mensaje del día.
 - **Precio de la luz:** un widget con el precio del mercado diario de tu zona (casi toda Europa): gráfica de hoy y
@@ -610,6 +612,13 @@ etiqueta enseña las casillas mientras arrastras, y las tarjetas nunca se pisan.
 aspecto (cristal, un color sólido o sin tarjeta) en el panel de la derecha. *Vista previa* enseña la pantalla real
 antes de guardar, y *Cancelar* la deja como estaba.
 
+Las tarjetas también pueden ser muy pequeñas. Casi todas tienen un aspecto compacto para un hueco diminuto: una luz,
+un enchufe o un sensor en una línea, el reloj o lo próximo como una tira, la previsión como una fila de iconos, una
+línea de tendencia para una gráfica. Una pantalla admite hasta 48 tarjetas, y *Densidad → Compacta* las junta más,
+para los paneles densos que la gente se trae de Home Assistant.
+
+![Una pantalla personalizada densa en densidad Compacta: el reloj en un color cálido, la fecha, una tarjeta rotativa del tiempo, cumpleaños, cuentas atrás, el tiempo de cinco lugares arriba, y salón, cocina y exterior con luces, termostato, música, persianas, sensores con su curva, un indicador, la energía, una gráfica, una cámara, escenas y la cerradura de la puerta](docs/screenshots/display-custom-dense.webp)
+
 ![Pantalla personalizada con Home Assistant por habitaciones: luces, termostato, persiana, cámara, puerta, música, una gráfica de energía y sensores](docs/screenshots/display-custom-home.webp)
 
 | | |
@@ -632,6 +641,18 @@ Conviene saber:
   ciertas horas, y se puede ocultar sin borrarla. El editor indica por qué está oculta ahora.
 - Cada tarjeta de calendario elige cuáles de los calendarios de la pantalla muestra, así que una pantalla puede
   tener el calendario del cole a la izquierda y el de la familia a la derecha.
+- **Rotativa:** un mismo hueco que enseña de 2 a 6 tarjetas por turnos, cada pocos segundos, con un fundido suave.
+  Cabe cualquier tarjeta; de entrada trae los próximos días y las próximas horas compartiendo hueco.
+- **El tiempo de varios lugares:** cada pantalla puede mostrar el tiempo de su propio lugar (*Tiempo → Ubicación de
+  esta pantalla*), cada tarjeta del tiempo puede tener su propio lugar, y la tarjeta *Tiempo en varias ciudades*
+  enseña de 2 a 8 lugares a la vez, en lista, en cuadrícula o en una sola fila. Cada lugar se pide una vez y lo
+  comparten todas las pantallas.
+- **Pantallas táctiles:** las tarjetas de *Navegación* son botones a otra pantalla de la casa (*Ir a pantalla*, o
+  *Inicio*), *Pausar carrusel* y *Progreso del carrusel*. Con el toque activado, deslizar a izquierda o derecha lleva
+  el carrusel a la pantalla siguiente o a la anterior. Tras unos minutos sin tocarla, la pantalla vuelve a lo que
+  enseña normalmente.
+- Los relojes y la tarjeta de fecha tienen su propio *Color de la hora* y *Color de la fecha*, y las gráficas (la
+  curva de un sensor, cripto, el precio de la luz) van *Debajo* de las cifras o *De fondo* detrás de ellas.
 - Horizontal y vertical: la vista vertical se saca de la horizontal hasta que la cambias tú.
 - *Exportar esta pantalla* guarda el diseño en un archivo sin nada personal (ni calendarios, ni personas, ni
   entidades, ni fotos); al importarlo los vuelves a elegir.
@@ -639,6 +660,10 @@ Conviene saber:
   animación entre ellas (*Sistema → Carruseles*). La pantalla de casa, la mañana de la familia y la de datos pueden
   turnarse en una misma pared; todas las teles del mismo carrusel cambian a la vez.
 - Personalizado es un diseño Moderno. Moderno, Clásico, Niños y sus diseños siguen exactamente igual.
+
+| | |
+|---|---|
+| ![El tiempo de varios lugares: el de la propia pantalla, una tarjeta de la casa de la playa, los próximos días en la cabaña del lago y en el refugio de esquí, y la tarjeta Tiempo en varias ciudades en lista y en cuadrícula](docs/screenshots/display-custom-places.webp) | ![Una pantalla táctil con tarjetas de navegación: botones a las pantallas Hoy, Fotos, Agenda y Cocina, Pausa, Inicio y la barra de progreso del carrusel junto al reloj, el tiempo y la agenda](docs/screenshots/display-custom-nav.webp) |
 
 <img src="docs/screenshots/display-custom-portrait.webp" width="280" align="right" alt="Pantalla personalizada en vertical: una tablet de cocina con el reloj, el tiempo, los menús de hoy, la lista de la compra, hoy, un temporizador del horno y dos luces">
 
