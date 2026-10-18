@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.7] - 2026-10-18
+
 ### Changed
 - Screens open faster over a slow connection. A screen's private link now carries its settings (and on Marco Cloud
   its first weather, events, countdowns, photos and news), so it draws without waiting for them, with the same privacy
