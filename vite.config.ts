@@ -3,6 +3,8 @@ import preact from '@preact/preset-vite';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+// @ts-expect-error plain ESM helper without types
+import { displayPreload } from './scripts/vite-preload.mjs';
 
 const root = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
@@ -27,6 +29,8 @@ export default defineConfig({
   root: 'web',
   plugins: [
     preact(),
+    // the display page preloads its WebGL chunks and first fonts (scripts/vite-preload.mjs)
+    displayPreload(),
     // Dev server only: /f and /f/<key> open the family page, as the Express server does in production (app.js).
     {
       name: 'family-page-dev',

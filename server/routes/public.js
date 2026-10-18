@@ -13,7 +13,8 @@ import { getPhotos } from '../photos.js';
 import { sseHandler } from '../sse.js';
 import { streamInit, streamHello, onStreamOpen, onStreamClose, pollDisplay } from '../displays.js';
 import { displayConfig as projectDisplayConfig } from '../core/screens.js';
-import { requestScreen } from '../displayAccess.js';
+import { requestScreen, resolveDisplayAccess, KEY_HEADER } from '../displayAccess.js';
+import { needsSetup } from '../auth.js';
 import { addDays, localDate, isDateStr, daysBetween } from '../core/lib/tz.js';
 import { healthBody } from '../capabilities.js';
 import { lanAddresses } from '../setup.js';
@@ -39,6 +40,27 @@ export function displayConfig(cfg, screenKey) {
 function displayConfigFor(cfg, req) {
   const { screen, carousel } = requestScreen(cfg, req);
   return projectDisplayConfig(cfg, screen, { privacy: privacyOf(cfg, screen), carousel, familyQr: familyQrUrl(req), trusted: trustedDisplay(req) });
+}
+
+/**
+ * The page bootstrap of a private link (/d/<key>, server/core/bootstrap.js): what GET /api/display/config and GET
+ * /api/health answer for that key, so the display draws without asking first. Null for an unknown or revoked key and
+ * while the server needs setup (the page then asks as before and shows what the API says). The answer is the API's
+ * own (displayConfigFor with the key's binding), so the privacy rules are the same.
+ */
+export function displayBootstrap(req, key, { version }) {
+  if (typeof key !== 'string' || !key || key.length > 64 || needsSetup()) return null;
+  // the display's own first request: the key in X-Marco-Key, no query (a keyed display never sends ?screen= at boot)
+  const asked = Object.create(req);
+  Object.defineProperty(asked, 'headers', { value: { ...req.headers, [KEY_HEADER]: key } });
+  Object.defineProperty(asked, 'query', { value: {} });
+  const access = resolveDisplayAccess(asked);
+  if (!access.ok || access.via !== 'key') return null;
+  Object.defineProperty(asked, 'displayAccess', { value: access });
+  return {
+    '/api/display/config': displayConfigFor(getConfig(), asked),
+    '/api/health': healthBody({ version, lanAddresses: onThisMachine(req) ? lanAddresses() : undefined }),
+  };
 }
 
 /**

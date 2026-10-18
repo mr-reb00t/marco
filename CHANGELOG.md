@@ -6,6 +6,11 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Changed
+- Screens open faster over a slow connection. A screen's private link now carries its settings (and on Marco Cloud
+  its first weather, events, countdowns, photos and news), so it draws without waiting for them, with the same privacy
+  rules as before. A paired TV asks for its settings and its first data at the same time instead of one after the
+  other. The page also loads the 3D background and the fonts right away.
+- While a screen is still on its way, it shows the time and the date instead of a black page.
 - *Widgets*: the widget type is now a dropdown (Image, Web page, Electricity price, Currency), so every name reads in
   full in all five languages. Widget cards fold to one line, like the carousels: the name, the type and the screens
   and places that show it. They start folded, each one stays as you left it in this browser, a new widget opens

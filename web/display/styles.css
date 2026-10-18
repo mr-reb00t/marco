@@ -90,6 +90,25 @@ body {
   transition: opacity 1.4s var(--ease);
 }
 #app.booting { opacity: 0; }
+/* the clock and the date while the first screen is on its way over a slow network (web/display/bootShell.ts) */
+#boot-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2vmin;
+  color: rgb(255 255 255 / 0.82);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s var(--ease);
+}
+#boot-shell.show { opacity: 1; }
+#boot-shell.light { background: #f2f2f7; color: rgb(22 22 26 / 0.78); }
+#boot-shell .bs-time { font-family: var(--font-num); font-weight: 200; font-size: 18vmin; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+#boot-shell .bs-date { font-family: var(--font-ui); font-weight: 400; font-size: 3.6vmin; opacity: 0.7; }
 /* carousel: the still copy of the screen that leaves, animated over the new one (web/display/screenSwitch.ts) */
 .switch-shot { position: fixed; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; contain: strict; }
 .switch-shot__shell, .switch-shot__inner { position: absolute; inset: 0; will-change: transform, opacity; }

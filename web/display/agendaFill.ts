@@ -4,11 +4,12 @@
 //   agenda. It never shows less than the 14 days the agenda always showed, so nothing that showed before disappears;
 //   it only fills room that was empty. How far it can look is limited by the events the display has fetched.
 import type { AgendaDays } from '../shared/types';
+import { AGENDA_AUTO_MAX_DAYS } from '../../server/core/bootstrap.js';
 
 /** Days the agenda showed before the setting existed: 'auto' never shows fewer. */
 export const AGENDA_BASE_DAYS = 14;
 /** Furthest day 'auto' looks at (the display fetches events this far ahead when the agenda view is on). */
-export const AGENDA_AUTO_MAX_DAYS = 60;
+export { AGENDA_AUTO_MAX_DAYS };
 
 /** Number of days from today the agenda considers. */
 export function agendaHorizon(setting: AgendaDays | number): number {

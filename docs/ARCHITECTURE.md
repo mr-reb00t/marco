@@ -325,6 +325,20 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   `/media/*` photo URLs carry it as `?k=`. The first config fetch happens before cached data is shown: `401` → pairing
   screen, `403` → "This link is no longer valid" (cached data is wiped; a revoked device token is forgotten). The SSE
   `revoked` event does the same while running. Paired → the token is stored and the page reloads at `/`.
+- First load (`web/display/boot.ts`, `server/core/bootstrap.js`): a private link's page (`/d/<key>`) carries what
+  the display API answers first for that key, as `<script type="application/json" id="marco-boot">` (a data block,
+  never run, so the CSP is unchanged). Self-hosted servers write the config and `/api/health`
+  (`server/routes/public.js displayBootstrap`); Marco Cloud also writes the weather, countdowns, first photos, news
+  and the events of the windows the screen is likely to ask for (`bootDataPaths`; `eventsWindow` is the same function
+  the display uses for its own window). Every answer is the API's own for that key, so the privacy rules are the
+  same; an unknown or revoked key, or a server that needs setup, gets the plain page. The display takes each answer
+  once, for its exact request path, within a minute of the page load, and asks the server for anything else, so a
+  block that does not fit only costs the requests it would have made anyway. Without a block (a paired TV, open
+  mode) the config, the setup check and the weather, news, countdowns and photos requests go out together. The page
+  preloads the WebGL chunks and the Latin subsets of the fonts (`scripts/vite-preload.mjs`). While the screen is not
+  there after 350 ms, the clock and the date from the device's time show on the screen's background
+  (`web/display/bootShell.ts`), with only the language, time zone, clock format and theme of the config it has or
+  had last time. Nothing else kept from an earlier visit is drawn before the server answered.
 
 ## Carousels
 

@@ -6,6 +6,7 @@ import type {
   PhotosResponse, PollResponse, WeatherResponse,
 } from '../shared/types';
 import { authHeaders, withScreen, withTarget } from './identity';
+import { early, takeSeed } from './boot';
 
 export class ApiError extends Error {
   constructor(message: string, public status = 0, public code = '') {
@@ -13,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15000): Promise<T> {
+async function send<T>(path: string, init: RequestInit = {}, timeoutMs = 15000): Promise<T> {
   const ctl = new AbortController();
   const tm = setTimeout(() => ctl.abort(), timeoutMs);
   try {
@@ -42,24 +43,50 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 1500
   }
 }
 
+/** A GET is answered by what boot.ts keeps for that exact path (the page bootstrap, an early request) when it can. */
+function request<T>(path: string, init: RequestInit = {}, timeoutMs = 15000): Promise<T> {
+  if (!init.method || init.method === 'GET') {
+    const kept = takeSeed(path);
+    if (kept) return kept as Promise<T>;
+  }
+  return send<T>(path, init, timeoutMs);
+}
+
 export function getJSON<T>(path: string, timeoutMs = 15000): Promise<T> {
   return request<T>(path, {}, timeoutMs);
 }
 
-// `screen` (optional) asks for one screen of the carousel the display runs (a prefetch); left out, the request is for
-// the screen on display.
-export const api = {
-  config: (screen?: string) => getJSON<DisplayConfig>(withScreen('/api/display/config', screen)),
-  /** First config fetch at boot: short timeout so an unreachable server falls back to the cache quickly. */
-  configQuick: () => getJSON<DisplayConfig>(withScreen('/api/display/config'), 5000),
+/** Start the GET for `path` now; the first getJSON(path) gets its answer (boot.ts early). */
+export function prefetchJSON(path: string, timeoutMs = 15000): void {
+  early(path, () => send(path, {}, timeoutMs));
+}
+
+/**
+ * Request paths of the display GETs, so an early request (boot.ts) and the request it stands for are the same path.
+ * `screen` (optional) asks for one screen of the carousel the display runs (a prefetch); left out, the request is for
+ * the screen on display.
+ */
+export const paths = {
+  config: (screen?: string) => withScreen('/api/display/config', screen),
   events: (from: string, to: string, screen?: string) =>
-    getJSON<EventsResponse>(withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, screen)),
-  weather: (screen?: string) => getJSON<WeatherResponse>(withScreen('/api/weather', screen)),
-  news: () => getJSON<NewsResponse>('/api/news'),
-  /** `after` = gallery file shown last, so sequential orders continue from there and random avoids repeating it. */
+    withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, screen),
+  weather: (screen?: string) => withScreen('/api/weather', screen),
+  news: () => '/api/news',
   photos: (count = 20, after = '', screen?: string) =>
-    getJSON<PhotosResponse>(withScreen(`/api/photos?count=${count}${after ? `&after=${encodeURIComponent(after)}` : ''}`, screen)),
-  countdowns: (screen?: string) => getJSON<CountdownsResponse>(withScreen('/api/countdowns', screen)),
+    withScreen(`/api/photos?count=${count}${after ? `&after=${encodeURIComponent(after)}` : ''}`, screen),
+  countdowns: (screen?: string) => withScreen('/api/countdowns', screen),
+};
+
+export const api = {
+  config: (screen?: string) => getJSON<DisplayConfig>(paths.config(screen)),
+  /** First config fetch at boot: short timeout so an unreachable server falls back to the cache quickly. */
+  configQuick: () => getJSON<DisplayConfig>(paths.config(), 5000),
+  events: (from: string, to: string, screen?: string) => getJSON<EventsResponse>(paths.events(from, to, screen)),
+  weather: (screen?: string) => getJSON<WeatherResponse>(paths.weather(screen)),
+  news: () => getJSON<NewsResponse>(paths.news()),
+  /** `after` = gallery file shown last, so sequential orders continue from there and random avoids repeating it. */
+  photos: (count = 20, after = '', screen?: string) => getJSON<PhotosResponse>(paths.photos(count, after, screen)),
+  countdowns: (screen?: string) => getJSON<CountdownsResponse>(paths.countdowns(screen)),
   /** Familia of a screen (kids layouts): today's routines, stars and the meals of the week. */
   family: (screen?: string) => getJSON<FamilyDisplayState>(withScreen('/api/display/family', screen)),
   /** A tap on a routine (only screens with touch on): the new state of that screen. */

@@ -16,8 +16,8 @@ import './styles-canvas-mini.css';
 import type {
   Announcement, CountdownsResponse, DisplayConfig, EventsResponse, FamilyDisplayState, Lang, NewsResponse, NightCommand, Photo, PhotosResponse, PlannerBar, StreamHello, WeatherResponse,
 } from '../shared/types';
-import { addDays, gridStartOf, LANGS } from '../shared/i18n';
-import { api, ApiError } from './api';
+import { LANGS } from '../shared/i18n';
+import { api, ApiError, paths, prefetchJSON } from './api';
 import { parseColor, toHex } from './color';
 import { ctx, setCtxConfig } from './ctx';
 import { normalizeAgendaDays, normalizeConfig } from './defaults';
@@ -47,13 +47,12 @@ import { detectLiveMode, startConfigPoll, startPoll, type StreamHandlers } from 
 import { connectStream, pollUrl } from './stream';
 import { current, freezeClock, onTick, setClockOffset, setTimezone, startTicker, type Tick } from './time';
 import { Agenda } from './widgets/agenda';
-import { agendaFetchDays } from './agendaFill';
 import { Announcements, IdentifyOverlay, ScheduleBanners, serverNow, setServerNow } from './widgets/alerts';
 import { Countdowns } from './widgets/countdowns';
 import { DoorbellOverlay, type FrameSource } from './widgets/doorbell';
 import { mockDoorbellFrame, mockDoorbellRing } from './mockDoorbell';
 import { MonthCalendar } from './widgets/calendar';
-import { AUTO_WEEKS_MAX, rangeWeeks } from './cards';
+import { AUTO_WEEKS_MAX } from './cards';
 import { Clock } from './widgets/clock';
 import { renderMessage, renderTodo } from './widgets/extras';
 import { Highlights } from './widgets/highlights';
@@ -68,6 +67,8 @@ import { checkSetup, showWelcome, waitForSetup } from './widgets/welcome';
 import { afterPairUrl, pairHealth, pairingLang, showPairing } from './widgets/pairing';
 import { showScreenMissing } from './widgets/screenMissing';
 import { healthOnce, loadEmojiWebFont } from './health';
+import { loadBoot, peekBoot } from './boot';
+import { armBootShell, hideBootShell } from './bootShell';
 import { isKidsPreset, Kids, withToggle } from './widgets/kids';
 import { refreshMarquee } from './marquee';
 import { CustomWidgets } from './widgets/custom';
@@ -78,7 +79,8 @@ import { DataFeed } from './dataFeed';
 import { demoData } from './mockData';
 import { demoValues } from './mockCanvas';
 import { HaTouch } from './widgets/canvas/touch';
-import { CANVAS_KINDS, canvasCards, canvasEventsNeed, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasCards, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
+import { eventsWindow } from '../../server/core/bootstrap.js';
 import { rotatorPins } from './widgets/canvas/rotator';
 
 const params = ctx.params;
@@ -1004,6 +1006,7 @@ function stopDisplay(): Lang {
   carousel?.stop();
   heartbeat.stop();
   const lang = state.config ? ctx.lang : pairingLang(params);
+  hideBootShell();
   for (const k of ['config', 'events', 'weather', 'news', 'photos', 'countdowns', 'family'] as const) state[k] = null;
   return lang;
 }
@@ -1077,21 +1080,16 @@ async function checkTarget(): Promise<void> {
 // Data
 // ---------------------------------------------------------------------------------------------
 function eventsRange(cfg: DisplayConfig = ctx.cfg): [string, string] {
-  const today = current().dayKey;
-  const from = gridStartOf(today, cfg.calendar.weekStart ?? 1, cfg.calendar.startOn);
-  let to = addDays(from, Math.max(rangeWeeks(cfg.calendar.weeks ?? 5) * 7, 21) + 1);
-  // the agenda view looks further ahead than the grid (calendar.agendaDays; 'auto' up to AGENDA_AUTO_MAX_DAYS)
+  // the agenda view looks further ahead than the grid (calendar.agendaDays; 'auto' up to AGENDA_AUTO_MAX_DAYS), and
+  // Personalizado as far as its calendars look ahead (canvasCore.js canvasEventsNeed, at most 6 weeks). The window is
+  // worked out in server/core/bootstrap.js, so the page bootstrap asks for the same one.
   const view = params.get('view') || cfg.calendar.view;
-  if (effectivePreset(cfg) === 'agenda' || view === 'agenda') {
-    const agendaTo = addDays(today, agendaFetchDays(cfg.calendar.agendaDays));
-    if (agendaTo > to) to = agendaTo;
-  }
-  // Personalizado: as far as its calendars look ahead (canvasCore.js canvasEventsNeed, at most 6 weeks)
-  if (effectivePreset(cfg) === 'canvas' && cfg.canvas) {
-    const canvasTo = addDays(today, canvasEventsNeed(cfg.canvas));
-    if (canvasTo > to) to = canvasTo;
-  }
-  return [from, to];
+  const preset = effectivePreset(cfg);
+  return eventsWindow(current().dayKey, {
+    weekStart: cfg.calendar.weekStart ?? 1, startOn: cfg.calendar.startOn, weeks: cfg.calendar.weeks ?? 5,
+    agenda: preset === 'agenda' || view === 'agenda', agendaDays: cfg.calendar.agendaDays,
+    canvas: preset === 'canvas' && cfg.canvas ? cfg.canvas : null,
+  });
 }
 
 /** The range the last events request asked for (the admin preview asks again when a draft changes it). */
@@ -2103,7 +2101,20 @@ function enterDemo(): void {
   if (db) setTimeout(() => doorbell.show(mockDoorbellRing(db)), 900);
 }
 
+/**
+ * Without a page bootstrap, the answers that do not depend on the config are asked for together with it (api.ts
+ * prefetchJSON): goLive takes them when it asks for the same paths. Nothing is drawn before the config came.
+ */
+function prefetchFirstData(): void {
+  prefetchJSON(paths.weather());
+  prefetchJSON(paths.news());
+  prefetchJSON(paths.countdowns());
+  prefetchJSON(paths.photos(20, photos.lastKey));
+}
+
 async function boot(): Promise<void> {
+  // The page bootstrap (boot.ts): the server wrote the config and the first answers of this screen into the page.
+  const booted = !forceDemo && loadBoot();
   startTicker();
   void healthOnce().then((h) => loadEmojiWebFont(h));
   // ?demo=1&pair=1|invalid (&pairLen=6|8) → preview of the pairing / invalid-link screen with a sample code
@@ -2118,17 +2129,27 @@ async function boot(): Promise<void> {
     startPolling();
     return;
   }
+  const pairing = location.pathname === '/pair' && !credential;
+  // A display with a credential is on its way to its screen: the clock and the date meanwhile (bootShell.ts), in the
+  // settings of the config it has (bootstrap) or of the last visit. Nothing of the family's is drawn from storage.
+  if ((booted || credential) && !isWidgetOnly) armBootShell(peekBoot<DisplayConfig>('/api/display/config') ?? loadCache<DisplayConfig>('config'));
+  // The setup check, the config and (with a credential) the first data go out together. A bootstrapped page needs
+  // no setup check: the server only writes one for a screen of a set up server.
+  if (!booted && credential) prefetchFirstData();
+  const setupAsked = booted ? Promise.resolve(null) : checkSetup();
+  const firstAsked = pairing ? null : api.configQuick().then((c) => ({ c }), (e: unknown) => ({ e }));
   // Fresh install: welcome screen with the admin URL + QR until the setup wizard is completed.
-  const setup = await checkSetup();
+  const setup = await setupAsked;
   if (setup) {
     const pl = params.get('lang');
     heartbeat.stop();
+    hideBootShell();
     showWelcome(setup, LANGS.includes(pl as Lang) ? (pl as Lang) : setup.suggestedLanguage);
     waitForSetup();
     return;
   }
   // /pair always shows the pairing screen for a browser without a key (also in open mode).
-  if (location.pathname === '/pair' && !credential) {
+  if (!firstAsked) {
     heartbeat.stop();
     showPairing('pair', pairingLang(params));
     return;
@@ -2136,11 +2157,10 @@ async function boot(): Promise<void> {
   // Ask the server first (short timeout): a revoked link or a private install without a key must never flash
   // cached family data. Offline → last known data (offline tolerance), then go live.
   let first: DisplayConfig | null = null;
-  try {
-    first = await api.configQuick();
-  } catch (e) {
-    if (deniedBy(e)) return;
-  }
+  const answer = await firstAsked;
+  if ('e' in answer) {
+    if (deniedBy(answer.e)) return;
+  } else first = answer.c;
   if (first) {
     setOnline(true);
     saveCache('config', first);

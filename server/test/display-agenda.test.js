@@ -90,7 +90,8 @@ test('the agenda view follows calendar.agendaDays; the compact side agenda keeps
   assert.match(main, /new Agenda\(\$\('#agenda'\), \{\}\)/);
   assert.match(main, /new Agenda\(\$\('#side-agenda'\), \{ days: 3, compact: true/);
   // the events fetched reach as far as the agenda looks
-  assert.match(main, /agendaFetchDays\((ctx\.)?cfg\.calendar\.agendaDays\)/);
+  assert.match(main, /agendaDays: cfg\.calendar\.agendaDays/);
+  assert.match(read('server/core/bootstrap.js'), /agendaDays === 'auto' \? AGENDA_AUTO_MAX_DAYS : agendaDays\) \+ 1/);
   const agenda = read('web/display/widgets/agenda.ts');
   assert.match(agenda, /agendaKeep\(offsets, fits\)/);
 });

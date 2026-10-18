@@ -7,7 +7,8 @@ import { getConfig, paths, ROOT } from './store.js';
 import { sessionMiddleware, csrfGuard, loginHandler, logoutHandler, logoutAllHandler, meHandler,
   googleLoginHandler, googleConnectHandler, googleCallbackHandler, microsoftConnectHandler, microsoftCallbackHandler, twoFactorLoginHandler } from './auth.js';
 import { twoFactorRouter } from './routes/twofactor.js';
-import { publicRouter } from './routes/public.js';
+import { publicRouter, displayBootstrap } from './routes/public.js';
+import { injectBoot } from './core/bootstrap.js';
 import { adminRouter } from './routes/admin.js';
 import { screensAdminRouter, displayPublicRouter } from './routes/screens.js';
 import { hooksRouter } from './routes/hooks.js';
@@ -205,10 +206,28 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
     app.get(['/admin', '/admin/', '/admin/*splat'], (req, res, next) =>
       fs.existsSync(path.join(dist, 'admin', 'index.html')) ? sendHtml('admin/index.html')(req, res) : next());
     app.get(['/', '/index.html', '/pair'], sendHtml('index.html'));
-    // Private display link: the same display page; the key is read from the path by the page itself.
+    // Private display link: the same display page; the key is read from the path by the page itself. The page
+    // carries what the display API answers first for that key (routes/public.js displayBootstrap), so the screen
+    // draws without those round trips; without it (unknown key, setup, an error) it is the plain page.
+    let displayPage = { mtimeMs: -1, html: '' };
+    const displayHtml = () => {
+      const file = path.join(dist, 'index.html');
+      const { mtimeMs } = fs.statSync(file);
+      if (mtimeMs !== displayPage.mtimeMs) displayPage = { mtimeMs, html: fs.readFileSync(file, 'utf8') };
+      return displayPage.html;
+    };
     app.get('/d/:key', (req, res) => {
       res.set('x-robots-tag', 'noindex, nofollow');
-      sendHtml('index.html', 'private, no-store')(req, res);
+      let boot = null;
+      try {
+        boot = displayBootstrap(req, req.params.key, { version });
+      } catch (err) {
+        console.warn('[display] page bootstrap', err?.message || err);
+      }
+      if (!boot) return sendHtml('index.html', 'private, no-store')(req, res);
+      res.set('cache-control', 'private, no-store');
+      res.set('content-security-policy', displayCsp(getConfig()));
+      res.type('html').send(injectBoot(displayHtml(), boot));
     });
     // Family page (/f/<key>, or /f with the key the phone remembers): the key is read from the path by the page.
     app.get(['/f', '/f/', '/f/:key'], (req, res, next) => {

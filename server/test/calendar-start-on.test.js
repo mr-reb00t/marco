@@ -158,7 +158,9 @@ test('the grid, the events range and the admin all read startOn', () => {
   assert.match(cal, /gridStartOf\(today, c\.weekStart, c\.startOn\)/);
   assert.doesNotMatch(cal, /weekdayNames\(lang, c\.weekStart/);
   const main = read('web/display/main.ts');
-  assert.match(main, /gridStartOf\(today, cfg\.calendar\.weekStart \?\? 1, cfg\.calendar\.startOn\)/);
+  // the events window is worked out in server/core/bootstrap.js (the page bootstrap asks for the same one)
+  assert.match(main, /eventsWindow\(current\(\)\.dayKey, \{\s*weekStart: cfg\.calendar\.weekStart \?\? 1, startOn: cfg\.calendar\.startOn/);
+  assert.match(read('server/core/bootstrap.js'), /startOn === 'today' \? today : startOfWeek\(today, weekStart\)/);
   const admin = read('web/admin/sections/Calendars.tsx');
   assert.match(admin, /d\.calendar\.startOn = 'today'/);
   assert.match(admin, /t\('El calendario empieza en'\)/);

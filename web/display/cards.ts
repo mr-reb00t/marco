@@ -3,10 +3,12 @@
 // - calendar.eventStyle = 'cards': the size of each card (time on top, title below on up to two lines) and how a
 //   day's cards are split into pages when they do not all fit.
 import type { CalendarWeeks } from '../shared/types';
+import { AUTO_WEEKS_MAX } from '../../server/core/bootstrap.js';
 
 /** Automatic weeks: never fewer rows than this, nor more than AUTO_WEEKS_MAX (or the cap of the layout). */
 export const AUTO_WEEKS_MIN = 2;
-export const AUTO_WEEKS_MAX = 6;
+/** The same number decides how many weeks of events the display asks for (server/core/bootstrap.js). */
+export { AUTO_WEEKS_MAX };
 /** Rows shown before the grid has a size (the next render, once it is laid out, picks the real number). */
 export const AUTO_WEEKS_FIRST = 4;
 

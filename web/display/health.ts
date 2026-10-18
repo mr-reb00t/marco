@@ -2,10 +2,14 @@
 // the pairing screen (code length, where to open the admin), the page a paired display continues at, and the
 // optional emoji web font. Offline or on an old server it resolves to {} (self-hosted defaults).
 import type { HealthResponse } from '../shared/types';
+import { peekBoot } from './boot';
 
 let pending: Promise<Partial<HealthResponse>> | null = null;
 
 export function healthOnce(): Promise<Partial<HealthResponse>> {
+  // the page bootstrap's answer (boot.ts), left for the live channel's first ask (api.health)
+  const boot = pending ? null : peekBoot<Partial<HealthResponse>>('/api/health');
+  if (boot) pending = Promise.resolve(boot);
   pending ??= (async () => {
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), 5000);
