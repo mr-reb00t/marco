@@ -186,9 +186,15 @@ export class CurrencyCard {
     const o = this.w.currency;
     const n = Math.max(1, o?.pairs?.length ?? 1);
     const chart = o?.chart !== 'none';
-    const bands = chart && o?.chartStyle === 'background' && o?.layout !== 'big';
+    const behind = chart && (this.backdrop || o?.chartStyle === 'background');
+    // one pair with its curve "De fondo": the large card with the curve behind it, edge to edge and down to the
+    // bottom, as a Divisas card with room draws it (data-room, widgets/canvas/data.ts); a place too low for it (a
+    // crowded side column) keeps the one row with its band
+    const solo = behind && n === 1 && this.maxH >= 0.75 * (24 * rem * k + 3 * rem);
+    const big = o?.layout === 'big' || solo;
+    const bands = behind && !big;
     // what a list of n pairs or the big card wants, padding included
-    const want = (o?.layout === 'big' ? (chart ? 24 : 12) : 5.4 + n * (bands ? 5.6 : 4.2)) * rem * k + 3 * rem;
+    const want = (big ? (chart ? 24 : 12) : 5.4 + n * (bands ? 5.6 : 4.2)) * rem * k + 3 * rem;
     const fill = place === 'full' || place === 'canvas';
     const w = fill || place === 'side' ? this.maxW : Math.min(this.maxW, 40 * rem * k);
     const h = fill ? this.maxH : Math.min(this.maxH, Math.round(want));
@@ -198,8 +204,13 @@ export class CurrencyCard {
     this.el.classList.toggle('pw--side', place === 'side');
     this.el.classList.toggle('pw--full', place === 'full');
     if (!this.el.isConnected) return;
+    if (solo) this.body.dataset.room = '';
+    else delete this.body.dataset.room;
     // too short for a list or the big card (a crowded side column): one line, as a Divisas card one cell high
-    if (this.body.clientHeight < LINE_REM * rem * Math.min(1, k)) {
+    // (the card's padding is the body's, so the chart behind can reach the card's edges: styles-data.css)
+    const bs = getComputedStyle(this.body);
+    const inner = this.body.clientHeight - (parseFloat(bs.paddingTop) || 0) - (parseFloat(bs.paddingBottom) || 0);
+    if (inner < LINE_REM * rem * Math.min(1, k)) {
       this.body.dataset.mini = '';
       this.body.dataset.mh = '1';
     } else {

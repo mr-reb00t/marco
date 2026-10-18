@@ -19,12 +19,14 @@ export const ROWS_WIDGETS: [string, string, string][] = [
   ['Widget sin nombre', 'Unnamed widget', 'Widget sem nome'],
   ['Precios de la luz', 'Electricity prices', 'Preços da luz'],
   ['Imagen', 'Image', 'Imagem'],
-  ['Web (iframe)', 'Web (iframe)', 'Web (iframe)'],
   [
-    'Solo para servidores propios. La página se carga en la pantalla dentro de un marco aislado.',
-    'Self-hosted servers only. The page loads on the screen inside an isolated frame.',
-    'Só para servidores próprios. A página carrega no ecrã dentro de uma moldura isolada.',
+    'Una página web dentro de un marco aislado (iframe). Solo para servidores propios.',
+    'A web page inside an isolated frame (iframe). Self-hosted servers only.',
+    'Uma página web dentro de uma moldura isolada (iframe). Só para servidores próprios.',
   ],
+  ['Buscar widget, tipo o pantalla…', 'Search widget, type or screen…', 'Procurar widget, tipo ou ecrã…'],
+  ['Ningún widget coincide con «{q}».', 'No widget matches “{q}”.', 'Nenhum widget corresponde a «{q}».'],
+  ['En ninguna pantalla', 'On no screen', 'Em nenhum ecrã'],
   ['Dirección', 'Address', 'Endereço'],
   ['PNG, JPEG, WebP o GIF.', 'PNG, JPEG, WebP or GIF.', 'PNG, JPEG, WebP ou GIF.'],
   [

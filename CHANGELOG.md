@@ -5,6 +5,18 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- *Widgets*: the widget type is now a dropdown (Image, Web page, Electricity price, Currency), so every name reads in
+  full in all five languages. Widget cards fold to one line, like the carousels: the name, the type and the screens
+  and places that show it. They start folded, each one stays as you left it in this browser, a new widget opens
+  unfolded and a widget with an error is always open. With more than 3 widgets a search box filters them by name,
+  type or screen.
+
+### Fixed
+- The *Currency* widget with its curve behind the numbers: the curve now fills the card from edge to edge and down
+  to the bottom, as the *Currency* card of the layout editor draws it. With one pair it shows the large rate with the
+  curve behind it and the lowest and highest in the bottom corner (in a place too low for that, one row as before).
+
 ## [0.16.6] - 2026-10-18
 
 ### Added

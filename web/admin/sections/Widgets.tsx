@@ -2,8 +2,8 @@ import { useState } from 'preact/hooks';
 import type { StoredConfig, TestWidgetResponse, WidgetDef, WidgetType } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { confirmDialog } from '../components/feedback';
-import { Icon } from '../components/icons';
-import { Button, Card, Empty, Field, PageHeader, ReorderButtons, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
+import { Icon, type IconName } from '../components/icons';
+import { Button, Card, Empty, Field, PageHeader, ReorderButtons, SearchInput, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
 import { t } from '../i18n';
 import { atLimit as reachesLimit, edition, has, limit } from '../caps';
 import { setWidgetPreview } from '../livePreview';
@@ -89,6 +89,34 @@ export function widgetUses(full: StoredConfig, id: string) {
 export const widgetUseAnchor = (s: StoredConfig['screens'][number], id: string) =>
   s.layout.preset === 'widget' && s.layout.widgetId === id ? 'layout/layout-options' : 'layout/layout-widgets';
 
+/** Where a screen shows widget `id`: full screen, in a corner, in the side column. */
+function widgetPlaces(s: StoredConfig['screens'][number], id: string) {
+  const out = new Set<string>();
+  if (s.layout.preset === 'widget' && s.layout.widgetId === id) out.add(t('Pantalla completa'));
+  for (const p of s.widgets ?? []) if (p.widgetId === id) out.add(p.place === 'side' ? t('Lateral') : t('Esquina'));
+  return [...out];
+}
+
+/** The type as the admin names it (the type select and the folded card). */
+const TYPE_LABEL: Record<WidgetType, string> = { image: 'Imagen', web: 'Página web', prices: 'Precio de la luz', currency: 'Divisas' };
+const typeIcon = (type: WidgetType): IconName => (type === 'image' ? 'image' : type === 'prices' ? 'zap' : type === 'currency' ? 'exchange' : 'globe');
+
+const LS_OPEN = 'calendar-admin.widgets-open';
+/** Ids of the widget cards left open (this browser only). */
+function loadOpen(): Set<string> {
+  try {
+    const v = localStorage.getItem(LS_OPEN);
+    return new Set(v ? (JSON.parse(v) as string[]) : []);
+  } catch {
+    return new Set();
+  }
+}
+function storeOpen(ids: Set<string>) {
+  try {
+    localStorage.setItem(LS_OPEN, JSON.stringify([...ids]));
+  } catch { /* private mode: only for this visit */ }
+}
+
 /** A widget leaves every screen: its placements and the full-screen layout that pointed at it. */
 export function pruneWidget(d: StoredConfig, id: string) {
   d.widgets = (d.widgets ?? []).filter((w) => w.id !== id);
@@ -171,8 +199,10 @@ function TestResult({ w, res }: { w: WidgetDef; res: TestWidgetResponse }) {
   );
 }
 
-function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId, previewed }: {
+function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId, previewed, open, locked, toggle }: {
   w: WidgetDef; i: number; n: number; full: StoredConfig; errors: Record<string, string>; previewed: boolean;
+  /** unfolded; `locked`: kept open (it has an error), the fold button is off */
+  open: boolean; locked: boolean; toggle: () => void;
   upd: (fn: (x: WidgetDef) => void) => void; remove: () => void; move: (a: number, b: number) => void;
   go: (route: string) => void; setScreenId: (id: string) => void;
 }) {
@@ -214,20 +244,32 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
   return (
     // the preview shows the widget the owner is working on
     <div class="widget-card-wrap" onFocusIn={() => setPreviewWidget(w.id)} onPointerDown={() => setPreviewWidget(w.id)}>
-    <Card
-      id={`widget-${w.id}`}
-      class={previewed ? 'is-previewed' : ''}
-      icon={image ? 'image' : prices ? 'zap' : currency ? 'exchange' : 'globe'}
-      title={w.name.trim() || t('Widget sin nombre')}
-      actions={
-        <div class="row-actions">
+    <section id={`widget-${w.id}`} class={`card widget-card ${previewed ? 'is-previewed' : ''} ${open ? '' : 'is-folded'}`}>
+      <header class="card__head">
+        <button type="button" class="icon-btn car-fold" aria-expanded={open} disabled={locked} title={open ? t('Plegar') : t('Desplegar')} onClick={toggle}>
+          <Icon name="chevron" size={16} />
+        </button>
+        <span class="card__icon">
+          <Icon name={typeIcon(w.type)} size={18} />
+        </span>
+        <button type="button" class="car-fold__name" aria-expanded={open} onClick={toggle}>
+          <strong>{w.name.trim() || t('Widget sin nombre')}</strong>
+          <span class="muted small">
+            {t(TYPE_LABEL[w.type])}
+            {' · '}
+            {uses.length ? uses.map((s) => `${s.name} (${widgetPlaces(s, w.id).join(', ')})`).join(', ') : t('En ninguna pantalla')}
+          </span>
+        </button>
+        {locked && <Icon name="alert" size={16} class="widget-card__err" />}
+        <div class="card__actions row-actions">
           <ReorderButtons index={i} count={n} onMove={move} />
           <button type="button" class="icon-btn icon-btn--danger" onClick={remove} aria-label={t('Eliminar')}>
             <Icon name="trash" size={16} />
           </button>
         </div>
-      }
-    >
+      </header>
+      {open && (
+      <div class="card__body">
       <div class="grid grid--2">
         <Field label={t('Nombre')} error={errors[`wdg.${w.id}.name`]}>
           <TextInput value={w.name} maxLength={60} placeholder={currency ? t('Cambio de divisas') : t('Precios de la luz')} onValue={(v) => upd((x) => void (x.name = v))} />
@@ -237,7 +279,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
           error={errors[`wdg.${w.id}.type`] ? t(errors[`wdg.${w.id}.type`]) : undefined}
           hint={
             w.type === 'web'
-              ? t('Solo para servidores propios. La página se carga en la pantalla dentro de un marco aislado.')
+              ? t('Una página web dentro de un marco aislado (iframe). Solo para servidores propios.')
               : prices
                 ? t('Precio de la electricidad de tu zona, hoy y mañana. Lo consulta este servidor; las pantallas no llaman a ninguna web.')
                 : currency
@@ -246,15 +288,15 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
           }
         >
           {((w.type === 'web' && !webOk) || (prices && !pricesOk)) && <span class="chip chip--static chip--bad">{t('No disponible aquí')}</span>}
-          <Segmented
-            full
+          <Select<WidgetType>
             value={w.type}
+            error={!!errors[`wdg.${w.id}.type`]}
             options={[
-              { value: 'image', label: t('Imagen') },
-              ...(webOk || w.type === 'web' ? [{ value: 'web' as const, label: t('Web (iframe)') }] : []),
-              ...(pricesOk || prices ? [{ value: 'prices' as const, label: t('Precio de la luz') }] : []),
-              { value: 'currency' as const, label: t('Divisas') },
-            ]}
+              { value: 'image' as const },
+              ...(webOk || w.type === 'web' ? [{ value: 'web' as const }] : []),
+              ...(pricesOk || prices ? [{ value: 'prices' as const }] : []),
+              { value: 'currency' as const },
+            ].map((o) => ({ ...o, label: t(TYPE_LABEL[o.value]) }))}
             onChange={(v) =>
               upd((x) => {
                 if (x.type === v) return;
@@ -374,13 +416,34 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
           )}
         </div>
       )}
-    </Card>
+      </div>
+      )}
+    </section>
     </div>
   );
 }
 
 export function WidgetsSection({ full, setFull, errors, go, setScreenId }: SectionProps) {
   const items = full.widgets ?? [];
+  // cards fold to one line and start folded; the ones opened are remembered in this browser
+  const [openIds, setOpenIds] = useState<Set<string>>(loadOpen);
+  const setOpen = (id: string, on: boolean) =>
+    setOpenIds((cur) => {
+      if (cur.has(id) === on) return cur;
+      const n = new Set(cur);
+      if (on) n.add(id);
+      else n.delete(id);
+      storeOpen(n);
+      return n;
+    });
+  const hasErr = (id: string) => Object.keys(errors).some((k) => k.startsWith(`wdg.${id}.`));
+  const [q, setQ] = useState('');
+  const query = q.trim().toLowerCase();
+  const matches = (w: WidgetDef) =>
+    !query ||
+    hasErr(w.id) ||
+    [w.name.trim() || t('Widget sin nombre'), t(TYPE_LABEL[w.type]), ...widgetUses(full, w.id).map((s) => s.name)].some((x) => x.toLowerCase().includes(query));
+  const shown = items.filter(matches);
   const max = limit('widgets');
   const atLimit = reachesLimit('widgets', items.length);
   const pv = useWidgetPreview();
@@ -391,6 +454,9 @@ export function WidgetsSection({ full, setFull, errors, go, setScreenId }: Secti
       d.widgets = d.widgets ?? [];
       d.widgets.push(w);
     });
+    // a new widget opens unfolded, with no search hiding it
+    setOpen(w.id, true);
+    setQ('');
     setPreviewWidget(w.id);
   };
   const move = (a: number, b: number) => setFull((d) => void (d.widgets = moveItem(d.widgets ?? [], a, b)));
@@ -428,11 +494,26 @@ export function WidgetsSection({ full, setFull, errors, go, setScreenId }: Secti
           </Empty>
         </Card>
       ) : (
-        items.map((w, i) => (
+        <>
+          {items.length > 3 && <SearchInput value={q} onValue={setQ} placeholder={t('Buscar widget, tipo o pantalla…')} />}
+          {items.length > 3 && !shown.length && <p class="muted small">{t('Ningún widget coincide con «{q}».', { q })}</p>}
+          {shown.map((w) => {
+          const i = items.indexOf(w);
+          // a card with an error is always open: errors are never hidden in a folded card
+          const locked = hasErr(w.id);
+          const open = locked || openIds.has(w.id);
+          return (
           <WidgetCard
             key={w.id}
             w={w}
             i={i}
+            open={open}
+            locked={locked}
+            toggle={() => {
+              if (locked) return;
+              setOpen(w.id, !open);
+              if (!open) setPreviewWidget(w.id);
+            }}
             n={items.length}
             previewed={items.length > 1 && w.id === pvId}
             full={full}
@@ -448,7 +529,9 @@ export function WidgetsSection({ full, setFull, errors, go, setScreenId }: Secti
               })
             }
           />
-        ))
+          );
+          })}
+        </>
       )}
     </>
   );

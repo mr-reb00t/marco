@@ -84,6 +84,31 @@ describe('exchange rates in a browser', { skip: !chrome && 'no Chrome' }, () => 
     });
   }
 
+  // "De fondo" with one pair: the curve fills the card behind the numbers (the large card, as a Divisas card with room
+  // draws it), from the card's left edge to its right one and down to its bottom, never a short band under the text
+  test('Currency widget, De fondo: the curve behind the numbers fills the card, edge to edge and down to the bottom', async () => {
+    const BG = `(() => [...document.querySelectorAll('.uw-currency .fxw')].map((card) => {
+      const r = card.getBoundingClientRect();
+      const g = card.querySelector('.cv-bgchart')?.getBoundingClientRect();
+      return { w: r.width, h: r.height, big: !!card.querySelector('.cv-dt.is-big'), bg: g ? { l: g.left - r.left, r: r.right - g.right, b: r.bottom - g.bottom, area: (g.width * g.height) / (r.width * r.height) } : null };
+    }))()`;
+    for (const q of ['fx=list:corner:br:s', 'fx=list:corner:br:m', 'fx=list:corner:br:l', 'fx=big:corner:tl:l', 'fx=list:full:br:l', 'fx=big:full:br:l']) {
+      const p = await open(`style=modern&${q}&fxstyle=background&fxpairs=EUR-USD&fxrange=7d`);
+      try {
+        const ws = await p.eval(BG);
+        assert.equal(ws.length, 1, q);
+        const [w] = ws;
+        assert.ok(w.big, `${q}: one pair "De fondo" is the large card`);
+        assert.ok(w.bg, `${q}: a chart behind`);
+        assert.ok(w.bg.l <= 1 && w.bg.r <= 1 && w.bg.b <= 1, `${q}: the chart reaches the card's edges ${JSON.stringify(w.bg)}`);
+        assert.ok(w.bg.area >= 0.3, `${q}: the chart takes a good part of the card (${w.bg.area.toFixed(2)})`);
+        noErrors(p);
+      } finally {
+        await p.close();
+      }
+    }
+  });
+
   test('Currency widget in a Personalizado card (the widget card), with its curve', async () => {
     for (const shot of ['size:widget:8x6:landscape:none:ambient', 'size:widget:12x8:landscape:none:ambient']) {
       const p = await open(`preset=canvas&shot=${shot}&demowidget=currency`);

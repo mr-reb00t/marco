@@ -134,3 +134,9 @@
 :is(#app.preset-canvas, #app .fxw) .cv-st-q .p { font-weight: 600; }
 :is(#app.preset-canvas, #app .fxw) .cv-st-q .cv-st-spark { width: 4.5em; height: 1.4em; align-self: center; }
 :is(#app.preset-canvas, #app .fxw) .cv-st-who .sym { font-weight: 800; }
+
+/* the Currency widget: the glass card's padding goes on the body, so a chart "De fondo" (.cv-bgchart, placed in the
+   body like in a Personalizado card's .cv-body) reaches the card's left, right and bottom edges */
+#app .pw.fxw { padding: 0; }
+#app .pw.fxw > .fxw-body { box-sizing: border-box; padding: 1.6rem 2rem 1.3rem; }
+#app .pw.fxw.pw--full > .fxw-body { padding: calc(var(--pk) * 1.8rem) calc(var(--pk) * 2.2rem) calc(var(--pk) * 1.4rem); }

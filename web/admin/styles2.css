@@ -5633,7 +5633,8 @@ button.immich-album:hover {
 
 /* carousels: a folded card is one line (name, its screens and times, what is on now) */
 .car-fold .ico { transition: transform 0.15s ease; }
-.car-card.is-folded .car-fold .ico { transform: rotate(-90deg); }
+.car-card.is-folded .car-fold .ico,
+.widget-card.is-folded .car-fold .ico { transform: rotate(-90deg); }
 .car-fold__name {
   flex: 1;
   min-width: 0;
@@ -5823,6 +5824,19 @@ button.immich-album:hover {
 .wpv-note p { margin: 0 0 6px; }
 .wpv-warn { color: var(--warn); }
 .widget-card-wrap { display: contents; }
+/* widgets fold to one line like the carousels: chevron, icon, name over type and placements */
+.widget-card .card__head { gap: 10px; }
+.widget-card.is-folded .card__head { padding-bottom: 14px; }
+.widget-card .car-fold { margin-left: -8px; }
+.widget-card .car-fold__name strong { font-size: 15px; font-weight: 650; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.widget-card__err { flex: none; color: var(--err); }
+@media (max-width: 680px) {
+  .widget-card .card__head { padding: 12px 12px 0; gap: 6px; flex-wrap: nowrap; }
+  .widget-card .card__actions { width: auto; gap: 8px; flex-wrap: nowrap; }
+  .widget-card.is-folded .card__head { padding-bottom: 12px; }
+  .widget-card .car-fold { margin-left: -4px; }
+  .widget-card .card__icon { width: 30px; height: 30px; }
+}
 .card.is-previewed { box-shadow: var(--shadow), 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
 /* a narrow sheet: "Pantalla completa" goes on two lines instead of being cut */
 .wpv-opts .seg button { padding-inline: 8px; white-space: normal; text-align: center; line-height: 1.15; }
