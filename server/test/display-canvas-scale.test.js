@@ -41,7 +41,7 @@ const LAST = new Set(['widget']);
 // box holds it, so 150 % is never smaller than 100 % and never cramped
 // cards that already fill their box at 100 % (the navigation buttons, the flip clock; the lists, the forecasts, the message and the next
 // event grown to a box larger than their content): 150 % may not grow them further, it must not shrink them
-const FILLS = new Set(['nav.button', 'nav.pause', 'clock.flip', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
+const FILLS = new Set(['nav.button', 'nav.pause', 'clock.flip', 'announcement', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
 const shotOf = (kind) => {
   if (SHOT[kind]) return SHOT[kind];
   const sizes = CANVAS_KINDS[kind].sizes;
