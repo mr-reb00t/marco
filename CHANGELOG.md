@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.4] - 2026-10-18
+
 ### Changed
 - Custom screens always use the fine grid (24×16 cells, 16×24 on a portrait screen). Screens made on the normal grid
   are converted and look the same: every card keeps its place and size, in both orientations, and the sidebar does

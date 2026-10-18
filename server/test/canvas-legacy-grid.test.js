@@ -31,7 +31,8 @@ const save = (raw) => {
 };
 /** A main position twice as large (what the conversion must give). */
 const twice = (p) => (p && p.zone === 'main' ? { ...p, x: p.x * 2, y: p.y * 2, ...(p.w !== undefined ? { w: p.w * 2, h: p.h * 2 } : {}) } : p);
-const project = (cv, orientation = 'auto') => projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation }, canvas: cv }, {});
+// at a fixed time outside every schedule of the fixtures (the old projection was captured at such a time)
+const project = (cv, orientation = 'auto') => projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation }, canvas: cv }, { now: new Date('2026-10-17T12:00:00Z'), tz: 'UTC' });
 
 test('the fixtures cover what the owner asked for', () => {
   const names = Object.keys(FIX);
