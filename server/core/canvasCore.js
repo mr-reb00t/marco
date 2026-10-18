@@ -199,8 +199,13 @@ export function boxOf(kind, w, h, orientation = 'landscape', grid = 'fine') {
   const o = orientOf(orientation);
   const k = kindOf(kind);
   const r = cellRange(k, o, grid);
-  const cw = Math.min(r.maxW, Math.max(r.minW, Math.round(w)));
-  const ch = Math.min(r.maxH, Math.max(r.minH, Math.round(h)));
+  let cw = Math.min(r.maxW, Math.max(r.minW, Math.round(w)));
+  let ch = Math.min(r.maxH, Math.max(r.minH, Math.round(h)));
+  // below the kind's own smallest only around one of its named sizes (the scenes: 4×4, never 4×1)
+  if (!aroundNamed(k, cw, ch, o, grid)) {
+    cw = Math.min(r.maxW, Math.max(cw, k.fine[0]));
+    ch = Math.min(r.maxH, Math.max(ch, k.fine[1]));
+  }
   const named = (k?.sizes ?? []).find((s) => {
     const [sw, sh] = sizeCells(s, o, grid);
     return sw === cw && sh === ch;
@@ -208,10 +213,24 @@ export function boxOf(kind, w, h, orientation = 'landscape', grid = 'fine') {
   return named ? { size: named } : { size: lookSize(k, cw, ch, o, grid), w: cw, h: ch };
 }
 
+/**
+ * True unless a w×h box is narrower or lower than the kind's own smallest (`fine`) without holding one of its named
+ * sizes: the named sizes widen the range (cellRange) only around themselves, so a kind whose smallest named size is
+ * narrower than its `fine` (the scenes: 4×4, but at least 6 wide when lower) is never drawn in a box too small to read.
+ */
+function aroundNamed(kind, w, h, orientation = 'landscape', grid = 'fine') {
+  const k = kindOf(kind);
+  if (gridFactor(gridOf(grid)) !== 2 || !k?.fine || (w >= k.fine[0] && h >= k.fine[1])) return true;
+  return (k.sizes ?? []).some((s) => {
+    const [sw, sh] = sizeCells(s, orientOf(orientation), grid);
+    return sw <= w && sh <= h;
+  });
+}
+
 /** True when a box of w×h cells is within the range of `kind` on an orientation (and a grid). */
 export function boxAllowed(kind, w, h, orientation = 'landscape', grid = 'fine') {
   const r = cellRange(kind, orientation, grid);
-  return Number.isInteger(w) && Number.isInteger(h) && w >= r.minW && w <= r.maxW && h >= r.minH && h <= r.maxH;
+  return Number.isInteger(w) && Number.isInteger(h) && w >= r.minW && w <= r.maxW && h >= r.minH && h <= r.maxH && aroundNamed(kind, w, h, orientation, grid);
 }
 
 // ---- registry ----------------------------------------------------------------------------------------------------
@@ -1171,13 +1190,15 @@ const FINE_MIN = {
   'ha.climate': [2, 1],
   'ha.cover': [2, 1],
   'ha.sensor': [2, 1],
-  'ha.gauge': [3, 1],
-  'ha.statistic': [3, 1],
+  // a value with its name beside it: 3 cells cut the name to a few letters next to a wide sidebar
+  'ha.gauge': [4, 1],
+  'ha.statistic': [4, 1],
   'ha.room': [4, 3],
   'ha.chart': [4, 2],
   'ha.camera': [3, 2],
   'ha.media': [6, 1],
-  'ha.scene': [4, 1],
+  // a few buttons in one row: each name keeps a word or two
+  'ha.scene': [6, 1],
   'rotator': [2, 1],
   'html': [3, 2],
   'card': null,
@@ -1379,15 +1400,33 @@ function placeMain(c, list, orientation, key, grid = 'fine') {
   for (const { item, path } of list) {
     const pos = item[key];
     const k = kindFor(item);
+    // a box saved smaller than the kind's smallest (a smallest raised since): grown where there is room, else kept
+    let small = null;
     if (pos.w !== undefined) {
       // its own box: clamped to the kind's range, stored as a named size when it is exactly one
       const r = cellRange(k, orientation, grid);
       const box = boxOf(k, pos.w, pos.h, orientation, grid);
       const [bw, bh] = posCells(box, orientation, grid);
-      if (bw !== pos.w || bh !== pos.h) warnOf(c, `${path}.w`, `${pos.w}×${pos.h} not allowed for ${item.kind} (${r.minW}×${r.minH} to ${r.maxW}×${r.maxH}), ${bw}×${bh} used`);
+      if (bw !== pos.w || bh !== pos.h) {
+        if (bw >= pos.w && bh >= pos.h && pos.w <= r.maxW && pos.h <= r.maxH) small = { w: pos.w, h: pos.h, x: pos.x, y: pos.y };
+        else warnOf(c, `${path}.w`, `${pos.w}×${pos.h} not allowed for ${item.kind} (${r.minW}×${r.minH} to ${r.maxW}×${r.maxH}), ${bw}×${bh} used`);
+      }
       delete pos.w;
       delete pos.h;
       Object.assign(pos, box);
+      if (small) {
+        const [x, y] = [Math.min(Math.max(0, pos.x), occ.cols - bw), Math.min(Math.max(0, pos.y), occ.rows - bh)];
+        const spot = fitsAt(occ, x, y, bw, bh) ? { x, y } : nearestFree(occ, x, y, bw, bh);
+        if (spot) {
+          warnOf(c, `${path}.w`, `${small.w}×${small.h} is smaller than ${item.kind} allows, grown to ${bw}×${bh}`);
+          pos.x = spot.x;
+          pos.y = spot.y;
+        } else {
+          // no room to grow without covering another card: it stays as it was (the display marks it cramped)
+          warnOf(c, `${path}.w`, `${small.w}×${small.h} is smaller than ${item.kind} allows and there is no room to grow it, kept`);
+          Object.assign(pos, { size: lookSize(k, small.w, small.h, orientation, grid), w: small.w, h: small.h });
+        }
+      }
     } else if (!k.sizes.includes(pos.size)) {
       if (pos.size) warnOf(c, `${path}.size`, `size not allowed for ${item.kind}, ${k.def} used`);
       pos.size = k.def;

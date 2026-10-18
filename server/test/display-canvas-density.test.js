@@ -8,7 +8,7 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CANVAS_KINDS, canvasDefaults, cellRange, fullLookMin, kindFor } from '../core/canvasCore.js';
+import { CANVAS_KINDS, boxOf, canvasDefaults, cellRange, fullLookMin, kindFor, posCells } from '../core/canvasCore.js';
 import { flexSamples } from './flexSizes.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
@@ -26,7 +26,9 @@ function fineSamples(kind, o) {
   const [fw, fh] = fullLookMin(k, o);
   const w = Math.max(f.minW, Math.min(f.maxW, fw - 1));
   const h = Math.max(f.minH, Math.min(f.maxH, fh - 1));
-  return [...list, `${w}x${h}`];
+  // as the box the kind takes there (the scenes: 6×3, not 4×3)
+  const [bw, bh] = posCells(boxOf(k, w, h, o), o);
+  return [...list, `${bw}x${bh}`];
 }
 /** True when a w×h box of `kind` is drawn in its compact look (canvas.ts miniMark). */
 function isMini(kind, o, cells) {

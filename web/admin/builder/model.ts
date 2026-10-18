@@ -4,7 +4,7 @@
 // size table and validation live in server/core/canvasCore.js; this file only moves items around within them.
 import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, SideSpan } from '../../shared/types';
 import {
-  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
+  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
   firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
@@ -428,7 +428,7 @@ export function handleBox(cv: CanvasConfig, o: Orient, id: string, w: number, h:
   let key: [number, number] | null = null;
   for (let bw = r.minW; bw <= Math.min(r.maxW, cols - p.x); bw++) {
     for (let bh = r.minH; bh <= Math.min(r.maxH, rows - p.y); bh++) {
-      if (!fitsAt(occ, p.x, p.y, bw, bh)) continue;
+      if (!fitsAt(occ, p.x, p.y, bw, bh) || !boxAllowed(sizingOf(it), bw, bh, o)) continue;
       const k: [number, number] = [Math.abs(bw - tw) + Math.abs(bh - th), -bw * bh];
       if (!key || k[0] < key[0] || (k[0] === key[0] && k[1] < key[1])) {
         key = k;
@@ -467,7 +467,7 @@ export function fitContent(cv: CanvasConfig, o: Orient, id: string, need: { w: n
   const wantW = Math.min(r.maxW, Math.max(cw, Math.ceil(cw * Math.max(1, need.w) - 0.05)));
   const wantH = Math.min(r.maxH, Math.max(ch, Math.ceil(ch * Math.max(1, need.h) - 0.05)));
   const list: [number, number][] = [];
-  for (let w = cw; w <= r.maxW; w++) for (let h = ch; h <= r.maxH; h++) if ((w > cw || h > ch) && w >= wantW && h >= wantH) list.push([w, h]);
+  for (let w = cw; w <= r.maxW; w++) for (let h = ch; h <= r.maxH; h++) if ((w > cw || h > ch) && w >= wantW && h >= wantH && boxAllowed(sizingOf(it), w, h, o)) list.push([w, h]);
   // smallest first; at the same area the shape closer to the card's own
   list.sort((a, b) => a[0] * a[1] - b[0] * b[1] || Math.abs(a[0] / a[1] - cw / ch) - Math.abs(b[0] / b[1] - cw / ch));
   // at its origin first, then anywhere nearby

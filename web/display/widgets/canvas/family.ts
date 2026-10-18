@@ -57,7 +57,8 @@ function fitList(root: HTMLElement, list: HTMLElement | null, sel: string, first
     return left.length > 1 ? left[left.length - 1] : null;
   }, () => {
     if (!more) return;
-    const k = list.querySelectorAll(`${sel}.fit-hide`).length;
+    // (days gone by that leave are not more to come)
+    const k = list.querySelectorAll(`${sel}.fit-hide:not(.is-past)`).length;
     more.textContent = k ? ctx.t('more', { n: k }) : '';
   });
   // down to one row that only fits alone (a small box, a busy day): the row stays whole and the "+N more" line goes
@@ -419,14 +420,16 @@ const mealsWeek = familyCard({
     const meals = mealsOf(env);
     if (!meals) return note('🍽️', ctx.t('kidsMealsOff'));
     const today = env.now().dayKey;
-    // a narrow box (three cells or so): a list of days, each with its meals on lines of their own
+    let n = Math.min(7, Math.max(3, Number((env.item().props as Props).days) || 7));
+    // a narrow box (three cells or so): a list of days, each with its meals on lines of their own. Late in the week
+    // the days before today fill a tall box as they do the grid (on a Sunday the list would be today alone); they go
+    // first when the box is short (fit), so today always shows
     if (box && box.w / box.rem < 46) {
       const from = Math.max(0, meals.days.findIndex((d) => d.date >= today));
-      return mealsListHtml(meals, today, meals.days.slice(from));
+      return mealsListHtml(meals, today, meals.days.slice(Math.max(0, Math.min(from, meals.days.length - n))));
     }
     const rows = !!box && box.h > box.w;
     // as many days as asked for, and as fit (a day column needs about 9rem, a day row about 4.4rem), from today on
-    let n = Math.min(7, Math.max(3, Number((env.item().props as Props).days) || 7));
     if (box) n = Math.max(1, Math.min(n, Math.floor(rows ? (box.h / box.rem - 3.6) / 4.4 : (box.w / box.rem - 8.4) / 9)));
     let days = meals.days;
     if (n < days.length) {
@@ -437,7 +440,9 @@ const mealsWeek = familyCard({
     return mealsGridHtml(meals, today, rows, days);
   },
   fit(root) {
-    fitList(root, root.querySelector<HTMLElement>('.cvf-mlist'), '.cvf-mday');
+    const list = root.querySelector<HTMLElement>('.cvf-mlist');
+    // the days before today leave first, from the earliest
+    fitList(root, list, '.cvf-mday', () => (list ? visible(list, '.cvf-mday.is-past')[0] : null));
   },
 });
 
@@ -447,7 +452,7 @@ function mealsListHtml(meals: NonNullable<FamilyDisplayState['meals']>, today: s
   const html = days.map((day) => {
     const lines = meals.slots.filter((s) => day.meals[s]).map((s) => `<div class="cvf-mline"><span class="cvf-mline-em">${MEAL_EMOJI[s]}</span><span class="cvf-mline-t">${esc(day.meals[s]!)}</span></div>`);
     const head = `<div class="cvf-mday-h"><span class="km-wd">${esc(day.date === today ? t('today') : weekdayName(lang, day.date, 'long').replace(/-feira$/i, ''))}</span><span class="km-dn">${Number(day.date.slice(8, 10))}</span></div>`;
-    return `<div class="cvf-mday${day.date === today ? ' is-today' : ''}">${head}${lines.join('') || `<div class="cvf-mline is-empty">${esc(t('kidsNoMeal'))}</div>`}</div>`;
+    return `<div class="cvf-mday${day.date === today ? ' is-today' : day.date < today ? ' is-past' : ''}">${head}${lines.join('') || `<div class="cvf-mline is-empty">${esc(t('kidsNoMeal'))}</div>`}</div>`;
   });
   return `<div class="kf-list cvf-mlist">${html.join('')}</div><div class="kf-more"></div>`;
 }

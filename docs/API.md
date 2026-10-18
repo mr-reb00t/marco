@@ -934,7 +934,10 @@ kind's sizes that fits in the box). Each kind has a range (`cellRange(kind, orie
 (`CANVAS_KINDS[kind].fine`, else twice the first two numbers of `CANVAS_KINDS[kind].cells`, which are written in old
 cells) to twice its largest, widened to hold its named sizes; on a portrait screen at most 16 wide, and a kind that may
 take the whole height takes all 24 rows. A box smaller than twice the kind's old smallest (`fullLookMin(kind,
-orientation)`) is drawn in a compact look. Saving clamps a box to its kind's range (a warning), stores a box that is
+orientation)`) is drawn in a compact look. Saving clamps a box to its kind's range (a warning); a box narrower or lower than the kind's `fine` smallest is allowed
+only when it holds one of the kind's named sizes (`boxAllowed`). A box saved smaller than its kind's smallest grows
+to it where there is room (in place or at the nearest free spot, a warning) and stays as it was when there is none.
+Saving also stores a box that is
 exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell (an error; the
 named size is used). The portrait view drawn from the landscape one keeps a box of its own (at most 16 wide) before it
 tries the named sizes. The display config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or

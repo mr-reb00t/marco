@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- *Gauge* and *Statistic* are at least 4×1 cells, and *Scenes* at least 6×1 (4×4 stays), so the names read next to a
+  wide sidebar instead of being cut to a few letters. A card saved smaller grows to its new smallest box where there
+  is room, at its place or the nearest free one, never over another card. With no room anywhere it stays as it was.
+
+### Fixed
+- *Meals of the week* in a narrow, tall box showed only today late in the week (on a Sunday, one day in a box made
+  for seven). Like the wide card, it now fills the box with the earlier days of the week too. In a short box those go
+  first, so today always shows.
+
 ## [0.16.4] - 2026-10-18
 
 ### Changed

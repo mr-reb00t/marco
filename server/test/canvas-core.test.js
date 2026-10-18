@@ -556,6 +556,47 @@ test('flexible sizes: validation keeps boxes of their own, clamps them to the ki
   }
 });
 
+test('raised smallest boxes: a gauge, a statistic or scenes saved smaller grow on read where there is room, never over another card, else stay as they were', () => {
+  assert.deepEqual([cellRange('ha.gauge').minW, cellRange('ha.gauge').minH], [4, 1]);
+  assert.deepEqual([cellRange('ha.statistic').minW, cellRange('ha.statistic').minH], [4, 1]);
+  // the scenes: at least 6 wide, narrower only around their 4×4 named size
+  assert.ok(boxAllowed('ha.scene', 6, 1) && boxAllowed('ha.scene', 4, 4) && boxAllowed('ha.scene', 5, 4));
+  assert.equal(boxAllowed('ha.gauge', 3, 1), false);
+  assert.equal(boxAllowed('ha.scene', 5, 1), false);
+  assert.equal(boxAllowed('ha.scene', 4, 3), false);
+  assert.deepEqual(boxOf('ha.scene', 4, 1), { size: lookSize('ha.scene', 6, 1), w: 6, h: 1 });
+  assert.deepEqual(boxOf('ha.scene', 4, 4), { size: 'xs' });
+  // room beside them: grown in place (a warning, not an error)
+  const g = item('ha.gauge', { zone: 'main', x: 0, y: 0, size: 'xs', w: 3, h: 1 });
+  const st = item('ha.statistic', { zone: 'main', x: 0, y: 1, size: 'xs', w: 3, h: 2 });
+  const sc = item('ha.scene', { zone: 'main', x: 0, y: 3, size: 'xs', w: 4, h: 1 });
+  let { c: col, out } = run({ items: [g, st, sc] });
+  const by = (it) => out.items.find((x) => x.id === it.id)?.pos;
+  assert.deepEqual(col.errors, []);
+  assert.deepEqual([by(g).x, by(g).y, ...posCells(by(g))], [0, 0, 4, 1]);
+  assert.deepEqual([by(st).x, by(st).y, ...posCells(by(st))], [0, 1, 4, 2]);
+  assert.deepEqual([by(sc).x, by(sc).y, ...posCells(by(sc))], [0, 3, 6, 1]);
+  assert.equal(col.warnings.filter((w) => /grown to/.test(w.message)).length, 3);
+  assertNoOverlap(out.items);
+  // a neighbour where it would grow: the grown box moves to the nearest free spot
+  const g2 = item('ha.gauge', { zone: 'main', x: 4, y: 0, size: 'xs', w: 3, h: 1 });
+  const wall = item('ha.sensor', { zone: 'main', x: 7, y: 0, size: 'row', w: 4, h: 2 });
+  ({ c: col, out } = run({ items: [wall, g2] }));
+  assert.deepEqual(col.errors, []);
+  assert.deepEqual(posCells(by(g2)), [4, 1]);
+  assertNoOverlap(out.items);
+  // a grid full but for its own cells: kept as it was, nothing deleted
+  const fill = [];
+  for (let y = 0; y < 16; y += 4) for (let x = 0; x < 24; x += 4) if (!(x === 0 && y === 0)) fill.push(item('ha.tile', { zone: 'main', x, y, size: 's', w: 4, h: 4 }));
+  const left = [item('ha.tile', { zone: 'main', x: 3, y: 0, size: 's', w: 1, h: 4 }), item('ha.tile', { zone: 'main', x: 0, y: 1, size: 's', w: 3, h: 3 })].map((it) => ({ ...it, kind: 'spacer', props: {} }));
+  const g3 = item('ha.gauge', { zone: 'main', x: 0, y: 0, size: 'xs', w: 3, h: 1 });
+  ({ c: col, out } = run({ items: [...fill, ...left, g3] }));
+  assert.deepEqual(col.errors, []);
+  assert.deepEqual(by(g3), { zone: 'main', x: 0, y: 0, size: lookSize('ha.gauge', 3, 1), w: 3, h: 1 });
+  assert.ok(col.warnings.some((w) => /no room to grow it, kept/.test(w.message)));
+  assertNoOverlap(out.items);
+});
+
 test('flexible sizes: portrait keeps a box of its own (at most 16 wide), a hand-made portrait one is checked like landscape, the display gets w and h', () => {
   const items = [item('news', { zone: 'main', x: 0, y: 0, size: 'w', w: 24, h: 4 }), item('todo', { zone: 'main', x: 0, y: 4, size: 't', w: 6, h: 12 }), item('clock.digital', { zone: 'main', x: 6, y: 4, size: 'm' })];
   const { placed, omitted } = deriveCanvasPortrait(items);
