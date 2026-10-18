@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.5] - 2026-10-18
+
 ### Changed
 - *Gauge* and *Statistic* are at least 4×1 cells, and *Scenes* at least 6×1 (4×4 stays), so the names read next to a
   wide sidebar instead of being cut to a few letters. A card saved smaller grows to its new smallest box where there
