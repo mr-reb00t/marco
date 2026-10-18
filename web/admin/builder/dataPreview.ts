@@ -1,4 +1,4 @@
-// The numbers of the draft's data cards (Cripto, Deportes, Bolsa) for the builder's preview: the items as they are in
+// The numbers of the draft's data cards (Cripto, Deportes, Bolsa, Divisas) for the builder's preview: the items as they are in
 // the editor go to POST /api/admin/data/preview (the server's own cache, so the preview never costs the sources more
 // than the screens do), and Stage.tsx posts the answer to the frame ('marco:preview-data'). Asked again a moment after
 // a data card changes and every minute while the builder stays open.
@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { CanvasConfig, DataItemData } from '../../shared/types';
 import { api } from '../api';
 
-const KINDS = ['market', 'sports', 'stocks'];
+const KINDS = ['market', 'sports', 'stocks', 'currency'];
 const EVERY_MS = 60_000;
 
 export function useDataPreview(cv: CanvasConfig | null): Record<string, DataItemData> {

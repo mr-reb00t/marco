@@ -59,7 +59,7 @@ test('the text size reaches every card: its own type, or the zoom of its body, n
   // the kinds that size their own type read the scale; the others do not (or they would grow twice)
   const readsScale = (k) => re.test(k);
   for (const k of Object.keys(CANVAS_KINDS)) {
-    if (k.startsWith('ha.') || k.startsWith('nav.') || ['market', 'sports', 'stocks', 'clock.digital', 'clock.analog', 'clock.flip', 'clock.world', 'date', 'weather.now', 'value', 'heading', 'html'].includes(k)) assert.ok(readsScale(k), k);
+    if (k.startsWith('ha.') || k.startsWith('nav.') || ['market', 'sports', 'stocks', 'currency', 'clock.digital', 'clock.analog', 'clock.flip', 'clock.world', 'date', 'weather.now', 'value', 'heading', 'html'].includes(k)) assert.ok(readsScale(k), k);
     else assert.ok(!readsScale(k), k);
   }
 });

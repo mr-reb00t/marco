@@ -599,6 +599,21 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/admin/data/currency/currencies",
+      "query": [],
+      "feature": null,
+      "callers": [
+        "dataCurrencies"
+      ],
+      "request": null,
+      "response": "CurrencyListResult",
+      "responseArray": false,
+      "responseKeys": [
+        "currencies"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/admin/data/preview",
       "query": [],

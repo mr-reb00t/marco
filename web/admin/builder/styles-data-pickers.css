@@ -1,0 +1,20 @@
+/* The data pickers (DataPickers.tsx): coins, teams, symbols and currency pairs, in the builder and on the Widgets page */
+.bld-drow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bld-drow > .select, .bld-drow > .input { flex: 1; min-width: 0; }
+.bld-drow > .select { flex: 0 0 auto; width: 88px; }
+.bld-dname { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bld-dbadge { flex: none; min-width: 34px; padding: 2px 6px; border-radius: 999px; background: var(--surface-2, rgb(127 127 127 / 0.14)); font-size: 11px; font-weight: 700; text-align: center; }
+.bld-dbadge.is-wide { min-width: 52px; }
+.bld-dresults { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; border: 1px solid var(--border, rgb(127 127 127 / 0.25)); border-radius: 8px; padding: 4px; }
+.bld-dres { display: flex; align-items: baseline; gap: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bld-dres:hover:not(:disabled), .bld-dres:focus-visible { background: var(--surface-2, rgb(127 127 127 / 0.14)); }
+.bld-dres:disabled { opacity: 0.45; cursor: default; }
+.bld-dres > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a currency pair: from, swap, to, remove (the selects share the row) */
+.bld-drow.bld-fxrow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; }
+.bld-drow.bld-fxrow > .select { width: auto; min-width: 0; }
+/* a narrow inspector: from and swap on one line, to and remove on the next, so each select shows the currency's name */
+.bld-dlist { container-type: inline-size; }
+@container (max-width: 420px) {
+  .bld-drow.bld-fxrow { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; padding-bottom: 6px; border-bottom: 1px solid var(--border, rgb(127 127 127 / 0.2)); }
+}

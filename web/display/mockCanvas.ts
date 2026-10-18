@@ -201,6 +201,34 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'stocks', pos: M(12, 12, 'w'), props: { symbols: [{ sym: 'AAPL' }, { sym: 'MSFT' }, { sym: 'NVDA' }, { sym: 'AMZN' }, { sym: 'GOOGL' }, { sym: 'TSLA' }, { sym: 'QQQ' }], layout: 'ticker' } },
     ],
   },
+  // Divisas (exchange rates of the ECB, made-up answers): a list with its curves, one pair large over a year, the
+  // curves behind the rows and behind the big rate, one-line compact cards, and a Bolsa symbol with no data
+  currency: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'currency', pos: B(0, 0, 8, 7), props: { pairs: [{ base: 'EUR', quote: 'HUF' }, { base: 'EUR', quote: 'USD' }, { base: 'USD', quote: 'MXN' }, { base: 'GBP', quote: 'EUR' }], layout: 'list', range: '30d', chart: 'area' } },
+      { kind: 'currency', pos: B(8, 0, 8, 7), props: { pairs: [{ base: 'EUR', quote: 'HUF' }], layout: 'big', range: '1y', chart: 'area' } },
+      { kind: 'currency', pos: B(16, 0, 8, 7), props: { pairs: [{ base: 'EUR', quote: 'CHF' }, { base: 'USD', quote: 'JPY' }, { base: 'EUR', quote: 'PLN' }], layout: 'list', range: '7d', chart: 'line', chartStyle: 'background' } },
+      { kind: 'currency', pos: B(0, 7, 8, 7), props: { pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' } },
+      { kind: 'currency', pos: B(8, 7, 8, 1), props: { pairs: [{ base: 'EUR', quote: 'HUF' }], range: '30d', chart: 'area' } },
+      { kind: 'currency', pos: B(8, 8, 8, 1), props: { pairs: [{ base: 'USD', quote: 'MXN' }], range: '7d', chart: 'line' } },
+      { kind: 'stocks', pos: B(8, 9, 8, 5), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'EURHUF', name: '' }, { sym: 'MSFT', name: 'Microsoft' }], layout: 'list' } },
+      { kind: 'stocks', pos: B(16, 7, 8, 3), props: { symbols: [{ sym: 'OANDA:EUR_HUF', name: '' }], layout: 'ticker' } },
+      { kind: 'stocks', pos: B(16, 10, 8, 4), props: { symbols: [{ sym: 'AAPL' }, { sym: 'EURHUF' }, { sym: 'NVDA' }], layout: 'ticker' } },
+    ],
+  },
+  // Divisas in its compact look (one line, the fine grid's smallest boxes) and a pair the ECB does not publish
+  currencyLines: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'currency', pos: B(0, 0, 8, 1), props: { pairs: [{ base: 'EUR', quote: 'HUF' }], range: '30d', chart: 'area' } },
+      { kind: 'currency', pos: B(0, 1, 6, 1), props: { pairs: [{ base: 'USD', quote: 'MXN' }, { base: 'EUR', quote: 'USD' }], range: '7d', chart: 'line' } },
+      { kind: 'currency', pos: B(0, 2, 4, 1), props: { pairs: [{ base: 'GBP', quote: 'EUR' }], range: '30d', chart: 'area' } },
+      { kind: 'currency', pos: B(0, 3, 4, 2), props: { pairs: [{ base: 'EUR', quote: 'IDR' }], range: '1y', chart: 'area' } },
+      { kind: 'currency', pos: B(8, 0, 6, 3), props: { pairs: [{ base: 'EUR', quote: 'XAU' }], layout: 'list' } },
+      { kind: 'currency', pos: B(14, 0, 6, 2), props: { pairs: [{ base: 'JPY', quote: 'EUR' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' } },
+    ],
+  },
   // Entidad cards at every size, on and off (a light by its own colour, one with the on/off row, a switch, sensors)
   tiles: {
     canvas: { background: 'ambient', touch: true },

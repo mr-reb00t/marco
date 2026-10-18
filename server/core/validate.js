@@ -19,7 +19,7 @@ import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
-import { sanitizeCanvas } from './canvasCore.js';
+import { currencyProps, sanitizeCanvas } from './canvasCore.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
 } from './pricesCore.js';
@@ -462,6 +462,17 @@ function sanitizeWidget(ctx, p, x, seen, opts) {
       name: str(ctx, `${p}.name`, x.name, '', 60).trim() || 'Widget',
       // the screens ask this server for the prices: no address, no reload interval of their own
       options: { url: '', refreshSec: 900, fit: 'contain', bust: false, prices: sanitizePriceOptions(ctx, `${p}.options.prices`, o.prices) },
+    };
+  }
+  if (type === 'currency') {
+    // exchange rates (the Divisas card's options): the screens ask this server for them (GET /api/display/currency)
+    const cur = currencyProps(ctx, `${p}.options.currency`, obj(ctx, `${p}.options.currency`, o.currency));
+    if (!cur.pairs.length) ctx.err(`${p}.options.currency.pairs`, 'at least one pair');
+    return {
+      id: id(ctx, `${p}.id`, typeof x.id === 'string' && x.id.startsWith(WIDGET_PREFIX) ? x.id : undefined, WIDGET_PREFIX, seen),
+      type,
+      name: str(ctx, `${p}.name`, x.name, '', 60).trim() || 'Widget',
+      options: { url: '', refreshSec: 0, fit: 'contain', bust: false, currency: cur },
     };
   }
   let url = str(ctx, `${p}.options.url`, o.url, '', 2048).trim();

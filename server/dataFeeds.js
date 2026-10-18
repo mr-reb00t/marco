@@ -1,4 +1,5 @@
-// Data cards on a self-hosted server (Personalizado, palette "Datos": market, sports, stocks). What to ask, how to read
+// Data cards on a self-hosted server (Personalizado, palette "Datos": market, sports, stocks, currency; and the Currency
+// widget). What to ask, how to read
 // it, how long to keep it and what a screen gets are in core/dataCore.js (Marco Cloud runs the same hub); this file
 // does the network part and ties it to the saved screens.
 //
@@ -29,7 +30,7 @@ const VERSION = (() => {
 const USER_AGENT = `Marco/${VERSION} (+https://github.com/mr-reb00t/marco)`;
 
 /** Data kinds of a Personalizado screen. */
-export const DATA_KINDS = ['market', 'sports', 'stocks'];
+export const DATA_KINDS = ['market', 'sports', 'stocks', 'currency'];
 
 async function readCapped(res, max) {
   const len = Number(res.headers?.get?.('content-length'));
@@ -117,6 +118,8 @@ export const itemData = (item, { preview = false } = {}) => dataForItem(hub, ite
 export const searchCoins = (text) => hub.searchCoins(text);
 /** The teams of a competition for the picker (cached a day). */
 export const leagueTeams = (league) => hub.teams(league);
+/** The ECB's currencies for the exchange rates picker (Frankfurter, cached a day). */
+export const fxCurrencies = () => hub.fxCurrencies();
 /** Symbol search for the stocks picker (Finnhub, needs the key). */
 export const searchSymbols = (text) => hub.searchSymbols(text);
 

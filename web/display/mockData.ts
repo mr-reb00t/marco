@@ -13,7 +13,7 @@ const hubs = new Map<string, ReturnType<typeof createDataHub>>();
 export async function demoData(cfg: DisplayConfig | null): Promise<Record<string, DataItemData>> {
   const out: Record<string, DataItemData> = {};
   for (const it of canvasCards(cfg?.canvas?.items)) {
-    if (it.disabled || !['market', 'sports', 'stocks'].includes(it.kind)) continue;
+    if (it.disabled || !['market', 'sports', 'stocks', 'currency'].includes(it.kind)) continue;
     const key = `${it.id}|${JSON.stringify(it.props)}`;
     let hub = hubs.get(key);
     if (!hub) {
@@ -25,6 +25,18 @@ export async function demoData(cfg: DisplayConfig | null): Promise<Record<string
     if (d) out[it.id] = d.kind === 'stocks' && it.props.sparkline === true ? { ...d, quotes: d.quotes.map(dayCurve) } : d;
   }
   return out;
+}
+
+/** The demo's numbers of one item of `kind` (the Currency widget asks for its own, widgets/currency.ts). */
+export async function demoItem(kind: string, props: Record<string, unknown>): Promise<DataItemData | null> {
+  const key = `${kind}|${JSON.stringify(props)}`;
+  let hub = hubs.get(key);
+  if (!hub) {
+    if (hubs.size > 40) hubs.clear();
+    hub = createDataHub({ call: fakeDataCall(), stocksKey: () => FAKE_STOCKS_KEY });
+    hubs.set(key, hub);
+  }
+  return (await dataForItem(hub, { kind, props })) as DataItemData | null;
 }
 
 /**

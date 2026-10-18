@@ -56,6 +56,8 @@ export function widgetPreviewSpot(cfg: StoredConfig, screenId: string, w: Widget
   const p = (screen?.widgets ?? []).find((x) => x.widgetId === w.id);
   if (p) return { place: p.place, size: p.size, corner: p.corner };
   // the Vertical shape is a tall card: the large size, where it has the height
+  // the exchange rates: a list in the side column, the big card in a large corner
+  if (w.type === 'currency') return w.options.currency?.layout === 'big' ? { place: 'corner', size: 'l', corner: 'br' } : { place: 'side', size: 'm', corner: 'br' };
   if (w.type === 'prices') return { place: 'side', size: w.options.prices?.view === 'next' || w.options.prices?.chartShape === 'rows' ? 'l' : 'm', corner: 'br' };
   return { place: 'corner', size: 'm', corner: 'br' };
 }

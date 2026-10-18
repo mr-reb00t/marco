@@ -40,7 +40,7 @@ export const PLANNER_CALENDAR = { weeks: 'auto', eventStyle: 'cards' };
 export const SCREEN_ONLY_KEYS = ['screen', 'layout', 'background', 'message', 'alerts', 'privacy', 'widgets', 'canvas'];
 
 // ---- Widgets: images and web pages the owner adds (config.widgets), placed per screen (screen.widgets) ----
-export const WIDGET_TYPES = ['image', 'web', 'prices'];
+export const WIDGET_TYPES = ['image', 'web', 'prices', 'currency'];
 /** Refresh choices in seconds. Web pages also have 0 (never reload: many dashboards update themselves). */
 export const WIDGET_REFRESH_SEC = [1, 10, 30, 60, 300, 900, 3600, 21600, 86400];
 export const WEB_WIDGET_REFRESH_SEC = [0, 30, 60, 300, 900, 3600, 21600, 86400];
@@ -155,8 +155,9 @@ export function defaultConfig() {
     //   transitionSpeed: 'fast' | 'normal' | 'slow', holdOnAlert, nightRotate, offScreenId,
     //   schedule: [{ id, enabled, days, from, to }], steps: [{ screenId, seconds }] }
     carousels: { items: [] },
-    // widgets: { id: 'w_…', type: 'image' | 'web' | 'prices', name, options: { url, refreshSec, fit, bust, prices? } }
-    // (prices: electricity price widget, server/core/pricesCore.js; no url). Where each one
+    // widgets: { id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency', name, options: { url, refreshSec, fit, bust,
+    // prices?, currency? } } (prices: electricity price widget, server/core/pricesCore.js; currency: exchange rates,
+    // server/core/dataCore.js, the Divisas card's options; no url). Where each one
     // shows is chosen per screen (screen.widgets, layout.widgetId).
     widgets: [],
     // doorbell: camera entity (camera.*), seconds on screen (10..300), screenIds ([] = all), door chime on/off

@@ -1,8 +1,9 @@
 // Personalizado data cards (palette "Datos"): Cripto (market: prices with a sparkline or an area chart over 1, 7 or 30
-// days), Deportes (sports: live, next and last games of teams or competitions, with crests) and Bolsa (stocks: a
-// scrolling ticker or a list of quotes). The numbers come from this server only (dataFeed.ts, GET /api/display/data);
+// days), Deportes (sports: live, next and last games of teams or competitions, with crests), Bolsa (stocks: a
+// scrolling ticker or a list of quotes) and Divisas (currency: exchange rates of the ECB with their curve over 7 days,
+// 30 days or a year, drawn like Cripto; the Currency widget, widgets/currency.ts, draws the same card). The numbers come from this server only (dataFeed.ts, GET /api/display/data);
 // every text is written with textContent and every chart is hand-drawn SVG (the approach of chart.ts).
-import type { DataItemData, DisplayCanvasItem, MarketCoinData, MarketData, SportsData, SportsGame, SportsSide, StocksData } from '../../../shared/types';
+import type { CurrencyData, DataItemData, DisplayCanvasItem, MarketCoinData, MarketData, SportsData, SportsGame, SportsSide, StockQuoteData, StocksData } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { reducedMotion } from '../../dom';
 import { ago } from '../ha/haui';
@@ -32,6 +33,31 @@ export function fmtPrice(v: number | null, cur = ''): string {
     return new Intl.NumberFormat(ctx.lang, { style: 'currency', currency: cur.toUpperCase(), minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
   } catch {
     return v.toFixed(d);
+  }
+}
+
+/**
+ * An exchange rate: as many decimals as its size wants (363,08 · 20,687 · 1,1298 · 0,8439 · 0,005624), no currency
+ * sign (the pair says what it is).
+ */
+export function fmtRate(v: number | null): string {
+  if (v === null || !Number.isFinite(v)) return '–';
+  const a = Math.abs(v);
+  const d = a >= 100 ? 2 : a >= 10 ? 3 : a >= 1 ? 4 : a > 0 ? Math.min(8, 3 - Math.floor(Math.log10(a))) : 2;
+  try {
+    return new Intl.NumberFormat(ctx.lang, { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+  } catch {
+    return v.toFixed(d);
+  }
+}
+
+/** A currency's name in the screen's language ("forinto húngaro"), or '' when the browser has none. */
+export function currencyName(code: string): string {
+  try {
+    const n = new Intl.DisplayNames([ctx.lang], { type: 'currency' }).of(code) ?? '';
+    return n && n !== code ? n.charAt(0).toUpperCase() + n.slice(1) : '';
+  } catch {
+    return '';
   }
 }
 
@@ -144,7 +170,15 @@ function staleText(env: AdapterEnv, id: string, d: DataItemData | null | undefin
   return ctx.t('dtUpdated', { when: ago(Date.now() - age * 1000) });
 }
 
-const RANGE_KEY: Record<string, string> = { '1d': 'dt1d', '7d': 'dt7d', '30d': 'dt30d' };
+const RANGE_KEY: Record<string, string> = { '1d': 'dt1d', '7d': 'dt7d', '30d': 'dt30d', '1y': 'dt1y' };
+
+/** The price or rate of a row and its change, or "Sin datos" when the source has nothing for it. */
+function valueOf(c: { price: number | null; ch: number | null; noData?: boolean }, fmt: (v: number | null) => string, cls = 'cv-mk-val'): HTMLElement {
+  const val = el('div', cls);
+  if (c.noData) val.appendChild(el('span', 'cv-dt-nd', ctx.t('dtNoDataRow')));
+  else val.append(el('b', 'cv-mk-p', fmt(c.price)), changeChip(c.ch));
+  return val;
+}
 
 /** The note of a card with nothing to draw yet (set it up, loading, no numbers), or ''. */
 function emptyNote(d: DataItemData | null | undefined, configured: boolean): string {
@@ -168,7 +202,7 @@ function note(root: HTMLElement, text: string): void {
 // ------------------------------------------------------------------------------------------------ fitting
 
 /** The one-line parts of the data cards that must show whole: a name with an ellipsis, a row part wider than its column. */
-const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l';
+const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-fx-pair, .cv-dt-nd, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l';
 
 /** The card's content is taller (or wider) than its box (the editor would say it does not fit), or a row of a list is squeezed shorter than its text. */
 function cutV(root: HTMLElement): boolean {
@@ -290,13 +324,56 @@ interface Base {
   sig: string;
 }
 
-// ------------------------------------------------------------------------------------------------ market
+// ------------------------------------------------------------------------------------------------ market and currency
+
+/** One row of a Cripto or Divisas card: a coin in its currency, or a pair of currencies. */
+type PriceRow = MarketCoinData & { noData?: boolean };
+
+/** What differs between Cripto and Divisas: the rows of an answer and of the props, the row's label, the number. */
+interface PriceLook {
+  cls: string;
+  /** the rows of the answer (null: none yet) */
+  rows(d: DataItemData | null | undefined): PriceRow[] | null;
+  /** the rows the props name, before any number */
+  skeleton(p: Props): PriceRow[];
+  /** what says which row it is: the coin's badge, the pair */
+  label(c: PriceRow): HTMLElement;
+  fmt(v: number | null, c: PriceRow): string;
+  /** the default period */
+  range: string;
+  /** a list too narrow: the names go before the sparklines move behind the rows (a pair says enough by itself) */
+  namesFirst?: boolean;
+}
 
 function coinSkeleton(p: Props): MarketCoinData[] {
   return (Array.isArray(p.coins) ? p.coins : []).map((c: Props) => ({ id: c.id, sym: c.sym || String(c.id).slice(0, 5).toUpperCase(), name: c.name || '', cur: c.currency || 'eur', price: null, ch: null, pts: [] }));
 }
 
-function market(item0: DisplayCanvasItem): CanvasAdapter {
+const MARKET_LOOK: PriceLook = {
+  cls: 'cv-mk',
+  rows: (d) => ((d as MarketData | null | undefined)?.coins?.length ? (d as MarketData).coins : null),
+  skeleton: coinSkeleton,
+  label: (c) => coinBadge(c),
+  fmt: (v, c) => fmtPrice(v, c.cur),
+  range: '7d',
+};
+
+/** A pair as a row: EUR/HUF, the quote's name in the screen's language. */
+const pairRow = (x: { base: string; quote: string; rate?: number | null; ch?: number | null; pts?: [number, number][]; noData?: boolean }): PriceRow => ({
+  id: `${x.base}${x.quote}`, sym: `${x.base}/${x.quote}`, name: currencyName(x.quote), cur: x.quote, price: x.rate ?? null, ch: x.ch ?? null, pts: x.pts ?? [], ...(x.noData ? { noData: true } : {}),
+});
+
+export const CURRENCY_LOOK: PriceLook = {
+  cls: 'cv-fx',
+  rows: (d) => ((d as CurrencyData | null | undefined)?.pairs?.length ? (d as CurrencyData).pairs.map(pairRow) : null),
+  skeleton: (p) => (Array.isArray(p.pairs) ? p.pairs : []).filter((x: Props) => x && x.base && x.quote).map((x: Props) => pairRow({ base: String(x.base), quote: String(x.quote) })),
+  label: (c) => el('b', 'cv-fx-pair', c.sym),
+  fmt: (v) => fmtRate(v),
+  range: '30d',
+  namesFirst: true,
+};
+
+function market(item0: DisplayCanvasItem, look: PriceLook = MARKET_LOOK): CanvasAdapter {
   const b = { box: null, sig: '' } as unknown as Base;
   let idx = 0;
   let turnAt = Date.now();
@@ -304,8 +381,8 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     const { env, root } = b;
     const it = env.item();
     const p = it.props as Props;
-    const d = env.data.get(item0.id) as MarketData | null | undefined;
-    const coins = d?.coins?.length ? d.coins : coinSkeleton(p);
+    const d = env.data.get(item0.id);
+    const coins = look.rows(d) ?? look.skeleton(p);
     // a box past the named sizes with one coin: the big price and its chart rather than one line of a list
     // a box one cell high (the compact look): one coin on one line, each in turn like the big card
     const line = isLine(root);
@@ -318,28 +395,28 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
     root.classList.remove('no-name', 'has-bgchart', 'is-bg', 'is-line');
     root.style.setProperty('--dk', '1');
     root.classList.toggle('is-big', big);
-    const n0 = emptyNote(d, coinSkeleton(p).length > 0);
+    const n0 = emptyNote(d, look.skeleton(p).length > 0);
     if (n0 && !(d === undefined && coins.length)) return note(root, n0);
-    const range = String(d?.range || p.range || '7d');
+    // nothing the source knows (a pair of a currency the ECB does not publish): which ones, rather than empty rows
+    if (d && coins.length && coins.every((c) => c.noData)) return note(root, ctx.t('dtNoDataFor', { s: coins.map((c) => c.sym).join(', ') }));
+    const range = String((d as MarketData | CurrencyData | null | undefined)?.range || p.range || look.range);
     const chart: 'line' | 'area' | 'none' = p.chart === 'none' ? 'none' : p.chart === 'line' ? 'line' : 'area';
     if (line) {
       const c = coins[idx] ?? coins[0];
       if (!c) return;
       const row = drawLineRow(root, chart === 'none' ? null : spark(c.pts, trend(c.ch)), `cv-mk-row is-${trend(c.ch)}`);
       const who = el('div', 'cv-mk-who');
-      who.append(coinBadge(c), el('span', 'cv-mk-name', c.name || c.sym));
+      who.append(look.label(c), el('span', 'cv-mk-name', c.name || c.sym));
       row.prepend(who);
-      const val = el('div', 'cv-mk-val');
-      val.append(el('b', 'cv-mk-p', fmtPrice(c.price, c.cur)), changeChip(c.ch));
-      row.appendChild(val);
+      row.appendChild(valueOf(c, (v) => look.fmt(v, c)));
       const st = staleText(env, item0.id, d);
       root.classList.toggle('is-stale', !!st);
       if (b.box) fitLine(root, b.box);
       return;
     }
     const style = chartStyleOf(p, 'below');
-    if (big) drawBig(root, coins[idx] ?? coins[0], coins.length, idx, chart, b.box, style);
-    else drawList(root, coins, chart, b.box, style);
+    if (big) drawBig(root, coins[idx] ?? coins[0], coins.length, idx, chart, b.box, style, look);
+    else drawList(root, coins, chart, b.box, style, look);
     const foot = el('div', 'cv-dt-foot');
     foot.append(el('span', 'cv-dt-range', ctx.t(RANGE_KEY[range] ?? 'dt7d')));
     const st = staleText(env, item0.id, d);
@@ -358,9 +435,10 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
       if (root.classList.contains('is-bg')) placeBg(root, coins[idx] ?? coins[0], chart);
     } else if (b.box) {
       const list = root.querySelector<HTMLElement>('.cv-mk-list');
+      const names = sideways(root, () => root.classList.add('no-name'));
+      const behind = sideways(root, () => sparksBehind(root));
       ladder(root, [
-        sideways(root, () => sparksBehind(root)),
-        sideways(root, () => root.classList.add('no-name')),
+        ...(look.namesFirst ? [names, behind] : [behind, names]),
         dropRow(root, list, '.cv-mk-row'),
         dkStep(root, 0.9), dkStep(root, 0.8), dkStep(root, 0.7),
       ]);
@@ -369,10 +447,10 @@ function market(item0: DisplayCanvasItem): CanvasAdapter {
       bleedRows(root);
     }
   };
-  return dataAdapter(b, 'cv-mk', render, (t) => {
+  return dataAdapter(b, look.cls, render, (t) => {
     // a big card with several coins shows each in turn, 10 s each
     const p = b.env.item().props as Props;
-    const n = (b.env.data.get(item0.id) as MarketData | null | undefined)?.coins?.length ?? 0;
+    const n = look.rows(b.env.data.get(item0.id))?.length ?? 0;
     if ((p.layout === 'big' || b.box?.size === 'xs' || isLine(b.root)) && n > 1 && t.ms - turnAt >= 10_000) {
       turnAt = t.ms;
       idx = (idx + 1) % n;
@@ -414,13 +492,13 @@ function fitLine(root: HTMLElement, box: AdapterBox): void {
   ]);
 }
 
-function coinBadge(c: MarketCoinData): HTMLElement {
+function coinBadge(c: PriceRow): HTMLElement {
   const s = el('span', 'cv-mk-badge', c.sym.slice(0, 4));
   s.dataset.len = String(Math.min(4, c.sym.length));
   return s;
 }
 
-function drawList(root: HTMLElement, coins: MarketCoinData[], chart: 'line' | 'area' | 'none', box: AdapterBox | null, style: ChartStyle): void {
+function drawList(root: HTMLElement, coins: PriceRow[], chart: 'line' | 'area' | 'none', box: AdapterBox | null, style: ChartStyle, look: PriceLook): void {
   const rem = box?.rem ?? 10;
   // behind each row, whatever the card's width (each row then a band, its curve under its text); beside the name and
   // the price only where there is room for it
@@ -431,7 +509,7 @@ function drawList(root: HTMLElement, coins: MarketCoinData[], chart: 'line' | 'a
   for (const c of coins.slice(0, rows)) {
     const row = el('div', `cv-mk-row is-${trend(c.ch)}`);
     const who = el('div', 'cv-mk-who');
-    who.append(coinBadge(c), el('span', 'cv-mk-name', c.name || c.sym));
+    who.append(look.label(c), el('span', 'cv-mk-name', c.name || c.sym));
     row.appendChild(who);
     if (withSpark) {
       const s = spark(c.pts, trend(c.ch));
@@ -439,9 +517,7 @@ function drawList(root: HTMLElement, coins: MarketCoinData[], chart: 'line' | 'a
       if (s) holder.appendChild(s);
       row.appendChild(holder);
     }
-    const val = el('div', 'cv-mk-val');
-    val.append(el('b', 'cv-mk-p', fmtPrice(c.price, c.cur)), changeChip(c.ch));
-    row.appendChild(val);
+    row.appendChild(valueOf(c, (v) => look.fmt(v, c)));
     // (a card too narrow for it beside the numbers: behind the row, never none)
     if (behind || (chart !== 'none' && !withSpark)) rowBg(row, c.pts, trend(c.ch), behind && chart === 'area');
     list.appendChild(row);
@@ -508,16 +584,17 @@ function rangeUp(root: HTMLElement): void {
   if (foot && !foot.childElementCount) foot.remove();
 }
 
-function drawBig(root: HTMLElement, c: MarketCoinData | undefined, n: number, idx: number, chart: 'line' | 'area' | 'none', box: AdapterBox | null, style: ChartStyle): void {
+function drawBig(root: HTMLElement, c: PriceRow | undefined, n: number, idx: number, chart: 'line' | 'area' | 'none', box: AdapterBox | null, style: ChartStyle, look: PriceLook): void {
   if (!c) return;
+  const fmt = (v: number | null) => look.fmt(v, c);
   const head = el('div', 'cv-mk-head');
-  head.append(coinBadge(c), el('span', 'cv-mk-name', c.name || c.sym));
+  head.append(look.label(c), el('span', 'cv-mk-name', c.name || c.sym));
   if (n > 1) {
     const dots = el('span', 'cv-mk-dots');
     for (let i = 0; i < n; i++) dots.appendChild(el('i', i === idx ? 'on' : ''));
     head.appendChild(dots);
   }
-  const price = el('div', 'cv-mk-price', fmtPrice(c.price, c.cur));
+  const price = el('div', 'cv-mk-price', c.noData ? ctx.t('dtNoDataRow') : fmt(c.price));
   const line = el('div', 'cv-mk-line');
   line.append(price);
   root.append(head, line, changeChip(c.ch));
@@ -531,7 +608,7 @@ function drawBig(root: HTMLElement, c: MarketCoinData | undefined, n: number, id
     if (tall) root.appendChild(el('div', 'cv-mk-chart is-room'));
     if (box && box.h / box.rem >= 16 && box.w / box.rem >= 26) {
       const mm = el('div', 'cv-mk-minmax');
-      mm.append(el('span', '', `${ctx.t('haMin')} ${fmtPrice(Math.min(...ys), c.cur)}`), el('span', '', `${ctx.t('haMax')} ${fmtPrice(Math.max(...ys), c.cur)}`));
+      mm.append(el('span', '', `${ctx.t('haMin')} ${fmt(Math.min(...ys))}`), el('span', '', `${ctx.t('haMax')} ${fmt(Math.max(...ys))}`));
       root.appendChild(mm);
     }
     return;
@@ -545,7 +622,7 @@ function drawBig(root: HTMLElement, c: MarketCoinData | undefined, n: number, id
       // the lowest and highest of the range, under the chart, where there is room for a line of its own
       if (ys.length && box && box.h / box.rem >= 26 && box.w / box.rem >= 30) {
         const mm = el('div', 'cv-mk-minmax');
-        mm.append(el('span', '', `${ctx.t('haMin')} ${fmtPrice(Math.min(...ys), c.cur)}`), el('span', '', `${ctx.t('haMax')} ${fmtPrice(Math.max(...ys), c.cur)}`));
+        mm.append(el('span', '', `${ctx.t('haMin')} ${fmt(Math.min(...ys))}`), el('span', '', `${ctx.t('haMax')} ${fmt(Math.max(...ys))}`));
         root.appendChild(mm);
       }
     }
@@ -558,7 +635,7 @@ function drawBig(root: HTMLElement, c: MarketCoinData | undefined, n: number, id
  * height, behind the numbers) down to the card's bottom edge,
  * edge to edge; the curve stays above the line at the bottom (the period, the lowest and highest).
  */
-function placeBg(root: HTMLElement, c: MarketCoinData | undefined, chart: 'line' | 'area' | 'none'): void {
+function placeBg(root: HTMLElement, c: PriceRow | undefined, chart: 'line' | 'area' | 'none'): void {
   if (!c) return;
   const H = root.clientHeight;
   const room = root.querySelector<HTMLElement>('.cv-mk-chart.is-room');
@@ -780,6 +857,8 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
     const n0 = emptyNote(d, configured);
     if (n0) return note(root, n0);
     const quotes = (d as StocksData).quotes ?? [];
+    // no symbol with data (unknown, all zeros, not on the free plan): which ones, never a card that keeps loading
+    if (quotes.length && quotes.every((q) => q.noData)) return note(root, ctx.t('dtNoDataFor', { s: quotes.map((q) => q.sym).join(', ') }));
     const ticker = p.layout !== 'list';
     const line = isLine(root);
     root.classList.toggle('is-ticker', ticker);
@@ -794,9 +873,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
       const who = el('div', 'cv-st-who');
       who.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
       row.prepend(who);
-      const val = el('div', 'cv-mk-val');
-      val.append(el('b', 'cv-mk-p', fmtPrice(q.price)), changeChip(q.ch));
-      row.appendChild(val);
+      row.appendChild(valueOf(q, (v) => fmtPrice(v)));
       root.classList.toggle('is-stale', !!staleText(env, item0.id, d));
       if (b.box) fitLine(root, b.box);
       return;
@@ -828,8 +905,12 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
   const drawTicker = (root: HTMLElement, quotes: StocksData['quotes'], box: AdapterBox | null, withSpark: boolean) => {
     const vp = el('div', 'cv-st-vp');
     const track = el('div', 'cv-st-track');
-    const one = (q: StocksData['quotes'][number]) => {
+    const one = (q: StockQuoteData) => {
       const x = el('span', `cv-st-q is-${trend(q.ch)}`);
+      if (q.noData) {
+        x.append(el('b', 'sym', q.sym), el('span', 'cv-dt-nd', ctx.t('dtNoDataRow')));
+        return x;
+      }
       x.append(el('b', 'sym', q.sym), el('span', 'p', fmtPrice(q.price)));
       x.appendChild(changeChip(q.ch));
       if (withSpark) {
@@ -904,9 +985,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
         row.appendChild(holder);
       }
       // the price and its change on one line in a card wide enough for them (each quote one line, not two)
-      const val = el('div', `cv-mk-val${!box || box.w / rem >= 30 ? ' is-inline' : ''}`);
-      val.append(el('b', 'cv-mk-p', fmtPrice(q.price)), changeChip(q.ch));
-      row.appendChild(val);
+      row.appendChild(valueOf(q, (v) => fmtPrice(v), `cv-mk-val${!box || box.w / rem >= 30 ? ' is-inline' : ''}`));
       // (a card too narrow for it beside the numbers: behind the row, never none)
       if (behind || (withSpark && !sp)) rowBg(row, q.pts, trend(q.ch), behind);
       list.appendChild(row);
@@ -964,4 +1043,5 @@ export const DATA_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAd
   market: (item) => market(item),
   sports: (item) => sports(item),
   stocks: (item) => stocks(item),
+  currency: (item) => market(item, CURRENCY_LOOK),
 };

@@ -351,6 +351,12 @@ export function validateGlobal(c: StoredConfig): Errors {
       }
       continue;
     }
+    if (w.type === 'currency') {
+      const o = w.options.currency;
+      if (!o?.pairs?.length) e[`${p}.pairs`] = 'Añade al menos un par';
+      else if (o.pairs.some((x) => x.base === x.quote)) e[`${p}.pairs`] = 'Elige dos monedas distintas.';
+      continue;
+    }
     const bad = widgetUrlProblem(w.options.url, wcaps.edition === 'cloud');
     if (bad) e[`${p}.url`] = bad;
     if (w.type === 'web' && !hasFeature(wcaps, 'webWidgets')) e[`${p}.type`] = 'No disponible aquí';

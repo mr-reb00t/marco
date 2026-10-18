@@ -79,7 +79,7 @@ export type PlannerBar = 'side' | 'top' | 'bottom';
 
 // ---- Widgets (server/validate.js sanitizeWidget, server/screens.js displayWidgets) ----
 
-export type WidgetType = 'image' | 'web' | 'prices';
+export type WidgetType = 'image' | 'web' | 'prices' | 'currency';
 export type WidgetPlace = 'corner' | 'side';
 export type WidgetSize = 's' | 'm' | 'l';
 export type WidgetFit = 'contain' | 'cover';
@@ -93,6 +93,17 @@ export interface WidgetOptions {
   bust: boolean;
   /** type 'prices' only (its url is empty) */
   prices?: PriceWidgetOptions;
+  /** type 'currency' only (its url is empty) */
+  currency?: CurrencyOptions;
+}
+/** Exchange rates (the Divisas card's props and the Currency widget's options; server/core/canvasCore.js currencyProps). */
+export interface CurrencyOptions {
+  /** 1 to 6 pairs of ISO 4217 codes, worked out through the euro (ECB reference rates) */
+  pairs: { base: string; quote: string }[];
+  layout: 'list' | 'big';
+  range: '7d' | '30d' | '1y';
+  chart: 'area' | 'line' | 'none';
+  chartStyle: 'below' | 'background';
 }
 export type PriceView = 'auto' | 'chart' | 'now' | 'cheap' | 'next';
 export type PriceAxis = 'simple' | '3h' | '1h';
@@ -202,6 +213,8 @@ export interface DisplayWidget {
   v: string;
   /** type 'prices': what to draw (the display fetches /api/display/prices?zone=) */
   prices?: PriceWidgetOptions;
+  /** type 'currency': what to draw (the display fetches /api/display/currency?pairs=) */
+  currency?: CurrencyOptions;
 }
 /** POST /api/admin/test/widget { type, url } */
 export interface TestWidgetResponse {
@@ -816,7 +829,7 @@ export type CanvasKind =
   | 'ha.tile' | 'ha.light' | 'ha.switch' | 'ha.climate' | 'ha.cover' | 'ha.sensor'
   | 'ha.room' | 'ha.chart' | 'ha.camera' | 'ha.media' | 'ha.scene' | 'ha.gauge' | 'ha.statistic'
   // Datos: numbers the server fetches from public sources (server/core/dataCore.js)
-  | 'market' | 'sports' | 'stocks'
+  | 'market' | 'sports' | 'stocks' | 'currency'
   | 'html'
   // reserved for a later version (a declarative card), refused today
   | 'card';
@@ -1096,6 +1109,8 @@ export interface StockQuoteData {
   price: number | null;
   ch: number | null;
   pts: [number, number][];
+  /** Finnhub has nothing for this symbol (unknown, all zeros, or not on the key's plan, like forex on the free one) */
+  noData?: boolean;
 }
 export interface StocksData extends DataItemBase {
   kind: 'stocks';
@@ -1103,7 +1118,26 @@ export interface StocksData extends DataItemBase {
   /** no Finnhub key saved, or it was refused */
   needsKey?: boolean;
 }
-export type DataItemData = MarketData | SportsData | StocksData;
+export interface CurrencyPairData {
+  base: string;
+  quote: string;
+  /** units of `quote` per one `base`, on the latest ECB day */
+  rate: number | null;
+  /** change in % since the working day before */
+  ch: number | null;
+  /** [day ms, rate] over the item's range ([] without a chart) */
+  pts: [number, number][];
+  /** the ECB has no rate for one of the two currencies */
+  noData?: boolean;
+}
+export interface CurrencyData extends DataItemBase {
+  kind: 'currency';
+  range: '7d' | '30d' | '1y';
+  /** the ECB day of the rates (YYYY-MM-DD), '' when none */
+  date: string;
+  pairs: CurrencyPairData[];
+}
+export type DataItemData = MarketData | SportsData | StocksData | CurrencyData;
 /** GET /api/display/data: the data items of the requesting screen, by item id. */
 export interface DisplayDataResponse {
   items: Record<string, DataItemData>;
@@ -1126,6 +1160,10 @@ export interface SportsLeaguesResult {
 }
 export interface SymbolSearchResult {
   symbols: { sym: string; name: string; type: string }[];
+}
+/** GET /api/admin/data/currency/currencies */
+export interface CurrencyListResult {
+  currencies: { code: string; name: string }[];
 }
 export interface StocksKeyStatus {
   set: boolean;

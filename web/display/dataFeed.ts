@@ -1,4 +1,4 @@
-// Numbers of the data cards on a Personalizado screen (market, sports, stocks; docs/API.md). The server fetches and
+// Numbers of the data cards on a Personalizado screen (market, sports, stocks, currency; docs/API.md). The server fetches and
 // caches them from the sources (server/dataFeeds.js); this page only asks the server: GET /api/display/data for the
 // items of its own screen, every minute while such a card is on screen and the page is visible, and team crests by
 // token (GET /api/display/data/crest/:token). Nothing here ever talks to a third party.
@@ -19,7 +19,7 @@ export interface DataSource {
   crest(token: string, onLoad?: () => void): string | null;
 }
 
-const DATA_KINDS = ['market', 'sports', 'stocks'];
+const DATA_KINDS = ['market', 'sports', 'stocks', 'currency'];
 const POLL_MS = 60_000;
 const isObj = (x: unknown): x is Record<string, any> => !!x && typeof x === 'object' && !Array.isArray(x);
 
@@ -28,12 +28,13 @@ export function showsData(cfg: DisplayConfig | null | undefined): boolean {
   return canvasCards(cfg?.canvas?.items).some((it) => !it.disabled && DATA_KINDS.includes(it.kind));
 }
 
-/** Only answers of the three shapes are kept (a wrong one is never drawn). */
+/** Only answers of the four shapes are kept (a wrong one is never drawn). */
 function clean(v: unknown): DataItemData | null {
   if (!isObj(v) || !DATA_KINDS.includes(v.kind)) return null;
   if (v.kind === 'market' && !Array.isArray(v.coins)) return null;
   if (v.kind === 'sports' && !Array.isArray(v.groups)) return null;
   if (v.kind === 'stocks' && !Array.isArray(v.quotes)) return null;
+  if (v.kind === 'currency' && !Array.isArray(v.pairs)) return null;
   return v as DataItemData;
 }
 

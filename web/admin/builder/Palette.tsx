@@ -74,8 +74,8 @@ export function Palette(props: {
       const name = w.name.trim() || t('Widget sin nombre');
       const lock = props.cloud && w.type === 'web' ? 'Solo en Marco instalado en casa' : lockOf('widget', props);
       out.push({
-        key: `w:${w.id}`, spec: { kind: 'widget', props: { widgetId: w.id }, label: name }, name, help: w.type === 'prices' ? 'Precio de la luz' : w.type === 'web' ? 'Página web' : 'Imagen',
-        icon: w.type === 'prices' ? 'zap' : w.type === 'web' ? 'globe' : 'image', group: 'mine', lock, away: props.cloud && w.type === 'web',
+        key: `w:${w.id}`, spec: { kind: 'widget', props: { widgetId: w.id }, label: name }, name, help: w.type === 'prices' ? 'Precio de la luz' : w.type === 'currency' ? 'Divisas' : w.type === 'web' ? 'Página web' : 'Imagen',
+        icon: w.type === 'prices' ? 'zap' : w.type === 'currency' ? 'exchange' : w.type === 'web' ? 'globe' : 'image', group: 'mine', lock, away: props.cloud && w.type === 'web',
       });
     }
     return out;

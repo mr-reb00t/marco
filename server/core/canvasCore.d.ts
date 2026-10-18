@@ -111,6 +111,7 @@ export const CLOUD_CANVAS_KINDS: CanvasKind[];
 export const CANVAS_CATEGORIES: CanvasCategory[];
 export const DATA_KIND_IDS: CanvasKind[];
 export const CHART_STYLES: ('below' | 'background')[];
+export function currencyProps(c: { err(path: string, msg: string): void }, p: string, x: Record<string, unknown>): { pairs: { base: string; quote: string }[]; layout: "list" | "big"; range: "7d" | "30d" | "1y"; chart: "area" | "line" | "none"; chartStyle: "below" | "background" };
 export const NAV_SHOW: ('both' | 'icon' | 'text')[];
 export const NAV_RETURN_DEFAULT: number;
 export const NAV_RETURN_MAX: number;

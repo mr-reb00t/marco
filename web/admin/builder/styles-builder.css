@@ -350,18 +350,7 @@
 .bld-html-pv { position: relative; height: 180px; display: grid; place-items: center; border-radius: 14px; overflow: hidden; background: linear-gradient(135deg, #2b3242, #161a22); padding: 14px; box-sizing: border-box; }
 .bld-html-pv > .muted { color: rgb(255 255 255 / 0.6); text-align: center; }
 .bld-html-pv__frame { position: absolute; inset: 14px; width: calc(100% - 28px); height: calc(100% - 28px); border: 0; background: transparent; color-scheme: dark; pointer-events: none; }
-/* data cards: chosen coins, teams and symbols, and the search results under them (DataPickers.tsx) */
-.bld-drow { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.bld-drow > .select, .bld-drow > .input { flex: 1; min-width: 0; }
-.bld-drow > .select { flex: 0 0 auto; width: 88px; }
-.bld-dname { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bld-dbadge { flex: none; min-width: 34px; padding: 2px 6px; border-radius: 999px; background: var(--surface-2, rgb(127 127 127 / 0.14)); font-size: 11px; font-weight: 700; text-align: center; }
-.bld-dbadge.is-wide { min-width: 52px; }
-.bld-dresults { display: flex; flex-direction: column; gap: 2px; max-height: 240px; overflow: auto; border: 1px solid var(--border, rgb(127 127 127 / 0.25)); border-radius: 8px; padding: 4px; }
-.bld-dres { display: flex; align-items: baseline; gap: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.bld-dres:hover:not(:disabled), .bld-dres:focus-visible { background: var(--surface-2, rgb(127 127 127 / 0.14)); }
-.bld-dres:disabled { opacity: 0.45; cursor: default; }
-.bld-dres > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* data cards: chosen coins, teams, symbols and pairs, and the search results under them: styles-data-pickers.css */
 
 /* Archivo: export and import of one screen */
 .bld-file { display: flex; flex-wrap: wrap; gap: 6px; }

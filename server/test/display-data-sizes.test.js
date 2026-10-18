@@ -2,7 +2,8 @@
 // allow, in headless Chrome with the demo's made-up numbers (web/display/mockData.ts): one coin and several, euros and
 // dollars, up and down, the large card with each chart, the chart under the numbers and behind them ("De fondo"); a
 // team's live game, next game and last result, a whole competition, two followed at once, with and without crests;
-// quotes as a list and as a ticker. Each size is drawn on a landscape screen, with a wide sidebar, in portrait and in
+// quotes as a list and as a ticker, with symbols that have no data; exchange rates as a list and one large, on the
+// fine grid's boxes too. Each size is drawn on a landscape screen, with a wide sidebar, in portrait and in
 // portrait under a wide top bar (the real box changes, the size's name does not), and no card may be marked cramped
 // (the editor's "No cabe") or have a name or a number cut.
 // Skipped without a browser (set CHROME_PATH).
@@ -46,6 +47,21 @@ const VARIANTS = {
     { symbols: [{ sym: 'SPY', name: 'SPDR S&P 500 ETF Trust' }], layout: 'list' },
     { symbols: [{ sym: 'MSFT', name: 'Microsoft' }], layout: 'ticker' },
     { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'NVDA', name: 'NVIDIA' }, { sym: 'TSLA', name: 'Tesla' }], layout: 'list', sparkline: true, chartStyle: 'background' },
+    // symbols Finnhub has no data for (a forex pair on the free key): "Sin datos" on the row, or the card's note
+    { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'EURHUF', name: '' }, { sym: 'MSFT', name: 'Microsoft' }], layout: 'list' },
+    { symbols: [{ sym: 'NVDA' }, { sym: 'OANDA:EUR_HUF' }, { sym: 'TSLA' }], layout: 'ticker' },
+  ],
+  // Divisas: a list and one large, every period, the curve under the numbers and behind them, no curve, a pair the ECB
+  // does not publish, the smallest and the largest rates (0,005624 and 20.290,28)
+  currency: [
+    { pairs: [{ base: 'EUR', quote: 'HUF' }, { base: 'EUR', quote: 'USD' }, { base: 'USD', quote: 'MXN' }, { base: 'GBP', quote: 'EUR' }], layout: 'list', range: '30d', chart: 'area' },
+    { pairs: [{ base: 'EUR', quote: 'HUF' }], layout: 'big', range: '1y', chart: 'area' },
+    { pairs: [{ base: 'JPY', quote: 'EUR' }, { base: 'EUR', quote: 'IDR' }], layout: 'big', range: '7d', chart: 'line', chartStyle: 'background' },
+    { pairs: [{ base: 'EUR', quote: 'CHF' }, { base: 'USD', quote: 'JPY' }, { base: 'EUR', quote: 'PLN' }], layout: 'list', range: '7d', chart: 'line', chartStyle: 'background' },
+    { pairs: [{ base: 'EUR', quote: 'IDR' }, { base: 'JPY', quote: 'EUR' }], layout: 'list', range: '1y', chart: 'none' },
+    { pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'big', range: '30d', chart: 'area', chartStyle: 'background' },
+    { pairs: [{ base: 'EUR', quote: 'XAU' }, { base: 'EUR', quote: 'HUF' }], layout: 'list', range: '30d', chart: 'area' },
+    { pairs: [{ base: 'SEK', quote: 'NOK' }, { base: 'CHF', quote: 'GBP' }, { base: 'AUD', quote: 'NZD' }, { base: 'CAD', quote: 'BRL' }, { base: 'ZAR', quote: 'INR' }, { base: 'KRW', quote: 'THB' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'background' },
   ],
 };
 
@@ -139,13 +155,15 @@ describe('data cards at every size, in a browser', { skip: !chrome && 'no Chrome
     await web?.close();
   });
 
-  for (const kind of ['market', 'sports', 'stocks']) {
+  for (const kind of ['market', 'sports', 'stocks', 'currency']) {
     for (const screen of SCREENS) {
       test(`${kind}, ${screen.name}: every size fits, nothing cut (named sizes and boxes of their own)`, async () => {
         const p = await browser.page(`${web.url}/?demo=1&lite=1&now=2026-03-04T10:43&lang=es&preset=canvas&shot=data`, screen.size);
         try {
           await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 800)))');
-          for (const size of [...CANVAS_KINDS[kind].sizes, ...flexSamples(kind, screen.orientation)]) {
+          // Divisas: the fine grid's boxes too (its compact look, one line, from 4×1)
+          const fine = kind === 'currency' ? flexSamples(kind, screen.orientation, 'fine') : [];
+          for (const size of new Set([...CANVAS_KINDS[kind].sizes, ...flexSamples(kind, screen.orientation), ...fine])) {
             // enough rounds that every variant is drawn at this size
             let from = 0;
             do {

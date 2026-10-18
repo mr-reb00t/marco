@@ -9,6 +9,7 @@
 // - Web pages (self-hosted only): a sandboxed iframe without top navigation, popups or forms. A page from this
 //   display's own origin is never framed (scripts + same origin could lift the sandbox and reach the display).
 // - Electricity prices ('prices'): a card this display draws itself (widgets/prices.ts) from this server's prices.
+// - Exchange rates ('currency'): the same, the Divisas card (widgets/currency.ts) from this server's rates.
 // - Two corners on the same side (top and bottom) share its height: each stack gets half (.uw-half), never overlapping.
 //   Inside one corner the widgets share the stack's height, so none is cut by it.
 // - Nothing while private; night dimming, alerts and the doorbell sit above (z-order in styles.css).
@@ -16,6 +17,7 @@ import type { DisplayConfig, DisplayWidget, FrameCorner } from '../../shared/typ
 import { ctx } from '../ctx';
 import { authHeaders, isPreview, withScreen } from '../identity';
 import { PriceCard, priceFloorHeight } from './prices';
+import { CurrencyCard, currencyFloorHeight } from './currency';
 
 /** Corner boxes: max width (vw) and height (vh) per size. */
 const CORNER_BOX: Record<string, [number, number]> = { s: [18, 22], m: [26, 32], l: [36, 45] };
@@ -31,8 +33,8 @@ interface Entry {
   el: HTMLElement;
   /** what is on screen now (null until the first load) */
   media: HTMLImageElement | HTMLIFrameElement | HTMLElement | null;
-  /** 'prices' widgets: the card that draws them */
-  card: PriceCard | null;
+  /** 'prices' and 'currency' widgets: the card that draws them */
+  card: PriceCard | CurrencyCard | null;
   /** natural size of the image on screen */
   nat: [number, number] | null;
   timer: ReturnType<typeof setTimeout> | null;
@@ -238,9 +240,10 @@ export class CustomWidgets {
     const items = [...this.entries.values()].filter((e) => e.el.parentElement === this.side && e.media && !e.el.classList.contains('uw-wait'));
     // price cards keep the room for their smallest readable size: the column drops its secondary content first
     // (main.ts fitSideContent), as it does for its own cards
+    // (an exchange rates card: its one-line look, widgets/currency.ts)
     const cards = items.filter((e) => e.card);
     const gap = parseFloat(getComputedStyle(this.side).rowGap) || 0;
-    const floor = cards.length ? cards.length * priceFloorHeight() + gap * (cards.length - 1) : 0;
+    const floor = cards.length ? cards.reduce((n, e) => n + (e.card instanceof CurrencyCard ? currencyFloorHeight() : priceFloorHeight()), 0) + gap * (cards.length - 1) : 0;
     this.side.style.minHeight = floor ? `${Math.ceil(floor)}px` : '';
     if (!items.length) return;
     const avail = this.side.clientHeight;
@@ -262,6 +265,7 @@ export class CustomWidgets {
   private usable(w: DisplayWidget): boolean {
     // only http(s): a javascript: or data: address in an iframe or the unsaved preview would run on this origin
     if (w?.type === 'prices') return typeof w.id === 'string' && typeof w.prices?.zone === 'string' && !!w.prices.zone;
+    if (w?.type === 'currency') return typeof w.id === 'string' && Array.isArray(w.currency?.pairs) && w.currency.pairs.length > 0;
     if (!w || typeof w.id !== 'string' || !webUrl(w.src)) return false;
     // web pages are framed directly only; a proxied server never sends them, but never frame its routes either
     if (w.type === 'web') return w.via === 'direct';
@@ -284,8 +288,8 @@ export class CustomWidgets {
     pill.className = 'uw-pill';
     el.appendChild(pill);
     const e: Entry = { key, w, el, media: null, card: null, nat: null, timer: null, gen: 0, blobUrl: null, abort: null, waiting: false, dead: false };
-    if (w.type === 'prices') {
-      const card = new PriceCard(w);
+    if (w.type === 'prices' || w.type === 'currency') {
+      const card = w.type === 'prices' ? new PriceCard(w) : new CurrencyCard(w);
       e.card = card;
       card.onState = (st) => {
         if (e.dead) return;
@@ -574,7 +578,8 @@ export class CustomWidgets {
       const canvasPlace = cw >= rem * 70 && ch >= rem * 36 ? 'full' : 'side';
       // a Personalizado card with its chart "De fondo" (widgets/canvas/content.ts)
       e.card.backdrop = this.isCanvasBox(box) && box.dataset.chartStyle === 'background';
-      e.card.layout(cw, ch, box === this.full ? 'full' : this.isCanvasBox(box) ? canvasPlace : box === this.side ? 'side' : 'corner');
+      if (e.card instanceof CurrencyCard) e.card.layout(cw, ch, box === this.full ? 'full' : this.isCanvasBox(box) ? 'canvas' : box === this.side ? 'side' : 'corner');
+      else e.card.layout(cw, ch, box === this.full ? 'full' : this.isCanvasBox(box) ? canvasPlace : box === this.side ? 'side' : 'corner');
       return;
     }
     if (!media || !(media instanceof HTMLImageElement || media instanceof HTMLIFrameElement)) return;

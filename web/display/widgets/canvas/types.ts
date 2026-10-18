@@ -73,7 +73,7 @@ export interface AdapterEnv {
   ha: HaSource;
   /** values pushed by POST /api/hooks/values, only the keys this screen shows (valuesFeed.ts) */
   values: ValueSource;
-  /** numbers of the data cards (market, sports, stocks), from this server only (dataFeed.ts) */
+  /** numbers of the data cards (market, sports, stocks, currency), from this server only (dataFeed.ts) */
   data: DataSource;
   /** the navigation cards: taps, the carousel's progress (main.ts) */
   nav: NavSource;

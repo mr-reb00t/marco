@@ -462,14 +462,17 @@ uses only its own days.
 
 ## Data cards
 
-Cripto, Deportes and Bolsa (Personalizado kinds `market`, `sports`, `stocks`) show numbers from CoinGecko, ESPN's
-public site API and Finnhub. `server/core/dataCore.js` holds everything that does not touch the network (the allowed
+Cripto, Deportes, Bolsa and Divisas (Personalizado kinds `market`, `sports`, `stocks`, `currency`) show numbers from
+CoinGecko, ESPN's public site API, Finnhub and Frankfurter (the ECB's exchange rates). `server/core/dataCore.js` holds everything that does not touch the network (the allowed
 hosts, the request paths, the readers of each answer, the refresh policy, the shared cache with its per-host gate and
 the projection a screen gets), so Marco Cloud runs the same code with its own `call`. `server/dataFeeds.js` gives it a
 fetch that only reaches those hosts, refuses redirects, caps the size and times out. Screens ask
 `GET /api/display/data` every minute and draw the cards with textContent and hand-written SVG
 (`web/display/widgets/canvas/data.ts`); crests come through `GET /api/display/data/crest/:token`. The demo works its
-numbers out from `server/core/dataFake.js` with the same code. Details and limits: docs/API.md, Data cards.
+numbers out from `server/core/dataFake.js` with the same code. The Currency widget (`config.widgets` type `currency`)
+draws the Divisas card in a corner, the side column or the whole screen (`web/display/widgets/currency.ts`, the same
+adapter) from `GET /api/display/currency`, which reads the same cache entries. Details and limits: docs/API.md, Data
+cards and Exchange rates.
 
 ## Display access
 

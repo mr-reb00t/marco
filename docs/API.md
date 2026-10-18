@@ -99,7 +99,8 @@ saved without `security` (old admin builds, backups or exports from before 0.3) 
 | `GET /api/display/ha/camera/<itemId>?n=` | One picture of a Cámara card, through Home Assistant's own `/api/camera_proxy/<entity>` (built from the card's camera entity, never from an `entity_picture`). One picture per camera is shared by every screen (and the doorbell) for 500 ms, and requests that arrive together share one fetch. JPEG, PNG, WebP or GIF up to 4 MB only, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`. `403 { error: "lan_only" }` for a request that does not come straight from the home network (see *Cameras* under Home Assistant), `404` for an item that is not a camera of this screen, `404 { error: "hidden" }` while its `showWhen` sensor is off, `403 { error: "private" }`, `503 { error: "ha_off" }`, `502 { error: "camera_unavailable" }` |
 | `GET /api/display/ha/camera/<itemId>/live` | The live picture of a Cámara card set to *En directo*: `multipart/x-mixed-replace; boundary=marcoframe`, each part with its `Content-Type` and `Content-Length`. The same rules as a picture, plus: never for an admin session (`403 { error: "preview" }`), `404 { error: "not_live" }` for a card that is not live, `503 { error: "busy" }` when the server already streams 4 cameras or has 8 viewers, or when this display already has 2 live pictures open. Ends after 10 minutes (the display opens it again), when the camera stops sending for 15 s, or as soon as the card may not show it any more |
 | `GET /api/display/values?screen=` | `ValuesSnapshot` of the values pushed by `POST /api/hooks/values` that this screen shows: `{ rev, full: true, screenId, values: { <key>: { v, u?, l?, at } \| null } }`. Only the keys of its Valor cards and of custom cards bound to a key (hidden items left out); `null` when the server has no value for a key. `v` is a number, a string or `true`/`false`, `u` the unit, `l` the label, `at` when it was stored (ms). `{}` while the screen is private. `Cache-Control: no-store`. Displays on the poll channel ask every 30 s while such a card is on screen and the page is visible |
-| `GET /api/display/data?screen=` | `{ items: { <itemId>: DataItemData } }`: the numbers of this screen's data cards (Cripto, Deportes, Bolsa; see [Data cards](#data-cards)), worked out from this server's cache, never fetched by the display. Hidden items and items a condition hides now are left out. `403 { error: 'private' }` while the screen is private. `Cache-Control: no-store`. Displays ask every minute while such a card is on screen and the page is visible |
+| `GET /api/display/data?screen=` | `{ items: { <itemId>: DataItemData } }`: the numbers of this screen's data cards (Cripto, Deportes, Bolsa, Divisas; see [Data cards](#data-cards)), worked out from this server's cache, never fetched by the display. Hidden items and items a condition hides now are left out. `403 { error: 'private' }` while the screen is private. `Cache-Control: no-store`. Displays ask every minute while such a card is on screen and the page is visible |
+| `GET /api/display/currency?pairs=EUR-HUF,USD-MXN&range=&chart=&screen=` | `CurrencyData` for a Currency widget (see [Exchange rates](#exchange-rates)): 1 to 6 pairs of ISO codes, `range` `7d` \| `30d` \| `1y`, `chart` `area` \| `line` \| `none`. `400 { error: 'invalid_pairs' }` without a valid pair, `403 { error: 'private' }` while the screen is private. `Cache-Control: no-store` |
 | `GET /api/display/data/crest/<token>` | A team crest a data answer named by token (PNG, JPEG or WebP, 256 KB at most, `Cache-Control: private, max-age=86400`, `nosniff`), fetched by this server from ESPN's image host and kept a day. `404` for a token the server never handed out; `403` while the screen is private |
 | `GET /media/photos/<file>`, `GET /media/thumbs/<file>` | Gallery images (a display: only photos in the rotation of a screen it may read that shows the gallery and is not private with *hide photos*) and thumbnails (admin session only) |
 | `GET /media/immich/<assetId>?v=` | Immich preview image, proxied with the server's API key and cached on disk (`Cache-Control: private, max-age=2592000`). `404` for an id that is not in an album some screen plays (a display key or device token: its own screen's albums only), and while that screen is private with *hide photos*; `503` when Immich is not set up; `502` when Immich fails or answers something that is not an image of up to 8 MB. `?s=thumb`: album cover thumbnail, admin session only |
@@ -610,8 +611,9 @@ never match a screen id; a saved id that does not follow this gets a new one.
 Images (and, on a server with `webWidgets`, web pages) the owner puts on screens. Saved with the config
 (`PUT /api/admin/config`), no endpoint of its own except the test.
 
-- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web', name, options: { url, refreshSec, fit: 'contain' | 'cover',
-  bust } }`, at most 20. `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
+- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency', name, options: { url, refreshSec,
+  fit: 'contain' | 'cover', bust, prices?, currency? } }`, at most 20 (`prices`: [Electricity prices](#electricity-prices),
+  `currency`: [Exchange rates](#exchange-rates)). `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
   angle brackets, backslashes or control characters) and is stored normalised. Image refresh: 1, 10, 30 s, 1, 5,
   15 min, 1, 6, 24 h (default 15 min); web: 0 (never reload, the default) or 30 s to 24 h. `bust` (images, default
   on) adds `_marco=<time>` to the address at every reload, for servers that send long cache times.
@@ -630,6 +632,19 @@ Images (and, on a server with `webWidgets`, web pages) the owner puts on screens
 - Web pages load in `<iframe sandbox="allow-scripts allow-same-origin">` with no referrer, no permissions and no
   top navigation or popups, never from the display's own origin. Pages of this server only load in a frame as the
   admin preview (`?preview=1`, same origin): any other framed request gets a sandboxed `403`.
+
+### Exchange rates
+
+A widget of type `currency` has no address either: the display asks this server for the rates
+(`GET /api/display/currency`) and draws the card of the *Divisas* data card (see [Data cards](#data-cards)) in a
+corner, in the side column, on the whole screen (the `widget` layout) or in a Personalizado `widget` card.
+
+- `options.currency`: `{ pairs: [{ base, quote }] (1 to 6, ISO 4217 codes, two different ones), layout: 'list' | 'big',
+  range: '7d' | '30d' | '1y', chart: 'area' | 'line' | 'none', chartStyle: 'below' | 'background' }`, the props of a
+  `currency` card. `options.url` is stored empty. `400` paths: `widgets[i].options.currency.pairs` ("at least one
+  pair", "invalid currency code").
+- `DisplayWidget.currency` carries the options; `src` is empty. The widget's numbers come from the same cache entries
+  as the cards': any pairs cost the source nothing more.
 
 ### Electricity prices
 
@@ -680,13 +695,15 @@ how to read the answers, how long to keep them and what a screen gets are in `se
 with Marco Cloud); `server/dataFeeds.js` does the network part.
 
 - **Sources.** Only `api.coingecko.com` (crypto, no key), `site.api.espn.com` and `a.espncdn.com` (sports and crests,
-  no key) and `finnhub.io` (stocks, a free key), over https, with paths built from validated ids. No address comes
+  no key), `finnhub.io` (stocks, a free key) and `api.frankfurter.dev` (exchange rates, the ECB's, no key), over https, with paths built from validated ids. No address comes
   from a screen's config or a request. Redirects are refused, answers over 1 MB (crests 256 KB) are refused, and every
   call times out after 10 s.
 - **Cache.** One entry per upstream key for every screen and the builder: CoinGecko markets per currency every 2
   minutes (one call for every coin wanted in that currency), 30 day charts every 6 hours, a league's scoreboard every
   minute while a game is on or about to start and every 15 minutes otherwise, a team's results every hour and its
-  fixtures every 6 hours, a stock quote every 90 s while its market trades and every 15 minutes otherwise. Nothing is
+  fixtures every 6 hours, a stock quote every 90 s while its market trades and every 15 minutes otherwise, the exchange
+  rates every 4 hours (every 30 minutes on a working day from 13:00 to 18:00 UTC until the day's rates are in) and a
+  year of them every 12 hours. Nothing is
   asked more than once a minute. Calls to one host go one at a time with a gap between them, and a `429` is respected
   for its `Retry-After`. A failed call keeps the last good numbers (`stale: true`, the card says how old they are) and
   backs off from 2 minutes to 30.
@@ -703,14 +720,26 @@ with Marco Cloud); `server/dataFeeds.js` does the network part.
   may change without notice. A team is followed in one competition (its league, or a cup added as another entry).
 - `stocks` props: `{ symbols: [{ sym, name }] (1 to 12, Finnhub symbols), layout: 'ticker' | 'list', sparkline, chartStyle:
   'below' | 'background' }` (the chart style of the list; the ticker keeps its small curves).
-  Answer: `{ kind: 'stocks', quotes: [{ sym, name, price, ch, pts }], age, stale, error?, needsKey? }`. No reliable
-  keyless source exists (Stooq's CSV links now sit behind a browser check), so stocks need a free Finnhub key. Its free
-  plan has no price history: the curve is drawn from the quotes this server has read, up to the last 24 hours.
+  Answer: `{ kind: 'stocks', quotes: [{ sym, name, price, ch, pts, noData? }], age, stale, error?, needsKey? }`. No
+  reliable keyless source exists (Stooq's CSV links now sit behind a browser check), so stocks need a free Finnhub key.
+  Its free plan has no price history: the curve is drawn from the quotes this server has read, up to the last 24 hours.
+  It has no forex either: a symbol Finnhub does not know (an all-zero quote, `404`) or that its plan does not cover
+  (`403`, as `OANDA:EUR_HUF`) gets `noData: true` and the card says "No data for EURHUF" on that row (the whole card
+  when no symbol has data); it makes the card neither stale nor `needsKey`. Only a `401` is a refused key.
+- `currency` props: `{ pairs: [{ base, quote }] (1 to 6, ISO 4217 codes), layout: 'list' | 'big', range: '7d' | '30d' |
+  '1y', chart: 'area' | 'line' | 'none', chartStyle: 'below' | 'background' }`. Answer: `{ kind: 'currency', range, date
+  (the ECB day, YYYY-MM-DD), pairs: [{ base, quote, rate, ch (% since the working day before), pts: [[ms, rate]],
+  noData? }], age, stale, error? }`. The source is the European Central Bank's reference rates through Frankfurter
+  (`/v2/rates?providers=ECB&base=EUR`): about 30 currencies against the euro, once per working day around 16:00 CET.
+  Every pair is worked out through the euro (USD/MXN = MXN per euro / USD per euro), so one call with every currency
+  (the last five weeks, day by day) serves every pair of every screen; a year week by week is asked only for a 1 year
+  curve. A pair with a currency the ECB does not publish gets `noData: true`. Stale after 10 hours.
 - The data kinds are private: a private screen gets placeholders, `GET /api/display/data` answers `403`.
 - Admin (session): `GET /api/admin/data/coins?q=` → `{ coins: [{ id, sym, name, rank }] }`; `GET
   /api/admin/data/sports/leagues` → `{ leagues }`; `GET /api/admin/data/sports/teams?league=&q=` → `{ teams: [{ id,
   name, abbr }] }`; `GET /api/admin/data/stocks/symbols?q=` → `{ symbols: [{ sym, name, type }] }` (`409 { error:
-  'no_key' }` without a key); `POST /api/admin/data/preview { items: [{ id, kind, props }] }` → `{ items }` for the
+  'no_key' }` without a key); `GET /api/admin/data/currency/currencies` → `{ currencies: [{ code, name }] }` (the ECB's,
+  from Frankfurter, cached a day; the ones no longer published left out); `POST /api/admin/data/preview { items: [{ id, kind, props }] }` → `{ items }` for the
   builder's preview (validated like a save, through the same cache). Searches are cached a day per text.
 - `GET /api/admin/data/stocks/key`: `{ set, last4 }`. `PUT /api/admin/data/stocks/key { key }`: 10 to 64 letters,
   digits, `-` or `_` (empty removes it), tried once with one quote; `400 { error: 'key_invalid' }` when Finnhub refuses

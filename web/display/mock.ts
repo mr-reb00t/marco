@@ -129,6 +129,27 @@ export function mockConfig(show?: string): DisplayConfig {
     });
     if (cfg.widgets.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
   }
+  // ?fx=layout:place:corner:size,... Currency widgets (layout list|big, place corner|side|full), &fxpairs=EUR-HUF,EUR-USD
+  // (default three pairs), &fxrange=7d|30d|1y, &fxchart=area|line|none, &fxstyle=background. A 'full' one picks the
+  // Widget layout.
+  if (q.get('fx')) {
+    const pairs = (q.get('fxpairs') || 'EUR-HUF,EUR-USD,USD-MXN').split(',').map((x) => ({ base: x.split('-')[0], quote: x.split('-')[1] }));
+    const fx = q.get('fx')!.split(',').map((spec, i) => {
+      const [layout = 'list', place = 'corner', corner = 'br', size = 'm'] = spec.split(':');
+      return {
+        id: `w_fx${i}`, type: 'currency' as const, name: '', place: place as 'corner' | 'side' | 'full', corner: corner as 'tl' | 'tr' | 'bl' | 'br',
+        size: size as 's' | 'm' | 'l', refreshSec: 0, fit: 'contain' as const, bust: false, src: '', via: 'direct' as const, v: `fx${i}`,
+        currency: {
+          pairs, layout: layout === 'big' ? 'big' as const : 'list' as const,
+          range: (['7d', '1y'].includes(q.get('fxrange') ?? '') ? q.get('fxrange') : '30d') as '7d' | '30d' | '1y',
+          chart: (['line', 'none'].includes(q.get('fxchart') ?? '') ? q.get('fxchart') : 'area') as 'area' | 'line' | 'none',
+          chartStyle: q.get('fxstyle') === 'background' ? 'background' as const : 'below' as const,
+        },
+      };
+    });
+    cfg.widgets = [...(cfg.widgets ?? []), ...fx];
+    if (fx.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
+  }
   // ?preset=canvas: a Personalizado screen (&shot=<fixture>, web/display/mockCanvas.ts), with the message and the to-do
   // list on so their cards have something to show
   if (q.get('preset') === 'canvas') {
@@ -154,8 +175,13 @@ export function mockConfig(show?: string): DisplayConfig {
     if (show?.todo) cfg.todo.items = show.todo.map((t) => ({ ...t }));
     if (show?.message) cfg.message = { ...show.message };
     if (show?.theme) cfg.screen.theme = show.theme;
-    // the saved widget of its widget items: the demo electricity prices
-    if (m.canvas.items.some((it) => it.kind === 'widget')) {
+    // the saved widget of its widget items: the demo electricity prices (&demowidget=currency: exchange rates)
+    if (m.canvas.items.some((it) => it.kind === 'widget') && q.get('demowidget') === 'currency') {
+      cfg.widgets = [{
+        id: DEMO_WIDGET, type: 'currency', name: '', place: 'canvas', corner: 'br', size: 'm', refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: 'demo',
+        currency: { pairs: [{ base: 'EUR', quote: 'HUF' }, { base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' },
+      }];
+    } else if (m.canvas.items.some((it) => it.kind === 'widget')) {
       cfg.widgets = [{
         id: DEMO_WIDGET, type: 'prices', name: '', place: 'canvas', corner: 'br', size: 'm', refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: 'demo',
         prices: { zone: 'DK2', view: 'auto', unit: 'main', currency: 'auto', surcharge: 0, vat: 0, windowHours: 3, resolution: 'hour', axis: 'simple', chartShape: 'columns' },

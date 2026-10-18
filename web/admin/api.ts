@@ -75,7 +75,7 @@ import type {
   UpdateSettings,
   FeedbackRequest,
   FeedbackResponse,
-  CoinSearchResult, DataPreviewRequest, DataPreviewResponse, SportsLeaguesResult, SportsTeamsResult, StocksKeyStatus, SymbolSearchResult,
+  CoinSearchResult, CurrencyListResult, DataPreviewRequest, DataPreviewResponse, SportsLeaguesResult, SportsTeamsResult, StocksKeyStatus, SymbolSearchResult,
 } from '../shared/types';
 import { getLang } from './i18n';
 import { apiErrorCode, apiErrorMessage, type ApiErrorCode } from './apiErrors';
@@ -319,10 +319,11 @@ export const api = {
   setTokenScopes: (id: string, scopes: TokenScope[]) => request<ApiTokenInfo>('PATCH', `/api/admin/tokens/${encodeURIComponent(id)}`, { scopes }),
   /** values pushed by POST /api/hooks/values (the builder's key picker, the API page) */
   hookValues: () => request<{ values: HookValueInfo[] }>('GET', '/api/admin/values'),
-  // data cards (market, sports, stocks): pickers, the builder's preview and the Finnhub key (server/routes/data.js)
+  // data cards (market, sports, stocks, currency): pickers, the builder's preview and the Finnhub key (server/routes/data.js)
   dataCoins: (q: string) => request<CoinSearchResult>('GET', `/api/admin/data/coins?q=${encodeURIComponent(q)}`),
   dataLeagues: () => request<SportsLeaguesResult>('GET', '/api/admin/data/sports/leagues'),
   dataTeams: (league: string, q = '') => request<SportsTeamsResult>('GET', `/api/admin/data/sports/teams?league=${encodeURIComponent(league)}&q=${encodeURIComponent(q)}`),
+  dataCurrencies: () => request<CurrencyListResult>('GET', '/api/admin/data/currency/currencies'),
   dataSymbols: (q: string) => request<SymbolSearchResult>('GET', `/api/admin/data/stocks/symbols?q=${encodeURIComponent(q)}`),
   dataPreview: (body: DataPreviewRequest) => request<DataPreviewResponse>('POST', '/api/admin/data/preview', body),
   stocksKey: () => request<StocksKeyStatus>('GET', '/api/admin/data/stocks/key'),

@@ -4,7 +4,7 @@
 import { isValidTimeZone } from './lib/tz.js';
 import { enabledWindows, nextWindowBoundary, windowState } from './schedules.js';
 import { cardErrorText, checkCard, cssProblem } from './cardTemplate.js';
-import { COIN_ID_RE, DATA_LIMITS, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
+import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
 import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
@@ -326,6 +326,33 @@ const P = {
   },
 };
 
+/**
+ * What the exchange rates card (Divisas) and the Currency widget show (validate.js uses it for the widget's options):
+ * 1 to 6 pairs of ISO codes (EUR/HUF; a pair of one currency, or one twice, is left out), as a list or one large,
+ * the curve over 7 days, 30 days or a year, under the numbers or behind them.
+ */
+export function currencyProps(c, p, x) {
+  const seen = new Set();
+  const pairs = P.list(c, `${p}.pairs`, x.pairs, DATA_LIMITS.pairs, (o, q) => {
+    const base = P.str(c, `${q}.base`, o.base, '', 8).trim().toUpperCase();
+    const quote = P.str(c, `${q}.quote`, o.quote, '', 8).trim().toUpperCase();
+    if (!FX_CODE_RE.test(base) || !FX_CODE_RE.test(quote)) {
+      c.err(q, 'invalid currency code');
+      return null;
+    }
+    if (base === quote || seen.has(`${base}/${quote}`)) return null;
+    seen.add(`${base}/${quote}`);
+    return { base, quote };
+  });
+  return {
+    pairs,
+    layout: P.oneOf(c, `${p}.layout`, x.layout, 'list', ['list', 'big']),
+    range: P.oneOf(c, `${p}.range`, x.range, '30d', CURRENCY_RANGES),
+    chart: P.oneOf(c, `${p}.chart`, x.chart, 'area', ['area', 'line', 'none']),
+    chartStyle: P.oneOf(c, `${p}.chartStyle`, x.chartStyle, 'below', CHART_STYLES),
+  };
+}
+
 const calendarCommon = (c, p, x, refs) => ({
   sourceIds: P.ids(c, `${p}.sourceIds`, x.sourceIds, refs.sourceIds ?? null),
   hidePast: P.bool(c, `${p}.hidePast`, x.hidePast, false),
@@ -366,9 +393,9 @@ export const CARD_BUILTINS = ['time', 'date', 'weather', 'nextEvent'];
 const HVAC_MODES = ['off', 'heat', 'cool', 'heat_cool', 'auto', 'dry', 'fan_only'];
 const SPORTS_LEAGUE_IDS = SPORTS_LEAGUES.map((l) => l.id);
 /** Kinds that show numbers the server fetches from public sources (core/dataCore.js). */
-export const DATA_KIND_IDS = ['market', 'sports', 'stocks'];
+export const DATA_KIND_IDS = ['market', 'sports', 'stocks', 'currency'];
 /**
- * "Estilo de la gráfica" of the cards that draw a chart (Cripto, Bolsa, Sensor, Gráfica): 'below', the chart in a
+ * "Estilo de la gráfica" of the cards that draw a chart (Cripto, Bolsa, Divisas, Sensor, Gráfica): 'below', the chart in a
  * band under the numbers, or 'background', the chart filling the card edge to edge behind them. Each kind keeps its
  * look as its default, so saved screens do not change.
  */
@@ -812,6 +839,11 @@ export const CANVAS_KINDS = {
       };
     },
   },
+  currency: {
+    cat: 'data', sizes: ['xs', 's', 'w', 'm', 't', 'l'], def: 's', cells: [2, 2, 8, 8], side: true, edition: 'all', private: true, perScreen: 6,
+    defaults: () => ({ pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' }),
+    props: (c, p, x) => currencyProps(c, p, x),
+  },
   // ---- Casa (Home Assistant, self-hosted only)
   'ha.tile': haKind(['row', 'xs', 's', 'w', 'm'], 'xs', [2, 1, 6, 4], 'tile', {
     controls: true, one: true, state: true,
@@ -1184,6 +1216,7 @@ const FINE_MIN = {
   'market': [4, 1],
   'sports': [4, 1],
   'stocks': [4, 1],
+  'currency': [4, 1],
   'ha.tile': [2, 1],
   'ha.light': [2, 1],
   'ha.switch': [2, 1],
@@ -2106,7 +2139,7 @@ export function projectCanvas(screen, opts = {}) {
   return out;
 }
 
-/** The data items (market, sports, stocks) a screen shows, hidden ones left out. */
+/** The data items (market, sports, stocks, currency) a screen shows, hidden ones left out. */
 export function canvasDataItems(screen, { now = new Date(), tz = 'UTC' } = {}) {
   if (screen?.layout?.preset !== 'canvas') return [];
   return canvasCards(screen.canvas?.items).filter((it) => !it.hidden && DATA_KIND_IDS.includes(it.kind) && scheduleOn(it, now, tz));

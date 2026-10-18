@@ -11,7 +11,7 @@ import { Icon } from '../components/icons';
 import { FIELDS } from './fieldSpecs';
 import { HtmlEditor } from './HtmlEditor';
 import { ValueKeyInput } from './ValueKeyInput';
-import { CoinsField, FollowField, StocksKeyField, SymbolsField } from './DataPickers';
+import { CoinsField, FollowField, PairsField, StocksKeyField, SymbolsField } from './DataPickers';
 import { PlaceChoice, PlaceList } from '../components/PlaceSearch';
 import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
 
@@ -516,6 +516,12 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
           return (
             <Field label={t(s.label)}>
               <SymbolsField value={p.symbols} onChange={(v) => put('symbols', v, `${item.id}.symbols`)} />
+            </Field>
+          );
+        if (s.type === 'pairs')
+          return (
+            <Field label={t(s.label)}>
+              <PairsField value={p.pairs} onChange={(v) => put('pairs', v, `${item.id}.pairs`)} />
             </Field>
           );
         if (s.type === 'stocksKey') return <StocksKeyField />;

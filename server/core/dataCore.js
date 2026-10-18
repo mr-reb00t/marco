@@ -1,5 +1,5 @@
-// Data cards of Personalizado (palette "Datos"): crypto prices (market), sports results (sports) and stock quotes
-// (stocks). The pure part, shared by the self-hosted server (server/dataFeeds.js) and Marco Cloud: which hosts may be
+// Data cards of Personalizado (palette "Datos"): crypto prices (market), sports results (sports), stock quotes
+// (stocks) and exchange rates (currency). The pure part, shared by the self-hosted server (server/dataFeeds.js) and Marco Cloud: which hosts may be
 // asked, how each request is built, how each answer is read, how long it is kept, and what a screen gets. No network,
 // no files, no timers: callers pass `call` (one GET to an allowed host), `now` and `sleep`.
 //
@@ -17,7 +17,14 @@
 // - Finnhub (finnhub.io/api/v1, a free API key). There is no reliable keyless source for stock quotes: Stooq now
 //   answers its CSV links with a browser check and Yahoo's chart endpoint is unofficial. Finnhub's free plan allows 60
 //   calls a minute and covers US listed shares and ETFs; its free plan has no price history, so the optional curve is
-//   drawn from the quotes this server has read since it started (up to the last 24 hours).
+//   drawn from the quotes this server has read since it started (up to the last 24 hours). The free plan has no forex
+//   either: a symbol it does not know answers all zeros and a paid one 403, so such a quote is "no data", never a
+//   refused key (only a 401 is).
+// - Frankfurter (api.frankfurter.dev/v2, no key), the European Central Bank's reference rates (providers=ECB): about
+//   30 currencies against the euro, published once per working day around 16:00 CET. Every pair is worked out
+//   through the euro (EUR/HUF, USD/MXN = MXN per euro / USD per euro), so one call with every currency serves every
+//   pair of every screen: the last five weeks day by day (the rate, the change since the working day before, the 7
+//   and 30 day curves) every few hours, and a year week by week only for a 1 year curve.
 //
 // Every request goes to one of DATA_HOSTS with a path built here from validated ids (no URL ever comes from a
 // screen's config), and a display only ever gets the numbers of the items on its screen (dataForItem).
@@ -30,11 +37,12 @@ export const DATA_HOSTS = Object.freeze({
   espn: 'site.api.espn.com',
   espnImg: 'a.espncdn.com',
   finnhub: 'finnhub.io',
+  frankfurter: 'api.frankfurter.dev',
 });
 export const DATA_HOST_LIST = Object.freeze(Object.values(DATA_HOSTS));
 
 /** Spacing between two calls to the same host (ms), so a busy server never bursts. */
-export const HOST_GAP_MS = { 'api.coingecko.com': 2500, 'site.api.espn.com': 300, 'a.espncdn.com': 100, 'finnhub.io': 1100 };
+export const HOST_GAP_MS = { 'api.coingecko.com': 2500, 'site.api.espn.com': 300, 'a.espncdn.com': 100, 'finnhub.io': 1100, 'api.frankfurter.dev': 1000 };
 /** Answers larger than this are refused (an ESPN scoreboard is ~100 KB, a 30 day chart ~40 KB). */
 export const DATA_MAX_BYTES = 1024 * 1024;
 export const CREST_MAX_BYTES = 256 * 1024;
@@ -58,6 +66,11 @@ export const DATA_TTL = {
   quoteOpen: 90_000,
   quoteClosed: 15 * MIN,
   symbolSearch: 24 * HOUR,
+  /** exchange rates: a few times a day, every half hour while the day's rates are due (fxTtl) */
+  fx: 4 * HOUR,
+  fxDue: 30 * MIN,
+  fxYear: 12 * HOUR,
+  fxCurrencies: 24 * HOUR,
 };
 
 // ---- ids --------------------------------------------------------------------------------------------------------
@@ -69,6 +82,16 @@ export const COIN_ID_RE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 export const TEAM_ID_RE = /^\d{1,8}$/;
 /** A Finnhub symbol: AAPL, BRK.B, VWCE.DE, BINANCE:BTCUSDT. */
 export const STOCK_SYMBOL_RE = /^[A-Z0-9][A-Z0-9.:_-]{0,23}$/;
+/** A currency of the exchange rates card: an ISO 4217 code. */
+export const FX_CODE_RE = /^[A-Z]{3}$/;
+/** Every rate is asked against this one currency, and a pair is worked out through it. */
+export const FX_BASE = 'EUR';
+/**
+ * The ECB's reference currencies (checked 2026-10): what the builder offers when the source's own list cannot be
+ * read, and what a symbol must be made of to look like a currency pair. The source's list wins when it is there.
+ */
+export const FX_CURRENCIES = ['AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'];
+export const CURRENCY_RANGES = ['7d', '30d', '1y'];
 /** A Finnhub API key as the admin may save it. */
 export const STOCKS_KEY_RE = /^[A-Za-z0-9_-]{10,64}$/;
 
@@ -106,7 +129,7 @@ const LEAGUES = new Map(SPORTS_LEAGUES.map((l) => [l.id, l]));
 export const sportsLeague = (id) => LEAGUES.get(id) ?? null;
 
 /** Limits of each card. */
-export const DATA_LIMITS = { coins: 6, follow: 4, games: 8, symbols: 12, chartPoints: 90, searchResults: 12 };
+export const DATA_LIMITS = { coins: 6, follow: 4, games: 8, symbols: 12, pairs: 6, chartPoints: 90, searchResults: 12 };
 
 // ---- requests ---------------------------------------------------------------------------------------------------
 
@@ -129,10 +152,21 @@ export const teamsRequest = (l) => ({ host: DATA_HOSTS.espn, path: `${espnBase(l
 export const quoteRequest = (sym, key) => ({ host: DATA_HOSTS.finnhub, path: `/api/v1/quote?${q({ symbol: sym })}`, headers: { 'x-finnhub-token': key } });
 export const symbolSearchRequest = (text, key) => ({ host: DATA_HOSTS.finnhub, path: `/api/v1/search?${q({ q: text })}`, headers: { 'x-finnhub-token': key } });
 
+/** A day as YYYY-MM-DD in UTC, `days` before `now`. */
+const dayIso = (now, days = 0) => new Date(now - days * 24 * HOUR).toISOString().slice(0, 10);
+/** Frankfurter: the ECB's rates against the euro, every currency, day by day from five weeks back. */
+export const fxMonthRequest = (now) => ({ host: DATA_HOSTS.frankfurter, path: `/v2/rates?${q({ providers: 'ECB', base: FX_BASE, from: dayIso(now, 36) })}` });
+/** A year of them, one point a week (for the 1 year curve only). */
+export const fxYearRequest = (now) => ({ host: DATA_HOSTS.frankfurter, path: `/v2/rates?${q({ providers: 'ECB', base: FX_BASE, from: dayIso(now, 366), group: 'week' })}` });
+export const fxCurrenciesRequest = () => ({ host: DATA_HOSTS.frankfurter, path: `/v2/currencies?${q({ providers: 'ECB' })}` });
+
 // ---- reading answers ----------------------------------------------------------------------------------------------
 
 export class DataError extends Error {
-  /** `code`: fetch_failed, timeout, rate_limited, bad_response, too_large, not_found, no_key, key_refused, host */
+  /**
+   * `code`: fetch_failed, timeout, rate_limited, bad_response, too_large, not_found, no_key, key_refused, no_access
+   * (Finnhub: the key works, this symbol is not on its plan), host
+   */
   constructor(code, detail = '', retryMs = null) {
     super(detail ? `${code}: ${detail}` : code);
     this.code = code;
@@ -323,6 +357,88 @@ export function parseSymbolSearch(text) {
     .map((x) => ({ sym: x.symbol, name: str(x.description, 40), type: str(x.type, 24) }));
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const FX_MAX_DATES = 400;
+const FX_MAX_CODES = 80;
+
+/**
+ * Frankfurter's rates against the euro → { dates (sorted, YYYY-MM-DD), rates: { CODE: [rate | null per date] } }.
+ * Reads v2's list of { date, base, quote, rate } and v1's { rates: { date: { CODE: rate } } } or { date, rates }.
+ * Rates against another base, odd codes and rates that are not a positive number are left out.
+ */
+export function parseFxSeries(text) {
+  const d = json(text);
+  const by = new Map(); // date → Map code → rate
+  const put = (date, code, rate) => {
+    if (typeof date !== 'string' || !DATE_RE.test(date) || typeof code !== 'string' || !FX_CODE_RE.test(code) || code === FX_BASE) return;
+    const r = num(rate);
+    if (r === null || !(r > 0)) return;
+    if (!by.has(date)) {
+      if (by.size >= FX_MAX_DATES) return;
+      by.set(date, new Map());
+    }
+    by.get(date).set(code, r);
+  };
+  if (Array.isArray(d)) {
+    for (const x of d) if (isObj(x) && (x.base ?? FX_BASE) === FX_BASE) put(x.date, x.quote, x.rate);
+  } else if (isObj(d) && (d.base ?? FX_BASE) === FX_BASE && isObj(d.rates)) {
+    if (typeof d.date === 'string') for (const [c, r] of Object.entries(d.rates)) put(d.date, c, r);
+    else for (const [date, m] of Object.entries(d.rates)) if (isObj(m)) for (const [c, r] of Object.entries(m)) put(date, c, r);
+  } else throw new DataError('bad_response', 'no rates');
+  if (!by.size) throw new DataError('bad_response', 'no rates');
+  const dates = [...by.keys()].sort();
+  const codes = [...new Set([...by.values()].flatMap((m) => [...m.keys()]))].sort().slice(0, FX_MAX_CODES);
+  const rates = {};
+  for (const c of codes) rates[c] = dates.map((t) => by.get(t).get(c) ?? null);
+  return { dates, rates };
+}
+
+/**
+ * Frankfurter's currencies → [{ code, name }] sorted by code: v2's list (only the ones still published: an end date
+ * within a month of the newest one, so the franc of 2001 is not offered) or v1's { CODE: name }. The euro is always
+ * there.
+ */
+export function parseFxCurrencies(text) {
+  const d = json(text);
+  const out = new Map();
+  if (Array.isArray(d)) {
+    const ends = d.map((x) => (isObj(x) && typeof x.end_date === 'string' && DATE_RE.test(x.end_date) ? x.end_date : '')).filter(Boolean).sort();
+    const newest = ends.length ? Date.parse(`${ends[ends.length - 1]}T00:00:00Z`) : 0;
+    for (const x of d) {
+      if (!isObj(x) || typeof x.iso_code !== 'string' || !FX_CODE_RE.test(x.iso_code)) continue;
+      const end = typeof x.end_date === 'string' && DATE_RE.test(x.end_date) ? Date.parse(`${x.end_date}T00:00:00Z`) : null;
+      if (end !== null && newest && newest - end > 31 * 24 * HOUR) continue;
+      out.set(x.iso_code, str(x.name, 40));
+    }
+  } else if (isObj(d)) {
+    for (const [c, n] of Object.entries(d)) if (FX_CODE_RE.test(c)) out.set(c, str(n, 40));
+  } else throw new DataError('bad_response', 'no currencies');
+  if (!out.size) throw new DataError('bad_response', 'no currencies');
+  if (!out.has(FX_BASE)) out.set(FX_BASE, 'Euro');
+  return [...out].sort((a, b) => a[0].localeCompare(b[0])).slice(0, FX_MAX_CODES).map(([code, name]) => ({ code, name }));
+}
+
+/** A currency's rate against the euro on the `i`th date of a series (the euro itself: 1), or null. */
+const perEuro = (series, code, i) => (code === FX_BASE ? 1 : series.rates[code]?.[i] ?? null);
+
+/** QUOTE per one BASE on the `i`th date, worked out through the euro (GBP/EUR = 1 / GBP per euro), or null. */
+export function fxRate(series, base, quote, i) {
+  const b = perEuro(series, base, i);
+  const qv = perEuro(series, quote, i);
+  return b && qv ? qv / b : null;
+}
+
+/**
+ * A symbol that looks like a currency pair (EURHUF, EUR/HUF, OANDA:EUR_HUF, FX:GBPUSD) → { base, quote } when both
+ * halves are ECB currencies, else null: what the Bolsa card points to the Divisas card for.
+ */
+export function fxPairOf(sym) {
+  const s = String(sym ?? '').toUpperCase().trim().replace(/^[A-Z_]{1,12}:/, '');
+  const m = /^([A-Z]{3})[/_\-. ]?([A-Z]{3})$/.exec(s);
+  if (!m || m[1] === m[2] || !FX_CURRENCIES.includes(m[1]) || !FX_CURRENCIES.includes(m[2])) return null;
+  return { base: m[1], quote: m[2] };
+}
+
 // ---- refresh policy -----------------------------------------------------------------------------------------------
 
 /**
@@ -345,6 +461,30 @@ export function sportsTtl(events, now) {
 /** A quote is asked often while its market trades (a quote under 30 minutes old), rarely otherwise. */
 export const quoteTtl = (quote, now) => (quote && quote.t && now - quote.t < 30 * MIN ? DATA_TTL.quoteOpen : DATA_TTL.quoteClosed);
 
+/**
+ * Exchange rates are asked every few hours; on a working day from 13:00 to 18:00 UTC, while the day's rates are not
+ * in yet (the ECB publishes them around 16:00 CET), every half hour.
+ */
+export function fxTtl(series, now) {
+  const wd = new Date(now).getUTCDay();
+  const h = new Date(now).getUTCHours();
+  const last = series?.dates?.[series.dates.length - 1] ?? '';
+  if (wd >= 1 && wd <= 5 && h >= 13 && h < 18 && last < dayIso(now)) return DATA_TTL.fxDue;
+  return DATA_TTL.fx;
+}
+
+/**
+ * What a source's status means: a DataError, or null for a 200. Finnhub answers 401 to a key it does not know and
+ * 403 to a symbol its plan does not cover (a forex pair on the free plan): the key is fine then, the symbol is not.
+ */
+export function statusError(host, status) {
+  if (status === 200) return null;
+  if (status === 401) return new DataError(host === DATA_HOSTS.finnhub ? 'key_refused' : 'bad_response', '401');
+  if (status === 403) return new DataError(host === DATA_HOSTS.finnhub ? 'no_access' : 'bad_response', '403');
+  if (status === 404) return new DataError('not_found');
+  return new DataError('bad_response', String(status));
+}
+
 // ---- the hub: cache and calls -------------------------------------------------------------------------------------
 
 /** 2 minutes, doubling up to 30, after failures (a 429's Retry-After wins). */
@@ -363,7 +503,7 @@ export const MARKETS_MAX_IDS = 250;
 export const HOST_QUEUE_MAX = 40;
 export const HOST_SEARCH_QUEUE_MAX = 3;
 /** Cache keys of the builder's pickers: the first let go when the cache is full. */
-const PICKER_KEY_RE = /^(?:coinsearch|symsearch|teams):/;
+const PICKER_KEY_RE = /^(?:coinsearch|symsearch|teams|fxcur):/;
 
 /**
  * The shared cache of the data cards: one upstream call per key per interval, whoever asks (every screen, the
@@ -416,9 +556,8 @@ export function createDataHub({ call, now = () => Date.now(), sleep = () => Prom
         g.until = now() + wait;
         throw new DataError('rate_limited', '', wait);
       }
-      if (r.status === 401 || r.status === 403) throw new DataError(req.host === DATA_HOSTS.finnhub ? 'key_refused' : 'bad_response', String(r.status));
-      if (r.status === 404) throw new DataError('not_found');
-      if (r.status !== 200) throw new DataError('bad_response', String(r.status));
+      const bad = statusError(req.host, r.status);
+      if (bad) throw bad;
       return raw ? r : r.text;
     });
     const done = () => {
@@ -587,6 +726,17 @@ export function createDataHub({ call, now = () => Date.now(), sleep = () => Prom
     return r?.value ?? [];
   }
 
+  // ---- exchange rates: one call with every currency (against the euro) for every pair of every screen
+  /** `span` 'month': five weeks day by day; 'year': a year week by week. */
+  const fx = (span) => cached(`fx:${FX_BASE}:${span === 'year' ? 'year' : 'month'}`, async () => parseFxSeries(await get(span === 'year' ? fxYearRequest(now()) : fxMonthRequest(now()))), (v, at) => (span === 'year' ? DATA_TTL.fxYear : fxTtl(v, at)));
+
+  /** The currencies for the builder's picker (cached a day). */
+  async function fxCurrencies() {
+    const r = await cached('fxcur:ECB', async () => parseFxCurrencies(await get(fxCurrenciesRequest(), { search: true })), () => DATA_TTL.fxCurrencies);
+    if (r?.error && !r.value) throw new DataError(r.error);
+    return r?.value ?? [];
+  }
+
   /** A new or removed key: quotes are asked again with it. */
   function keyChanged() {
     for (const k of [...cache.keys()]) if (k.startsWith('q:') || k.startsWith('symsearch:')) cache.delete(k);
@@ -595,13 +745,13 @@ export function createDataHub({ call, now = () => Date.now(), sleep = () => Prom
   /** What the admin status shows: key → { at, error }. */
   const status = () => Object.fromEntries([...cache].map(([k, e]) => [k, { at: e.at, error: e.error }]));
 
-  return { now, get, cached, markets, chart30, searchCoins, scoreboard, results, fixtures, teams, crest, quote, searchSymbols, keyChanged, status, _cache: cache };
+  return { now, get, cached, markets, chart30, searchCoins, scoreboard, results, fixtures, teams, crest, quote, searchSymbols, fx, fxCurrencies, keyChanged, status, _cache: cache };
 }
 
 // ---- what a screen gets -------------------------------------------------------------------------------------------
 
 /** "Updated X ago" applies once an answer is this much older than it should be. */
-const staleAfter = (kind) => (kind === 'sports' ? 20 * MIN : kind === 'stocks' ? 20 * MIN : 10 * MIN);
+const staleAfter = (kind) => (kind === 'sports' ? 20 * MIN : kind === 'stocks' ? 20 * MIN : kind === 'currency' ? 10 * HOUR : 10 * MIN);
 
 const ageOf = (at, t) => (at ? Math.max(0, Math.round((t - at) / 1000)) : null);
 
@@ -615,6 +765,7 @@ export async function dataForItem(hub, item, now = hub.now(), { preview = false 
   if (item?.kind === 'market') return marketData(hub, p, now, preview);
   if (item?.kind === 'sports') return sportsData(hub, p, now);
   if (item?.kind === 'stocks') return stocksData(hub, p, now);
+  if (item?.kind === 'currency') return currencyData(hub, p, now);
   return null;
 }
 
@@ -718,6 +869,9 @@ function projectGame(g) {
   return out;
 }
 
+/** Why a symbol has nothing to show: Finnhub does not know it (all zeros, 404) or its plan does not cover it (403). */
+const NO_DATA_ERRORS = new Set(['not_found', 'no_access']);
+
 async function stocksData(hub, p, now) {
   const syms = Array.isArray(p.symbols) ? p.symbols.filter((s) => STOCK_SYMBOL_RE.test(s?.sym ?? '')).slice(0, DATA_LIMITS.symbols) : [];
   let oldest = Infinity;
@@ -725,8 +879,11 @@ async function stocksData(hub, p, now) {
   const quotes = [];
   for (const s of syms) {
     const r = await hub.quote(s.sym);
-    if (r?.error) error = error ?? r.error;
     const v = r?.value;
+    // a symbol with no data (unknown, all zeros, not on the free plan) says so on its own row: the card is not old
+    // for it, and the key is not wrong
+    const none = !v?.quote && (NO_DATA_ERRORS.has(r?.error) || (!r?.error && !!r?.at));
+    if (r?.error && !NO_DATA_ERRORS.has(r.error)) error = error ?? r.error;
     if (r?.at && v?.quote) oldest = Math.min(oldest, r.at);
     quotes.push({
       sym: s.sym,
@@ -734,12 +891,76 @@ async function stocksData(hub, p, now) {
       price: v?.quote?.price ?? null,
       ch: v?.quote?.ch ?? null,
       pts: p.sparkline && v?.pts?.length >= 2 ? thin(v.pts, 60) : [],
+      ...(none ? { noData: true } : {}),
     });
   }
   const age = ageOf(Number.isFinite(oldest) ? oldest : 0, now);
-  const out = { kind: 'stocks', quotes, age, stale: !!error || age === null || age * 1000 > staleAfter('stocks'), ...(error ? { error } : {}) };
+  const anyData = quotes.some((x) => !x.noData);
+  // every symbol without data: nothing is old, there is just nothing to show
+  const stale = !!error || (anyData && (age === null || age * 1000 > staleAfter('stocks')));
+  const out = { kind: 'stocks', quotes, age, stale, ...(error ? { error } : {}) };
   if (error === 'no_key' || error === 'key_refused') out.needsKey = true;
   return out;
+}
+
+/** Days between two YYYY-MM-DD dates. */
+const daysBetween = (a, b) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / (24 * HOUR));
+const dayMs = (d) => Date.parse(`${d}T00:00:00Z`);
+
+/** The last date of a series on which both currencies of a pair have a rate, before index `before`; -1 if none. */
+function lastWith(series, base, quote, before = series.dates.length) {
+  for (let i = Math.min(before, series.dates.length) - 1; i >= 0; i--) if (fxRate(series, base, quote, i) !== null) return i;
+  return -1;
+}
+
+/** The [t, rate] points of a pair over the dates of a series from `from` (YYYY-MM-DD) on. */
+function fxPoints(series, base, quote, from) {
+  const pts = [];
+  for (let i = 0; i < series.dates.length; i++) {
+    if (series.dates[i] < from) continue;
+    const r = fxRate(series, base, quote, i);
+    if (r !== null) pts.push([dayMs(series.dates[i]), sig(r)]);
+  }
+  return pts;
+}
+
+async function currencyData(hub, p, now) {
+  const pairs = Array.isArray(p.pairs) ? p.pairs.filter((x) => FX_CODE_RE.test(x?.base ?? '') && FX_CODE_RE.test(x?.quote ?? '') && x.base !== x.quote).slice(0, DATA_LIMITS.pairs) : [];
+  const range = CURRENCY_RANGES.includes(p.range) ? p.range : '30d';
+  const m = await hub.fx('month');
+  const y = range === '1y' && p.chart !== 'none' && pairs.length ? await hub.fx('year') : null;
+  const series = m?.value ?? null;
+  let error = m?.error ?? null;
+  if (y?.error && !y.value) error = error ?? y.error;
+  let date = '';
+  const out = [];
+  for (const { base, quote } of pairs) {
+    const i = series ? lastWith(series, base, quote) : -1;
+    if (i < 0) {
+      out.push({ base, quote, rate: null, ch: null, pts: [], ...(series ? { noData: true } : {}) });
+      continue;
+    }
+    const rate = fxRate(series, base, quote, i);
+    const j = lastWith(series, base, quote, i);
+    const prev = j >= 0 ? fxRate(series, base, quote, j) : null;
+    const last = series.dates[i];
+    if (last > date) date = last;
+    let pts = [];
+    if (p.chart !== 'none') {
+      if (range === '1y') {
+        pts = y?.value ? fxPoints(y.value, base, quote, dayIso(dayMs(last), 366)) : [];
+        // the weekly points end at the latest day's rate
+        if (pts.length && pts[pts.length - 1][0] < dayMs(last)) pts.push([dayMs(last), sig(rate)]);
+      } else {
+        const days = range === '7d' ? 7 : 30;
+        pts = fxPoints(series, base, quote, dayIso(dayMs(last), days)).filter(([t]) => daysBetween(dayIso(t), last) <= days);
+      }
+      pts = thin(pts, DATA_LIMITS.chartPoints);
+    }
+    out.push({ base, quote, rate, ch: prev ? ((rate / prev) - 1) * 100 : null, pts });
+  }
+  const age = ageOf(m?.at ?? 0, now);
+  return { kind: 'currency', range, date, pairs: out, age, stale: !!error || age === null || age * 1000 > staleAfter('currency'), ...(error ? { error } : {}) };
 }
 
 /** Whether a stocks key is saved and its last 4 characters, never the key. */

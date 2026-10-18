@@ -1,4 +1,4 @@
-// Made-up answers of the data card sources (CoinGecko, ESPN, Finnhub) in their own shapes, for the tests, for
+// Made-up answers of the data card sources (CoinGecko, ESPN, Finnhub, Frankfurter) in their own shapes, for the tests, for
 // MARCO_DATA_FAKE=1 (a server that never leaves the machine, for screenshots) and for Marco Cloud's own tests. The
 // numbers are realistic but invented. `fakeDataCall(opts)` returns a `call` for createDataHub (core/dataCore.js).
 
@@ -115,8 +115,54 @@ export const FAKE_STOCKS = {
 };
 export const FAKE_STOCKS_KEY = 'fakefinnhubkey0123456789';
 
+/** Currencies the fake Frankfurter knows: units per euro on the last day, and their names (the ECB's set). */
+export const FAKE_FX = {
+  AUD: [1.6171, 'Australian Dollar'], BRL: [5.7197, 'Brazilian Real'], CAD: [1.5935, 'Canadian Dollar'], CHF: [0.9272, 'Swiss Franc'],
+  CNY: [7.524, 'Chinese Renminbi Yuan'], CZK: [24.323, 'Czech Koruna'], DKK: [7.4748, 'Danish Krone'], GBP: [0.84385, 'British Pound'],
+  HKD: [8.8316, 'Hong Kong Dollar'], HUF: [363.08, 'Hungarian Forint'], IDR: [20290.28, 'Indonesian Rupiah'], ILS: [3.4822, 'Israeli New Shekel'],
+  INR: [106.864, 'Indian Rupee'], ISK: [136.2, 'Icelandic Króna'], JPY: [177.82, 'Japanese Yen'], KRW: [1499.01, 'South Korean Won'],
+  MXN: [20.6871, 'Mexican Peso'], MYR: [4.5929, 'Malaysian Ringgit'], NOK: [10.624, 'Norwegian Krone'], NZD: [1.9868, 'New Zealand Dollar'],
+  PHP: [70.858, 'Philippine Peso'], PLN: [4.37, 'Polish Złoty'], RON: [5.331, 'Romanian Leu'], SEK: [11.145, 'Swedish Krona'],
+  SGD: [1.4395, 'Singapore Dollar'], THB: [37.602, 'Thai Baht'], TRY: [48.91, 'Turkish Lira'], USD: [1.1298, 'United States Dollar'],
+  ZAR: [19.62, 'South African Rand'],
+};
+
+/** The working days (YYYY-MM-DD) from `from` to the last one published by `now` (the ECB's rates come at 15:00 UTC). */
+function fxDays(from, now) {
+  const out = [];
+  const end = new Date(now - 15 * H);
+  for (let t = Date.parse(`${from}T00:00:00Z`); t <= end.getTime(); t += 24 * H) {
+    const wd = new Date(t).getUTCDay();
+    if (wd !== 0 && wd !== 6) out.push(new Date(t).toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+/** A currency's rate on a day: a slow wave and a small daily wobble around its last rate (the last day exactly it). */
+function fxOn(code, day, last) {
+  const [v] = FAKE_FX[code];
+  if (day === last) return v;
+  const d = (Date.parse(`${last}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`)) / (24 * H);
+  const s = [...code].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const wave = (x) => Math.sin(x / 9 + s) * 0.012 + Math.sin(x / 47 + s / 3) * 0.025 + Math.sin(x * 1.7 + s) * 0.002;
+  const w = wave(d) - wave(0);
+  return Number((v * (1 + w)).toPrecision(6));
+}
+
+function fxRates(params, now) {
+  const from = params.get('from') || new Date(now).toISOString().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return null;
+  const days = fxDays(from, now);
+  const last = fxDays(new Date(now - 10 * 24 * H).toISOString().slice(0, 10), now).pop();
+  // group=week: one point a week (as v2 does), the newest week's last day
+  const pick = params.get('group') === 'week' ? days.filter((_, i) => (days.length - 1 - i) % 5 === 0) : days;
+  const out = [];
+  for (const day of pick) for (const code of Object.keys(FAKE_FX)) out.push({ date: day, base: 'EUR', quote: code, rate: fxOn(code, day, last) });
+  return out;
+}
+
 /**
- * A `call` for createDataHub answering like the three sources. `opts.now()` the clock, `opts.fail` = host → status
+ * A `call` for createDataHub answering like the four sources. `opts.now()` the clock, `opts.fail` = host → status
  * (to test errors), `opts.calls` an array every request is pushed to, `opts.key` the Finnhub key it accepts.
  */
 export function fakeDataCall(opts = {}) {
@@ -159,6 +205,17 @@ export function fakeDataCall(opts = {}) {
       if (p === '/api/v1/search') {
         const s = (u.searchParams.get('q') || '').toUpperCase();
         return ok({ count: 1, result: Object.entries(FAKE_STOCKS).filter(([k, v]) => k.includes(s) || v[2].toUpperCase().includes(s)).map(([k, v]) => ({ symbol: k, displaySymbol: k, description: v[2].toUpperCase(), type: 'Common Stock' })) });
+      }
+      return { status: 404, text: '{}' };
+    }
+    if (req.host === 'api.frankfurter.dev') {
+      if (p === '/v2/rates') {
+        const r = fxRates(u.searchParams, now());
+        return r ? ok(r) : { status: 422, text: '{"message":"bad date"}' };
+      }
+      if (p === '/v2/currencies') {
+        const end = new Date(now()).toISOString().slice(0, 10);
+        return ok([{ iso_code: 'EUR', name: 'Euro', end_date: end }, { iso_code: 'HRK', name: 'Croatian Kuna', end_date: '2022-12-30' }, ...Object.entries(FAKE_FX).map(([c, [, n]]) => ({ iso_code: c, name: n, end_date: end }))]);
       }
       return { status: 404, text: '{}' };
     }

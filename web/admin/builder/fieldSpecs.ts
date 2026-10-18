@@ -47,6 +47,7 @@ export type Spec =
   | { k: 'coins'; type: 'coins'; label: string }
   | { k: 'follow'; type: 'follow'; label: string; hint?: string }
   | { k: 'symbols'; type: 'symbols'; label: string }
+  | { k: 'pairs'; type: 'pairs'; label: string }
   | { type: 'stocksKey' }
   | { type: 'note'; text: string; go?: { label: string; route: string } }
   /** a small heading over the fields that follow */
@@ -66,6 +67,16 @@ const SHOW_STATE: Spec = { k: 'showState', type: 'bool', label: 'Mostrar estado'
 const CHART_STYLE = (hint: string, show?: (p: Record<string, any>, widgets: { id: string; type: string }[]) => boolean): Spec => ({
   k: 'chartStyle', type: 'seg', label: 'Estilo de la gráfica', opts: [{ v: 'below', l: 'Debajo' }, { v: 'background', l: 'De fondo' }], hint, show,
 });
+/** The Divisas card's fields, and the Currency widget's (sections/Widgets.tsx). */
+export const CURRENCY_FIELDS: Spec[] = [
+  { k: 'pairs', type: 'pairs', label: 'Pares' },
+  { k: 'layout', type: 'seg', label: 'Cómo', opts: [{ v: 'list', l: 'En lista' }, { v: 'big', l: 'Uno en grande' }], hint: 'En grande, si hay varios pares se van turnando cada 10 segundos.' },
+  { k: 'range', type: 'seg', label: 'Periodo', opts: [{ v: '7d', l: '7 días' }, { v: '30d', l: '30 días' }, { v: '1y', l: '1 año' }] },
+  { k: 'chart', type: 'seg', label: 'Curva', opts: [{ v: 'area', l: 'Área' }, { v: 'line', l: 'Línea' }, { v: 'none', l: 'Sin curva' }] },
+  CHART_STYLE('Debajo: la curva bajo el cambio. De fondo: la curva llena la tarjeta de borde a borde, detrás del cambio; en una lista, cada par lleva la suya detrás.', (p) => p.chart !== 'none'),
+  { type: 'note', text: 'Cambios de referencia del Banco Central Europeo, de Frankfurter. Se publican una vez al día laborable, hacia las 16:00; este servidor los pide unas pocas veces al día y los comparte con todas las pantallas.' },
+];
+
 const range = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
 
 /** What a navigation button shows. */
@@ -190,6 +201,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   widget: [
     { k: 'widgetId', type: 'widget', label: 'Widget' },
     CHART_STYLE('De fondo: las barras de las horas llenan la tarjeta de borde a borde, detrás del precio de ahora.', (p, widgets) => widgets.find((w) => w.id === p.widgetId)?.type === 'prices'),
+    CHART_STYLE('De fondo: la curva llena la tarjeta de borde a borde, detrás del cambio; en una lista, cada par lleva la suya detrás.', (p, widgets) => widgets.find((w) => w.id === p.widgetId)?.type === 'currency'),
   ],
   spacer: [{ type: 'note', text: 'Un hueco que no se ve. Sirve para dejar libre una parte de la pantalla.' }],
   rotator: [
@@ -347,4 +359,5 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     CHART_STYLE('De fondo: la curva de cada valor detrás de su fila, de borde a borde.', (p) => p.layout === 'list' && !!p.sparkline),
     { type: 'stocksKey' },
   ],
+  currency: CURRENCY_FIELDS,
 };

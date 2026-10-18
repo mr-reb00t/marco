@@ -78,7 +78,7 @@ export const BLUR_BUDGET = 26;
  * zoomed instead: its text, icons and gaps grow or shrink together inside the same box, and the card's own fitting
  * (the agenda's "+N more", the cramped mark) measures the zoomed content.
  */
-const OWN_SCALE = /^(?:ha\.|clock\.|nav\.|date$|weather\.now$|value$|heading$|html$|market$|sports$|stocks$)/;
+const OWN_SCALE = /^(?:ha\.|clock\.|nav\.|date$|weather\.now$|value$|heading$|html$|market$|sports$|stocks$|currency$)/;
 
 /** The text size of a card on its body: --cv-scale for the kinds that read it, a zoom for the others (none at 100 %). */
 function applyScale(e: { kind: string; item: DisplayCanvasItem; body: HTMLElement }): void {

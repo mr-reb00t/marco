@@ -5,6 +5,26 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- *Currency* (Divisas), a new card in *Data*: the exchange rate of 1 to 6 currency pairs, such as EUR/HUF, EUR/USD,
+  USD/MXN or GBP/EUR, from the European Central Bank's reference rates (through Frankfurter, free, no key). Every pair
+  is worked out through the euro. Each shows its rate, with as many decimals as its size needs, and how much it moved
+  since the working day before, in green or red. As a list or one pair large, with an optional curve over 7 days, 30
+  days or a year, under the numbers or behind them, like *Crypto*. On the fine grid a small card is one line: the
+  pair, the rate, the change and a small curve. In the editor, pairs are picked from the ECB's currencies, by code,
+  name or as written (EURHUF, eur/huf).
+- *Currency* is also a widget in *Widgets*, for a corner, the side column or the whole screen of the Modern and
+  Classic designs, and for the *Widget* card of a custom screen. It draws the same card.
+- The rates are fetched by the server only, a few times a day (every half hour on a working afternoon until the
+  ECB's rates of the day are in), in one call for every pair of every screen, and the last ones stay with "Updated
+  X ago" when the source fails. Screens never contact it. Marco Cloud too.
+
+### Fixed
+- *Stocks*: a symbol the free Finnhub key has no data for (a currency pair like EURHUF or OANDA:EUR_HUF, an unknown
+  symbol) no longer looks like it keeps loading or like a wrong key. Its row says "No data", and a card with only such
+  symbols says "No data for EURHUF". In the editor, such a symbol is marked, and a currency pair points to the
+  *Currency* card.
+
 ## [0.16.5] - 2026-10-18
 
 ### Changed

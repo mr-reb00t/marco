@@ -11,6 +11,39 @@ import { moveItem, uid, WEB_WIDGET_REFRESH_SEC, WIDGET_REFRESH_SEC, widgetUrlPro
 import type { SectionProps } from './common';
 import { previewTested, setPreviewWidget, useWidgetPreview } from '../widgetPreview';
 import { newPriceOptions, PriceWidgetFields } from './PriceWidget';
+import { PairsField } from '../builder/DataPickers';
+
+/** A new Currency widget: the euro against the dollar, as a list with its 30 day curve (the Divisas card's defaults). */
+export const newCurrencyOptions = (): NonNullable<WidgetDef['options']['currency']> => ({ pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' });
+
+/** The Currency widget's options: the pairs, how they show, the period and the curve (the Divisas card's fields). */
+function CurrencyWidgetFields({ w, errors, upd }: { w: WidgetDef; errors: Record<string, string>; upd: (fn: (x: WidgetDef) => void) => void }) {
+  const o = w.options.currency ?? newCurrencyOptions();
+  const set = <K extends keyof typeof o>(k: K, v: (typeof o)[K]) => upd((x) => void (x.options.currency = { ...(x.options.currency ?? newCurrencyOptions()), [k]: v }));
+  return (
+    <div class="stack">
+      <Field label={t('Pares')} error={errors[`wdg.${w.id}.pairs`] ? t(errors[`wdg.${w.id}.pairs`]) : undefined}>
+        <PairsField value={o.pairs} onChange={(v) => set('pairs', v)} />
+      </Field>
+      <div class="grid grid--2">
+        <Field label={t('Cómo')} hint={t('En grande, si hay varios pares se van turnando cada 10 segundos.')}>
+          <Segmented value={o.layout} options={[{ value: 'list', label: t('En lista') }, { value: 'big', label: t('Uno en grande') }]} onChange={(v) => set('layout', v)} />
+        </Field>
+        <Field label={t('Periodo')}>
+          <Segmented value={o.range} options={[{ value: '7d', label: t('7 días') }, { value: '30d', label: t('30 días') }, { value: '1y', label: t('1 año') }]} onChange={(v) => set('range', v)} />
+        </Field>
+        <Field label={t('Curva')}>
+          <Segmented value={o.chart} options={[{ value: 'area', label: t('Área') }, { value: 'line', label: t('Línea') }, { value: 'none', label: t('Sin curva') }]} onChange={(v) => set('chart', v)} />
+        </Field>
+        {o.chart !== 'none' && (
+          <Field label={t('Estilo de la gráfica')}>
+            <Segmented value={o.chartStyle} options={[{ value: 'below', label: t('Debajo') }, { value: 'background', label: t('De fondo') }]} onChange={(v) => set('chartStyle', v)} />
+          </Field>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /** Refresh choices as the admin shows them. */
 const REFRESH_LABEL: Record<number, string> = {
@@ -147,6 +180,9 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
   const [more, setMore] = useState(false);
   const image = w.type === 'image';
   const prices = w.type === 'prices';
+  const currency = w.type === 'currency';
+  /** a card this server feeds (no address, no reload interval) */
+  const own = prices || currency;
   // Marco Cloud fetches the image itself (https only) and serves it to the screens; self-hosted TVs load the address
   const cloud = edition() === 'cloud';
   const webOk = has('webWidgets');
@@ -181,7 +217,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
     <Card
       id={`widget-${w.id}`}
       class={previewed ? 'is-previewed' : ''}
-      icon={image ? 'image' : prices ? 'zap' : 'globe'}
+      icon={image ? 'image' : prices ? 'zap' : currency ? 'exchange' : 'globe'}
       title={w.name.trim() || t('Widget sin nombre')}
       actions={
         <div class="row-actions">
@@ -194,7 +230,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
     >
       <div class="grid grid--2">
         <Field label={t('Nombre')} error={errors[`wdg.${w.id}.name`]}>
-          <TextInput value={w.name} maxLength={60} placeholder={t('Precios de la luz')} onValue={(v) => upd((x) => void (x.name = v))} />
+          <TextInput value={w.name} maxLength={60} placeholder={currency ? t('Cambio de divisas') : t('Precios de la luz')} onValue={(v) => upd((x) => void (x.name = v))} />
         </Field>
         <Field
           label={t('Tipo')}
@@ -204,7 +240,9 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
               ? t('Solo para servidores propios. La página se carga en la pantalla dentro de un marco aislado.')
               : prices
                 ? t('Precio de la electricidad de tu zona, hoy y mañana. Lo consulta este servidor; las pantallas no llaman a ninguna web.')
-                : undefined
+                : currency
+                  ? t('El cambio de monedas del Banco Central Europeo. Lo consulta este servidor unas pocas veces al día; las pantallas no llaman a ninguna web.')
+                  : undefined
           }
         >
           {((w.type === 'web' && !webOk) || (prices && !pricesOk)) && <span class="chip chip--static chip--bad">{t('No disponible aquí')}</span>}
@@ -215,16 +253,23 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
               { value: 'image', label: t('Imagen') },
               ...(webOk || w.type === 'web' ? [{ value: 'web' as const, label: t('Web (iframe)') }] : []),
               ...(pricesOk || prices ? [{ value: 'prices' as const, label: t('Precio de la luz') }] : []),
+              { value: 'currency' as const, label: t('Divisas') },
             ]}
             onChange={(v) =>
               upd((x) => {
                 if (x.type === v) return;
                 x.type = v;
                 if (v === 'prices') {
+                  delete x.options.currency;
                   x.options.prices ??= newPriceOptions(full.datetime.timezone);
                   return;
                 }
                 delete x.options.prices;
+                if (v === 'currency') {
+                  x.options.currency ??= newCurrencyOptions();
+                  return;
+                }
+                delete x.options.currency;
                 const list = v === 'web' ? WEB_WIDGET_REFRESH_SEC : WIDGET_REFRESH_SEC;
                 if (!list.includes(x.options.refreshSec)) x.options.refreshSec = v === 'web' ? 0 : 900;
               })
@@ -233,7 +278,8 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
         </Field>
       </div>
       {prices && w.options.prices && <PriceWidgetFields w={w} errors={errors} upd={upd} part="main" tz={full.datetime.timezone} />}
-      {!prices && (
+      {currency && <CurrencyWidgetFields w={w} errors={errors} upd={upd} />}
+      {!own && (
         <>
           <Field
             label={t('Dirección')}
@@ -270,7 +316,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
         </>
       )}
       <div class="grid grid--2">
-        {!prices && (
+        {!own && (
           <Field label={t('Recargar cada')} error={errors[`wdg.${w.id}.refreshSec`] ? t(errors[`wdg.${w.id}.refreshSec`]) : undefined}>
             <Select
               value={w.options.refreshSec}
@@ -302,11 +348,11 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
           )}
         </Field>
       </div>
-      <button type="button" class="link-btn widget-more" aria-expanded={more} onClick={() => setMore(!more)}>
+      {!currency && <button type="button" class="link-btn widget-more" aria-expanded={more} onClick={() => setMore(!more)}>
         <Icon name={more ? 'up' : 'chevron'} size={14} /> {t('Más opciones')}
-      </button>
+      </button>}
       {more && prices && w.options.prices && <PriceWidgetFields w={w} errors={errors} upd={upd} part="more" tz={full.datetime.timezone} />}
-      {more && !prices && (
+      {more && !own && (
         <div class="stack">
           <Field label={t('Ajuste')} hint={t('Solo cuenta cuando el widget ocupa toda la pantalla.')}>
             <Segmented

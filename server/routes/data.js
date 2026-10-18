@@ -1,12 +1,16 @@
-// Data cards of Personalizado screens (market, sports, stocks; server/dataFeeds.js, core/dataCore.js):
+// Data cards of Personalizado screens (market, sports, stocks, currency; server/dataFeeds.js, core/dataCore.js):
 //   dataDisplayRouter() mounted at /api (displayAuth already ran for /api/display):
 //     GET /display/data               → { items: { [itemId]: DataItemData } } for the requesting screen's data items
 //     GET /display/data/crest/:token  → a team crest (PNG/JPEG/WebP bytes) a data answer named
+//     GET /display/currency?pairs=EUR-HUF,USD-MXN&range=&chart= → CurrencyData for a Currency widget (any pairs: the
+//                                       admin preview shows unsaved widgets; every pair comes from the same shared
+//                                       entries, so no query costs the source more than one screen does)
 //   dataAdminRouter() mounted at /api/admin (session):
 //     GET  /data/coins?q=             → { coins } coin search for the picker (CoinGecko)
 //     GET  /data/sports/leagues       → { leagues } the competitions the card can follow
 //     GET  /data/sports/teams?league=&q= → { teams } of one competition
 //     GET  /data/stocks/symbols?q=    → { symbols } symbol search (needs the Finnhub key)
+//     GET  /data/currency/currencies  → { currencies } the ECB's currencies for the pair picker (Frankfurter, a day)
 //     GET  /data/stocks/key           → { set, last4 }    PUT { key } (write-only, tried once before it is kept)
 //     POST /data/preview              → { items } the builder's preview of items not saved yet (the same cache)
 // A display only gets the numbers of the items on its own screen, never while the screen is private, never for an
@@ -16,10 +20,10 @@ import { getConfig, updateSecrets } from '../store.js';
 import { requestScreen } from '../displayAccess.js';
 import { screenPrivacy } from '../privacy.js';
 import { hiddenItems } from '../canvasConditions.js';
-import { CANVAS_ID_RE, CANVAS_KINDS, canvasDataItems, DATA_KIND_IDS } from '../core/canvasCore.js';
+import { CANVAS_ID_RE, CANVAS_KINDS, canvasDataItems, currencyProps, DATA_KIND_IDS } from '../core/canvasCore.js';
 import { CREST_TOKEN_RE, DataError, SPORTS_LEAGUES, STOCKS_KEY_RE, sportsLeague } from '../core/dataCore.js';
 import {
-  checkStocksKey, crestImage, itemData, leagueTeams, searchCoins, searchSymbols, stocksKey, stocksKeyChanged, stocksStatus,
+  checkStocksKey, crestImage, fxCurrencies, itemData, leagueTeams, searchCoins, searchSymbols, stocksKey, stocksKeyChanged, stocksStatus,
 } from '../dataFeeds.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -52,6 +56,17 @@ export function dataDisplayRouter() {
     if (screenPrivacy(cfg, screen).active) return res.status(403).json({ error: 'private' });
     const hide = hiddenItems(cfg, screen);
     res.json({ items: await dataOf(canvasDataItems(screen, { tz: cfg.datetime?.timezone || 'UTC' }).filter((it) => !hide.has(it.id))) });
+  }));
+
+  // the Currency widget (Widgets section): its pairs come in the query, like the prices widget's zone
+  r.get('/display/currency', wrap(async (req, res) => {
+    res.set('cache-control', 'no-store');
+    const cfg = getConfig();
+    const { screen } = requestScreen(cfg, req);
+    if (screenPrivacy(cfg, screen).active) return res.status(403).json({ error: 'private' });
+    const props = currencyQuery(req.query);
+    if (!props) return res.status(400).json({ error: 'invalid_pairs' });
+    res.json(await itemData({ kind: 'currency', props }));
   }));
 
   r.get('/display/data/crest/:token', wrap(async (req, res) => {
@@ -87,6 +102,20 @@ export function previewItems(list) {
     .map((x) => ({ id: x.id, kind: x.kind, props: CANVAS_KINDS[x.kind].props(sink, 'props', x.props && typeof x.props === 'object' ? x.props : {}, {}, {}) }));
 }
 
+/**
+ * The options of a Currency widget as GET /display/currency reads them: pairs=EUR-HUF,USD-MXN (1 to 6), range, chart;
+ * null when no pair is valid.
+ */
+export function currencyQuery(q) {
+  const sink = { err() {}, warn() {} };
+  const pairs = (typeof q?.pairs === 'string' ? q.pairs.slice(0, 64) : '').split(',').filter(Boolean).slice(0, 6).map((x) => {
+    const [base, quote] = x.split('-');
+    return { base, quote };
+  });
+  const props = currencyProps(sink, 'q', { pairs, range: typeof q?.range === 'string' ? q.range : undefined, chart: typeof q?.chart === 'string' ? q.chart : undefined });
+  return props.pairs.length ? props : null;
+}
+
 const qText = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 export function dataAdminRouter() {
@@ -119,6 +148,15 @@ export function dataAdminRouter() {
     res.set('cache-control', 'no-store');
     try {
       res.json({ symbols: await searchSymbols(qText(req.query.q, 30)) });
+    } catch (err) {
+      sendErr(res, err);
+    }
+  }));
+
+  r.get('/data/currency/currencies', wrap(async (req, res) => {
+    res.set('cache-control', 'no-store');
+    try {
+      res.json({ currencies: await fxCurrencies() });
     } catch (err) {
       sendErr(res, err);
     }

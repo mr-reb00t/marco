@@ -385,8 +385,8 @@ test('display: containers, z-order, sandbox, same-origin refusal, privacy, prese
   assert.match(mod, /if \(!webUrl\(e\.w\.src\) \|\| e\.w\.via !== 'direct' \|\| sameOrigin\(e\.w\.src\)\)/);
   // only http(s) addresses are ever loaded (a javascript: one in the unsaved preview would run on this origin)
   assert.match(mod, /if \(!w \|\| typeof w\.id !== 'string' \|\| !webUrl\(w\.src\)\) return false;/);
-  // price widgets carry no address (the display asks this server for the prices)
-  assert.match(read('web/admin/livePreview.ts'), /cfg\.widgets\.filter\(\(w\) => w\.type === 'prices' \|\| w\.via !== 'direct' \|\| !widgetUrlProblem\(w\.src\)\)/);
+  // price and currency widgets carry no address (the display asks this server for the prices and the rates)
+  assert.match(read('web/admin/livePreview.ts'), /cfg\.widgets\.filter\(\(w\) => w\.type === 'prices' \|\| w\.type === 'currency' \|\| w\.via !== 'direct' \|\| !widgetUrlProblem\(w\.src\)\)/);
   assert.match(mod, /cfg\.privacy\?\.active/);
   const main = read('web/display/main.ts');
   assert.match(main, /custom\.render\(cfg, preset\)/);

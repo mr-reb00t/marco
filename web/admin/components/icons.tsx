@@ -19,6 +19,7 @@ const P: Record<string, string> = {
   shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z M9 12l2 2 4-4',
   activity: 'M3 12h4l3-8 4 16 3-8h4',
   trend: 'M3 17l6-6 4 4 8-8 M15 7h6v6',
+  exchange: 'M4 8h15 M15 4l4 4-4 4 M20 16H5 M9 12l-4 4 4 4',
   coins: 'M9 13a6 4 0 1 0 0-.01 M3 13v4c0 2.2 2.7 4 6 4s6-1.8 6-4v-4 M9 5a6 3.5 0 0 1 12 0c0 1.5-1.5 2.8-3.7 3.4 M21 5v4c0 1.5-1.4 2.8-3.5 3.5',
   trophy: 'M8 4h8v5a4 4 0 0 1-8 0z M8 6H5a3 3 0 0 0 3 4 M16 6h3a3 3 0 0 1-3 4 M12 13v4 M8 21h8 M10 17h4v4h-4z',
   monitor: 'M3 4h18v12H3z M8 20h8 M12 16v4',

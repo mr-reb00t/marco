@@ -1,5 +1,5 @@
 // Every card of Personalizado that draws a chart (the Sensor with today's curve, binary sensors beside it, Gráfica,
-// Cripto, Bolsa with its sparklines, the electricity prices widget) at every box from its smallest up to 12×8 cells,
+// Cripto, Bolsa with its sparklines, Divisas, the electricity prices widget) at every box from its smallest up to 12×8 cells,
 // with the chart under the numbers ("Debajo") and behind them ("De fondo"): wherever the card is two rows high or more
 // its chart is drawn and seen (an element of some area, not hidden), the card is never marked "No cabe" and no text is
 // cut by its edge. A Sensor 5×3 drew the one-line look with no curve while 4×4 had it (the boxes three rows high are
@@ -40,6 +40,13 @@ const KINDS = {
   stocks: {
     chart: 'svg.cv-curve',
     variants: ['below', 'background'].map((chartStyle) => ({ chart: true, props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'NVDA', name: 'NVIDIA' }], layout: 'list', sparkline: true, chartStyle } })),
+  },
+  currency: {
+    chart: 'svg.cv-curve',
+    variants: [
+      ...['below', 'background'].map((chartStyle) => ({ chart: true, props: { pairs: [{ base: 'EUR', quote: 'HUF' }], layout: 'big', range: '30d', chart: 'area', chartStyle } })),
+      ...['below', 'background'].map((chartStyle) => ({ chart: true, props: { pairs: [{ base: 'USD', quote: 'MXN' }, { base: 'EUR', quote: 'USD' }], layout: 'list', range: '1y', chart: 'line', chartStyle } })),
+    ],
   },
   widget: {
     chart: '.pw-chart svg',

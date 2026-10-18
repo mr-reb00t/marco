@@ -39,7 +39,7 @@ export function draftDisplayConfig(draft: StoredConfig, screenId: string): Displ
         })
       : [];
     // an unsaved widget address the server would refuse never reaches the preview (a javascript: one would run there)
-    if (Array.isArray(cfg.widgets)) cfg.widgets = cfg.widgets.filter((w) => w.type === 'prices' || w.via !== 'direct' || !widgetUrlProblem(w.src));
+    if (Array.isArray(cfg.widgets)) cfg.widgets = cfg.widgets.filter((w) => w.type === 'prices' || w.type === 'currency' || w.via !== 'direct' || !widgetUrlProblem(w.src));
     return cfg;
   } catch (e) {
     console.warn('[preview] draft config', e);

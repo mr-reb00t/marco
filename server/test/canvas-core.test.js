@@ -52,7 +52,7 @@ test('registry: every kind of the spec and of the owner amendments is reserved, 
     'family.members', 'family.routines', 'family.points', 'family.rewards', 'family.chores', 'meals.today', 'meals.week', 'birthdays', 'highlights', 'announcement',
     'ha.tile', 'ha.light', 'ha.switch', 'ha.climate', 'ha.cover', 'ha.sensor', 'ha.room', 'ha.chart', 'ha.camera', 'ha.media', 'ha.scene',
     'ha.gauge', 'ha.statistic',
-    'market', 'sports', 'stocks',
+    'market', 'sports', 'stocks', 'currency',
     'html', 'card',
   ];
   assert.deepEqual([...CANVAS_KIND_IDS].sort(), [...want].sort());
