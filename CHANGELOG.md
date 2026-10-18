@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.6] - 2026-10-18
+
 ### Added
 - *Currency* (Divisas), a new card in *Data*: the exchange rate of 1 to 6 currency pairs, such as EUR/HUF, EUR/USD,
   USD/MXN or GBP/EUR, from the European Central Bank's reference rates (through Frankfurter, free, no key). Every pair
