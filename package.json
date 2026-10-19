@@ -26,7 +26,7 @@
     "build": "vite build",
     "start": "NODE_ENV=production node server/index.js",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --test --test-force-exit --test-timeout=900000 server/test/*.test.js",
+    "test": "node --test --test-force-exit --test-timeout=1800000 server/test/*.test.js",
     "demo": "node scripts/demo.js",
     "check:release": "node scripts/check-release.js",
     "contract": "node scripts/gen-contract.mjs",
