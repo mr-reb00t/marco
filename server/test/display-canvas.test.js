@@ -200,6 +200,19 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
     assert.deepEqual(v.notes, []);
   });
 
+  test('Colores según el valor in the small look of a sensor too (issue #13): the value line takes the colour', async () => {
+    const { value: v, errors } = await open('preset=canvas&shot=size:ha.sensor:row&lang=en', `[...document.querySelectorAll('.cv-item[data-kind="ha.sensor"] .cv-body')]
+      .filter((b) => b.querySelector('.cv-ha-tile-card, .cv-ha-tile') && /\\d/.test(b.querySelector('.cv-ha-state')?.textContent ?? ''))
+      .map((b) => { const st = b.querySelector('.cv-ha-state'); return [st.textContent, (/lv-(ok|warn|err)/.exec(st.className) ?? [])[1] ?? '', getComputedStyle(st).color]; })`);
+    assert.deepEqual(errors, []);
+    assert.ok(v.length >= 3, JSON.stringify(v));
+    // the demo's sensors: 20 and 60, the other way round every other one (21.4 °C and 48 % between, 1.3 kW above)
+    for (const [text, lv, color] of v) {
+      assert.ok(lv, `${text}: no colour`);
+      assert.doesNotMatch(color, /^rgba?\(255, 255, 255/, `${text}: still the plain ink`);
+    }
+  });
+
   // every Casa card (and the Sección) at every size it allows, with the defaults and normal names (every third one
   // long), on a touch screen: nothing reports "No cabe" (the same measure as the editor's badge) and no text is cut by
   // the card's edge, with no sidebar, a wide sidebar on top or on the left, and in portrait; the climate card's name,

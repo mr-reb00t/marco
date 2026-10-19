@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.9] - 2026-10-19
+
+### Fixed
+- *Colours by value* on a Home Assistant sensor now also colours the value in the small look (a row, or a card
+  with the name above the value). Before, only the large value took the colour (#13).
+
 ## [0.16.8] - 2026-10-19
 
 ### Fixed

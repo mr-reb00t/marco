@@ -97,6 +97,9 @@
 #app.preset-canvas .cv-ha-big.lv-ok .v { color: var(--ha-ok); }
 #app.preset-canvas .cv-ha-big.lv-warn .v { color: var(--ha-warn); }
 #app.preset-canvas .cv-ha-big.lv-err .v { color: var(--ha-alert); }
+#app.preset-canvas .cv-ha-state.lv-ok { color: var(--ha-ok); font-weight: 600; }
+#app.preset-canvas .cv-ha-state.lv-warn { color: var(--ha-warn); font-weight: 600; }
+#app.preset-canvas .cv-ha-state.lv-err { color: var(--ha-alert); font-weight: 600; }
 #app.preset-canvas .cv-ha-big.tone-alert .v { color: var(--ha-alert); }
 #app.preset-canvas .cv-ha-sensor > .cv-ha-ago { position: relative; z-index: 1; font-size: calc(1.3rem * clamp(0.8, var(--wk, 1), calc(1.3 * var(--cv-scale, 1)))); }
 #app.preset-canvas .cv-ha-sensor[data-size='xs'] > .cv-ha-ago { display: none; }
@@ -538,8 +541,8 @@ html.lite #app.preset-canvas .cv-ha-tile.is-pulse > .cv-ha-ico, #app.preset-canv
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.tone-heat .cv-ha-target, .tone-heat ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='heat'] .cv-ha-cl-big) { color: color-mix(in srgb, var(--ha-heat) 76%, #000); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.tone-cool .cv-ha-target, .tone-cool ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='cool'] .cv-ha-cl-big),
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.tone-cool .cv-ha-target, .tone-cool ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='cool'] .cv-ha-cl-big) { color: color-mix(in srgb, var(--ha-cool) 72%, #000); }
-.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-ha-big.lv-warn .v, .cv-dt-stale),
-.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-ha-big.lv-warn .v, .cv-dt-stale) { color: color-mix(in srgb, var(--ha-warn) 72%, #000); }
+.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .cv-dt-stale),
+.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .cv-dt-stale) { color: color-mix(in srgb, var(--ha-warn) 72%, #000); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) .cv-ha-tile-card .cv-ha-bri[aria-valuenow='0'] .cv-slider-t,
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none .cv-ha-tile-card .cv-ha-bri[aria-valuenow='0'] .cv-slider-t { color: var(--fg-2); }
 

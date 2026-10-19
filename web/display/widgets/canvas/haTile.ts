@@ -278,7 +278,11 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   // a binary sensor that is active (motion, water, a door open) breathes softly (never in lite or low power)
   const wrap = el('div', `cv-ha-tile tone-${tn}${s?.d === 'binary' && tn !== 'off' && tn !== 'na' ? ' is-pulse' : ''}`);
   const txt = el('div', 'cv-ha-txt');
-  txt.append(el('span', 'cv-ha-name', nameOf(p, s)), el('span', 'cv-ha-state cv-sec3', tileStateText(s, drawn, size === 'row', p.decimals)));
+  const stEl = el('span', 'cv-ha-state cv-sec3', tileStateText(s, drawn, size === 'row', p.decimals));
+  // a sensor's "Colores según el valor" in the small look too (the value is the state line there)
+  const lvT = s?.d === 'sensor' && s.num !== null ? level(s.num, p.thresholds, !!p.invert) : '';
+  if (lvT) stEl.classList.add(`lv-${lvT}`);
+  txt.append(el('span', 'cv-ha-name', nameOf(p, s)), stEl);
   // when it changed, under the state while there is room (it is the first thing to go)
   const when = s?.at && !drawn.length && size !== 'row' ? ago(s.at) : '';
   if (when) txt.append(el('span', 'cv-ha-ago cv-sec1', when));
