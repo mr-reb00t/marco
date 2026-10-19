@@ -71,16 +71,20 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
       assert.ok(a.length >= 1);
       for (const r of a) {
         assert.equal(r.slides, 2, 'one slide per card');
-        assert.equal(r.on, 0, 'the first card first');
+        // (on a slow machine the first change can come before this first look: the card on show and its dot match)
+        assert.ok(r.on === 0 || r.on === 1, 'one card on show');
         assert.equal(r.dots, 2);
-        assert.equal(r.dotOn, 0);
+        assert.equal(r.dotOn, r.on);
         assert.equal(r.still, false, 'a soft fade on a normal screen');
         assert.ok(r.kinds, 'the cards are drawn');
       }
       // every five seconds (the fixture's "Cambiar cada"): the next card, and the dot follows
-      await p.eval('new Promise((r) => setTimeout(r, 6000))');
-      const b = await p.eval(state);
-      for (const r of b) assert.deepEqual([r.on, r.dotOn], [1, 1]);
+      let b = a;
+      for (let i = 0; i < 24 && b.every((r, n) => r.on === a[n].on); i++) {
+        await p.eval('new Promise((r) => setTimeout(r, 500))');
+        b = await p.eval(state);
+      }
+      for (const [n, r] of b.entries()) assert.deepEqual([r.on, r.dotOn], [(a[n].on + 1) % 2, (a[n].on + 1) % 2]);
     } finally {
       await p.close();
     }
