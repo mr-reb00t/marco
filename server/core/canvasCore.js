@@ -853,7 +853,7 @@ export const CANVAS_KINDS = {
       if (Array.isArray(x.features)) features = [...new Set(x.features.filter((f) => TILE_FEATURES.includes(f)))].slice(0, 3);
       else if (x.features !== undefined && x.features !== null) c.err(`${p}.features`, 'expected array');
       const [lo, hi] = rangeOf(c, p, x.gaugeMin, x.gaugeMax, 'gaugeMin', 'gaugeMax');
-      return { features, gaugeMin: lo, gaugeMax: hi };
+      return { features, gaugeMin: lo, gaugeMax: hi, ...stateColorsOf(c, p, x) };
     },
   }),
   'ha.light': haKind(['row', 'xs', 's', 'sq', 'm', 't'], 's', [2, 1, 6, 4], 'light', {
@@ -865,7 +865,7 @@ export const CANVAS_KINDS = {
       brightness: P.bool(c, `${p}.brightness`, x.brightness, true), colorTemp: P.bool(c, `${p}.colorTemp`, x.colorTemp, true),
     }),
   }),
-  'ha.switch': haKind(['row', 'xs', 's'], 'xs', [2, 1, 6, 4], 'switch', { controls: true, one: true, state: true }),
+  'ha.switch': haKind(['row', 'xs', 's'], 'xs', [2, 1, 6, 4], 'switch', { controls: true, one: true, state: true, extra: (c, p, x) => stateColorsOf(c, p, x) }),
   'ha.climate': haKind(['row', 'xs', 's', 'w', 'm', 't'], 'm', [2, 1, 6, 5], 'climate', {
     controls: true, one: true, bigType: true, state: true,
     // a new card shows a short set of modes (null: off and the two the entity has that people use most), no fan
@@ -887,6 +887,8 @@ export const CANVAS_KINDS = {
         chartStyle: P.oneOf(c, `${p}.chartStyle`, x.chartStyle, 'background', CHART_STYLES),
         thresholds: thresholdsOf(c, `${p}.thresholds`, x.thresholds),
         invert: P.bool(c, `${p}.invert`, x.invert, false),
+        // a binary sensor (a door, a window): its colour open and closed
+        ...stateColorsOf(c, p, x),
       };
     },
   }),
@@ -1138,6 +1140,13 @@ function rangeOf(c, p, a, b, ka, kb) {
   const hi = Math.max(x, y);
   return [lo, hi > lo ? hi : lo + 1];
 }
+
+/** The colour a card's state may take (Colores según el estado): auto (as Home Assistant colours it) or one of three. */
+export const STATE_COLORS = ['auto', 'green', 'yellow', 'red'];
+const stateColorsOf = (c, p, x) => ({
+  colorOn: P.oneOf(c, `${p}.colorOn`, x.colorOn, 'auto', STATE_COLORS),
+  colorOff: P.oneOf(c, `${p}.colorOff`, x.colorOff, 'auto', STATE_COLORS),
+});
 
 /** Two breakpoints of a value's colour (ok below the first, warn between, err above the second), or null. */
 function thresholdsOf(c, path, v) {

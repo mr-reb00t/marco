@@ -618,3 +618,18 @@ test('flexible sizes: portrait keeps a box of its own (at most 16 wide), a hand-
   assert.deepEqual(proj.items[1].pos, { zone: 'main', x: 0, y: 4, size: 't', w: 6, h: 12 });
   assert.deepEqual(posCells(proj.items[0].portrait, 'portrait'), [16, 4]);
 });
+
+test('Colores según el estado (issue #13): Entidad, binary sensors and switches keep auto, green, yellow or red; anything else is refused', () => {
+  for (const kind of ['ha.tile', 'ha.sensor', 'ha.switch']) {
+    const fresh = run({ items: [item(kind, M(0, 0, 'xs'))] });
+    assert.deepEqual([fresh.out.items[0].props.colorOn, fresh.out.items[0].props.colorOff], ['auto', 'auto'], `${kind}: automatic by default`);
+    const raw = item(kind, M(0, 0, 'xs'));
+    raw.props = { ...raw.props, colorOn: 'red', colorOff: 'green' };
+    const { c, out } = run({ items: [raw] });
+    assert.deepEqual(c.errors, []);
+    assert.deepEqual([out.items[0].props.colorOn, out.items[0].props.colorOff], ['red', 'green'], kind);
+    const bad = item(kind, M(0, 0, 'xs'));
+    bad.props = { ...bad.props, colorOn: 'purple' };
+    assert.ok(run({ items: [bad] }).c.errors.some((e) => e.path.endsWith('.colorOn')), `${kind}: an unknown colour is an error`);
+  }
+});

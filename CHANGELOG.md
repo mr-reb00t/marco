@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.10] - 2026-10-19
+
+### Added
+- *Colours by state* on Home Assistant cards: an Entidad card, a binary sensor (a door, a window, motion) and a
+  switch can show their state in green, yellow or red, one colour when active (open, on, detected) and one when not,
+  for example a door red when open and green when closed. *Automatic* keeps Home Assistant's own colours (#13).
+
 ## [0.16.9] - 2026-10-19
 
 ### Fixed

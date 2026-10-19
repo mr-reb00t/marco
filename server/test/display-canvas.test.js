@@ -213,6 +213,18 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
     }
   });
 
+  test('Colores según el estado (issue #13): a door closed in green when the owner says so, the others as Home Assistant colours them', async () => {
+    const { value: v, errors } = await open('preset=canvas&shot=size:ha.sensor:row&lang=en', `[...document.querySelectorAll('.cv-item[data-kind="ha.sensor"] .cv-body .cv-ha-tile')]
+      .map((t) => [t.querySelector('.cv-ha-state')?.textContent, (/tone-([a-z]+)/.exec(t.className) ?? [])[1], getComputedStyle(t.querySelector('.cv-ha-state')).color])`);
+    assert.deepEqual(errors, []);
+    // the demo: the second sensor a door with colorOn red / colorOff green, closed; the fifth a motion sensor on auto
+    const door = v.find(([text]) => text === 'Closed');
+    assert.ok(door, JSON.stringify(v));
+    assert.equal(door[1], 'good');
+    assert.match(door[2], /^rgb\(76, 217, 100\)/, 'the state line in the green of --ha-ok');
+    assert.ok(v.some(([text, t]) => text === 'Motion' && t === 'on'), 'a sensor on auto keeps its own colour');
+  });
+
   // every Casa card (and the Sección) at every size it allows, with the defaults and normal names (every third one
   // long), on a touch screen: nothing reports "No cabe" (the same measure as the editor's badge) and no text is cut by
   // the card's edge, with no sidebar, a wide sidebar on top or on the left, and in portrait; the climate card's name,

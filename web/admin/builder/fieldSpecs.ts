@@ -225,6 +225,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'features', type: 'features', label: 'Debajo', hint: 'Una fila en los tamaños pequeño y ancho, dos en el mediano. En el mini y en la línea no se ven. Toca el icono para encender o apagar.' },
     { k: 'gaugeMin', type: 'number', label: 'La barra empieza en', show: (p) => Array.isArray(p.features) && p.features.includes('gauge') },
     { k: 'gaugeMax', type: 'number', label: 'La barra termina en', show: (p) => Array.isArray(p.features) && p.features.includes('gauge') },
+    { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Abierto, encendido o detectado. Automático: el color de Home Assistant.' },
+    { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Cerrado, apagado o sin nada detectado.' },
   ],
   'ha.gauge': [
     { k: 'entity', type: 'entity', label: 'Sensor' },
@@ -268,6 +270,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     CHART_STYLE('De fondo: la curva llena la parte de abajo de la tarjeta, detrás del valor. Debajo: en una franja propia bajo el valor.', (p) => !!p.sparkline),
     { k: 'thresholds', type: 'thresholds', label: 'Colores según el valor', hint: 'Verde por debajo del primero, amarillo entre los dos y rojo por encima del segundo.' },
     { k: 'invert', type: 'bool', label: 'Al revés', hint: 'Rojo por debajo y verde por encima, por ejemplo para la batería.' },
+    { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Abierto o detectado. Automático: el color de Home Assistant.', show: (p) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.') },
+    { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Cerrado o sin nada detectado.', show: (p) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.') },
   ],
   'ha.room': [
     { k: 'title', type: 'text', label: 'Nombre de la habitación', max: 40, placeholder: 'Salón' },
@@ -302,6 +306,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     HA_NAME,
     SHOW_NAME,
     SHOW_STATE,
+    { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Encendido. Automático: el color de Home Assistant.' },
+    { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Apagado.' },
     { type: 'note', text: 'Toca el icono para encender o apagar.' },
   ],
   'ha.climate': [

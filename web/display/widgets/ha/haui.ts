@@ -236,6 +236,19 @@ export function tone(s: HaState | null): 'on' | 'alert' | 'open' | 'heat' | 'coo
   }
 }
 
+const PICKED = { green: 'good', yellow: 'warn', red: 'alert' } as const;
+
+/**
+ * The state colour with the owner's choice on top (Colores según el estado, colorOn / colorOff): when the entity is
+ * active (open, on, detected) or not, green, yellow or red instead of the automatic colour.
+ */
+export function stateTone(s: HaState | null, p: { colorOn?: unknown; colorOff?: unknown }): ReturnType<typeof tone> | 'good' | 'warn' {
+  const t = tone(s);
+  if (t === 'na') return t;
+  const c = t === 'off' ? p.colorOff : p.colorOn;
+  return typeof c === 'string' && c in PICKED ? PICKED[c as keyof typeof PICKED] : t;
+}
+
 /** The domain an alias was bound to ({ a, d } in the item's props), or ''. */
 export const domainOf = (ref: unknown): string => (ref && typeof ref === 'object' && typeof (ref as { d?: unknown }).d === 'string' ? (ref as { d: string }).d : '');
 /** The alias of a binding, or ''. */

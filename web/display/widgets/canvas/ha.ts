@@ -8,7 +8,7 @@
 import type { DisplayCanvasItem, HaHistory, HaState } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { isPreview } from '../../identity';
-import { HA_ICON, ago, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, stateIcon, stateText, tone, type HaIconName } from '../ha/haui';
+import { HA_ICON, ago, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, stateIcon, stateText, stateTone, tone, type HaIconName } from '../ha/haui';
 import { now as clockNow, onTick } from '../../time';
 import { bigType, fitWidth, typeCap } from './clock';
 import { drawTile, fitTile } from './haTile';
@@ -380,7 +380,7 @@ function sensorAdapter(): CanvasAdapter {
       if (lv) big.classList.add(`lv-${lv}`);
     } else {
       big.append(el('span', 'v is-text', s ? stateText(s, decimals) : ''));
-      big.classList.add(`tone-${tone(s)}`);
+      big.classList.add(`tone-${stateTone(s, p)}`);
     }
     // the value and, beside it on the right, the lowest and highest of today (never over the value)
     const foot = el('div', 'cv-ha-sfoot');

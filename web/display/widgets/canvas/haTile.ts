@@ -7,7 +7,7 @@
 import type { DisplayCanvasItem, HaState, HaStatistic, TileFeature } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { sizeCells } from '../../../../server/core/canvasCore.js';
-import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, stateIcon, stateText, stepDecimals, svgEl, tone } from '../ha/haui';
+import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, stateIcon, stateText, stepDecimals, svgEl, stateTone, tone } from '../ha/haui';
 import { bigType, fitWidth, typeCap } from './clock';
 import { el, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
 import { climateState, colorRow, ctChips, fitSwatches, kelvinRgb } from './haControls';
@@ -248,7 +248,8 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   const alias = aliasOf(p.entity);
   const s = env.ha.state(alias);
   const size = root.dataset.size || 'xs';
-  const tn = tone(s);
+  const t0 = tone(s);
+  const tn = stateTone(s, p);
   // the state colour of the whole card (the icon, the switch, the slider): a lit light in its own colour
   root.dataset.tone = tn;
   // what it shows (a cover's card keeps its buttons; the browser tests look for them)
@@ -276,7 +277,7 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
     }
   }
   // a binary sensor that is active (motion, water, a door open) breathes softly (never in lite or low power)
-  const wrap = el('div', `cv-ha-tile tone-${tn}${s?.d === 'binary' && tn !== 'off' && tn !== 'na' ? ' is-pulse' : ''}`);
+  const wrap = el('div', `cv-ha-tile tone-${tn}${s?.d === 'binary' && t0 !== 'off' && t0 !== 'na' ? ' is-pulse' : ''}`);
   const txt = el('div', 'cv-ha-txt');
   const stEl = el('span', 'cv-ha-state cv-sec3', tileStateText(s, drawn, size === 'row', p.decimals));
   // a sensor's "Colores según el valor" in the small look too (the value is the state line there)

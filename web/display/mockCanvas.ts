@@ -532,7 +532,8 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
     // every third one a binary sensor (motion, a door, water...)
     // the curve behind the value and, every other one, in a band under it (Estilo de la gráfica)
     // (with Colores según el valor, the other way round every other one, so every look shows its colour)
-    case 'ha.sensor': return n % 3 === 1 ? { entity: one('binary_sensor') } : { entity: one('sensor'), sparkline: n % 2 === 0, chartStyle: n % 4 === 2 ? 'below' : 'background', decimals: 1, name, thresholds: [20, 60], invert: n % 2 === 1 };
+    // a binary one in its own colours every other time (Colores según el estado: red open, green closed)
+    case 'ha.sensor': return n % 3 === 1 ? { entity: one('binary_sensor'), ...(n % 2 ? { colorOn: 'red', colorOff: 'green' } : {}) } : { entity: one('sensor'), sparkline: n % 2 === 0, chartStyle: n % 4 === 2 ? 'below' : 'background', decimals: 1, name, thresholds: [20, 60], invert: n % 2 === 1 };
     case 'ha.gauge': return { entity: one('sensor'), decimals: 0, thresholds: [60, 75], name };
     case 'ha.statistic': return { entity: one('sensor'), stat: n % 2 ? 'mean' : 'change', period: n % 3 ? 'today' : 'month', name: n % 3 === 2 ? '[AA] Aire Dormitorio Principal - Split interior' : n % 2 ? '' : 'Consumo de hoy' };
     case 'heading': return { title: n % 3 === 2 ? 'Planta baja y jardín de atrás' : 'Salón', icon: n % 2 ? '' : '🛋️' };

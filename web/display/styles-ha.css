@@ -37,6 +37,11 @@
 #app.preset-canvas .tone-alert > .cv-ha-ico, #app.preset-canvas .tone-alert.cv-ha-row .cv-ha-ico { color: #fff; background: var(--ha-alert); }
 #app.preset-canvas .tone-open > .cv-ha-ico, #app.preset-canvas .tone-open.cv-ha-row .cv-ha-ico { color: #fff; background: var(--ha-cool); }
 #app.preset-canvas .tone-alert .cv-ha-state { color: var(--ha-alert); font-weight: 600; }
+/* Colores según el estado: green and yellow, as the red above */
+#app.preset-canvas .tone-good > .cv-ha-ico, #app.preset-canvas .tone-good.cv-ha-row .cv-ha-ico { color: #fff; background: var(--ha-ok); }
+#app.preset-canvas .tone-warn > .cv-ha-ico, #app.preset-canvas .tone-warn.cv-ha-row .cv-ha-ico { color: #1c1c1e; background: var(--ha-warn); }
+#app.preset-canvas .tone-good .cv-ha-state { color: var(--ha-ok); font-weight: 600; }
+#app.preset-canvas .tone-warn .cv-ha-state { color: var(--ha-warn); font-weight: 600; }
 #app.preset-canvas .tone-na { opacity: 0.55; }
 /* the server lost Home Assistant: a small dot in the corner, the last states stay */
 #app.preset-canvas .cv-ha-down { position: absolute; top: 1rem; right: 1rem; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: var(--ha-alert); box-shadow: 0 0 0 0.25rem rgb(0 0 0 / 0.25); }
@@ -51,6 +56,8 @@
 #app.preset-canvas .cv-ha[data-tone='cool'] { --tile-c: var(--ha-cool); }
 #app.preset-canvas .cv-ha[data-tone='alert'] { --tile-c: var(--ha-alert); }
 #app.preset-canvas .cv-ha[data-tone='open'] { --tile-c: var(--ha-cool); }
+#app.preset-canvas .cv-ha[data-tone='good'] { --tile-c: var(--ha-ok); }
+#app.preset-canvas .cv-ha[data-tone='warn'] { --tile-c: var(--ha-warn); }
 /* a card given its own accent shows "on" in that colour instead of the amber (a switch, motion) */
 #app.preset-canvas .cv-card[style*="--accent:"] .cv-ha[data-tone='on'] { --tile-c: var(--accent); }
 .theme-light #app.preset-canvas .cv-ha, #app.preset-canvas .cv-card.is-ink-dark .cv-ha { --tile-ink: color-mix(in srgb, var(--tile-c) 72%, #000); }
@@ -101,6 +108,8 @@
 #app.preset-canvas .cv-ha-state.lv-warn { color: var(--ha-warn); font-weight: 600; }
 #app.preset-canvas .cv-ha-state.lv-err { color: var(--ha-alert); font-weight: 600; }
 #app.preset-canvas .cv-ha-big.tone-alert .v { color: var(--ha-alert); }
+#app.preset-canvas .cv-ha-big.tone-good .v { color: var(--ha-ok); }
+#app.preset-canvas .cv-ha-big.tone-warn .v { color: var(--ha-warn); }
 #app.preset-canvas .cv-ha-sensor > .cv-ha-ago { position: relative; z-index: 1; font-size: calc(1.3rem * clamp(0.8, var(--wk, 1), calc(1.3 * var(--cv-scale, 1)))); }
 #app.preset-canvas .cv-ha-sensor[data-size='xs'] > .cv-ha-ago { display: none; }
 /* today's curve (the shared style of styles-data.css .cv-curve): behind the value over the lower part of the card, or in
@@ -541,8 +550,8 @@ html.lite #app.preset-canvas .cv-ha-tile.is-pulse > .cv-ha-ico, #app.preset-canv
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.tone-heat .cv-ha-target, .tone-heat ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='heat'] .cv-ha-cl-big) { color: color-mix(in srgb, var(--ha-heat) 76%, #000); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.tone-cool .cv-ha-target, .tone-cool ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='cool'] .cv-ha-cl-big),
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.tone-cool .cv-ha-target, .tone-cool ~ .cv-ha-feats .cv-ha-sval, .cv-ha-climate[data-tone='cool'] .cv-ha-cl-big) { color: color-mix(in srgb, var(--ha-cool) 72%, #000); }
-.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .cv-dt-stale),
-.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .cv-dt-stale) { color: color-mix(in srgb, var(--ha-warn) 72%, #000); }
+.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .tone-warn .cv-ha-state, .cv-ha-big.tone-warn .v, .cv-dt-stale),
+.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-ha-big.lv-warn .v, .cv-ha-state.lv-warn, .tone-warn .cv-ha-state, .cv-ha-big.tone-warn .v, .cv-dt-stale) { color: color-mix(in srgb, var(--ha-warn) 72%, #000); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) .cv-ha-tile-card .cv-ha-bri[aria-valuenow='0'] .cv-slider-t,
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none .cv-ha-tile-card .cv-ha-bri[aria-valuenow='0'] .cv-slider-t { color: var(--fg-2); }
 
