@@ -113,7 +113,16 @@ describe('every kind follows its text size on screen', { skip: !chrome && 'no Ch
     const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=${shotOf(kind)}&cvscale=${scale}&now=2026-10-14T10:43`, { width: 1920, height: 1080 });
     try {
       await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1200)))');
-      return await p.eval(MEASURE(kind));
+      // measured once the card has settled: on a slow machine its data (the demo's announcement) can arrive after the
+      // first second, and the card is fitted to its box again then; two equal readings half a second apart
+      let last = await p.eval(MEASURE(kind));
+      for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const now = await p.eval(MEASURE(kind));
+        if (now && last && now.px === last.px && now.cramped === last.cramped) return now;
+        last = now;
+      }
+      return last;
     } finally {
       await p.close();
     }
@@ -126,21 +135,15 @@ describe('every kind follows its text size on screen', { skip: !chrome && 'no Ch
     // a few tabs at a time
     await Promise.all(Array.from({ length: 4 }, async () => {
       for (let k = queue.shift(); k; k = queue.shift()) {
-        // measured twice before it counts as a failure: on a busy runner a card can still be fitting its text
-        let fail = null;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const [ma, mb, mc] = [await measure(k, 0.7), await measure(k, 1), await measure(k, 1.5)];
-          if (!ma || !mb || !mc) {
-            fail = `${k} (${shotOf(k)}): no text measured`;
-            continue;
-          }
-          const [a, b, c] = [ma.px, mb.px, mc.px];
-          // (a card that fills its box keeps its size within a few per cent: its padding grows with the text size)
-          const grows = FILLS.has(k) ? c >= b * 0.95 && !mc.cramped : c > b * 1.08;
-          fail = a < b * 0.92 && grows ? null : `${k} (${shotOf(k)}): ${a.toFixed(1)} / ${b.toFixed(1)} / ${c.toFixed(1)} px${mc.cramped ? ', cramped at 150 %' : ''}`;
-          if (!fail) break;
+        const [ma, mb, mc] = [await measure(k, 0.7), await measure(k, 1), await measure(k, 1.5)];
+        if (!ma || !mb || !mc) {
+          bad.push(`${k} (${shotOf(k)}): no text measured`);
+          continue;
         }
-        if (fail) bad.push(fail);
+        const [a, b, c] = [ma.px, mb.px, mc.px];
+        // (a card that fills its box keeps its size within a few per cent: its padding grows with the text size)
+        const grows = FILLS.has(k) ? c >= b * 0.95 && !mc.cramped : c > b * 1.08;
+        if (!(a < b * 0.92 && grows)) bad.push(`${k} (${shotOf(k)}): ${a.toFixed(1)} / ${b.toFixed(1)} / ${c.toFixed(1)} px${mc.cramped ? ', cramped at 150 %' : ''}`);
       }
     }));
     assert.deepEqual(bad.sort(), []);
