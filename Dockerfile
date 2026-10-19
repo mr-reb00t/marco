@@ -7,6 +7,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.json vite.config.ts ./
+# the whole folder: vite.config.ts imports helpers from it
+COPY scripts ./scripts
 COPY web ./web
 COPY server ./server
 RUN npm run build

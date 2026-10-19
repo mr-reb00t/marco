@@ -49,6 +49,14 @@ jobs:
           for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:3999/api/health && break; sleep 1; done
           curl -fsS http://127.0.0.1:3999/api/health
           kill "$pid"
+      # the image people build with `docker compose up -d --build`: a release never goes out if it does not build
+      - name: Docker image builds and starts
+        run: |
+          docker build -t marco:release .
+          cid="$(docker run -d -p 127.0.0.1:3998:3000 marco:release)"
+          ok=0; for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:3998/api/health && { ok=1; break; }; sleep 1; done
+          docker logs "$cid" | tail -20; docker rm -f "$cid" >/dev/null
+          [ "$ok" = 1 ]
       - name: Release notes
         run: node scripts/release-notes.js "$GITHUB_REF_NAME" > release/notes.md
       - name: Publish

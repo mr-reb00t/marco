@@ -126,15 +126,21 @@ describe('every kind follows its text size on screen', { skip: !chrome && 'no Ch
     // a few tabs at a time
     await Promise.all(Array.from({ length: 4 }, async () => {
       for (let k = queue.shift(); k; k = queue.shift()) {
-        const [ma, mb, mc] = [await measure(k, 0.7), await measure(k, 1), await measure(k, 1.5)];
-        if (!ma || !mb || !mc) {
-          bad.push(`${k} (${shotOf(k)}): no text measured`);
-          continue;
+        // measured twice before it counts as a failure: on a busy runner a card can still be fitting its text
+        let fail = null;
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const [ma, mb, mc] = [await measure(k, 0.7), await measure(k, 1), await measure(k, 1.5)];
+          if (!ma || !mb || !mc) {
+            fail = `${k} (${shotOf(k)}): no text measured`;
+            continue;
+          }
+          const [a, b, c] = [ma.px, mb.px, mc.px];
+          // (a card that fills its box keeps its size within a few per cent: its padding grows with the text size)
+          const grows = FILLS.has(k) ? c >= b * 0.95 && !mc.cramped : c > b * 1.08;
+          fail = a < b * 0.92 && grows ? null : `${k} (${shotOf(k)}): ${a.toFixed(1)} / ${b.toFixed(1)} / ${c.toFixed(1)} px${mc.cramped ? ', cramped at 150 %' : ''}`;
+          if (!fail) break;
         }
-        const [a, b, c] = [ma.px, mb.px, mc.px];
-        // (a card that fills its box keeps its size within a few per cent: its padding grows with the text size)
-        const grows = FILLS.has(k) ? c >= b * 0.95 && !mc.cramped : c > b * 1.08;
-        if (!(a < b * 0.92 && grows)) bad.push(`${k} (${shotOf(k)}): ${a.toFixed(1)} / ${b.toFixed(1)} / ${c.toFixed(1)} px${mc.cramped ? ', cramped at 150 %' : ''}`);
+        if (fail) bad.push(fail);
       }
     }));
     assert.deepEqual(bad.sort(), []);

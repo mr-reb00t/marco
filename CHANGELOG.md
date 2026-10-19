@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.16.8] - 2026-10-19
+
+### Fixed
+- The Docker image builds again. 0.16.7 failed with `Could not resolve './scripts/vite-preload.mjs'` on
+  `docker compose up -d --build` (#12). Releases now check that the Docker image builds and starts before they go
+  out.
+
 ## [0.16.7] - 2026-10-18
 
 ### Changed
