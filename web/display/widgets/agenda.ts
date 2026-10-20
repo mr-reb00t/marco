@@ -130,9 +130,10 @@ export class Agenda {
       if (!rows.length) rows.push(`<div class="ag-empty">${esc(t('noEvents'))}</div>`);
       const d = keyToUTC(key);
       const rel = relativeDayLabel(lang, key, today, false);
-      // Dutch and Danish write the month in lower case ("Dinsdag 13 okt"); Danish puts a dot after the day ("Tirsdag 13. okt")
+      // Dutch, Danish and Polish write the month in lower case ("Dinsdag 13 okt", "Wtorek 13 paź"); Danish puts a dot
+      // after the day ("Tirsdag 13. okt")
       const mon = monthName(lang, d.getUTCMonth() + 1, 'short');
-      const dateStr = `${weekdayName(lang, key, 'long')} ${d.getUTCDate()}${lang === 'da' ? '.' : ''} ${lang === 'nl' || lang === 'da' ? mon.toLowerCase() : mon}`;
+      const dateStr = `${weekdayName(lang, key, 'long')} ${d.getUTCDate()}${lang === 'da' ? '.' : ''} ${lang === 'nl' || lang === 'da' || lang === 'pl' ? mon.toLowerCase() : mon}`;
       const label = i < 2 ? `<b>${esc(rel)}</b><span>${esc(dateStr)}</span>` : `<b>${esc(dateStr)}</b>`;
       specs.push({
         key: `d${key}`,

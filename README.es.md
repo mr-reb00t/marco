@@ -14,7 +14,7 @@ Un *marco* de fotos que también enmarca el día de tu familia.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js ≥ 20](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](#docker)
-[![Languages](https://img.shields.io/badge/i18n-English%20%C2%B7%20Espa%C3%B1ol%20%C2%B7%20Portugu%C3%AAs%20%C2%B7%20Nederlands%20%C2%B7%20Dansk-orange)](#)
+[![Languages](https://img.shields.io/badge/i18n-English%20%C2%B7%20Espa%C3%B1ol%20%C2%B7%20Portugu%C3%AAs%20%C2%B7%20Nederlands%20%C2%B7%20Dansk%20%C2%B7%20Polski-orange)](#)
 
 [English](README.md) · **Español**
 
@@ -123,7 +123,7 @@ color de la foto, transparencia, desenfoque y borde de luz:
   tintado; transparencia, desenfoque, tono oscuro, claro o de la foto y borde de luz, con vista previa en *Diseño*.
 - **Emojis automáticos:** 🎂 cumpleaños, ✈️ vuelos, 🩺 médico, 🎒 colegio, ⚽ deporte, 🍽️ cenas, 💼 reuniones, 🏖️
   vacaciones, 🚗 coche, 🐾 veterinario y más, a partir de reglas de palabras clave editables (35 categorías con unas
-  800 palabras clave en inglés, español, portugués, neerlandés y danés de serie).
+  1000 palabras clave en inglés, español, portugués, neerlandés, danés y polaco de serie).
 - **Cumpleaños con edad:** "🎂 Abuela Isabel (72)", desde un calendario de cumpleaños o introducidos en la
   administración. Los títulos de tus calendarios se quedan solo con el nombre ("Cumpleaños de Ana" sale como
   "🎂 Ana"); desactiva *Ordenar los títulos de cumpleaños* para dejarlos como vienen.
@@ -196,7 +196,8 @@ color de la foto, transparencia, desenfoque y borde de luz:
 - **Cámara del timbre:** cuando llaman a la puerta, Home Assistant avisa a Marco y las pantallas muestran la cámara a
   pantalla completa durante un rato, con sonido de timbre (también despierta las pantallas en modo noche).
 - **Copias de seguridad** (automáticas, exportar/importar con vista previa), **registro de actividad**, **paleta de
-  comandos** (Ctrl/Cmd + K), diseño adaptado al móvil, en inglés / español / portugués / neerlandés / danés.
+  comandos** (Ctrl/Cmd + K), diseño adaptado al móvil, en inglés / español / portugués / neerlandés / danés / polaco
+  (las revisiones de hablantes nativos son bienvenidas, mira [Adding a language](CONTRIBUTING.md#adding-a-language)).
 
 | | | |
 |---|---|---|
@@ -442,7 +443,7 @@ Una instalación nueva no tiene contraseña de administración ni ajustes propio
 | ![Paso 3: ciudad, zona horaria, unidades y formato de hora](docs/screenshots/setup-3-location.webp) | ![Paso 4: festivos por país y fuentes iCal con botón Probar](docs/screenshots/setup-4-calendars.webp) |
 | ![Paso 5: nombre, diseño, color, fotos y efecto ambiental](docs/screenshots/setup-5-look.webp) | ![Paso 6: el enlace privado de la pantalla con código QR y resumen](docs/screenshots/setup-6-done.webp) |
 
-1. **Bienvenida**: elige el idioma (English, Español, Português, Nederlands, Dansk).
+1. **Bienvenida**: elige el idioma (English, Español, Português, Nederlands, Dansk, Polski).
 2. **Contraseña del panel**: al menos 10 caracteres, nada obvio (`password123`, `1234567890`, `qwertyuiop`),
    escrita dos veces; un medidor te ayuda. La pantalla en sí nunca necesita contraseña.
 3. **Ubicación**: busca tu ciudad (Open-Meteo, sin clave de API); la zona horaria viene con ella (o del navegador);

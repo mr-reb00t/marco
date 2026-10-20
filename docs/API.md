@@ -341,7 +341,7 @@ installs) and setup is skipped; the panel then offers to change it (`passwordFro
 | `POST /api/setup/test-ics` | `{ url }` → `TestIcsResponse` (the wizard's "Test" button). Unauthenticated, so it refuses loopback, link-local / cloud-metadata, multicast and unspecified destinations (also after redirects) and returns only generic errors (`address not allowed`, `HTTP <status>`, `could not load the calendar`) |
 | `POST /api/setup/complete` | `SetupRequest` → `{ ok, user, screen: { id, slug, name, displayPath }, displayAccess }` and a session cookie (logged in). `displayPath` = the screen's private link `/d/<key>` |
 
-`SetupRequest`: `{ password, passwordConfirm, language: es|en|pt|nl|da, screenName, location?: { name, lat, lon, timezone },
+`SetupRequest`: `{ password, passwordConfirm, language: es|en|pt|nl|da|pl, screenName, location?: { name, lat, lon, timezone },
 timezone? (when the location is skipped), units?: metric|imperial, format24?, calendars?: [{ name, url, kind: holidays|generic }] (≤ 20), photos?: { source:
 stock|gallery|mixed }, layout?: { preset }, accent?: #rrggbb, ambient?: aurora|particles|none, theme?: dark|light }`.
 `layout.preset: "planner"` also sets the screen's `calendar.weeks` to `"auto"` and `calendar.eventStyle` to
@@ -940,7 +940,7 @@ and colour temperature (`light.turn_on`), `fan.set_percentage`, `climate.set_tem
 `vacuum.start`, `pause` and `return_to_base`, on the entity the card was given. Locks, alarms, gas valves (device
 class `gas`, or the word "gas" in the entity id, its name or the card's name, since many integrations set no
 device class), garage doors and gates are only shown, and so are updates. A switch, script, button or cover whose device class, id or name
-looks like a door, a gate or a lock (in any of the five languages), and a valve of device class `water` (the house's
+looks like a door, a gate or a lock (in any of the six languages), and a valve of device class `water` (the house's
 water), needs the owner's tick in the editor before it can be used at all, and then always two taps; its log entries
 say so. That check is a
 speed bump: the safest thing is not to put such entities on a screen anyone can touch. Each action is logged as

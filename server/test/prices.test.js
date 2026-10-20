@@ -596,7 +596,7 @@ test('display wiring: price cards in custom widgets, corner halves, styles for e
   assert.match(modern, /#app\.is-kids \.pw/);
   const i18n = read('web/shared/i18n.ts');
   for (const k of ['priceTitle', 'priceCheap', 'priceMid', 'priceHigh', 'priceNextHour', 'priceCheapestHours', 'priceCheapestStretches', 'priceNoneLeft', 'priceRange', 'priceMinMax']) {
-    assert.equal(i18n.split(`  ${k}: '`).length, 6, k);
+    assert.equal(i18n.split(`  ${k}: '`).length, 7, k);
   }
   const prices = read('web/display/widgets/prices.ts');
   // the screens only ever ask this server
@@ -654,7 +654,7 @@ test('display wiring: prices over the bars, the tall chart, the loading card', (
   // grid tariffs still on their way: a note, not "without grid tariff"
   assert.match(prices, /m\.gridPending\) f\.appendChild\(el\('span', 'pw-incl pw-incl--wait', ctx\.t\('priceLoadingGrid'/);
   const i18n = read('web/shared/i18n.ts');
-  for (const k of ['priceLoading', 'priceLoadingGrid']) assert.equal(i18n.split(`  ${k}: '`).length, 6, k);
+  for (const k of ['priceLoading', 'priceLoadingGrid']) assert.equal(i18n.split(`  ${k}: '`).length, 7, k);
   const admin = read('web/admin/sections/PriceWidget.tsx');
   assert.match(admin, /axis: 'simple', chartShape: 'columns'/);
   assert.match(admin, /\{test\.loading \? t\('Cargando…'\) : t\('Probar'\)\}/);

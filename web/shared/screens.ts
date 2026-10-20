@@ -64,12 +64,13 @@ export function applyScreen(cfg: StoredConfig, view: AppConfig): StoredConfig {
   return next as StoredConfig;
 }
 
-/** "Salón principal" → "salon-principal" (same rule as the server). */
+/** "Salón principal" → "salon-principal", "Łazienka" → "lazienka" (same rule as the server). */
 export function slugify(s: string): string {
   return s
     .normalize('NFD')
     .replace(/\p{M}+/gu, '')
     .toLowerCase()
+    .replace(/ł/g, 'l')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 32)

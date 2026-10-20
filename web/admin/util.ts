@@ -27,12 +27,13 @@ export function moveItem<T>(arr: T[], from: number, to: number): T[] {
   return out;
 }
 
-/** Case- and accent-insensitive normalisation (same rule the server applies). */
+/** Case- and accent-insensitive normalisation (same rule the server applies, ł as l). */
 export const normalize = (s: string) =>
   s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/ł/g, 'l')
     .trim();
 
 /** First icon rule matching `text`, same rule as the server (short keywords match whole words only). */
@@ -101,6 +102,7 @@ export const HOLIDAY_PRESETS: { cc: string; flag: string; name: string; url: str
   { cc: 'NL', flag: '🇳🇱', name: 'Festivos de Países Bajos', url: 'https://calendar.google.com/calendar/ical/en.dutch%23holiday%40group.v.calendar.google.com/public/basic.ics' },
   { cc: 'BE', flag: '🇧🇪', name: 'Festivos de Bélgica', url: 'https://calendar.google.com/calendar/ical/en.be%23holiday%40group.v.calendar.google.com/public/basic.ics' },
   { cc: 'DK', flag: '🇩🇰', name: 'Festivos de Dinamarca', url: 'https://calendar.google.com/calendar/ical/en.danish%23holiday%40group.v.calendar.google.com/public/basic.ics' },
+  { cc: 'PL', flag: '🇵🇱', name: 'Festivos de Polonia', url: 'https://calendar.google.com/calendar/ical/en.polish%23holiday%40group.v.calendar.google.com/public/basic.ics' },
 ];
 
 export const SWATCHES = [

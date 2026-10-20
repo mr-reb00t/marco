@@ -5,6 +5,23 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- Polish (#17): every admin and family page text, the screen's words, dates and numbers, weather descriptions, private
+  mode titles, backup summaries, the pairing and welcome screens, the setup wizard and the demo, with Polish count
+  forms ("1 ekran", "3 ekrany", "5 ekranów"). Long dates read "Poniedziałek, 12 października". The translation is
+  ours: reviews and corrections from native speakers are very welcome (see *Adding a language* in CONTRIBUTING.md).
+- Icon rules and the emoji search: Polish keywords (about 200 more keywords). Existing installs get them once on the
+  next start; rules you changed keep your emoji and your own keywords, and nothing is removed.
+- Holidays: a quick-add calendar for Poland, and holiday names from the Polish Google feed shown in every language.
+- Vacation rental and birthday titles in Polish are recognised ("Niedostępne", "Rezerwacja", guest lines with "Gość",
+  "Urodziny: Ania").
+
+### Changed
+- Search, keyword rules and screen addresses treat "ł" as "l", so "pilka" finds "piłka" and a screen called
+  "Łazienka" gets the address "lazienka".
+- Home Assistant: a switch or button whose name says door, gate or lock in Polish ("Brama", "Drzwi", "Zamek") asks
+  for the owner's tick and two taps, and a valve named "gaz" is a gas valve.
+
 ## [0.18.0] - 2026-10-20
 
 ### Added

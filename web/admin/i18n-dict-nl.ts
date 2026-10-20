@@ -162,6 +162,7 @@ export const NL: Record<string, string> = {
   'Festivos de Países Bajos': 'Feestdagen Nederland',
   'Festivos de Bélgica': 'Feestdagen België',
   'Festivos de Dinamarca': 'Feestdagen Denemarken',
+  'Festivos de Polonia': 'Feestdagen Polen',
   'Fondo': 'Achtergrond',
   'Formato': 'Opmaak',
   'Formato de fecha': 'Datumnotatie',

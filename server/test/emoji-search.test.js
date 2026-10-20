@@ -16,7 +16,7 @@ const FREQ = ['🎂', '✈️', '⚽', '🏠'];
 const index = () => mod.buildEmojiIndex(data.EMOJI_CATEGORIES, { id: 'frequent', icon: '⭐', title: 'Frecuentes', emojis: FREQ });
 const first = (q, lang = 'es') => mod.searchEmoji(index(), q, lang).slice(0, 5).map((e) => e.e);
 
-test('emoji data: unique, five languages, compact', opts, () => {
+test('emoji data: unique, six languages, compact', opts, () => {
   const seen = new Set();
   for (const c of data.EMOJI_CATEGORIES) {
     for (const it of c.items) {
@@ -24,7 +24,7 @@ test('emoji data: unique, five languages, compact', opts, () => {
       assert.ok(!seen.has(e), `duplicate ${e}`);
       seen.add(e);
       const parts = it.slice(it.indexOf(' ') + 1).split('|');
-      assert.equal(parts.length, 5, it);
+      assert.equal(parts.length, 6, it);
       for (const p of parts) assert.ok(p.trim(), it);
     }
   }
@@ -43,6 +43,10 @@ test('emoji search: accents, languages and ranking', opts, () => {
   assert.ok(first('fødselsdag', 'da').includes('🎂'));
   assert.ok(first('fodbold', 'da').includes('⚽'));
   assert.ok(first('strand', 'da').includes('🏖️'));
+  assert.ok(first('urodziny', 'pl').includes('🎂'));
+  assert.ok(first('piłka', 'pl').includes('⚽'));
+  assert.ok(first('pilka', 'pl').includes('⚽'));
+  assert.ok(first('plaża', 'pl').includes('🏖️'));
   assert.ok(first('tarta cumple').includes('🎂'));
   assert.deepEqual(first('zzqx'), []);
   assert.deepEqual(first('  '), []);
@@ -59,6 +63,7 @@ test('emoji names follow the language; frequent section comes first', opts, () =
   assert.equal(mod.emojiName(cake, 'pt'), 'bolo de aniversário');
   assert.equal(mod.emojiName(cake, 'nl'), 'verjaardagstaart');
   assert.equal(mod.emojiName(cake, 'da'), 'fødselsdagskage');
+  assert.equal(mod.emojiName(cake, 'pl'), 'tort urodzinowy');
   assert.ok(mod.looksLikeEmoji('🦩'));
   assert.ok(!mod.looksLikeEmoji('abc'));
 });

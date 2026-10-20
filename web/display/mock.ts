@@ -8,7 +8,7 @@ import type {
 } from '../shared/types';
 import { DEFAULT_ICON_RULES, resolveEventStyle } from '../shared/emoji';
 import { addDays, dateKeyInTz, keyToUTC, normLang, pad2, startOfWeek, zonedParts } from '../shared/i18n';
-import { DEMO_FAMILY_EN, DEMO_NEWS, DEMO_NL_DA } from './mock-text';
+import { DEMO_FAMILY_EN, DEMO_MORE, DEMO_NEWS } from './mock-text';
 import { DEFAULT_CONFIG, deepMerge } from './defaults';
 import { now } from './time';
 import { DEMO_WIDGET, mockCanvas } from './mockCanvas';
@@ -26,12 +26,12 @@ const TZ = (() => {
   }
 })();
 
-// Demo text follows ?lang=en|es|pt|nl|da (English by default).
+// Demo text follows ?lang=en|es|pt|nl|da|pl (English by default).
 const DEMO_LANG = normLang(new URLSearchParams(location.search).get('lang'));
 /** A showcase screen in English (&shot=show.* or the showcase carousel, web/display/showcase/): the family demo in English too. */
 const SHOW_EN = DEMO_LANG === 'en' && SHOW_ACTIVE;
-/** Column of DEMO_NL_DA for Dutch and Danish, else null. */
-const NL_DA: 0 | 1 | null = DEMO_LANG === 'nl' ? 0 : DEMO_LANG === 'da' ? 1 : null;
+/** Column of DEMO_MORE for Dutch, Danish and Polish, else null. */
+const MORE_COL: 0 | 1 | 2 | null = DEMO_LANG === 'nl' ? 0 : DEMO_LANG === 'da' ? 1 : DEMO_LANG === 'pl' ? 2 : null;
 /** ?empty=1: no events, no countdowns, no to-dos (empty states). */
 const EMPTY = new URLSearchParams(location.search).get('empty') === '1';
 /** ?sparse=1: a quiet calendar, a few events and most of them weeks away (to see how far the agenda looks ahead). */
@@ -46,9 +46,9 @@ const PRIVATE = new URLSearchParams(location.search).get('private') === '1';
 /** Pick the demo string for the current language: L('English', 'Español', 'Português'); Dutch and Danish come from
  * mock-text.ts, keyed by the English. */
 const L = (en: string, es: string, pt: string) =>
-  DEMO_LANG === 'es' ? es : DEMO_LANG === 'pt' ? pt : NL_DA !== null ? DEMO_NL_DA[en]?.[NL_DA] ?? en : en;
+  DEMO_LANG === 'es' ? es : DEMO_LANG === 'pt' ? pt : MORE_COL !== null ? DEMO_MORE[en]?.[MORE_COL] ?? en : en;
 /** The family demo is written in Spanish (every language but Dutch and Danish shows it as is). */
-const F = (es: string) => (NL_DA !== null ? DEMO_NL_DA[es]?.[NL_DA] ?? es : SHOW_EN ? DEMO_FAMILY_EN[es] ?? es : es);
+const F = (es: string) => (MORE_COL !== null ? DEMO_MORE[es]?.[MORE_COL] ?? es : SHOW_EN ? DEMO_FAMILY_EN[es] ?? es : es);
 
 export const MOCK_SOURCES: PublicCalendarSource[] = [
   { id: 'c_fam', name: L('Family', 'Familia', 'Família'), color: '#4c8dff', emoji: '', kind: 'generic' },
@@ -760,7 +760,7 @@ export function mockNews(): NewsResponse {
     ['La fiesta de la vendimia cierra con 200.000 visitantes', 'Música, gastronomía y vino llenaron las calles del centro histórico durante cinco días.'],
     ['La biblioteca municipal abre también los domingos', 'El nuevo horario incluye talleres gratuitos para niños y un club de lectura en inglés.'],
     ['Previsión: llega la primera lluvia del otoño', 'Se esperan chubascos a partir del sábado, con un descenso notable de las temperaturas.'],
-  ] : NL_DA !== null ? DEMO_NEWS[DEMO_LANG as 'nl' | 'da'].map(([a, b]) => [a, b]) : DEMO_LANG === 'pt' ? [
+  ] : MORE_COL !== null ? DEMO_NEWS[DEMO_LANG as 'nl' | 'da' | 'pl'].map(([a, b]) => [a, b]) : DEMO_LANG === 'pt' ? [
     ['Cidade alarga a rede de metro com quatro novas estações', 'As obras da linha circular avançam e os novos troços devem abrir no próximo ano.'],
     ['Golfinhos voltam a ser avistados no estuário', 'Os biólogos registam mais avistamentos este outono e os passeios de barco celebram uma temporada recorde.'],
     ['Renováveis batem recorde na produção de eletricidade', 'Em setembro, mais de 80 % da eletricidade consumida veio de fontes eólica, solar e hídrica.'],

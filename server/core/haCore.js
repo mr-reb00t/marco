@@ -61,8 +61,8 @@ const SETTABLE = ['number', 'input_number'];
 const SELECTS = ['select', 'input_select'];
 /** Valves that are only shown (gas): never opened or closed from a screen. */
 const VALVE_NEVER = ['gas'];
-/** "gas" as a word ("gás" in Portuguese): a valve without a device class named like this is a gas valve too. */
-const GAS_RE = /(?<![a-z\u00c0-\u024f])g[aá]s(?![a-z\u00c0-\u024f])/i;
+/** "gas" as a word ("gás" in Portuguese, "gaz" in Polish): a valve without a device class named like this is a gas valve too. */
+const GAS_RE = /(?<![a-z\u00c0-\u024f])(?:g[aá]s|gaz(?:u|owy|owa|owe)?)(?![a-z\u00c0-\u024f])/i;
 /**
  * A gas valve: its device class, or (many integrations set none) "gas" in its entity id, its friendly name or the
  * name the owner gave it on the card. Never opened or closed from a screen.

@@ -597,10 +597,14 @@ starts normally once the screen exists. A credential's own screen always wins ov
   without its metadata (location, camera, dates, comments; the EXIF orientation is kept: `cleanImage` in
   `server/photos.js`) and refuses files that do not parse as JPEG, PNG or WebP. Photos stored by older versions are
   cleaned once at startup (`cleanStoredPhotos`, keeping their date and focal point).
-- i18n: Spanish strings are the keys; English and Portuguese live in `web/admin/i18n-dict*.ts`, Dutch and Danish
-  in `web/admin/i18n-dict-nl.ts` and `i18n-dict-da.ts` (one object per language keyed by the Spanish string; the
-  Familia rows sit in `i18n-dict-family.ts` so the family page stays small). A missing Dutch or Danish value falls
-  back to English. The first visit follows the browser language.
+- i18n: Spanish strings are the keys; English and Portuguese live in `web/admin/i18n-dict*.ts`, Dutch, Danish and
+  Polish in `web/admin/i18n-dict-nl.ts`, `i18n-dict-da.ts` and `i18n-dict-pl.ts` (one object per language keyed by
+  the Spanish string; the Familia rows sit in `i18n-dict-family.ts` so the family page stays small). A missing Dutch,
+  Danish or Polish value falls back to English. The first visit follows the browser language. Count strings have a
+  singular form (`i18n-plural.ts` and each language's singular table); Polish also has a "few" form for 2-4, 22-24…
+  (`PL_FEW`, picked with `Intl.PluralRules`), and the display's Polish dictionary does the same with `key_few`
+  twins. Polish dates put the month in the genitive after a day ("12 października"). Search and keyword matching
+  fold case, accents and `ł` (so "pilka" finds "piłka").
 
 ## Security model
 

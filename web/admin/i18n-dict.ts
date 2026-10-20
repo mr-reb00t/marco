@@ -178,6 +178,7 @@ const ROWS: [string, string, string][] = [
   ['Festivos de Países Bajos', 'Netherlands holidays', 'Feriados dos Países Baixos'],
   ['Festivos de Bélgica', 'Belgium holidays', 'Feriados da Bélgica'],
   ['Festivos de Dinamarca', 'Denmark holidays', 'Feriados da Dinamarca'],
+  ['Festivos de Polonia', 'Poland holidays', 'Feriados da Polónia'],
   ['Fondo', 'Background', 'Fundo'],
   ['Formato', 'Format', 'Formato'],
   ['Formato de fecha', 'Date format', 'Formato da data'],

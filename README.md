@@ -14,7 +14,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js ≥ 20](https://img.shields.io/badge/node-%E2%89%A520-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white)](#docker)
-[![Languages](https://img.shields.io/badge/i18n-English%20%C2%B7%20Espa%C3%B1ol%20%C2%B7%20Portugu%C3%AAs%20%C2%B7%20Nederlands%20%C2%B7%20Dansk-orange)](#)
+[![Languages](https://img.shields.io/badge/i18n-English%20%C2%B7%20Espa%C3%B1ol%20%C2%B7%20Portugu%C3%AAs%20%C2%B7%20Nederlands%20%C2%B7%20Dansk%20%C2%B7%20Polski-orange)](#)
 
 **English** · [Español](README.es.md)
 
@@ -118,8 +118,8 @@ transparency, blur and a light edge:
 - **Glass options** for the Modern style, per screen: automatic (adapts to each photo), clear or tinted; transparency,
   blur, a dark, light or photo-coloured tint and a light edge, with a live preview in *Layout*.
 - **Automatic emoji:** 🎂 birthdays, ✈️ flights, 🩺 doctor, 🎒 school, ⚽ sports, 🍽️ dinners, 💼 meetings, 🏖️
-  holidays, 🚗 car, 🐾 vet and more, from editable keyword rules (35 categories with about 800 keywords in English,
-  Spanish, Portuguese, Dutch and Danish out of the box).
+  holidays, 🚗 car, 🐾 vet and more, from editable keyword rules (35 categories with about 1,000 keywords in English,
+  Spanish, Portuguese, Dutch, Danish and Polish out of the box).
 - **Birthdays with age:** "🎂 Grandma Isabel (72)", from a birthdays calendar or entered in the admin. Titles
   from your calendars are tidied to just the name ("Astrid's Birthday" shows as "🎂 Astrid"); turn off *Tidy birthday
   titles* to keep them as they are.
@@ -185,7 +185,8 @@ transparency, blur and a light edge:
 - **Doorbell camera:** when someone rings, Home Assistant tells Marco and the screens show the camera full screen for
   a while, with a door chime (it also wakes screens in night mode).
 - **Backups** (automatic, export/import with preview), **activity log**, **command palette** (Ctrl/Cmd + K),
-  phone-friendly layout, English / Spanish / Portuguese / Dutch / Danish.
+  phone-friendly layout, English / Spanish / Portuguese / Dutch / Danish / Polish (native speakers welcome to
+  review, see [Adding a language](CONTRIBUTING.md#adding-a-language)).
 
 | | | |
 |---|---|---|
@@ -419,7 +420,7 @@ display (`http://<server-ip>:3000/`) shows a welcome screen with the admin addre
 | ![Step 3: city search, time zone, units and time format](docs/screenshots/setup-3-location.webp) | ![Step 4: holidays by country and iCal sources with a Test button](docs/screenshots/setup-4-calendars.webp) |
 | ![Step 5: screen name, layout, accent colour, photos and ambient effect](docs/screenshots/setup-5-look.webp) | ![Step 6: the screen's private link with copy button and QR code, summary and tips](docs/screenshots/setup-6-done.webp) |
 
-1. **Welcome:** pick the language (English, Español, Português, Nederlands, Dansk).
+1. **Welcome:** pick the language (English, Español, Português, Nederlands, Dansk, Polski).
 2. **Admin password:** at least 10 characters, nothing obvious (`password123`, `1234567890`, `qwertyuiop`), typed
    twice; a strength meter helps. The display itself never needs a password.
 3. **Location:** search your city (Open-Meteo, no API key); the time zone comes with it (or from your browser),

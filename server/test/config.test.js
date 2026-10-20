@@ -283,7 +283,7 @@ test('icon rules merge stays within the validation limits (200 rules, 100 keywor
   }
 });
 
-test('icon rules v3: one-time additive merge into an existing config', async () => {
+test('icon rules v4: one-time additive merge into an existing config', async () => {
   const store = await import('../store.js');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-iconrules-'));
   try {
@@ -299,11 +299,11 @@ test('icon rules v3: one-time additive merge into an existing config', async () 
     assert.deepEqual(rules[0], { id: 'r_mine', match: ['piano'], emoji: '🎻', color: '#112233' });
     // a kept default gains keywords but keeps the user's emoji
     assert.equal(rules[1].emoji, '🎈');
-    assert.ok(rules[1].match.includes('birthday') && rules[1].match[0] === 'cumple');
+    assert.ok(rules[1].match.includes('birthday') && rules[1].match.includes('urodzin') && rules[1].match[0] === 'cumple');
     // new categories appended once
     assert.ok(rules.some((r) => r.id === 'r_swim'));
     assert.equal(rules.filter((r) => r.id === 'r_birthday').length, 1);
-    assert.ok(fs.existsSync(path.join(dir, '.iconrules-v3')));
+    assert.ok(fs.existsSync(path.join(dir, '.iconrules-v4')));
     const saved = JSON.parse(fs.readFileSync(path.join(dir, 'config.json'), 'utf8'));
     assert.equal(saved.calendar.iconRules.length, rules.length);
     // the merge runs once: rules removed afterwards stay removed

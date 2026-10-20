@@ -324,10 +324,11 @@ button {
   padding: 2px;
   box-shadow: inset 0 0 0 1px var(--border);
 }
+/* six languages fit next to the theme and help buttons */
 .lang-switch button {
   border: 0;
   background: transparent;
-  padding: 4px 9px;
+  padding: 4px 6px;
   font-size: 11px;
   font-weight: 650;
   border-radius: 6px;

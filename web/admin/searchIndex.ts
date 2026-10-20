@@ -29,7 +29,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Efecto ambiental (aurora, partículas)', route: 'background', anchor: 'bg-ambient', keywords: 'ambient aurora particles three webgl animación' },
   { label: 'Efecto del tiempo (lluvia, nieve, sol)', route: 'background', anchor: 'bg-weather', keywords: 'weather effect rain snow sun drops lluvia nieve sol gotas webgl' },
   { label: 'Nombre de la pantalla', route: 'screen', anchor: 'scr-general', keywords: 'name nombre nome' },
-  { label: 'Idioma de la pantalla', route: 'screen', anchor: 'scr-general', keywords: 'language idioma lingua taal sprog español english português nederlands dansk' },
+  { label: 'Idioma de la pantalla', route: 'screen', anchor: 'scr-general', keywords: 'language idioma lingua taal sprog język español english português nederlands dansk polski' },
   { label: 'Orientación (horizontal / vertical)', route: 'screen', anchor: 'scr-general', keywords: 'orientation portrait landscape vertical rotar' },
   { label: 'Tamaño de letra', route: 'screen', anchor: 'scr-general', keywords: 'font size escala texto grande' },
   { label: 'Tema claro / oscuro', route: 'layout', anchor: 'layout-look', keywords: 'theme dark light tema' },

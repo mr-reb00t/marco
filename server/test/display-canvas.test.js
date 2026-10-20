@@ -90,10 +90,10 @@ test('adapters write item text as text: innerHTML only with static markup', () =
   assert.ok(seen > 0);
 });
 
-test('display strings of the canvas: five languages, no em dashes', async () => {
+test('display strings of the canvas: six languages, no em dashes', async () => {
   const [i18n] = await loadWebModules('/web/shared/i18n.ts');
   for (const k of ['cvEmpty', 'cvNotAvailable', 'cvPrivate', 'cvSoon', 'cvSetup', 'cvWeek', 'cvNoValue']) {
-    for (const l of ['es', 'en', 'pt', 'nl', 'da']) {
+    for (const l of ['es', 'en', 'pt', 'nl', 'da', 'pl']) {
       const s = i18n.DICTS[l][k];
       assert.ok(s, `${k} ${l}`);
       assert.equal(s.includes('\u2014'), false, `${k} ${l}`);
