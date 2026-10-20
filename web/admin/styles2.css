@@ -6022,3 +6022,32 @@ button.immich-album:hover {
 .sp-account__text strong { overflow-wrap: anywhere; }
 .sp-account__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
 .ext-link { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+/* Spotify page, paste mode: the SSH tunnel guide (Spotify.tsx TunnelGuide) */
+.tunnel-guide summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  color: var(--text);
+}
+.tunnel-guide summary::-webkit-details-marker {
+  display: none;
+}
+.tunnel-guide summary > span {
+  flex: 1;
+  min-width: 0;
+}
+.tunnel-guide summary svg {
+  flex: none;
+  color: var(--muted);
+}
+.tunnel-guide .tunnel-guide__chev {
+  transition: transform 0.2s var(--ease);
+}
+.tunnel-guide[open] .tunnel-guide__chev {
+  transform: rotate(180deg);
+}
+.tunnel-guide > .howto,
+.tunnel-guide > p {
+  margin-top: 12px;
+}

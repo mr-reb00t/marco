@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- The Spotify page, on a server without an https address, has a guide to connect through an SSH tunnel from your
+  computer, with the command ready to copy (this server's address and port): Spotify then comes back to the admin on
+  its own and nothing has to be pasted.
+
 ## [0.19.2] - 2026-10-20
 
 ### Added

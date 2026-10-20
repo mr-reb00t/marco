@@ -259,6 +259,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
             {isSelfHosted() && <> {t('Con una dirección https propia (PUBLIC_URL en el archivo .env, por ejemplo detrás de un proxy como Caddy), Spotify vuelve aquí solo.')}</>}
           </Callout>
         )}
+        {st?.paste && st.tunnel && <TunnelGuide tunnel={st.tunnel} />}
         {st?.appRefused && (
           <Callout kind="error">
             {t('Spotify no acepta el Client Secret de tu app. Si lo cambiaste en el panel de desarrolladores, pega aquí el nuevo y guárdalo: las cuentas conectadas siguen valiendo y no hay que volver a conectarlas.')}
@@ -378,5 +379,44 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
         )}
       </Card>
     </>
+  );
+}
+
+/**
+ * Paste mode on a server reached over plain http: how to connect without pasting anything, through an SSH tunnel from
+ * the owner's computer. With the tunnel open the admin is on http://127.0.0.1:<port>, the address Spotify accepts, so
+ * Spotify comes back to the admin on its own.
+ */
+function TunnelGuide({ tunnel }: { tunnel: { hosts: string[]; port: number } }) {
+  const port = tunnel.port;
+  const host = tunnel.hosts[0] || t('IP-del-servidor');
+  const here = location.hostname === '127.0.0.1' && Number(location.port || 80) === port;
+  const cmd = `ssh -L ${port}:127.0.0.1:${port} ${t('usuario')}@${host}`;
+  const admin = `http://127.0.0.1:${port}/admin`;
+  return (
+    <details class="pair-alt tunnel-guide">
+      <summary>
+        <Icon name="info" size={16} />
+        <span>{t('Conectar sin pegar nada: un túnel SSH desde tu ordenador')}</span>
+        <Icon name="chevron" size={16} class="tunnel-guide__chev" />
+      </summary>
+      {here ? (
+        <p class="muted small">{t('Ya estás entrando por 127.0.0.1: pulsa «Conectar» y Spotify volverá aquí solo.')}</p>
+      ) : (
+        <ol class="howto">
+          <li>
+            {t('En tu ordenador, abre una terminal (en Windows, PowerShell) y ejecuta esto. Cambia «usuario» por tu usuario en el servidor y deja la ventana abierta:')}
+            <CopyField value={cmd} label={t('Copiar el comando')} />
+            {tunnel.hosts.length > 1 && <span class="muted small">{t('Si no conecta, prueba con otra dirección del servidor: {list}.', { list: tunnel.hosts.slice(1).join(', ') })}</span>}
+          </li>
+          <li>
+            {t('Abre el panel por el túnel e inicia sesión ahí:')}
+            <CopyField value={admin} label={t('Copiar la dirección')} />
+          </li>
+          <li>{t('Vuelve a esta página y pulsa «Conectar». Spotify volverá al panel y la cuenta quedará conectada sin pegar nada.')}</li>
+          <li>{t('Cuando termines, cierra la terminal. Marco sigue funcionando como siempre y la cuenta queda guardada.')}</li>
+        </ol>
+      )}
+    </details>
   );
 }

@@ -1899,6 +1899,7 @@
         "appRefused",
         "redirectUri",
         "paste",
+        "tunnel?",
         "accounts",
         "max"
       ]
@@ -1953,6 +1954,7 @@
         "appRefused",
         "redirectUri",
         "paste",
+        "tunnel?",
         "accounts",
         "max"
       ]
@@ -1974,6 +1976,7 @@
         "appRefused",
         "redirectUri",
         "paste",
+        "tunnel?",
         "accounts",
         "max",
         "ok",

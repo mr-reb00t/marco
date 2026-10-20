@@ -22,6 +22,7 @@ import crypto from 'node:crypto';
 import { request } from './lib/http.js';
 import { getSecrets, updateSecrets } from './store.js';
 import { publicUrl } from './google.js';
+import { lanAddresses } from './setup.js';
 import { sniffImage } from './core/imageInfo.js';
 import { retryAfterMs } from './core/pricesCore.js';
 import {
@@ -59,7 +60,9 @@ export const accountIds = () => Object.keys(accounts());
 /** GET /api/admin/spotify (SpotifyStatus). */
 export function spotifyStatus(req) {
   const { redirectUri, paste } = redirectFor(req);
-  return { clientId: String(sp().clientId || ''), secretSet: Boolean(sp().clientSecret), appRefused: Boolean(sp().appRefused), redirectUri, paste, accounts: listAccounts(), max: NOW_PLAYING_MAX_ACCOUNTS };
+  // paste mode: what the admin's SSH tunnel guide needs, this server's network addresses and the loopback port
+  const tunnel = paste ? { hosts: lanAddresses(), port: Number(new URL(redirectUri).port) || 80 } : undefined;
+  return { clientId: String(sp().clientId || ''), secretSet: Boolean(sp().clientSecret), appRefused: Boolean(sp().appRefused), redirectUri, paste, tunnel, accounts: listAccounts(), max: NOW_PLAYING_MAX_ACCOUNTS };
 }
 
 /**

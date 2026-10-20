@@ -2227,6 +2227,11 @@ export interface SpotifyStatus {
    * an error page, and its address is pasted into the admin (POST /api/admin/spotify/finish).
    */
   paste: boolean;
+  /**
+   * Paste mode on a self-hosted server: this server's network addresses and the loopback port, for the guide to an
+   * SSH tunnel (ssh -L port:127.0.0.1:port user@host), which lets Spotify come back on its own. Absent otherwise.
+   */
+  tunnel?: { hosts: string[]; port: number };
   accounts: SpotifyAccount[];
   /** most accounts per household */
   max: number;
