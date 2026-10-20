@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.2] - 2026-10-20
+
 ### Added
 - One card or another in the same place, depending on Home Assistant (#19). Each card inside a *Rotating card* now has
   its own *Show* setting, like any card on the screen: a card whose condition is not met is skipped, the same way an
