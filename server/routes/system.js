@@ -159,6 +159,7 @@ export function systemRouter({ version = getServerVersion() } = {}) {
         if (s.stocksKey !== undefined) { x.data = { ...(x.data || {}), stocksKey: s.stocksKey }; applied.push('data'); }
         if (s.googleAccounts) { x.google.accounts = s.googleAccounts; applied.push('google'); }
         if (s.microsoftAccounts) { x.microsoft = { accounts: s.microsoftAccounts }; applied.push('microsoft'); }
+        if (s.spotify) { x.spotify = s.spotify; applied.push('spotify'); }
         if (s.apiTokens) { x.apiTokens = s.apiTokens; applied.push('apiTokens'); }
         if (s.displayKeys) { x.displayKeys = { ...(x.displayKeys || {}), ...s.displayKeys }; applied.push('displayKeys'); }
         if (s.devices) { x.devices = s.devices; applied.push('devices'); }

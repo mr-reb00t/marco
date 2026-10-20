@@ -432,6 +432,19 @@ export const NAV_HOME = 'home';
 /** Kinds the "Permitir tocar en la pantalla" switch turns on (without it the display does not draw them). */
 export const NAV_TAP_KINDS = ['nav.button', 'nav.pause'];
 
+/**
+ * The opaque id of a linked "now playing" account (sp_ and 10 to 24 lower case letters or digits for Spotify). The
+ * card and the screen setting "Sonando ahora bajo el reloj" store it; the server keeps what it stands for.
+ */
+export const NOW_PLAYING_ACCOUNT_RE = /^sp_[a-z0-9]{10,24}$/;
+/** A stored account id, or '' (none chosen). Anything else is an error that leaves it unset. */
+export function nowPlayingAccountOf(c, p, v) {
+  if (v === undefined || v === null || v === '') return '';
+  if (typeof v === 'string' && NOW_PLAYING_ACCOUNT_RE.test(v)) return v;
+  c.err(p, 'invalid account id');
+  return '';
+}
+
 function navTargetOf(c, p, v, known) {
   if (v === undefined || v === null || v === '') return '';
   if (v === NAV_HOME) return NAV_HOME;
@@ -851,6 +864,17 @@ export const CANVAS_KINDS = {
     defaults: () => ({ pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' }),
     props: (c, p, x) => currencyProps(c, p, x),
   },
+  // ---- Sonando ahora (issue #18): what a linked account plays, read by the server (core/nowPlayingCore.js). The
+  // card names the account by its opaque id ('' = not chosen yet); no token, email or address ever reaches a display.
+  nowplaying: {
+    cat: 'content', sizes: ['s', 'w', 'm', 't', 'l'], def: 'w', cells: [3, 2, 8, 8], side: true, edition: 'all', private: true, perScreen: 6, feature: 'spotify',
+    defaults: () => ({ account: '', art: true, progress: true }),
+    props: (c, p, x) => ({
+      account: nowPlayingAccountOf(c, `${p}.account`, x.account),
+      art: P.bool(c, `${p}.art`, x.art, true),
+      progress: P.bool(c, `${p}.progress`, x.progress, true),
+    }),
+  },
   // ---- Casa (Home Assistant, self-hosted only)
   'ha.tile': haKind(['row', 'xs', 's', 'w', 'm'], 'xs', [2, 1, 6, 4], 'tile', {
     controls: true, one: true, state: true,
@@ -1233,6 +1257,8 @@ const FINE_MIN = {
   'sports': [4, 1],
   'stocks': [4, 1],
   'currency': [4, 1],
+  // one line: the art as high as the card, the title and the artist beside it
+  'nowplaying': [4, 1],
   'ha.tile': [2, 1],
   'ha.light': [2, 1],
   'ha.switch': [2, 1],
@@ -2159,6 +2185,21 @@ export function projectCanvas(screen, opts = {}) {
 export function canvasDataItems(screen, { now = new Date(), tz = 'UTC' } = {}) {
   if (screen?.layout?.preset !== 'canvas') return [];
   return canvasCards(screen.canvas?.items).filter((it) => !it.hidden && DATA_KIND_IDS.includes(it.kind) && scheduleOn(it, now, tz));
+}
+
+/**
+ * The "now playing" accounts a screen shows, no repeats: the Sonando ahora cards of a Personalizado screen (shown ones,
+ * inside a Rotativa too), or the line under the clock of any other layout (screen.nowPlaying).
+ */
+export function nowPlayingAccounts(screen, { now = new Date(), tz = 'UTC' } = {}) {
+  const out = [];
+  const add = (id) => {
+    if (typeof id === 'string' && NOW_PLAYING_ACCOUNT_RE.test(id) && !out.includes(id)) out.push(id);
+  };
+  if (screen?.layout?.preset === 'canvas') {
+    for (const it of canvasCards(screen.canvas?.items)) if (it.kind === 'nowplaying' && !it.hidden && !it.disabled && scheduleOn(it, now, tz)) add(it.props?.account);
+  } else add(screen?.screen?.nowPlaying);
+  return out;
 }
 
 /** Widget ids (config.widgets) the canvas of a screen shows ('widget' items), in item order, no repeats. */

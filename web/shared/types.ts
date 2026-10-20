@@ -59,6 +59,9 @@ export interface ScreenConfig {
   /** The pills under the date of the usual designs: next event, happening now, birthdays, check-in/out (default true).
    *  Not the Personalizado "highlights" card. Older servers: absent (= shown). */
   highlights?: boolean;
+  /** "Sonando ahora bajo el reloj": the opaque id of a linked Spotify account whose track shows on one line under the
+   *  clock of the usual designs ('' or absent = off). Not used by Personalizado (it has its own card). */
+  nowPlaying?: string;
 }
 
 export interface LayoutConfig {
@@ -895,6 +898,8 @@ export type CanvasKind =
   | 'ha.room' | 'ha.chart' | 'ha.camera' | 'ha.media' | 'ha.scene' | 'ha.gauge' | 'ha.statistic'
   // Datos: numbers the server fetches from public sources (server/core/dataCore.js)
   | 'market' | 'sports' | 'stocks' | 'currency'
+  // Sonando ahora: what a linked Spotify account plays (server/core/nowPlayingCore.js, NowPlayingData)
+  | 'nowplaying'
   | 'html'
   // reserved for a later version (a declarative card), refused today
   | 'card';
@@ -1206,6 +1211,29 @@ export type DataItemData = MarketData | SportsData | StocksData | CurrencyData;
 /** GET /api/display/data: the data items of the requesting screen, by item id. */
 export interface DisplayDataResponse {
   items: Record<string, DataItemData>;
+}
+/**
+ * What a "now playing" account plays now (GET /api/display/nowplaying, server/core/nowPlayingCore.js displayItem).
+ * Paused, stopped, an ad or nothing at all is null: the card and the line under the clock vanish.
+ */
+export interface NowPlayingData {
+  provider: 'spotify';
+  /** a song, or a podcast episode (`title` the episode, `artist` the show) */
+  kind: 'track' | 'episode';
+  title: string;
+  artist: string;
+  album: string;
+  /** the cover's token for GET /api/display/nowplaying/art/:token ('' = no cover) */
+  art: string;
+  playing: true;
+  /** seconds into the track when the answer was made, and its length (null: not known) */
+  progress: number | null;
+  duration: number | null;
+}
+/** GET /api/display/nowplaying?accounts=: the accounts asked for that this display may read; `next` = seconds until it asks again. */
+export interface DisplayNowPlayingResponse {
+  items: Record<string, NowPlayingData | null>;
+  next: number;
 }
 /** POST /api/admin/data/preview */
 export interface DataPreviewRequest {
@@ -1719,6 +1747,9 @@ export interface Features {
   /** The Bolsa card can get quotes (a self-hosted server: the owner's own Finnhub key; Marco Cloud: only when the
    *  service has a key). Absent = on self-hosted, off elsewhere. */
   stockQuotes: boolean;
+  /** "Sonando ahora": Spotify accounts linked with the household's own Spotify app, the Sonando ahora card and the
+   *  line under the clock (/api/admin/spotify*, GET /api/display/nowplaying). Absent = off. */
+  spotify: boolean;
 }
 
 export type FeatureName = keyof Features;
@@ -2059,6 +2090,57 @@ export interface MicrosoftAccount {
   tasks?: boolean;
   /** the account lets Marco tick its To Do tasks from a touch screen (Tasks.ReadWrite) */
   tasksWrite?: boolean;
+}
+
+/** One Spotify account linked for "now playing" (GET /api/admin/spotify). No email, no token: a name and an opaque id. */
+export interface SpotifyAccount {
+  id: string;
+  /** the account's display name on Spotify (else its user id) */
+  name: string;
+  connectedAt: string;
+  /** 'reconnect': Spotify refused its tokens (the app changed or access was removed); connect it again */
+  status: 'ok' | 'reconnect';
+}
+/** GET /api/admin/spotify: the household's own Spotify app (the secret is never sent back) and its linked accounts. */
+export interface SpotifyStatus {
+  clientId: string;
+  secretSet: boolean;
+  /** the exact Redirect URI to add to the app in Spotify's developer dashboard */
+  redirectUri: string;
+  /**
+   * Spotify only sends people back to an https address or to http://127.0.0.1 (never "localhost"). A server reached
+   * over plain http on the home network gets a loopback Redirect URI instead: after allowing access the browser shows
+   * an error page, and its address is pasted into the admin (POST /api/admin/spotify/finish).
+   */
+  paste: boolean;
+  accounts: SpotifyAccount[];
+  /** most accounts per household */
+  max: number;
+}
+/** PUT /api/admin/spotify/app: the Client ID and, when changed, the Client Secret ('' clientId removes the app and its accounts). */
+export interface SpotifyAppRequest {
+  clientId: string;
+  clientSecret?: string;
+}
+/** POST /api/admin/spotify/finish: the address the browser landed on after allowing access (paste mode). */
+export interface SpotifyFinishRequest {
+  url: string;
+}
+/** POST /api/admin/spotify/finish: the account linked, and the status after it. */
+export interface SpotifyFinishResponse extends SpotifyStatus {
+  ok: true;
+  id: string;
+}
+/** DELETE /api/admin/spotify/accounts/:id: Spotify has no revoke call, so where the owner removes Marco's access. */
+export interface SpotifyRemoveResponse {
+  ok: true;
+  manageAccess: string;
+}
+/** GET /api/admin/spotify/accounts/:id/now: what the account plays now (the admin's test). */
+export interface SpotifyNowResponse {
+  ok: boolean;
+  item: NowPlayingData | null;
+  error?: string;
 }
 
 /** GET /api/admin/microsoft/todo-lists?account= */
@@ -2848,6 +2930,10 @@ export type ActivityType =
   | 'google.removed'
   | 'microsoft.connected'
   | 'microsoft.removed'
+  | 'spotify.connected'
+  | 'spotify.removed'
+  | 'spotify.app_saved'
+  | 'spotify.app_removed'
   | 'config.saved'
   | 'config.restored'
   | 'config.imported'

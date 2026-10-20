@@ -52,7 +52,7 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(old.edition, 'self-hosted');
   assert.equal(old.features, null);
   // accountMenu, microsoftCalendar, updates, feedback, privacy and the doorbell only exist on servers that say so
-  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder'].includes(k), k);
+  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'spotify'].includes(k), k);
   // carousels: on for this server, off for servers that do not say so (they would drop config.carousels)
   assert.equal(hasFeature(selfHosted(), 'carousels'), true);
   assert.equal(hasFeature(capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: true } }), 'carousels'), false);
@@ -75,6 +75,9 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(hasFeature(sh, 'immich'), false, 'an older self-hosted server has no Immich proxy');
   assert.equal(hasFeature(cloud(), 'immich'), false, 'Marco Cloud has no Immich');
   assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: { news: true } }), 'immich'), false, 'a missing key is off');
+  // "now playing" with Spotify: only on servers that link a Spotify app (an older one has no /api/admin/spotify)
+  assert.equal(hasFeature(selfHosted(), 'spotify'), true);
+  assert.equal(hasFeature(sh, 'spotify'), false, 'an older self-hosted server has no Spotify accounts');
   const sh2 = capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: false } });
   assert.equal(hasFeature(sh2, 'news'), false, 'an explicit false is off everywhere');
 });
@@ -132,7 +135,7 @@ test('navFilter: self-hosted defaults and old servers show everything', () => {
   const all = nav.NAV_ITEMS.map((n) => n.id);
   assert.deepEqual(nav.filterNav(nav.NAV_ITEMS, selfHosted()).map((n) => n.id), all);
   // old servers have no carousels page (opt-in: it would drop the section on save), no Immich proxy and no Familia
-  assert.deepEqual(nav.filterNav(nav.NAV_ITEMS, oldServer()).map((n) => n.id), all.filter((id) => !['carousels', 'immich', 'family', 'meals', 'widgets'].includes(id)));
+  assert.deepEqual(nav.filterNav(nav.NAV_ITEMS, oldServer()).map((n) => n.id), all.filter((id) => !['carousels', 'immich', 'family', 'meals', 'widgets', 'spotify'].includes(id)));
   const routes = all;
   // every entry except the account ones (features.accountMenu, multi-tenant servers only), Microsoft calendars
   // (features.microsoftCalendar), updates (features.updates) and the doorbell (features.doorbell): an old server lists
@@ -155,7 +158,10 @@ test('navFilter: self-hosted defaults and old servers show everything', () => {
   // two-step sign-in: older servers have no /api/admin/2fa
   const twoFactorEntries = search.SETTINGS_INDEX.filter((e) => [e.feature].flat().includes('twoFactor')).length;
   assert.equal(twoFactorEntries, 1);
-  assert.equal(nav.filterSettings(search.SETTINGS_INDEX, oldServer(), routes).length, search.SETTINGS_INDEX.length - accountEntries - updateEntries - doorbellEntries - carouselEntries - immichEntries - familyEntries - widgetEntries - twoFactorEntries);
+  // "now playing" with Spotify: older servers have no /api/admin/spotify
+  const spotifyEntries = search.SETTINGS_INDEX.filter((e) => e.feature === 'spotify').length;
+  assert.equal(spotifyEntries, 2);
+  assert.equal(nav.filterSettings(search.SETTINGS_INDEX, oldServer(), routes).length, search.SETTINGS_INDEX.length - accountEntries - updateEntries - doorbellEntries - carouselEntries - immichEntries - familyEntries - widgetEntries - twoFactorEntries - spotifyEntries);
   // without Google credentials a self-hosted admin still lists the Google entries (with the setup hint); the doorbell
   // card is on the Home Assistant page there, so the entry for API & webhooks (servers without a live camera) is out
   const snapshotEntries = search.SETTINGS_INDEX.filter((e) => e.unless === 'doorbellLive').length;

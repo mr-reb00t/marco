@@ -958,6 +958,40 @@ Paste the link in the guide: Marco tests it and adds it as an iCal calendar (`we
 up on the server. Anyone who has the link can see the calendar, but it is long and impossible to guess; to withdraw
 it, turn off *Public Calendar* in iCloud.
 
+## Showing what plays on Spotify
+
+A screen can show what someone is listening to on Spotify: the song (or the podcast episode), the artist and the
+cover. Marco only reads what plays; it never controls playback. Pausing or stopping hides it. There are two ways to
+show it:
+
+- the **Now playing** card of a *Custom* screen (*Content* group of the builder), with or without the cover and a
+  thin progress bar that moves along with the song;
+- **Now playing under the clock** in *Layout → Appearance* for the other layouts: one line under the date, which
+  slides when it is long and is gone when nothing plays.
+
+Each card and each screen picks the account it shows, so the kitchen can show one person and the living room another.
+Spotify asks every household to use its own (free) Spotify app, so each home has its own API limits:
+
+1. Open <https://developer.spotify.com/dashboard> and **Create app** (any name and description).
+2. Under **Redirect URIs** add exactly the address *Admin → Spotify* shows, with its copy button. Spotify accepts
+   `https://` addresses, and `http://` only for `127.0.0.1` or `[::1]` ("localhost" is refused).
+   - With an https address of your own (set `PUBLIC_URL`, for example behind Caddy), it is
+     `<PUBLIC_URL>/auth/spotify/callback` and Spotify comes back to the admin by itself.
+   - On plain `http://` in the home network the page shows `http://127.0.0.1:<port>/auth/spotify/callback`. After
+     you allow access, your browser opens that address and the page does not load: copy its address and paste it in
+     the field under *Connected accounts*. Marco finishes the link from there.
+3. Tick **Web API**, save, and copy the **Client ID** and **Client Secret** (*Settings*) into *Admin → Spotify*.
+4. While the app is in *Development mode*, add everyone who will connect an account under **User Management**.
+5. **Connect a Spotify account**, once per person. Marco asks only for `user-read-currently-playing` and
+   `user-read-playback-state`.
+
+The Client Secret and the tokens stay in `data/secrets.json`; the admin only says a secret is saved, and screens only
+know an account by an opaque id. Marco asks Spotify at most every 10 seconds per account, and only while a screen
+showing it is on (sooner when a song is about to end), waits for Spotify's `Retry-After` when it asks for a pause and
+backs off after errors. Covers come through the server, so screens never load anything from Spotify. *Disconnect*
+deletes an account's tokens; to remove Marco's access on Spotify's side too, go to
+<https://www.spotify.com/account/apps/>.
+
 ## Other integrations
 
 - **iCal / ICS feeds:** any `http(s)://` or `webcal://` URL: school, sports club, work, public holidays (presets for
@@ -1224,6 +1258,7 @@ Back up the whole folder (or use *Export*) to keep everything.
 | `?preset=today\|people\|photoFrame\|twoWeeks\|board\|bedside` `?people=<calendar ids, comma separated>` `?corner=tl\|tr\|bl\|br` | Preview the newer layouts, the *Per person* columns and the *Photo frame* corner |
 | `?glass=clear\|tinted\|auto` `?glassOpacity=0..1` `?glassBlur=0..40` `?glassTint=dark\|light\|photo` `?glassEdge=0\|1` | Override the glass options of the Modern style |
 | `?highlights=0\|1` | Hide (or show) the pills under the date: the next event, birthdays and today's check-ins and check-outs (*Layout → Appearance*) |
+| `?np=0` | Hide the *Now playing under the clock* line; with `?demo=1`, `?np=1` shows it with a made-up song (`?np=idle`: nothing plays) and `&preset=canvas&shot=nowplaying` shows the *Now playing* cards |
 | `?wxfx=off\|simple\|rich` | Override the weather effect; with `?demo=1`, `?wx=rain\|drizzle\|thunder\|snow\|clear` (or a WMO code, e.g. `45` for fog) forces the weather |
 | `?ambient=aurora\|particles\|none` | Override the ambient backdrop behind the calendar |
 | `?demo=1&pair=1` `?demo=1&pair=invalid` `&pairLen=6\|8` | Preview the pairing screen or the “link no longer valid” screen with a sample code (no server needed) |

@@ -59,6 +59,11 @@ import type {
   HouseholdInfo,
   GoogleCalendarListItem,
   MicrosoftAccount,
+  SpotifyAppRequest,
+  SpotifyFinishResponse,
+  SpotifyNowResponse,
+  SpotifyRemoveResponse,
+  SpotifyStatus,
   MicrosoftCalendarListItem,
   MicrosoftTodoListItem,
   HaAdminHistory, HaEntity, HaLiveStatus, HaSlim,
@@ -217,6 +222,15 @@ export const api = {
   // Microsoft To Do lists of a linked account (the To-do page). 409 microsoft_tasks_reconnect: connect it again.
   microsoftTodoLists: (account: string) =>
     request<MicrosoftTodoListItem[]>('GET', `/api/admin/microsoft/todo-lists?account=${encodeURIComponent(account)}`),
+
+  // "Now playing" (features.spotify): the household's own Spotify app (the secret is write-only) and its accounts
+  spotify: () => request<SpotifyStatus>('GET', '/api/admin/spotify'),
+  /** '' clientId removes the app and every account; an empty clientSecret keeps the stored one */
+  setSpotifyApp: (body: SpotifyAppRequest) => request<SpotifyStatus>('PUT', '/api/admin/spotify/app', body),
+  /** paste mode: the address the browser landed on after allowing access */
+  finishSpotify: (url: string) => request<SpotifyFinishResponse>('POST', '/api/admin/spotify/finish', { url }),
+  spotifyNow: (id: string) => request<SpotifyNowResponse>('GET', `/api/admin/spotify/accounts/${encodeURIComponent(id)}/now`),
+  removeSpotifyAccount: (id: string) => request<SpotifyRemoveResponse>('DELETE', `/api/admin/spotify/accounts/${encodeURIComponent(id)}`),
 
   testIcs: (url: string, insecureTls?: boolean) =>
     request<TestIcsResponse>('POST', '/api/admin/test/ics', insecureTls ? { url, insecureTls: true } : { url }),

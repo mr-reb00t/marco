@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- *Now playing* with Spotify (#18): a screen can show what someone is listening to on Spotify, the song (or podcast
+  episode), the artist and the cover. On a *Custom* screen it is the *Now playing* card, with an optional thin
+  progress bar that moves along with the song; on the other layouts it is *Now playing under the clock* in *Layout →
+  Appearance*, one line under the date. Both are gone when nothing plays, and each card or screen picks the Spotify
+  account it shows. Marco only reads what plays and never controls playback. Each household links its own Spotify app
+  in the new *Spotify* page (Client ID and Client Secret from Spotify's developer dashboard, with the exact Redirect URI
+  to register and a step-by-step guide); a server on plain http finishes the link with a pasted address. Spotify is
+  asked at most every 10 seconds per account and only while a screen shows it, and covers come through the server.
+
 ## [0.18.0] - 2026-10-20
 
 ### Added

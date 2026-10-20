@@ -607,3 +607,10 @@ html.lite #app.preset-canvas .cv-ha-tile.is-pulse > .cv-ha-ico, #app.preset-canv
 #app.preset-canvas .cv-ha-prog-bar { position: relative; flex: 1; min-width: 3rem; height: 0.32em; min-height: 0.4rem; border-radius: 1rem; background: color-mix(in srgb, var(--fg, #fff) 16%, transparent); overflow: hidden; }
 #app.preset-canvas .cv-ha-prog-bar > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: inherit; background: color-mix(in srgb, var(--fg, #fff) 78%, transparent); }
 #app.preset-canvas .cv-ha-media.is-stack .cv-ha-prog { width: 100%; }
+
+/* ---- Sonando ahora (kind 'nowplaying', widgets/canvas/nowPlaying.ts): the media card's look, no controls, and the
+   small "Spotify" credit under the words (at the end of the one-line look): Spotify's terms ask for it next to the
+   cover and the track */
+#app.preset-canvas .cv-np-src { font-size: max(0.6em, 1.1rem); font-weight: 600; letter-spacing: 0.02em; color: var(--fg-3); line-height: 1.3; white-space: nowrap; }
+#app.preset-canvas .cv-np-src.is-inline { flex: none; align-self: center; margin-left: auto; padding-left: 0.6em; }
+#app.preset-canvas .cv-np .cv-ha-artist { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

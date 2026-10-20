@@ -49,6 +49,8 @@ export function Palette(props: {
   allowed: readonly string[];
   /** false: Bolsa cannot get quotes here (no stockQuotes feature) */
   stocks?: boolean;
+  /** false: no Spotify accounts on this server (no spotify feature) */
+  spotify?: boolean;
   stage: { current: StageApi | null };
   /** add at the first free spot */
   onAdd: (spec: AddSpec) => void;
@@ -79,7 +81,7 @@ export function Palette(props: {
       });
     }
     return out;
-  }, [props.widgets, props.cloud, props.allowed, props.stocks, photoBg]);
+  }, [props.widgets, props.cloud, props.allowed, props.stocks, props.spotify, photoBg]);
 
   const nq = q.trim();
   const shown = nq ? tiles.filter((x) => matchesSearch(nq, { kind: x.spec.kind, name: x.name, help: x.help, group: x.group }, t)) : tiles;

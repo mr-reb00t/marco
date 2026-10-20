@@ -813,6 +813,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
               ha={fieldEnv.ha}
               allowed={allowed}
               stocks={has('stockQuotes')}
+              spotify={has('spotify')}
               stage={stageApi}
               onAdd={addSpec}
               onPlace={(spec) => {

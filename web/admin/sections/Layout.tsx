@@ -12,6 +12,7 @@ import { t } from '../i18n';
 import { allSourceOptions, MAX_SCREEN_WIDGETS, moveItem } from '../util';
 import type { SectionProps } from './common';
 import { FamilyScreenOptions } from './Family';
+import { SpotifyAccountSelect } from './Spotify';
 
 export const PRESETS: { id: LayoutPreset; name: string; desc: string; wizard?: boolean; group?: 'kids' }[] = [
   { id: 'bigCalendar', name: 'Calendario grande', desc: 'Mes completo a pantalla grande con reloj, tiempo y noticias en una columna lateral.', wizard: true },
@@ -1044,6 +1045,14 @@ export function LayoutSection(props: SectionProps) {
             checked={cfg.screen.highlights !== false}
             onChange={(v) => set((d) => void (d.screen.highlights = v))}
           />
+        )}
+        {!canvasOn && !kids && has('spotify') && (
+          <Field label={t('Sonando ahora bajo el reloj')} hint={t('Una línea con la canción que suena en esa cuenta de Spotify. Si no suena nada, no se ve.')}>
+            <SpotifyAccountSelect value={cfg.screen.nowPlaying ?? ''} none="No mostrar" go={props.go} onChange={(v) => set((d) => {
+              if (v) d.screen.nowPlaying = v;
+              else delete d.screen.nowPlaying;
+            })} />
+          </Field>
         )}
       </Card>
       {canvasOn && <CanvasCard cfg={cfg} onOpen={() => void openBuilder(!(cfg.canvas?.items?.length))} />}

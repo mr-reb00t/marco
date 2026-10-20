@@ -77,6 +77,8 @@ import { Canvas, sidebarSide } from './widgets/canvas';
 import { HaFeed } from './haFeed';
 import { ValuesFeed } from './valuesFeed';
 import { DataFeed } from './dataFeed';
+import { DEMO_NOW_PLAYING_ACCOUNT, demoNowPlaying, NowPlayingFeed } from './nowPlayingFeed';
+import { NowPlayingLine } from './widgets/nowPlayingLine';
 import { demoData } from './mockData';
 import { demoValues } from './mockCanvas';
 import { HaTouch } from './widgets/canvas/touch';
@@ -147,6 +149,17 @@ const haFeed = new HaFeed(() => {
 const valuesFeed = new ValuesFeed(() => canvasView.onData('values'));
 // numbers of the data cards (market, sports, stocks; dataFeed.ts): asked of this server every minute while one shows
 const dataFeed = new DataFeed(() => canvasView.onData('data'));
+// what the linked Spotify accounts play (nowPlayingFeed.ts): the Sonando ahora cards and the line under the clock,
+// asked of this server while one shows, as often as it says
+const nowPlayingFeed = new NowPlayingFeed(() => {
+  canvasView.onData('nowplaying');
+  renderNowPlayingLine();
+});
+const nowPlayingLine = new NowPlayingLine($('#nowplaying'), nowPlayingFeed);
+function renderNowPlayingLine(): void {
+  const cfg = state.config ? ctx.cfg : null;
+  if (nowPlayingLine.render(cfg, !!cfg && effectivePreset(cfg) === 'canvas')) refreshMarquee();
+}
 // taps on the Home Assistant controls (widgets/canvas/touch.ts): only on a screen that allows them, online, not
 // private, never in the admin's preview (a click there would switch a real light)
 haFeed.gate = () => (state.online || state.demo) && !state.config?.privacy?.active && !isPreview;
@@ -170,6 +183,7 @@ const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   ha: haFeed,
   values: valuesFeed,
   data: dataFeed,
+  nowPlaying: nowPlayingFeed,
   nav: {
     shows: () => isPreview || !!ctx.cfg?.canvas?.taps,
     live: () => navLive(),
@@ -461,6 +475,10 @@ function applyConfig(raw: DisplayConfig): void {
   // ?highlights=0|1 (the pills under the date: next event, happening now, birthdays, check-in/out)
   const phl = params.get('highlights');
   if (phl === '0' || phl === '1') cfg.screen.highlights = phl === '1';
+  // ?np=0 hides the "now playing" line under the clock; in the demo ?np=1 shows a made-up track there (?np=idle: nothing plays)
+  const pnp = params.get('np');
+  if (pnp === '0') cfg.screen.nowPlaying = '';
+  else if (pnp && state.demo && !cfg.screen.nowPlaying) cfg.screen.nowPlaying = DEMO_NOW_PLAYING_ACCOUNT;
   // glass previews: ?glass=clear|tinted|auto &glassOpacity=0..1 &glassBlur=0..40 &glassTint=dark|light|photo &glassEdge=0|1
   const gq = (k: string) => params.get(k);
   if (gq('glass') || gq('glassOpacity') || gq('glassBlur') || gq('glassTint') || gq('glassEdge')) {
@@ -1370,6 +1388,9 @@ on('config', (s) => {
   valuesFeed.config(s.config);
   dataFeed.config(s.config);
   applyConfig(s.config);
+  // after the URL overrides (?np=), which applyConfig puts on ctx.cfg
+  nowPlayingFeed.config(ctx.cfg);
+  renderNowPlayingLine();
   const priv = s.config.privacy;
   const privSig = priv?.active ? 'on' : 'off';
   const privChanged = privateSig !== '' && privSig !== privateSig;
@@ -2127,6 +2148,7 @@ function enterDemo(): void {
   haFeed.demo = true;
   valuesFeed.demo = () => demoValues(state.config);
   dataFeed.demo = (cfg) => demoData(cfg);
+  nowPlayingFeed.demo = (accounts) => demoNowPlaying(accounts, params.get('np') === 'idle');
   statusDot.classList.remove('show');
   // &carousel=1: the demo screens in a loop (web/display/mock.ts mockCarouselConfigs)
   set('config', params.get('carousel') === '1' ? mockCarouselConfigs()[0] : mockConfig());
@@ -2339,6 +2361,7 @@ function onHello(d: Partial<StreamHello>): void {
   haFeed.refresh();
   valuesFeed.refresh();
   dataFeed.refresh();
+  nowPlayingFeed.refresh();
   heartbeat.soon();
   if (d.serverVersion) void maybeReloadForVersion(d.serverVersion);
 }

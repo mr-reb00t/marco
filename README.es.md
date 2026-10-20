@@ -1009,6 +1009,41 @@ Pega el enlace en la guía: Marco lo prueba y lo añade como calendario iCal (lo
 falta configurar nada en el servidor. Cualquiera que tenga el enlace puede ver el calendario, aunque es largo e
 imposible de adivinar; para retirarlo, desactiva *Calendario público* en iCloud.
 
+## Mostrar lo que suena en Spotify
+
+Una pantalla puede mostrar lo que alguien escucha en Spotify: la canción (o el episodio del podcast), el artista y la
+portada. Marco solo lee lo que suena; nunca controla la reproducción. Si se pausa o se para, deja de verse. Hay dos
+formas de mostrarlo:
+
+- la tarjeta **Sonando ahora** de una pantalla *Personalizado* (grupo *Contenido* del editor), con o sin portada y
+  con una barra fina que avanza con la canción;
+- **Sonando ahora bajo el reloj** en *Diseño → Apariencia* para los demás diseños: una línea bajo la fecha, que se
+  desliza si es larga y desaparece cuando no suena nada.
+
+Cada tarjeta y cada pantalla eligen la cuenta que muestran, así la cocina puede mostrar a una persona y el salón a
+otra. Spotify pide que cada casa use su propia app de Spotify (gratis), así cada hogar tiene sus propios límites:
+
+1. Abre <https://developer.spotify.com/dashboard> y pulsa **Create app** (el nombre y la descripción que quieras).
+2. En **Redirect URIs** añade exactamente la dirección que muestra *Admin → Spotify*, con su botón de copiar. Spotify
+   acepta direcciones `https://`, y `http://` solo para `127.0.0.1` o `[::1]` ("localhost" no vale).
+   - Con una dirección https propia (pon `PUBLIC_URL`, por ejemplo detrás de Caddy), es
+     `<PUBLIC_URL>/auth/spotify/callback` y Spotify vuelve solo al panel.
+   - Con `http://` normal en la red de casa la página muestra `http://127.0.0.1:<puerto>/auth/spotify/callback`.
+     Después de permitir el acceso, el navegador abre esa dirección y la página no carga: copia su dirección y pégala
+     en el campo bajo *Cuentas conectadas*. Marco termina la conexión desde ahí.
+3. Marca **Web API**, guarda y copia el **Client ID** y el **Client Secret** (*Settings*) en *Admin → Spotify*.
+4. Mientras la app esté en *Development mode*, añade en **User Management** a cada persona que vaya a conectar su
+   cuenta.
+5. **Conectar una cuenta de Spotify**, una vez por persona. Marco solo pide `user-read-currently-playing` y
+   `user-read-playback-state`.
+
+El Client Secret y los tokens se quedan en `data/secrets.json`; el panel solo dice que hay un secreto guardado, y las
+pantallas solo conocen cada cuenta por un identificador opaco. Marco pregunta a Spotify como mucho cada 10 segundos
+por cuenta, y solo mientras hay encendida una pantalla que la muestra (antes si una canción está a punto de acabar),
+espera el `Retry-After` de Spotify cuando pide una pausa y espacia las preguntas tras un error. Las portadas pasan por
+el servidor, así que las pantallas nunca cargan nada de Spotify. *Desconectar* borra los tokens de una cuenta; para
+quitarle a Marco el acceso también en Spotify, ve a <https://www.spotify.com/account/apps/>.
+
 ## Otras integraciones
 
 - **Fuentes iCal / ICS:** cualquier URL `http(s)://` o `webcal://`: colegio, club deportivo, trabajo, festivos
@@ -1273,6 +1308,7 @@ Haz copia de seguridad de toda la carpeta (o usa *Exportar*) para conservarlo to
 | `?preset=today\|people\|photoFrame\|twoWeeks\|board\|bedside` `?people=<ids de calendario, separados por comas>` `?corner=tl\|tr\|bl\|br` | Prueba los diseños nuevos, las columnas de *Por persona* y la esquina de *Marco de fotos* |
 | `?glass=clear\|tinted\|auto` `?glassOpacity=0..1` `?glassBlur=0..40` `?glassTint=dark\|light\|photo` `?glassEdge=0\|1` | Fuerza las opciones de cristal del estilo Moderno |
 | `?highlights=0\|1` | Oculta (o muestra) los avisos bajo la fecha: el próximo evento, los cumpleaños y las entradas y salidas de hoy (*Diseño → Apariencia*) |
+| `?np=0` | Oculta la línea *Sonando ahora bajo el reloj*; con `?demo=1`, `?np=1` la muestra con una canción inventada (`?np=idle`: no suena nada) y `&preset=canvas&shot=nowplaying` muestra las tarjetas *Sonando ahora* |
 | `?wxfx=off\|simple\|rich` | Fuerza el efecto del tiempo; con `?demo=1`, `?wx=rain\|drizzle\|thunder\|snow\|clear` (o un código WMO, p. ej. `45` para niebla) fuerza el tiempo |
 | `?ambient=aurora\|particles\|none` | Fuerza el fondo ambiental detrás del calendario |
 | `?demo=1&pair=1` `?demo=1&pair=invalid` `&pairLen=6\|8` | Muestra la pantalla de vinculación o la de “enlace ya no válido” con un código de ejemplo (sin servidor) |

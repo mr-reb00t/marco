@@ -15,6 +15,7 @@ import { CoinsField, FollowField, PairsField, StocksKeyField, SymbolsField } fro
 import { PlaceChoice, PlaceList } from '../components/PlaceSearch';
 import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
 import { TodoViewFields } from '../components/TodoViewFields';
+import { SpotifyAccountSelect } from '../sections/Spotify';
 
 export interface FieldEnv {
   /** the kinds this server offers (a Rotativa picks its cards among them) */
@@ -529,6 +530,12 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
             </Field>
           );
         if (s.type === 'stocksKey') return <StocksKeyField />;
+        if (s.type === 'spotifyAccount')
+          return (
+            <Field label={t(s.label)}>
+              <SpotifyAccountSelect value={String(p.account ?? '')} none="Elige una cuenta" onChange={(v) => put('account', v)} />
+            </Field>
+          );
         if (s.type === 'thresholds')
           return (
             <Field label={t(s.label)} hint={s.hint ? t(s.hint) : undefined}>

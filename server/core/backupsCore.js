@@ -7,6 +7,7 @@ import { stableStringify } from './lib/text.js';
 import { countNoun, countChanged, summaryWord } from './lib/i18n.js';
 import { carouselList, targetInfo } from './carousels.js';
 import { IMMICH_KEY_RE } from './immichCore.js';
+import { NOW_PLAYING_ACCOUNT_RE, NOW_PLAYING_MAX_ACCOUNTS, SPOTIFY_CLIENT_ID_RE, SPOTIFY_SECRET_RE } from './nowPlayingCore.js';
 import { FAMILY_KEY_RE } from './familyCore.js';
 
 /** Rotated backups kept per installation (or per household in the cloud). */
@@ -33,6 +34,8 @@ export function exportSecrets(sec) {
     ...(sec.data?.stocksKey ? { data: { stocksKey: sec.data.stocksKey } } : {}),
     google: { accounts: sec.google?.accounts || {} },
     ...(sec.microsoft?.accounts && Object.keys(sec.microsoft.accounts).length ? { microsoft: { accounts: sec.microsoft.accounts } } : {}),
+    // The household's own Spotify app and its linked accounts ("now playing"), only when an app is stored.
+    ...(sec.spotify?.clientId ? { spotify: { clientId: sec.spotify.clientId, clientSecret: sec.spotify.clientSecret || '', accounts: sec.spotify.accounts || {} } } : {}),
     apiTokens: sec.apiTokens || [],
     // Private display links and paired devices (token hashes only): an import on a new server keeps every
     // screen's link and paired device working.
@@ -127,6 +130,21 @@ export function sanitizeImportedSecrets(s) {
       if (/^[^\s@]{1,64}@[^\s@]{1,255}$/.test(email) && isObj(a) && typeof a.refresh_token === 'string') acc[email.toLowerCase()] = a;
     }
     out.microsoftAccounts = acc;
+  }
+  // the Spotify app and its accounts (ids sp_..., each with its refresh token); the Cloud keeps its own
+  if (isObj(s.spotify) && typeof s.spotify.clientId === 'string' && SPOTIFY_CLIENT_ID_RE.test(s.spotify.clientId)
+    && typeof s.spotify.clientSecret === 'string' && (s.spotify.clientSecret === '' || SPOTIFY_SECRET_RE.test(s.spotify.clientSecret))) {
+    const acc = {};
+    for (const [id, a] of Object.entries(isObj(s.spotify.accounts) ? s.spotify.accounts : {}).slice(0, NOW_PLAYING_MAX_ACCOUNTS)) {
+      if (NOW_PLAYING_ACCOUNT_RE.test(id) && isObj(a) && typeof a.refresh_token === 'string' && a.refresh_token.length <= 2000) {
+        acc[id] = {
+          name: typeof a.name === 'string' ? a.name.slice(0, 60) : 'Spotify', user: typeof a.user === 'string' ? a.user.slice(0, 128) : '',
+          refresh_token: a.refresh_token, access_token: '', expiry: 0, scope: typeof a.scope === 'string' ? a.scope.slice(0, 300) : '',
+          connectedAt: typeof a.connectedAt === 'string' ? a.connectedAt.slice(0, 40) : new Date().toISOString(),
+        };
+      }
+    }
+    out.spotify = { clientId: s.spotify.clientId, clientSecret: s.spotify.clientSecret, accounts: acc };
   }
   if (Array.isArray(s.apiTokens)) {
     out.apiTokens = s.apiTokens.filter((t) => isObj(t) && typeof t.id === 'string' && /^[a-f0-9]{64}$/.test(t.hash || '')
