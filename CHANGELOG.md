@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-10-20
+
 ### Added
 - Polish (#17): every admin and family page text, the screen's words, dates and numbers, weather descriptions, private
   mode titles, backup summaries, the pairing and welcome screens, the setup wizard and the demo, with Polish count
