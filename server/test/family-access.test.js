@@ -17,12 +17,12 @@ import { _resetAnnouncements, listAnnouncements } from '../announce.js';
 import { _resetActivityThrottle, listActivity } from '../activity.js';
 import { _resetPrivacy, privacyResponse } from '../privacy.js';
 import { _resetFamily } from '../family.js';
-import { _resetFamilyAccess, BAD_CODE_LIMIT, ACTIONS_PER_MIN } from '../familyAccess.js';
+import { _resetFamilyAccess, BAD_CODE_LIMIT, BAD_CODE_GLOBAL, BAD_LIMIT, BAD_GLOBAL, ACTIONS_PER_MIN } from '../familyAccess.js';
 import { FEATURE_KEYS } from '../capabilities.js';
 import { addDays, localDate } from '../core/lib/tz.js';
 import {
   effectivePerms, memberEventRequest, memberMessageRequest, memberState, memberTodoRequest, normalizeAccessCode, sanitizePersonInput,
-  deviceLabel, LINK_TOKEN_RE, DEVICE_TOKEN_RE, MESSAGE_MAX,
+  deviceLabel, LINK_TOKEN_RE, DEVICE_TOKEN_RE, MESSAGE_MAX, MAX_DEVICES_PER_PERSON,
 } from '../core/familyAccessCore.js';
 
 const realFetch = globalThis.fetch;
@@ -129,7 +129,8 @@ async function withServer(fn, { mut = () => {} } = {}) {
     const cookie = await login();
     const r = await call('POST', '/api/admin/family-access', { cookie, body });
     assert.equal(r.status, 200, r.text);
-    const link = r.json.link.path.slice('/my/'.length);
+    // /my/<link>?lang=<household language>
+    const link = r.json.link.path.slice('/my/'.length).replace(/\?.*$/, '');
     return { person: r.json.person, link };
   };
   const redeem = async (link, token) => call('POST', '/api/member/redeem', { body: { link, ...(token ? { token } : {}) }, headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1' } });
@@ -179,6 +180,9 @@ test('core: permissions, requests and what the phone sees', () => {
   assert.deepEqual(memberEventRequest({ title: 'Dentista', date: '2026-10-21', allDay: false, startTime: '17:30' }, '2026-10-20').value,
     { title: 'Dentista', date: '2026-10-21', allDay: false, startTime: '17:30', endTime: '18:30' });
   assert.equal(memberEventRequest({ title: 'Late', date: '2026-10-21', allDay: false, startTime: '23:15' }, '2026-10-20').value.endTime, '23:59');
+  // at 23:59 there is no later minute for a default end: the phone gets bad_time, not a save error
+  assert.deepEqual(memberEventRequest({ title: 'Late', date: '2026-10-21', allDay: false, startTime: '23:59' }, '2026-10-20'), { error: 'bad_time', path: 'startTime' });
+  assert.equal(memberEventRequest({ title: 'Late', date: '2026-10-21', allDay: false, startTime: '23:58' }, '2026-10-20').value.endTime, '23:59');
   assert.equal(memberEventRequest({ title: 'x', date: '2026-10-21', allDay: false, startTime: '10:00', endTime: '09:00' }, '2026-10-20').error, 'bad_time');
   assert.equal(memberEventRequest({ title: 'x', date: '2031-01-01' }, '2026-10-20').error, 'bad_date');
   assert.equal(memberEventRequest({ title: 'x', date: '2026-02-30' }, '2026-10-20').error, 'bad_date');
@@ -353,8 +357,8 @@ test('a code on a screen authorises one phone, once, and the codes are rate limi
     assert.equal(ev.data.code, r.json.code);
     assert.equal(ev.data.name, 'Leo');
     // the address a phone at home can open (this test server is on loopback: the LAN address)
-    assert.match(ev.data.url, /^http:\/\/192\.168\.0\.50:\d+\/my$/);
-    assert.deepEqual(Object.keys(ev.data).sort(), ['code', 'expiresAt', 'name', 'url']);
+    assert.match(ev.data.url, /^http:\/\/192\.168\.0\.50:\d+\/my\?lang=[a-z]{2}$/);
+    assert.deepEqual(Object.keys(ev.data).sort(), ['code', 'expiresAt', 'id', 'name', 'url']);
     assert.ok(!main.events.some((e) => e.event === 'access-code'), 'only the chosen screen');
     assert.ok((await call('GET', '/api/admin/family-access', { cookie })).json.people[0].code);
     // typed on the phone, with spaces and lower case
@@ -368,6 +372,10 @@ test('a code on a screen authorises one phone, once, and the codes are rate limi
     const people = (await call('GET', '/api/admin/family-access', { cookie })).json.people;
     assert.equal(people[0].devices[0].via, 'code');
     assert.equal(people[0].code, null);
+    // the used code leaves the screen at once (the overlay with this id hides)
+    const cleared = await kitchen.waitFor('access-code', (d) => d.clear === true);
+    assert.equal(cleared.data.id, ev.data.id);
+    assert.equal(cleared.data.code, '');
     // guessing stops after a few wrong codes, also for a right one
     _resetFamilyAccess();
     const next = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json.code;
@@ -438,7 +446,7 @@ test('the phone page, the display overlay and the texts are wired up', async () 
   for (const k of ['accessCodeFor', 'accessCodeHint', 'accessCodeHintNoUrl', 'accessCodeScan']) assert.equal(i18n.split(`  ${k}: '`).length - 1, 5, `${k} in 5 languages`);
 });
 
-test('the phone page needs only its own table: every text it shows has all five languages', async (t) => {
+test('the phone page needs only its own table: every text it shows has all six languages', async (t) => {
   let mod;
   try {
     mod = await import('../../web/admin/i18n-dict-access.ts');
@@ -448,7 +456,7 @@ test('the phone page needs only its own table: every text it shows has all five 
   const rows = new Map(mod.ROWS_ACCESS_ALL.map((r) => [r[0], r]));
   const holes = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(',');
   for (const r of mod.ROWS_ACCESS_ALL) {
-    assert.equal(r.length, 5);
+    assert.equal(r.length, 6);
     for (const v of r) assert.ok(v && !/\u2014/.test(v), `${r[0]}: no empty value, no em dash`);
     for (const v of r.slice(1)) assert.equal(holes(v), holes(r[0]), `placeholders of ${r[0]}`);
   }
@@ -458,4 +466,78 @@ test('the phone page needs only its own table: every text it shows has all five 
   const missing = [...used(main), ...mapped, 'No se pudo hacer. Inténtalo otra vez.'].filter((k) => !rows.has(k));
   assert.deepEqual(missing, []);
   assert.doesNotMatch(read('web/member/i18n.ts'), /i18n-dict-(nl|da|family)/, 'the phone page loads only the access table');
+});
+
+test('a flood of wrong codes and tokens from the Internet never locks out the phones at home', async () => {
+  await withServer(async ({ call, login, addPerson, redeem }) => {
+    const { person, link } = await addPerson({ name: 'Ana', perms: { todo: true } });
+    const from = (i) => ({ 'x-forwarded-for': `203.0.113.${i}` });
+    // far past the overall limits (50 codes, 200 links and tokens), from many public addresses
+    for (let i = 1; i <= 25; i++) {
+      for (let j = 0; j < BAD_CODE_LIMIT; j++) await call('POST', '/api/member/pair', { headers: from(i), body: { code: 'ZZZZZZ' } });
+      for (let j = 0; j < BAD_LIMIT; j++) await call('GET', '/api/member/state', { headers: { ...from(i), 'x-member-token': `fd_${'A'.repeat(43)}` } });
+    }
+    assert.ok(BAD_CODE_GLOBAL < 25 * BAD_CODE_LIMIT && BAD_GLOBAL < 25 * BAD_LIMIT);
+    // a new public address is refused by the overall limit
+    assert.equal((await call('POST', '/api/member/pair', { headers: from(99), body: { code: 'ZZZZZZ' } })).status, 429);
+    // a phone on the LAN still gets in, with the link and with a code
+    const r = await redeem(link);
+    assert.equal(r.status, 200, r.text);
+    const cookie = await login();
+    const code = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json.code;
+    const pair = await call('POST', '/api/member/pair', { body: { code } });
+    assert.equal(pair.status, 200, pair.text);
+  });
+});
+
+test('a person with every phone slot taken keeps the code; a new code or a removed person clears the screen', async () => {
+  await withServer(async ({ call, login, addPerson, redeem, sse }) => {
+    const { person, link } = await addPerson({ name: 'Ana', perms: { todo: true } });
+    for (let i = 0; i < MAX_DEVICES_PER_PERSON; i++) {
+      const r = await call('POST', '/api/member/redeem', { body: { link }, headers: { 'user-agent': `phone ${i}` } });
+      assert.equal(r.status, 200, r.text);
+    }
+    assert.equal((await redeem(link)).json.code, 'device_limit');
+    const cookie = await login();
+    const kitchen = await sse('s_kitchen');
+    const first = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json.code;
+    const full = await call('POST', '/api/member/pair', { body: { code: first } });
+    assert.equal(full.status, 409);
+    assert.equal(full.json.code, 'device_limit');
+    // the admin removes a phone and the same code still works
+    const dev = (await call('GET', '/api/admin/family-access', { cookie })).json.people[0].devices[0];
+    await call('DELETE', `/api/admin/family-access/${person.id}/devices/${dev.id}`, { cookie });
+    assert.equal((await call('POST', '/api/member/pair', { body: { code: first } })).status, 200);
+    // a new code replaces the old one on the screen, removing the person clears it
+    const a = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json;
+    const evA = await kitchen.waitFor('access-code', (d) => d.code === a.code);
+    const b = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json;
+    await kitchen.waitFor('access-code', (d) => d.clear === true && d.id === evA.data.id);
+    const evB = await kitchen.waitFor('access-code', (d) => d.code === b.code);
+    await call('DELETE', `/api/admin/family-access/${person.id}`, { cookie });
+    await kitchen.waitFor('access-code', (d) => d.clear === true && d.id === evB.data.id);
+  });
+});
+
+test('an export with secrets keeps the people and their phones (digests only), and an import brings them back', async () => {
+  await withServer(async ({ call, login, phone, addPerson, redeem }) => {
+    const { person, link } = await addPerson({ name: 'Ana', perms: { message: true, messageScreens: ['s_kitchen'] } });
+    const token = (await redeem(link)).json.token;
+    assert.equal((await call('POST', '/api/member/message', { headers: phone(token), body: { text: 'Hola' } })).status, 200);
+    const cookie = await login();
+    const bundle = (await call('POST', '/api/admin/export', { cookie, body: { includeSecrets: true, password: 'secret-pass-123' } })).json;
+    const fa = bundle.secrets.familyAccess;
+    assert.equal(fa.length, 1);
+    assert.equal(fa[0].id, person.id);
+    assert.match(fa[0].link.hash, /^[a-f0-9]{64}$/);
+    assert.ok(!JSON.stringify(fa).includes(token) && !JSON.stringify(fa).includes(link), 'digests only');
+    assert.ok(!('lastIp' in fa[0].devices[0]), 'no address in the export');
+    // the person is removed, then the export is imported: the same link and phone work again
+    await call('DELETE', `/api/admin/family-access/${person.id}`, { cookie });
+    assert.equal((await call('GET', '/api/member/state', { headers: phone(token) })).status, 403);
+    const imp = await call('POST', '/api/admin/import/apply', { cookie, body: { bundle, includeSecrets: true, password: 'secret-pass-123' } });
+    assert.equal(imp.status, 200, imp.text);
+    assert.equal((await call('GET', '/api/member/state', { headers: phone(token) })).status, 200);
+    assert.equal((await redeem(link, token)).json.token, token);
+  });
 });

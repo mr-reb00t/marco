@@ -348,7 +348,7 @@ function PersonDialog({ person, saved, onClose, onSaved }: {
         </Field>
       )}
       <div class="fa-perms">
-        <div class="field__label">{t('Qué puede hacer')}</div>
+        <div class="field__label">{t('Qué puede hacer esta persona')}</div>
         {PERMS.map((x) => (
           <div>
             <ToggleRow icon={x.emoji} label={t(x.label)} hint={t(x.hint)} checked={perms[x.key]} onChange={(v) => setPerms((p) => ({ ...p, [x.key]: v }))} />

@@ -11,6 +11,7 @@
 // minutes, single use) is the other way to get a device token. Only SHA-256 digests of tokens and codes are stored.
 import { addDays, isDateStr } from './lib/tz.js';
 import { CODE_ALPHABET } from './pairCore.js';
+import { defaultScreen } from './screens.js';
 
 /** What a person may be allowed to do, in the order the admin lists them. */
 export const ACCESS_PERMS = Object.freeze(['message', 'privacy', 'night', 'todo', 'events']);
@@ -38,6 +39,12 @@ export const PERSON_ID_RE = /^fp_[a-f0-9]{12}$/;
 export const DEVICE_ID_RE = /^fv_[a-f0-9]{12}$/;
 /** Where a phone opens its dashboard. */
 export const MEMBER_PATH = '/my';
+
+/** The household's language (the default screen's): the phone page uses it from the first screen, before sign-in. */
+export const householdLang = (cfg) => defaultScreen(cfg)?.screen?.language || 'en';
+
+/** `/my?lang=es` or `/my/<link>?lang=es`: the language only changes texts, so it may travel in the address. */
+export const memberPath = (cfg, link = '') => `${MEMBER_PATH}${link ? `/${link}` : ''}?lang=${encodeURIComponent(householdLang(cfg))}`;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -112,6 +119,56 @@ export function sanitizePersonInput(body, cfg, { partial = false } = {}) {
     value.perms = sanitizePerms(b.perms, cfg);
   }
   return { value };
+}
+
+const ISO = (v) => (typeof v === 'string' && v.length <= 40 && Number.isFinite(Date.parse(v)) ? v : null);
+const HASH = /^[a-f0-9]{64}$/;
+
+/**
+ * The people of family access in an export with secrets (backupsCore.js exportSecrets): digests only, no address,
+ * so the links and phones keep working after a restore or a move to a new server.
+ */
+export const exportAccessPeople = (list) => (Array.isArray(list) ? list : []).map((p) => ({
+  id: p.id, name: p.name, memberId: p.memberId ?? null, perms: p.perms ?? emptyPerms(), createdAt: p.createdAt ?? null, lastUsedAt: p.lastUsedAt ?? null,
+  link: p.link?.hash ? { hash: p.link.hash, createdAt: p.link.createdAt ?? null } : null,
+  devices: (p.devices || []).map((d) => ({ id: d.id, name: d.name, via: d.via, hash: d.hash, createdAt: d.createdAt ?? null, lastSeenAt: d.lastSeenAt ?? null })),
+}));
+
+/**
+ * The people of an imported bundle, well-formed parts only (MAX_PEOPLE, MAX_DEVICES_PER_PERSON). The permissions
+ * are read again against the config on every request (effectivePerms), so a screen missing here only turns off.
+ */
+export function importAccessPeople(list) {
+  if (!Array.isArray(list)) return null;
+  const now = new Date().toISOString();
+  const ids = new Set();
+  const out = [];
+  for (const p of list) {
+    if (!isObj(p) || typeof p.id !== 'string' || !/^fp_[a-f0-9]{12}$/.test(p.id) || ids.has(p.id)) continue;
+    const name = cleanLine(p.name).slice(0, NAME_MAX);
+    if (!name) continue;
+    ids.add(p.id);
+    const perms = isObj(p.perms) ? p.perms : {};
+    out.push({
+      id: p.id, name,
+      memberId: typeof p.memberId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(p.memberId) ? p.memberId : null,
+      perms: {
+        ...Object.fromEntries(['message', 'privacy', 'night', 'todo', 'events'].map((k) => [k, perms[k] === true])),
+        messageScreens: Array.isArray(perms.messageScreens) ? perms.messageScreens.filter((x) => typeof x === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(x)).slice(0, 12) : [],
+      },
+      createdAt: ISO(p.createdAt) ?? now, lastUsedAt: ISO(p.lastUsedAt),
+      link: isObj(p.link) && HASH.test(p.link.hash || '') ? { hash: p.link.hash, createdAt: ISO(p.link.createdAt) ?? now } : null,
+      devices: (Array.isArray(p.devices) ? p.devices : [])
+        .filter((d) => isObj(d) && typeof d.id === 'string' && /^fv_[a-f0-9]{12}$/.test(d.id) && HASH.test(d.hash || ''))
+        .slice(0, MAX_DEVICES_PER_PERSON)
+        .map((d) => ({
+          id: d.id, name: cleanLine(d.name).slice(0, 60) || 'Browser', via: d.via === 'code' ? 'code' : 'link', hash: d.hash,
+          createdAt: ISO(d.createdAt) ?? now, lastSeenAt: ISO(d.lastSeenAt), lastIp: null,
+        })),
+    });
+    if (out.length >= MAX_PEOPLE) break;
+  }
+  return out;
 }
 
 /** A rough name of the phone from its user agent ("iPhone", "Android · Chrome"), for the admin's device list. */
@@ -228,7 +285,8 @@ export function memberEventRequest(body, today) {
   if (endTime && !HHMM.test(endTime)) return { error: 'bad_time', path: 'endTime' };
   if (endTime && endTime <= b.startTime) return { error: 'bad_time', path: 'endTime' };
   if (!endTime) {
-    // an hour by default, never past midnight
+    // an hour by default, never past midnight; at 23:59 there is no minute left for it to end in
+    if (b.startTime >= '23:59') return { error: 'bad_time', path: 'startTime' };
     const [h, m] = b.startTime.split(':').map(Number);
     endTime = h >= 23 ? '23:59' : `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
@@ -247,5 +305,5 @@ export const newLocalEvent = (value, id) => ({
 /** Error codes of the member API and their HTTP status. */
 export const MEMBER_ERROR_STATUS = Object.freeze({
   text_required: 400, text_too_long: 400, bad_screens: 400, bad_duration: 400, bad_mode: 400, title_required: 400, title_too_long: 400,
-  bad_date: 400, bad_time: 400, not_allowed: 403, todo_full: 409, events_full: 409, calendar_off: 409, conflict: 409,
+  bad_date: 400, bad_time: 400, not_allowed: 403, todo_full: 409, events_full: 409, calendar_off: 409, conflict: 409, invalid: 400,
 });

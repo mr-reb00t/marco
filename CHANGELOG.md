@@ -8,12 +8,12 @@ All notable changes to this project are documented here. The format is based on
 ### Added
 - *Family access* in *Family → Access*: each person of the household can get a dashboard of their own on the phone
   (`/my`), without the admin password. Add a person (optionally one of the family members), tick what they may do
-  (send a message to all screens or to chosen ones, turn privacy mode on or off, switch night, day or auto mode on
+  (send a message to all screens or to chosen ones, turn private mode on or off, switch night, day or auto mode on
   every screen, add to-dos, add events to the local calendar) and send them their private link, or show a code on
   one of the screens for two minutes: they type it on their phone, or scan the QR code next to it. Every phone that
   gets in is listed and can be removed alone; removing the person stops their link, phones and codes at once. Every
   action is checked on the server against what the person may do at that moment, and each one is in the activity log
-  with their name (#16).
+  with their name. An export with private data keeps the people and their phones (#16).
 
 ## [0.18.0] - 2026-10-20
 

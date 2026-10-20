@@ -582,7 +582,7 @@ may do:
 
 - send a message to the screens (all of them, or only the ones you choose); it shows as an announcement with their
   name for 1 minute, 10 minutes or an hour
-- turn privacy mode on or off, on every screen at once
+- turn private mode on or off, on every screen at once
 - switch night, day or auto mode on every screen
 - add to-dos to the list typed in Marco
 - add events to the local calendar (a day, all day or at a time)
@@ -594,9 +594,10 @@ under the person, so one phone can be removed alone. *Remove person* stops their
 
 The phone only ever gets the person's name and the controls you allowed. Each action is checked again on the server,
 so a permission you take away counts from the next tap. Nobody with this access gets into the admin or sees
-calendars, photos or passwords. Messages, privacy changes, night mode, to-dos and events are in the activity log
-with the person's name. Tokens and codes are stored as hashes in `secrets.json`; wrong links, tokens and codes are
-rate limited per address and overall.
+calendars, photos or passwords. Messages, private mode changes, night mode, to-dos and events are in the activity log
+with the person's name. Tokens and links are stored as hashes in `secrets.json` (a code is only on its screen for its
+two minutes, and goes away once used); wrong links, tokens and codes are rate limited per address, and overall for
+clients outside your network. An export with private data keeps the people, their permissions and their phones.
 
 ## Custom screens
 

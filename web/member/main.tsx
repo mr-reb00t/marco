@@ -43,7 +43,8 @@ function readStart(): { link: string | null; code: string | null } {
 }
 const START = readStart();
 // the link and the code are used once: neither stays in the address bar or the history entry
-if (START.link || START.code) history.replaceState(null, '', '/my');
+// (?lang= only sets the texts and goes with them)
+if (START.link || START.code || location.search) history.replaceState(null, '', '/my');
 
 // ---- API ----
 
@@ -307,7 +308,7 @@ function TodoCard({ onLost }: { onLost: (e: unknown) => boolean }) {
   return (
     <Card id="m-todo" emoji="✅" title={t('Nueva tarea')}>
       <form onSubmit={add} class="m-inline">
-        <input class="m-input" maxLength={200} value={text} placeholder={t('Por ejemplo: comprar pan')} aria-label={t('Tarea')} onInput={(e) => setText((e.target as HTMLInputElement).value)} />
+        <input class="m-input" maxLength={200} value={text} placeholder={t('Ej.: comprar pan')} aria-label={t('Tarea')} onInput={(e) => setText((e.target as HTMLInputElement).value)} />
         <button type="submit" class="m-btn m-btn-primary" disabled={busy || !text.trim()}>
           {t('Añadir')}
         </button>
@@ -411,7 +412,7 @@ function CodeEntry({ onIn, notice }: { onIn: (r: MemberAuthResponse) => void; no
           maxLength={CODE_LENGTH + 2}
           value={code}
           aria-label={t('Código')}
-          placeholder="ABC123"
+          placeholder="K7M2QX"
           onInput={(e) => setCode((e.target as HTMLInputElement).value.toUpperCase().replace(CODE_CHARS, '').slice(0, CODE_LENGTH))}
         />
         <button type="submit" class="m-btn m-btn-primary" disabled={busy || code.length !== CODE_LENGTH}>

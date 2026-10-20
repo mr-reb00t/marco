@@ -2147,7 +2147,7 @@ function enterDemo(): void {
   }
   // &accesscode=1 → a family access code for a made-up person, with its QR code
   if (params.get('accesscode') === '1') {
-    setTimeout(() => accessCode.show({ code: 'K7M2QX', name: 'Ana', expiresAt: new Date(serverNow() + 115_000).toISOString(), url: `${location.origin}/my` }), 900);
+    setTimeout(() => accessCode.show({ id: 'demo', code: 'K7M2QX', name: 'Ana', expiresAt: new Date(serverNow() + 115_000).toISOString(), url: `${location.origin}/my` }), 900);
   }
   // &doorbell=1 → doorbell ring with a drawn camera picture; &doorbell=nocam → a ring without a picture
   const db = params.get('doorbell');
@@ -2394,6 +2394,7 @@ const liveHandlers: StreamHandlers = {
     heartbeat.soon();
   },
   accessCode: (d) => accessCode.show(d),
+  accessCodeClear: (id) => accessCode.clear(id),
   // privacy mode turned on or off: new config (lock, photo source), filtered events and countdowns
   // (a carousel only refetches now when it is the screen on display; the others before they show)
   privacy: (d) => {

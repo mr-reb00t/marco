@@ -229,7 +229,7 @@ calendar's.
 | `doorbell-end` | `{ id }` | the ring was dismissed |
 | `todo` | `{}` | the tasks of the Microsoft To Do lists changed (read every 5 minutes, or a task ticked on a screen): the display refetches its config, where they are `todo.items` |
 | `family` | `{ rev }` | Familia changed: a routine ticked (phone, TV or admin), stars, a reward, an import, a new or removed family link. Displays with a kids layout ask for `GET /api/display/family` again |
-| `access-code` | `{ code, name, expiresAt, url }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` until `expiresAt` (two minutes). Never a token |
+| `access-code` | `{ id, code, name, expiresAt, url }` or `{ clear: true, id, expiresAt }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` (`url` is `…/my?lang=<household language>`) until `expiresAt` (two minutes). `clear` takes the code with that `id` down early (used, replaced, person removed). Never a token |
 | `ha` | `HaSnapshot` | Home Assistant states of a Personalizado screen: the full snapshot when the stream opens and when the connection to Home Assistant changes (`full: true`), then only the aliases that changed (`full: false`), at most one event a second per screen, aimed at that screen (`screenId`). Not sent on the poll channel |
 | `values` | `ValuesSnapshot` | Pushed values of a Personalizado screen: the snapshot when the stream opens (`full: true`, only for a screen that shows a key), then the keys that changed (`full: false`, `null` for a key that was cleared), at most one event a second, only to the screens that show those keys and never while one is private. Not sent on the poll channel |
 | `ping` | `{ t }` | every 25 s |
@@ -871,7 +871,7 @@ that is not `true` is off.
 | Method | Path | Body | Answer |
 |---|---|---|---|
 | GET | `/api/admin/family-access` | | `{ people: FamilyAccessPerson[], max, lanAddresses, publicUrl }`. A person: `{ id, name, memberId, perms, createdAt, lastUsedAt, link: { exists, createdAt }, devices: [{ id, name, via: "link" \| "code", createdAt, lastSeenAt }], code: { screenId, expiresAt } \| null }`. No token, hash or link address |
-| POST | `/api/admin/family-access` | `{ name, memberId?, perms? }` | `{ person, link: { path: "/my/fa_…" } }`. The link is in this answer only. `400 name_required`, `unknown_member`; `409 too_many_people` (20) |
+| POST | `/api/admin/family-access` | `{ name, memberId?, perms? }` | `{ person, link: { path: "/my/fa_…?lang=es" } }` (`lang`: the household language, the default screen's). The link is in this answer only. `400 name_required`, `unknown_member`; `409 too_many_people` (20) |
 | PATCH | `/api/admin/family-access/:id` | `{ name?, memberId?, perms? }` | `{ person }`; counts from the person's next request |
 | POST | `/api/admin/family-access/:id/link` | | a new link: `{ person, link: { path } }`. The old link stops working; phones already in keep working |
 | POST | `/api/admin/family-access/:id/code` | `{ screenId }` | `{ code, expiresAt, screenId, delivered }`: the screen draws the code for two minutes (`access-code` live event). A new code replaces the person's previous one. `400 unknown_screen`; `429 rate_limited` (10 per person every 10 minutes) |
@@ -883,7 +883,7 @@ that is not `true` is off.
 | Method | Path | Body | Answer |
 |---|---|---|---|
 | POST | `/api/member/redeem` | `{ link, token? }` | trade the private link for a device token: `{ token: "fd_…", state }`. A phone that sends a valid `token` of the same person keeps it. `403 invalid_link`, `409 device_limit` (10 phones per person) |
-| POST | `/api/member/pair` | `{ code }` | a code shown on a screen (6 characters of the pairing alphabet, spaces and case ignored, single use, two minutes): `{ token, state }`. `404 invalid_code` |
+| POST | `/api/member/pair` | `{ code }` | a code shown on a screen (6 characters of the pairing alphabet, spaces and case ignored, single use, two minutes): `{ token, state }`. `404 invalid_code`; `409 device_limit` (the code is not used up then) |
 
 With `X-Member-Token: fd_…`:
 
@@ -900,7 +900,7 @@ With `X-Member-Token: fd_…`:
 A permission the person does not have now answers `403 not_allowed`, whatever the request. No token:
 `401 token_required`; a wrong or revoked one: `403 invalid_token`. Wrong links and tokens are limited to 20 per
 10 minutes per address and 200 overall, wrong codes to 10 per address and 50 overall (`429 rate_limited`,
-`Retry-After`); a locked address gets `429` before anything is looked up. With a valid token: 120 requests a minute per
+`Retry-After`; the overall limits leave out clients on the local network); a locked address gets `429` before anything is looked up. With a valid token: 120 requests a minute per
 phone and 20 actions a minute per person. A member token is never an admin credential: `/api/admin/*` answers `401`.
 To-dos and events are saved like any config change (the revision goes up, displays get `config`), with the reason
 `family`.

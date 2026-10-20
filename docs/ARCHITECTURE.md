@@ -459,7 +459,9 @@ uses only its own days.
 Each person of the household can have a dashboard of their own on the phone (#16). People are not config: they live
 in `secrets.json` as `familyAccess: [{ id (fp_), name, memberId, perms, createdAt, lastUsedAt, link: { hash,
 createdAt } | null, devices: [{ id (fv_), name, via, hash, createdAt, lastSeenAt, lastIp }] }]`, so adding or changing
-one never bumps the config revision, and an export without secrets has none of them.
+one never bumps the config revision. An export with secrets carries them (digests only, no addresses) and an import
+with secrets puts them back, so the links and phones keep working on a new server; an export without secrets has none
+of them.
 
 - **Pure rules** (`server/core/familyAccessCore.js`, shared with Marco Cloud): permissions (`effectivePerms` drops
   deleted screens and never widens a message list to every screen), the requests of each action, the to-do and local
@@ -467,7 +469,9 @@ one never bumps the config revision, and an export without secrets has none of t
 - **Credentials**: the private link carries `fa_` + 32 characters; opening it on a phone trades it for a device token
   `fd_` + 43 characters that the phone keeps in `localStorage`. A code (6 characters of the pairing alphabet, two
   minutes, single use, one per person at a time) shown on a screen through the `access-code` live event is the other
-  way to get one. Only SHA-256 digests are stored; codes live in memory. Lookups are constant time over every stored
+  way to get one. Only SHA-256 digests are stored; codes live in memory, and the plain code is only in the `access-code`
+event to the screen for its two minutes (once used, replaced or withdrawn, a `{ clear: true, id }` event takes it off
+the screen and out of the poll ring). Lookups are constant time over every stored
   digest. Every request reads the person again, so a permission taken away, a phone revoked or a person removed
   counts from the next request (the page holds no stream).
 - **Actions** (`server/familyAccess.js`) go through the server's own paths: `createAnnouncement` (`via: "family"`, the
@@ -476,7 +480,8 @@ one never bumps the config revision, and an export without secrets has none of t
   say who added them).
 - **Phone page** (`web/member/`, `/my/<link>` and `/my`): its own small Preact bundle (`vite.config.ts` input
   `member`) with only the access texts (`web/admin/i18n-dict-access.ts`). The link and the code (from the QR code's
-  fragment) are taken out of the address bar at once. **Display**: `web/display/widgets/accessCode.ts` draws the code
+  fragment) are taken out of the address bar at once, and so is `?lang=` (the household language that the link and the
+QR code carry, so the code screen is in that language before sign-in). **Display**: `web/display/widgets/accessCode.ts` draws the code
   above the announcements. **Admin**: the *Family access* card on the *Access* tab of *Family*
   (`web/admin/components/FamilyAccess.tsx`).
 

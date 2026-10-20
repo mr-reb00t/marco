@@ -106,6 +106,7 @@ export interface StreamHandlers {
   values?: (d: ValuesSnapshot) => void;
   /** a code for a person's phone (family access), shown on this screen until it expires */
   accessCode?: (d: AccessCodePayload) => void;
+  accessCodeClear?: (id: string) => void;
   /** link regenerated / device revoked / display access switched to private */
   revoked?: (d: { code: string }) => void;
   open?: () => void;
@@ -140,8 +141,12 @@ export function dispatch(name: string, d: any, h: StreamHandlers): boolean {
       if (d && typeof d.rev === 'number' && d.values && typeof d.values === 'object' && !Array.isArray(d.values)) h.values?.(d);
       return true;
     case 'access-code':
-      if (d && typeof d.code === 'string' && typeof d.expiresAt === 'string') {
-        h.accessCode?.({ code: d.code, expiresAt: d.expiresAt, name: typeof d.name === 'string' ? d.name : '', url: typeof d.url === 'string' ? d.url : '' });
+      // { clear: true, id }: the code was used, replaced or withdrawn before it ran out
+      if (d && d.clear === true) h.accessCodeClear?.(typeof d.id === 'string' ? d.id : '');
+      else if (d && typeof d.code === 'string' && typeof d.expiresAt === 'string') {
+        h.accessCode?.({
+          id: typeof d.id === 'string' ? d.id : '', code: d.code, expiresAt: d.expiresAt, name: typeof d.name === 'string' ? d.name : '', url: typeof d.url === 'string' ? d.url : '',
+        });
       }
       return true;
     case 'doorbell-end': h.doorbellEnd?.({ id: typeof d?.id === 'string' ? d.id : null }); return true;

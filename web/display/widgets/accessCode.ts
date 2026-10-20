@@ -23,6 +23,8 @@ export function remainingMs(expiresAt: string, now: number): number {
 
 export class AccessCodeOverlay {
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** id of the code on screen now */
+  private shown = '';
 
   constructor(private root: HTMLElement) {}
 
@@ -32,7 +34,8 @@ export class AccessCodeOverlay {
     if (!/^[A-Z0-9]{4,12}$/.test(code) || left < 5000) return;
     const { t } = ctx;
     const qr = accessQrUrl(p);
-    const where = qr ? p.url.replace(/^https?:\/\//, '') : '';
+    // the hint shows the address to type, without the ?lang= the QR code carries
+    const where = qr ? p.url.replace(/^https?:\/\//, '').replace(/[?#].*$/, '') : '';
     this.root.innerHTML = `<div class="ac-card">
         <div class="ac-kicker">${esc(t('accessCodeFor', { name: p.name || '' }))}</div>
         <div class="ac-body">
@@ -44,6 +47,7 @@ export class AccessCodeOverlay {
         </div>
         <div class="ac-bar"><i></i></div>
       </div>`;
+    this.shown = typeof p.id === 'string' ? p.id : '';
     this.root.classList.add('show');
     this.root.setAttribute('aria-hidden', 'false');
     const bar = this.root.querySelector('.ac-bar i') as HTMLElement | null;
@@ -52,7 +56,13 @@ export class AccessCodeOverlay {
     this.timer = setTimeout(() => this.hide(), left);
   }
 
+  /** The code with this id stopped working: hide it if it is the one on screen (an empty id hides any). */
+  clear(id: string): void {
+    if (!id || !this.shown || id === this.shown) this.hide();
+  }
+
   hide(): void {
+    this.shown = '';
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     this.root.classList.remove('show');

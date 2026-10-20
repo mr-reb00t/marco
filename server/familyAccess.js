@@ -13,23 +13,25 @@ import crypto from 'node:crypto';
 import { getConfig, getSecrets, updateSecrets, updateConfig } from './store.js';
 import { publish } from './pollHub.js';
 import { logActivity, logActivityThrottled } from './activity.js';
-import { clientBucket } from './lib/net.js';
+import { clientBucket, isLanClient } from './lib/net.js';
 import { familyOrigin } from './family.js';
 import { createAnnouncement, sanitizeAnnounce } from './announce.js';
 import { resolveScreenList, runCommand } from './displays.js';
 import { applyPrivacy, screenPrivacy } from './privacy.js';
-import { defaultScreen } from './core/screens.js';
 import { localDate } from './core/lib/tz.js';
 import { randomCode } from './core/pairCore.js';
 import { newId } from './core/familyCore.js';
 import {
-  CODE_LENGTH, CODE_TTL_MS, DEVICE_TOKEN_RE, LINK_TOKEN_RE, MAX_DEVICES_PER_PERSON, MAX_PEOPLE, MEMBER_PATH,
-  deviceLabel, effectivePerms, emptyPerms, memberEventRequest, memberMessageRequest, memberNightMode, memberPrivacyMode,
+  CODE_LENGTH, CODE_TTL_MS, DEVICE_TOKEN_RE, LINK_TOKEN_RE, MAX_DEVICES_PER_PERSON, MAX_PEOPLE,
+  deviceLabel, effectivePerms, emptyPerms, householdLang, memberEventRequest, memberMessageRequest, memberPath, memberNightMode, memberPrivacyMode,
   memberState, memberTodoRequest, newLocalEvent, newTodoItem, normalizeAccessCode, sanitizePersonInput,
 } from './core/familyAccessCore.js';
 
 export const TOKEN_HEADER = 'x-member-token';
-/** Wrong links, device tokens or codes: per client address and overall, per window. */
+/**
+ * Wrong links, device tokens or codes: per client address and overall, per window. The overall limit only counts and
+ * stops clients from outside the LAN, so a flood from the Internet never locks out the phones at home (as auth.js).
+ */
 export const BAD_LIMIT = 20;
 export const BAD_GLOBAL = 200;
 export const BAD_CODE_LIMIT = 10;
@@ -62,7 +64,7 @@ const fresh = (list, ms, now) => (list || []).filter((t) => now - t < ms);
 const maps = { bad: new Map(), badCode: new Map(), requests: new Map(), actions: new Map(), messages: new Map(), codesShown: new Map() };
 let badAll = [];
 let badCodeAll = [];
-/** sha256(code) hex → { personId, screenId, expiresAt } */
+/** sha256(code) hex → { personId, screenId, expiresAt, payload } (payload: the `access-code` event, kept to clear it) */
 const codes = new Map();
 /** device id → ms of the last request not written to secrets.json yet */
 const seen = new Map();
@@ -87,11 +89,12 @@ function countBad(req, { code = false } = {}, now = Date.now()) {
   else badAll = fresh(badAll, BAD_WINDOW_MS, now);
   const all = code ? badCodeAll : badAll;
   const ip = clientBucket(req);
+  const lan = isLanClient(req);
   const mine = fresh(map.get(ip), BAD_WINDOW_MS, now);
-  if (mine.length >= limit || all.length >= global) { map.set(ip, mine); return false; }
+  if (mine.length >= limit || (!lan && all.length >= global)) { map.set(ip, mine); return false; }
   mine.push(now);
   map.set(ip, mine);
-  all.push(now);
+  if (!lan) all.push(now);
   return true;
 }
 
@@ -100,11 +103,23 @@ function locked(req, { code = false } = {}, now = Date.now()) {
   const map = code ? maps.badCode : maps.bad;
   const all = fresh(code ? badCodeAll : badAll, BAD_WINDOW_MS, now);
   return fresh(map.get(clientBucket(req)), BAD_WINDOW_MS, now).length >= (code ? BAD_CODE_LIMIT : BAD_LIMIT)
-    || all.length >= (code ? BAD_CODE_GLOBAL : BAD_GLOBAL);
+    || (!isLanClient(req) && all.length >= (code ? BAD_CODE_GLOBAL : BAD_GLOBAL));
 }
 
 const rejected = (req, reason) => logActivityThrottled('family.access_rejected', `${clientBucket(req)}|${reason}`,
   { everyMs: BAD_WINDOW_MS, perMinute: 5 }, { req, actor: 'anonymous', level: 'warn', data: { reason } });
+
+/**
+ * Take a code off its screen before it runs out (used, replaced, person deleted): the event in the poll ring loses its
+ * code, and the screen gets a clearing event with the overlay's id (`access-code` { clear: true }).
+ */
+function clearShown(entry) {
+  const p = entry?.payload;
+  if (!p || p.clearedAt) return;
+  p.clearedAt = new Date().toISOString();
+  p.code = '';
+  publish('access-code', { clear: true, id: p.id, code: '', name: '', url: '', expiresAt: p.expiresAt }, { screenIds: [entry.screenId] });
+}
 
 function pruneCodes(now = Date.now()) {
   for (const [k, c] of codes) if (c.expiresAt <= now || !findPerson(c.personId)) codes.delete(k);
@@ -151,7 +166,7 @@ export function createPerson(body, { req } = {}) {
     s.familyAccess.push(p);
   });
   logActivity('family.access', { req, level: 'warn', data: { action: 'created', person: p.name, perms: permList(p) } });
-  return { person: personInfo(p), link: { path: `${MEMBER_PATH}/${token}` } };
+  return { person: personInfo(p), link: { path: memberPath(getConfig(), token) } };
 }
 
 /** The permissions that are on, for the activity log ("message", "privacy"...). */
@@ -178,7 +193,7 @@ export function regenerateLink(id, { req } = {}) {
   const { token, stored } = newLink();
   updateSecrets(() => { p.link = stored; });
   logActivity('family.access', { req, level: 'warn', data: { action: 'link', person: p.name } });
-  return { person: personInfo(p), link: { path: `${MEMBER_PATH}/${token}` } };
+  return { person: personInfo(p), link: { path: memberPath(getConfig(), token) } };
 }
 
 /** Remove a person: the link, every phone and any code on a screen stop working at once. */
@@ -186,7 +201,7 @@ export function deletePerson(id, { req } = {}) {
   const p = findPerson(id);
   if (!p) return false;
   updateSecrets((s) => { s.familyAccess = people().filter((x) => x.id !== id); });
-  for (const [k, c] of codes) if (c.personId === id) codes.delete(k);
+  for (const [k, c] of codes) if (c.personId === id) { clearShown(c); codes.delete(k); }
   for (const d of p.devices || []) seen.delete(d.id);
   logActivity('family.access', { req, level: 'warn', data: { action: 'deleted', person: p.name, devices: (p.devices || []).length } });
   return true;
@@ -216,14 +231,14 @@ export function showCode(id, screenId, { req } = {}, now = Date.now()) {
   if (!screen) return { error: 'unknown_screen', status: 400 };
   if (!allow(maps.codesShown, id, BAD_WINDOW_MS, CODES_PER_WINDOW, now)) return { error: 'rate_limited', status: 429 };
   pruneCodes(now);
-  for (const [k, c] of codes) if (c.personId === id) codes.delete(k);
+  for (const [k, c] of codes) if (c.personId === id) { clearShown(c); codes.delete(k); }
   const live = new Set(codes.keys());
   let code;
   do code = randomCode(CODE_LENGTH); while (live.has(shaHex(code)));
   const expiresAt = now + CODE_TTL_MS;
-  codes.set(shaHex(code), { personId: id, screenId, expiresAt });
   const origin = familyOrigin(req);
-  const payload = { code, name: p.name, expiresAt: new Date(expiresAt).toISOString(), url: origin ? `${origin}${MEMBER_PATH}` : '' };
+  const payload = { id: newId('ac_'), code, name: p.name, expiresAt: new Date(expiresAt).toISOString(), url: origin ? `${origin}${memberPath(cfg)}` : '' };
+  codes.set(shaHex(code), { personId: id, screenId, expiresAt, payload });
   const delivered = publish('access-code', payload, { screenIds: [screenId] });
   logActivity('family.code', { req, data: { person: p.name, screen: screen.slug, delivered } });
   return { code, expiresAt: payload.expiresAt, screenId, delivered };
@@ -262,7 +277,7 @@ function addDevice(person, via, req) {
 export function stateOf(person) {
   const cfg = getConfig();
   const on = cfg.screens.filter((s) => screenPrivacy(cfg, s).active).length;
-  return memberState(cfg, person, { lang: defaultScreen(cfg)?.screen?.language || 'en', privacy: { on, total: cfg.screens.length } });
+  return memberState(cfg, person, { lang: householdLang(cfg), privacy: { on, total: cfg.screens.length } });
 }
 
 const tooMany = { error: 'too many tries, wait a few minutes', code: 'rate_limited', status: 429 };
@@ -309,7 +324,10 @@ export function redeemCode(raw, req, now = Date.now()) {
     rejected(req, code ? 'invalid_code' : 'malformed_code');
     return { error: 'unknown or expired code: check the code on the screen', code: 'invalid_code', status: 404 };
   }
+  // a full person keeps the code, so the admin can remove a phone and the same code still works
+  if ((person.devices || []).length >= MAX_DEVICES_PER_PERSON) return { error: 'device_limit', code: 'device_limit', status: 409 };
   codes.delete(hitKey);
+  clearShown(hit);
   const r = addDevice(person, 'code', req);
   if (r.error) return { error: r.error, code: r.error, status: r.status };
   return { token: r.token, state: stateOf(person) };
@@ -388,6 +406,14 @@ function gate(person, perm) {
 /** The permission alone (checked before the request is read, so a phone without it learns nothing else). */
 const allowed = (person, perm) => Boolean(effectivePerms(person, getConfig())[perm]);
 
+/** The member error code of a failed sanitizeAnnounce (the same mapping as Cloud's /member/message). */
+const announceError = (v) => {
+  const paths = (v.details || []).map((d) => d.path);
+  if (paths.includes('screens')) return 'bad_screens';
+  if (paths.includes('body') || paths.includes('title')) return 'text_too_long';
+  return 'invalid';
+};
+
 /** POST /api/member/message { text, screens?, durationSec? } */
 export function memberMessage({ person }, body, { req } = {}) {
   const cfg = getConfig();
@@ -396,7 +422,7 @@ export function memberMessage({ person }, body, { req } = {}) {
   if (r.error) return fail(r.error, r.error === 'not_allowed' ? 403 : 400);
   if (!allow(maps.messages, person.id, MESSAGE_WINDOW_MS, MESSAGES_PER_WINDOW) || !budget(person)) return fail('rate_limited', 429);
   const v = sanitizeAnnounce(r.value, (keys) => resolveScreenList(cfg, keys));
-  if (!v.ok) return fail('text_too_long', 400);
+  if (!v.ok) return fail(announceError(v), 400);
   const { announcement, delivered } = createAnnouncement(v.value, { via: 'family', by: actorOf(person) });
   const slugs = announcement.screenIds.map((id) => cfg.screens.find((s) => s.id === id)?.slug || id);
   logActivity('family.message', {
@@ -434,7 +460,8 @@ export function memberNight({ person }, body, { req } = {}) {
 /** Save a config change made from a phone (no revision guard: it adds one item to what is saved now). */
 function saveChange(fn, req) {
   const r = updateConfig(fn, { reason: 'family', req });
-  return r.ok ? null : fail('conflict', 409);
+  if (r.ok) return null;
+  return r.conflict ? fail('conflict', 409) : fail('invalid', 400);
 }
 
 /** POST /api/member/todo { text }: a typed to-do on the list (config.todo.items). */

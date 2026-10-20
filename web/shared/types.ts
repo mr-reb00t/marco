@@ -1498,6 +1498,9 @@ export interface FamilyAccessCodeResponse {
 
 /** Live event / poll command `access-code`: a code for the phone, drawn on the screen for two minutes. */
 export interface AccessCodePayload {
+  /** this showing of the code, so a later { clear: true, id } takes down only this one ('' from older servers) */
+  id: string;
+  /** '' once the code was used, replaced or withdrawn */
   code: string;
   name: string;
   expiresAt: string;
@@ -1986,6 +1989,7 @@ export type StreamEvent =
   | { type: 'todo' }
   /** a code for a person's phone (family access), on this screen for two minutes */
   | ({ type: 'access-code' } & AccessCodePayload)
+  | { type: 'access-code'; clear: true; id: string; expiresAt: string }
   | { type: 'ping'; t: number };
 
 // ---- Admin API ----
@@ -2680,7 +2684,8 @@ export type DisplayCommand =
   /** the tasks of the Microsoft To Do lists changed: fetch the config again */
   | { type: 'todo' }
   /** a code for a person's phone (family access), on this screen for two minutes */
-  | ({ type: 'access-code' } & AccessCodePayload);
+  | ({ type: 'access-code' } & AccessCodePayload)
+  | { type: 'access-code'; clear: true; id: string; expiresAt: string };
 
 /** GET /api/display/poll?client=&cursor=&rev=&hidden=&preview= (docs/API.md) */
 export interface PollResponse {

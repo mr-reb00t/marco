@@ -35,7 +35,8 @@ const family = await load('../../web/admin/i18n-dict-family.ts');
 const nlMod = await load('../../web/admin/i18n-dict-nl.ts');
 const daMod = await load('../../web/admin/i18n-dict-da.ts');
 const shared = await load('../../web/shared/i18n.ts');
-const ts = { skip: dict && plural && family && nlMod && daMod && shared ? false : 'TypeScript imports need Node >= 22.18' };
+const access = await load('../../web/admin/i18n-dict-access.ts');
+const ts = { skip: dict && plural && family && nlMod && daMod && shared && access ? false : 'TypeScript imports need Node >= 22.18' };
 
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 const holes = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(',');
@@ -270,4 +271,23 @@ test('Dutch and Danish files: no em dashes, no DAKboard', () => {
     const values = /i18n-dict-(nl|da|family)\.ts$/.test(f) ? [...s.matchAll(/^ {2}'(?:[^'\\]|\\.)*': ('(?:[^'\\]|\\.)*'),$/gm)].map((m) => m[1]).join('\n') : s;
     assert.doesNotMatch(values, /dakboard/i, f);
   }
+});
+
+test('family access (#16): every row has a value in every column, with the same {placeholders}, and no em dash', ts, () => {
+  // [es, en, pt, nl, da, pl]: the phone page (web/member/i18n.ts) reads the column of each language
+  assert.ok(access.ROWS_ACCESS_ALL.length > 100);
+  const keys = new Set();
+  for (const row of access.ROWS_ACCESS_ALL) {
+    assert.equal(row.length, 6, row[0]);
+    assert.ok(!keys.has(row[0]), `twice: ${row[0]}`);
+    keys.add(row[0]);
+    for (const v of row) {
+      assert.ok(typeof v === 'string' && v.trim(), `empty value for ${row[0]}`);
+      assert.equal(holes(v), holes(row[0]), `placeholders of ${row[0]}: ${v}`);
+      assert.doesNotMatch(v, /—/, v);
+    }
+  }
+  for (const l of shared.LANGS) if (l !== 'es') assert.ok(['en', 'pt', 'nl', 'da', 'pl'].includes(l), `no family access column for ${l}`);
+  // the admin's own wording: "private mode", never "privacy mode"
+  assert.ok(access.ROWS_ACCESS_ALL.every((r) => !/privacy mode/i.test(r[1])));
 });

@@ -626,8 +626,10 @@ persona* deja sin efecto su enlace, sus móviles y sus códigos al momento.
 El móvil solo recibe el nombre de la persona y los controles que has permitido. Cada acción se vuelve a comprobar en el
 servidor, así que un permiso que quitas cuenta desde el siguiente toque. Nadie con este acceso entra en el panel ni ve
 calendarios, fotos o contraseñas. Los mensajes, el modo privado, el modo noche, las tareas y los eventos quedan en la
-actividad con el nombre de la persona. Los tokens y los códigos se guardan como hash en `secrets.json`; los enlaces,
-tokens y códigos incorrectos tienen un límite de intentos por dirección y en total.
+actividad con el nombre de la persona. Los tokens y los enlaces se guardan como hash en `secrets.json` (un código solo
+está en su pantalla durante sus dos minutos y desaparece en cuanto se usa); los enlaces, tokens y códigos incorrectos
+tienen un límite de intentos por dirección, y en total para lo que llega de fuera de tu red. Una exportación con los
+datos privados conserva a las personas, sus permisos y sus móviles.
 
 ## Pantallas personalizadas
 
