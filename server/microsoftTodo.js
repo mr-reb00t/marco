@@ -65,7 +65,7 @@ async function readList(l, now) {
   } catch (err) {
     // Only a short code: never a token or Microsoft's description.
     const code = err.code || (err.status ? `HTTP ${err.status}` : 'error');
-    if (!prev?.error) console.warn('[todo] Microsoft To Do list failed:', code);
+    if (!prev?.error) console.warn('[todo] Microsoft To Do list failed:', code, err.graph || '');
     cache.set(k, { items: prev?.items ?? [], okAt: prev?.okAt ?? 0, error: String(code).slice(0, 60), next: now + TODO_RETRY_MS });
   }
 }

@@ -171,7 +171,12 @@ async function graphGet(url, token, write = null) {
     : { headers: graphHeaders(token), throwOnError: false });
   let json;
   try { json = JSON.parse(res.text); } catch { json = {}; }
-  if (!res.ok) throw new MicrosoftError(`Microsoft Graph: HTTP ${res.status}`, res.status, res.status === 401 ? 'auth_failed' : '');
+  if (!res.ok) {
+    // Graph's own error code and the start of its message (never a token) say what was wrong with the request
+    const e = new MicrosoftError(`Microsoft Graph: HTTP ${res.status}`, res.status, res.status === 401 ? 'auth_failed' : '');
+    e.graph = [json?.error?.code, json?.error?.message].filter((x) => typeof x === 'string' && x).join(': ').slice(0, 160);
+    throw e;
+  }
   return json;
 }
 

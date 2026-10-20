@@ -66,6 +66,8 @@ test('task mapping: completed and empty tasks out, due day, importance, due ones
   const u = new URL(todoTasksUrl('AQMk/x=='));
   assert.equal(u.pathname, '/v1.0/me/todo/lists/AQMk%2Fx%3D%3D/tasks');
   assert.equal(u.searchParams.get('$filter'), "status ne 'completed'");
+  // Graph refuses a $select on To Do tasks (400 invalidRequest): never ask for one
+  assert.equal(u.searchParams.has('$select'), false);
 });
 
 test('config: todo.lists are validated and capped', () => {

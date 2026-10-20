@@ -250,11 +250,13 @@ export const TODO_RETRY_MS = 2 * 60_000;
 
 export const todoListsUrl = () => `${GRAPH_API}/me/todo/lists?${new URLSearchParams({ $top: '100' })}`;
 
-/** The open tasks of one list (completed ones are filtered by Graph). */
+/**
+ * The open tasks of one list (completed ones are filtered by Graph). No $select: Graph answers 400 invalidRequest to
+ * a $select on To Do tasks, so the whole task comes and todoItems keeps what it needs.
+ */
 export function todoTasksUrl(listId) {
   const q = new URLSearchParams({
     $filter: "status ne 'completed'",
-    $select: 'id,title,status,importance,dueDateTime',
     $top: String(TASK_PAGE_SIZE),
   });
   return `${GRAPH_API}/me/todo/lists/${encodeURIComponent(listId)}/tasks?${q}`;
