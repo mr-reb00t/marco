@@ -1118,7 +1118,12 @@ cap, their entities towards the screen's (80), and the box of a Rotativa is kept
 its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch
 controls (a control on one answers `not_found`); a camera inside shows pictures. In the display config each card is
 projected like an item (`{ id, kind, props, v, disabled? }`, entity ids replaced by aliases, `privacy` placeholders
-on a private screen).
+on a private screen). A card can also have a condition of its own (`when`, the shape of an item's *Mostrar solo si*,
+#19): while it does not hold the Rotativa skips that card, as it skips an empty one, at once when the state changes;
+with one card left it stays on it with no dots, and with none it is hidden like an empty card. Its entity counts
+towards the screen's 80 and is followed like an item's (`conditionEntities`), `conditionHidden` lists the card's id,
+and in the display config the card carries `when: { src }` like an item. An export empties its entity, and an import
+where Home Assistant is not offered drops it (counted in `conditions`).
 
 **Navigation (touch screens).** Three kinds in the palette category *Navegación* (`cat: "nav"`, every edition):
 `nav.button` (*Ir a pantalla*: `{ target, label, icon, show, returnMin }`), `nav.pause` (*Pausar carrusel*: `{ label,

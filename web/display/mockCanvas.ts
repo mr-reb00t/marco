@@ -1,12 +1,18 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
-import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
+import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
 import { cardSnippets } from '../shared/cardSnippets';
 import { SHOWCASES } from './showcase';
 import { DEMO_NOW_PLAYING_ACCOUNT } from './nowPlayingFeed';
+
+/**
+ * The demo screen as it was saved, before the projection takes the entity ids out: the entity of each alias and the
+ * canvas with its conditions, so the demo can work out what a server would (mockHa.ts demoHaStates, demoHaHidden).
+ */
+export const DEMO_SAVED: { entities: Map<string, string>; canvas: CanvasConfig | null } = { entities: new Map(), canvas: null };
 
 /** The saved widget the demo's widget items show (mock.ts adds its definition). */
 export const DEMO_WIDGET = 'w_demo_prices';
@@ -330,6 +336,24 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'ha.switch', pos: M(8, 0, 's'), props: { entity: 'switch.coffee_maker' } },
     ],
   },
+  // Rotativas that change with Home Assistant (#19): the hall's motion sensor (&motion=on|off|unavailable, or the
+  // 'marco:demo-ha' event, mockHa.ts) shows the hall light while all is clear and the camera when there is movement;
+  // with the sensor unavailable neither card holds and the first Rotativa is hidden. The second one keeps a card
+  // with no condition, so it always shows something.
+  motion: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'rotator', pos: M(8, 0, 'l'), props: { everySec: 5, cards: [
+        { id: '', kind: 'ha.tile', props: { ...canvasDefaults('ha.tile'), entity: 'light.hall', name: 'Pasillo' }, when: { src: 'ha', entity: 'binary_sensor.hall_motion', op: 'eq', value: 'off' } },
+        { id: '', kind: 'ha.camera', props: { ...canvasDefaults('ha.camera'), entity: 'camera.hall' }, when: { src: 'ha', entity: 'binary_sensor.hall_motion', op: 'eq', value: 'on' } },
+      ] } },
+      { kind: 'rotator', pos: M(0, 8, 'w'), props: { everySec: 5, cards: [
+        { id: '', kind: 'ha.sensor', props: { ...canvasDefaults('ha.sensor'), entity: 'sensor.hall_temperature', name: 'Pasillo' } },
+        { id: '', kind: 'ha.tile', props: { ...canvasDefaults('ha.tile'), entity: 'binary_sensor.hall_motion', name: 'Movimiento en el pasillo' }, when: { src: 'ha', entity: 'binary_sensor.hall_motion', op: 'eq', value: 'on' } },
+      ] } },
+    ],
+  },
   // cameras with a chart: a snapshot card with its name, one set to live (the demo shows snapshots), one that waits
   // for a motion sensor, and a picture shown whole
   cameras: {
@@ -645,6 +669,10 @@ export function mockCanvas(name: string | null, screens?: { id: string; name: st
     })),
   };
   const canvas = sanitizeCanvas({ err: (p: string, m: string) => console.warn('[demo canvas]', p, m) }, 'canvas', raw, { widgets: new Map([[DEMO_WIDGET, {}]]) }, {});
+  // what a server keeps to itself: the entities behind the aliases and the conditions (mockHa.ts reads them)
+  DEMO_SAVED.entities.clear();
+  for (const it of canvasCards(canvas.items)) for (const a of itemAliases(it)) DEMO_SAVED.entities.set(a.alias, a.entity);
+  DEMO_SAVED.canvas = canvas;
   const projected = projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation: fx.orientation ?? 'auto' }, canvas }, screens ? { screens } : {})!;
   return { canvas: projected, orientation: fx.orientation };
 }

@@ -1000,6 +1000,8 @@ export interface RotatorCard {
   id: string;
   kind: CanvasKind;
   props: Record<string, unknown>;
+  /** its own "Mostrar solo si": while it does not hold, the Rotativa skips the card */
+  when?: CanvasCondition;
 }
 /** A Rotativa's props: its cards (2 to 6), "Cambiar cada" in seconds (5 to 120) and the dots. */
 export interface RotatorProps {
@@ -1012,6 +1014,8 @@ export interface DisplayRotatorCard {
   id: string;
   kind: CanvasKind;
   props: Record<string, unknown>;
+  /** it has a condition of its own: the feed of that source says whether it is skipped now */
+  when?: { src: 'ha' | 'value' };
   v: string;
   disabled?: 'feature' | 'privacy' | 'setup';
 }

@@ -6,7 +6,7 @@
 // of them (Casa) stays folded with that badge.
 import { useMemo, useRef, useState } from 'preact/hooks';
 import type { CanvasConfig, CanvasKind, WidgetDef } from '../../shared/types';
-import { CANVAS_KINDS } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasDefaults } from '../../../server/core/canvasCore.js';
 import { Icon } from '../components/icons';
 import { SearchInput } from '../components/ui';
 import { t } from '../i18n';
@@ -27,6 +27,19 @@ interface Tile {
   /** not in this edition: no tile, only its name muted */
   away: boolean;
 }
+
+/**
+ * "Cambiar según Casa" (#19): a Rotativa of an Entidad and a camera, each with a Home Assistant condition whose entity
+ * the owner picks (while it is empty the condition holds and both cards take turns). With a motion sensor: the light
+ * while all is clear, the camera when someone moves.
+ */
+const haSwitch = (): Record<string, unknown> => ({
+  ...canvasDefaults('rotator'),
+  cards: [
+    { id: '', kind: 'ha.tile', props: canvasDefaults('ha.tile'), when: { src: 'ha', entity: '', op: 'eq', value: 'off' } },
+    { id: '', kind: 'ha.camera', props: canvasDefaults('ha.camera'), when: { src: 'ha', entity: '', op: 'eq', value: 'on' } },
+  ],
+});
 
 /** The default size of a kind, drawn on a tiny 12×8 grid. */
 function MiniSize({ kind }: { kind: CanvasKind }) {
@@ -71,6 +84,11 @@ export function Palette(props: {
       if (k === 'photo' && photoBg) continue;
       const m = KIND_META[k]!;
       out.push({ key: k, spec: { kind: k, label: m.name }, name: m.name, help: m.help, icon: m.icon, group: groupOf(k), lock: lockOf(k, props), away: outOfEdition(k, props) });
+    }
+    {
+      const name = 'Cambiar según Casa';
+      const help = 'Dos tarjetas en el mismo hueco: se ve una u otra según Home Assistant. En cada una eliges cuándo se ve.';
+      out.push({ key: 'rot:ha', spec: { kind: 'rotator', props: haSwitch(), label: name }, name, help, icon: 'repeat', group: 'home', lock: lockOf('ha.camera', props) ?? lockOf('rotator', props), away: outOfEdition('ha.camera', props) });
     }
     for (const w of props.widgets) {
       const name = w.name.trim() || t('Widget sin nombre');

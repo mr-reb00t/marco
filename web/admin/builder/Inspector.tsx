@@ -525,7 +525,7 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
               </Button>
             </Callout>
           )}
-          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates }} put={(k, v, merge) => upd((x) => void (x.props[k] = v), merge)} />
+          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates, haRaw: p.haRaw }} put={(k, v, merge) => upd((x) => void (x.props[k] = v), merge)} />
           {p.env.ha && <HaControlsPanel item={item} cv={cv} states={p.haStates} openMode={p.openMode} upd={upd} />}
           <ConditionField item={item} ha={p.env.ha} values={p.env.values ?? []} raw={p.haRaw} upd={upd} />
           <ScheduleField item={item} upd={upd} />

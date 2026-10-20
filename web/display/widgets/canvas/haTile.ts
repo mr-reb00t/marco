@@ -517,6 +517,30 @@ function fitNumberLine(root: HTMLElement, box: AdapterBox, env: AdapterEnv): voi
   }
 }
 
+/**
+ * The Indicador three cells wide and one high (styles-canvas-mini.css): the name and the number on one line with the
+ * thin bar under both, the number as high as the line allows. A name that does not fit whole is left out, so the line
+ * is the number and the bar alone (is-noname), never a name cut to a few letters.
+ */
+function fitGaugeNarrow(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
+  root.classList.remove('is-noname');
+  const cs = getComputedStyle(root);
+  const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  // the number's line box is 5.6rem × --wk high; the bar and the gap over it take about 1rem
+  let wk = Math.min(1.2, ((h - (root.querySelector('.cv-ha-gaugebar') ? box.rem : 0)) * 0.82) / (5.6 * box.rem)) * Math.min(1, scaleOf(env));
+  wk = Math.max(0.25, wk);
+  root.style.setProperty('--wk', wk.toFixed(3));
+  const big = root.querySelector<HTMLElement>('.cv-ha-big');
+  const bw = big?.getBoundingClientRect().width ?? 0;
+  if (bw > w) {
+    wk = Math.max(0.25, (wk * w) / bw);
+    root.style.setProperty('--wk', wk.toFixed(3));
+  }
+  const name = root.querySelector<HTMLElement>('.cv-ha-head .cv-ha-name');
+  if (!name?.textContent || name.scrollWidth > name.clientWidth + 1) root.classList.add('is-noname');
+}
+
 // ------------------------------------------------------------------------------------------------ gauge
 /** ok / warn / err of a value against two breakpoints (inverted: a high value is the good one). */
 function level(num: number, th: unknown, invert: boolean): '' | 'ok' | 'warn' | 'err' {
@@ -637,6 +661,8 @@ export const HA_TILE_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Canva
     fitSwatches(root);
   }),
   'ha.gauge': () => haAdapter('cv-ha-sensor cv-ha-gauge', (p) => [aliasOf(p.entity)].filter(Boolean), drawGauge, (root, box, env) => {
+    root.classList.remove('is-noname');
+    if (miniLine(root) && root.dataset.mw === '3') return fitGaugeNarrow(root, box, env);
     if (miniLine(root)) return fitNumberLine(root, box, env);
     const wk = bigType(root, box, box.size === 'xs' ? 11.5 : 13, scaleOf(env), 14, typeCap(root));
     fitWidth(root, root.querySelector('.cv-ha-big'), wk);

@@ -1,4 +1,4 @@
-// Inspector, Contenido tab, every card: "Mostrar solo si", a condition on a Home Assistant entity's state or on a
+// Inspector, Contenido tab, every card (and each card of a Rotativa): "Mostrar solo si", a condition on a Home Assistant entity's state or on a
 // pushed value (Valor). The server works it out for the screens (canvasCore conditionHidden); the builder works it
 // out again from the states and values it has, to say when the condition hides the card right now.
 import type { CanvasCondition, CanvasConditionOp, CanvasItem, HookValueInfo } from '../../shared/types';
@@ -37,7 +37,7 @@ export function condOffNow(item: CanvasItem, raw: Record<string, string>, values
   return !conditionMet(w, hit ? hit.value : null);
 }
 
-export function ConditionField({ item, ha, values, raw, upd }: {
+export function ConditionField({ item, ha, values, raw, upd, offText }: {
   item: CanvasItem;
   /** Home Assistant is on (and this is not Marco Cloud) */
   ha: boolean;
@@ -45,6 +45,8 @@ export function ConditionField({ item, ha, values, raw, upd }: {
   /** the raw states the builder fetched, by entity id (haPreview.ts) */
   raw: Record<string, string>;
   upd: (fn: (it: CanvasItem) => void, merge?: string) => void;
+  /** what the note says while the condition hides it (a t() key; a Rotativa's card is skipped, not hidden) */
+  offText?: string;
 }) {
   const w = item.when ?? null;
   const src = w?.src ?? 'always';
@@ -91,7 +93,7 @@ export function ConditionField({ item, ha, values, raw, upd }: {
               {t('Ahora')}: <strong>{typeof now === 'string' ? now : valueLabel(now)}</strong>
             </p>
           )}
-          {off === true && <Callout>{t('Ahora no se ve en la pantalla: no se cumple la condición.')}</Callout>}
+          {off === true && <Callout>{t(offText ?? 'Ahora no se ve en la pantalla: no se cumple la condición.')}</Callout>}
         </>
       )}
     </div>

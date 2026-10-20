@@ -5,6 +5,21 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- One card or another in the same place, depending on Home Assistant (#19). Each card inside a *Rotating card* now has
+  its own *Show* setting, like any card on the screen: a card whose condition is not met is skipped, the same way an
+  empty card is. With a motion sensor, for example, the hall light shows while all is clear and the camera when
+  someone moves. When only one card is left the Rotating card stays on it with no dots, when none is left it is hidden,
+  and a change of state switches the card at once instead of at the next turn. The Rotating card's settings say how to
+  do it, and the *Home (Home Assistant)* group of the palette has *Swap with Home Assistant*: a Rotating card with an
+  entity card and a camera, each with a condition ready for you to pick the entity. A condition can also read a value
+  sent to Marco (*Depending on a value*), so this works on Marco Cloud too.
+
+### Changed
+- *Gauge* goes down to 3×1 on the grid (it stopped at 4×1, #9). At 3×1 the name and the number share one line with the
+  thin bar under them, in the colours of its thresholds; when the name does not fit whole, the card shows the number
+  and the bar alone, never a name cut to a few letters.
+
 ## [0.19.1] - 2026-10-20
 
 ### Changed

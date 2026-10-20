@@ -5,7 +5,7 @@
 // 'marco:preview-history'). Refreshed every 15 s while the editor is open. Camera cards get one picture every 10 s
 // (GET /api/admin/homeassistant/camera, 'marco:preview-camera'): the preview never opens a live picture.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { CanvasConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic, TileFeature } from '../../shared/types';
+import type { CanvasConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic, RotatorCard, TileFeature } from '../../shared/types';
 import { CANVAS_LIMITS, itemAliases, itemNames, needsConfirm, canvasCards } from '../../../server/core/canvasCore.js';
 import { controlsFor, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
@@ -76,7 +76,12 @@ export function useHaPreview(cv: CanvasConfig, enabled: boolean): HaPreview | nu
     [cv],
   );
   // the entities of the cards, then the ones their conditions read (the badge on the stage)
-  const condEntities = useMemo(() => cv.items.flatMap((it) => (it.when?.src === 'ha' && it.when.entity && !it.hidden ? [it.when.entity] : [])), [cv]);
+  // (a Rotativa's cards have conditions of their own)
+  const condEntities = useMemo(() => cv.items.flatMap((it) => {
+    if (it.hidden) return [];
+    const cards = it.kind === 'rotator' && Array.isArray(it.props.cards) ? (it.props.cards as RotatorCard[]) : [];
+    return [it.when, ...cards.map((c) => c.when)].flatMap((w) => (w?.src === 'ha' && w.entity ? [w.entity] : []));
+  }), [cv]);
   const entities = useMemo(() => [...new Set([...aliases.map((a) => a.entity), ...condEntities])].sort().slice(0, CANVAS_LIMITS.haEntities), [aliases, condEntities]);
   const statItems = useMemo(
     () => canvasCards(cv.items).filter((it) => it.kind === 'ha.statistic' && !it.hidden && (it.props as { entity?: string }).entity).map((it) => {

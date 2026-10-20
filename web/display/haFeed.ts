@@ -14,7 +14,7 @@ import { canvasCards } from '../../server/core/canvasCore.js';
 import type { DisplayConfig, HaActionResponse, HaControl, HaHistory, HaSnapshot, HaState, HaStatistic } from '../shared/types';
 import { ApiError, getJSON } from './api';
 import { authHeaders, isPreview, withScreen } from './identity';
-import { demoArt, demoHaHistory, demoHaStates, demoHaStatistic } from './mockHa';
+import { DEMO_RAW, demoArt, demoHaHidden, demoHaHistory, demoHaStates, demoHaStatistic } from './mockHa';
 
 /** What the canvas adapters read (widgets/canvas/types.ts AdapterEnv.ha). */
 export interface HaSource {
@@ -178,6 +178,13 @@ export class HaFeed implements HaSource {
   };
 
   constructor(private changed: () => void) {
+    // the demo: a made-up entity changes state (mockHa.ts DEMO_RAW), as a server's push would say
+    window.addEventListener('marco:demo-ha', (e) => {
+      const d = (e as CustomEvent<{ entity?: unknown; state?: unknown }>).detail;
+      if (!this.demo || typeof d?.entity !== 'string' || !(d.entity in DEMO_RAW) || typeof d.state !== 'string') return;
+      DEMO_RAW[d.entity] = d.state;
+      this.refresh();
+    });
     if (isPreview) {
       window.addEventListener('message', (e) => {
         if (e.source !== window.parent) return;
@@ -262,7 +269,7 @@ export class HaFeed implements HaSource {
     this.fetchTimer = null;
     if (!this.wanted) return;
     if (this.demo) {
-      this.stores.set(this.screenId, { rev: 1, conn: 'ok', off: false, states: demoHaStates(this.cfg), hide: new Set() });
+      this.stores.set(this.screenId, { rev: 1, conn: 'ok', off: false, states: demoHaStates(this.cfg), hide: demoHaHidden() });
       this.changed();
       return;
     }

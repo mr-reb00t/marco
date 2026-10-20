@@ -832,7 +832,7 @@ export class Canvas {
     const old = new Map((e.subs ?? []).map((s) => [s.id, s]));
     const next: Entry[] = [];
     for (const cd of cards) {
-      const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v: `${cd.v}|${e.item.v}`, pos: e.item.pos, portrait: e.item.portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}) };
+      const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v: `${cd.v}|${e.item.v}`, pos: e.item.pos, portrait: e.item.portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}), ...(cd.when ? { when: cd.when } : {}) };
       let s = old.get(cd.id);
       if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled)) {
         this.dropSub(s);
@@ -941,13 +941,15 @@ export class Canvas {
       const needOf = (b: HTMLElement) => ({ w: Math.round((b.scrollWidth / Math.max(1, b.clientWidth)) * 100) / 100, h: Math.round((b.scrollHeight / Math.max(1, b.clientHeight)) * 100) / 100 });
       let cramped = over(e.body);
       e.need = cramped ? needOf(e.body) : null;
-      // a Rotativa: empty when every card is, cramped when one of its cards is (the most it needs)
+      // a Rotativa: empty when every card is empty or off by its own condition (it skips those), cramped when one of
+      // its cards is (the most it needs)
       if (e.subs?.length) {
         let all = true;
         for (const s of e.subs) {
           const em = !!s.adapter.empty?.();
           s.body.classList.toggle('is-empty', em);
-          if (!em) all = false;
+          s.body.classList.toggle('is-cond-off', this.condOff(s.item));
+          if (!em && !s.body.classList.contains('is-cond-off')) all = false;
           s.cramped = !em && over(s.body);
           s.need = s.cramped ? needOf(s.body) : null;
           if (s.cramped) {

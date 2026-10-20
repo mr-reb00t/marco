@@ -1653,6 +1653,42 @@ const ROWS: [string, string, string, string, string][] = [
     'De gratis Finnhub-sleutel heeft geen valuta. Gebruik voor de koers {p} de kaart Valuta.',
     'Den gratis Finnhub-nøgle har ingen valutaer. Brug kortet Valuta til kursen {p}.',
   ],
+  // a Rotativa's cards by Home Assistant or a value (#19)
+  [
+    'Ahora la Rotativa se salta esta tarjeta: no se cumple la condición.',
+    'The rotating card skips this card right now: its condition is not met.',
+    'Agora o Rotativo salta este cartão: a condição não se cumpre.',
+    'De wisselkaart slaat deze kaart nu over: de voorwaarde klopt niet.',
+    'Skiftekortet springer dette kort over lige nu: betingelsen er ikke opfyldt.',
+  ],
+  [
+    'Para cambiar una tarjeta por otra según Home Assistant: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.',
+    'To swap one card for another depending on Home Assistant: add both, and on each one choose under «Show» when it appears.',
+    'Para trocar um cartão por outro conforme o Home Assistant: adiciona os dois e escolhe em cada um, em «Mostrar», quando aparece.',
+    'Om de ene kaart door de andere te vervangen afhankelijk van Home Assistant: voeg ze allebei toe en kies bij elke onder «Tonen» wanneer hij te zien is.',
+    'For at skifte et kort ud med et andet afhængigt af Home Assistant: tilføj begge, og vælg på hvert under «Vis», hvornår det vises.',
+  ],
+  [
+    'Para cambiar una tarjeta por otra según un valor: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.',
+    'To swap one card for another depending on a value: add both, and on each one choose under «Show» when it appears.',
+    'Para trocar um cartão por outro conforme um valor: adiciona os dois e escolhe em cada um, em «Mostrar», quando aparece.',
+    'Om de ene kaart door de andere te vervangen afhankelijk van een waarde: voeg ze allebei toe en kies bij elke onder «Tonen» wanneer hij te zien is.',
+    'For at skifte et kort ud med et andet afhængigt af en værdi: tilføj begge, og vælg på hvert under «Vis», hvornår det vises.',
+  ],
+  [
+    'Cambiar según Casa',
+    'Swap with Home Assistant',
+    'Trocar com o Home Assistant',
+    'Wisselen met Home Assistant',
+    'Skift med Home Assistant',
+  ],
+  [
+    'Dos tarjetas en el mismo hueco: se ve una u otra según Home Assistant. En cada una eliges cuándo se ve.',
+    'Two cards in the same place: one or the other shows depending on Home Assistant. On each one you choose when it appears.',
+    'Dois cartões no mesmo sítio: aparece um ou outro conforme o Home Assistant. Em cada um escolhes quando aparece.',
+    'Twee kaarten op dezelfde plek: de ene of de andere is te zien afhankelijk van Home Assistant. Bij elke kies je wanneer hij te zien is.',
+    'To kort på samme plads: det ene eller det andet vises afhængigt af Home Assistant. På hvert vælger du, hvornår det vises.',
+  ],
 ];
 
 export const ROWS_BUILDER: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

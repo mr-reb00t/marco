@@ -1071,9 +1071,10 @@ const ROTATOR_NEVER = /^(?:rotator|spacer|heading|card|nav\..*)$/;
 export const rotatorKindOk = (kind) => typeof kind === 'string' && !!CANVAS_KINDS[kind] && !CANVAS_KINDS[kind].reserved && !ROTATOR_NEVER.test(kind);
 
 /**
- * The cards of a Rotativa: [{ id, kind, props }], each validated with its kind's own props. Kinds this server does not
- * allow and the kinds that never go inside one are refused (an error, the card is left out); a card of a saved widget
- * that was deleted goes quietly, a camera shows pictures (never a live stream). Ids are checked by sanitizeCanvas.
+ * The cards of a Rotativa: [{ id, kind, props, when? }], each validated with its kind's own props, `when` its own
+ * "Mostrar solo si" (readCondition). Kinds this server does not allow and the kinds that never go inside one are
+ * refused (an error, the card is left out); a card of a saved widget that was deleted goes quietly, a camera shows
+ * pictures (never a live stream). Ids and the entity cap are checked by sanitizeCanvas.
  */
 function rotatorCards(c, p, v, refs, opts) {
   if (v === undefined || v === null) return [];
@@ -1083,6 +1084,7 @@ function rotatorCards(c, p, v, refs, opts) {
   }
   if (v.length > ROTATOR_MAX) c.err(p, `too many cards (max ${ROTATOR_MAX})`);
   const allowed = new Set(opts?.canvasKinds ?? DEFAULT_CANVAS_KINDS);
+  const haConds = [...allowed].some((k) => k.startsWith('ha.'));
   const out = [];
   v.slice(0, ROTATOR_MAX).forEach((x, i) => {
     const q = `${p}[${i}]`;
@@ -1094,14 +1096,19 @@ function rotatorCards(c, p, v, refs, opts) {
     const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
     if (x.kind === 'widget' && !(refs?.widgets instanceof Map ? refs.widgets.has(props.widgetId) : false)) return;
     if (x.kind === 'ha.camera') props.mode = 'snapshot';
-    out.push({ id: typeof x.id === 'string' ? x.id : '', kind: x.kind, props });
+    const cd = { id: typeof x.id === 'string' ? x.id : '', kind: x.kind, props };
+    // its own "Mostrar solo si": a card whose condition is off is skipped, like an empty one
+    const when = readCondition(c, `${q}.when`, x.when, { ha: haConds });
+    if (when) cd.when = when;
+    out.push(cd);
   });
   return out;
 }
 
 /**
  * Every card of a list of items: each item, and after a Rotativa its cards as items of their own ({ id, kind, props,
- * parent }) that share its hiding, its schedule, its condition and its place, and are never touch controls. The
+ * parent }) that share its hiding, its schedule, its condition and its place, and are never touch controls. A card
+ * with a condition of its own has it as `own` (`when` stays the Rotativa's): both must hold for it to show. The
  * server's feeds (Home Assistant aliases, values, data cards, calendars, widgets) walk this list, so a card inside a
  * Rotativa gets its data like any other and is hidden whenever its Rotativa is.
  */
@@ -1121,6 +1128,7 @@ export function canvasCards(items) {
       if (it.hidden) x.hidden = true;
       if (it.schedule) x.schedule = it.schedule;
       if (it.when) x.when = it.when;
+      if (cd.when) x.own = cd.when;
       out.push(x);
     }
   }
@@ -1265,8 +1273,9 @@ const FINE_MIN = {
   'ha.climate': [2, 1],
   'ha.cover': [2, 1],
   'ha.sensor': [2, 1],
-  // a value with its name beside it: 3 cells cut the name to a few letters next to a wide sidebar
-  'ha.gauge': [4, 1],
+  // three cells: the name and the value on one line with the thin bar under them (the value and the bar alone when
+  // the name does not fit)
+  'ha.gauge': [3, 1],
   'ha.statistic': [4, 1],
   'ha.room': [4, 3],
   'ha.chart': [4, 2],
@@ -1709,6 +1718,17 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
       }
       item.when = when;
     }
+    // the conditions of a Rotativa's cards: their entities count too
+    if (x.kind === 'rotator') {
+      props.cards.forEach((cd, j) => {
+        const w = cd.when;
+        if (w?.src !== 'ha' || !w.entity || entities.has(w.entity)) return;
+        if (entities.size >= LIM.haEntities) {
+          c.err(`${q}.props.cards[${j}].when`, `too many Home Assistant entities (max ${LIM.haEntities})`);
+          w.entity = '';
+        } else entities.add(w.entity);
+      });
+    }
     item.pos = readPos(c, `${q}.pos`, x.pos) ?? { zone: 'main', x: 0, y: 0, size: k.def };
     // null: left out of the portrait view last time (derived again below)
     if (!out.portraitAuto && x.portrait !== undefined && x.portrait !== null) item.portrait = readPos(c, `${q}.portrait`, x.portrait);
@@ -1845,7 +1865,11 @@ export function conditionMet(when, raw) {
 export function conditionEntities(screen) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of canvasCards(screen.canvas?.items)) if (!it.hidden && it.when?.src === 'ha' && it.when.entity) out.add(it.when.entity);
+  for (const it of canvasCards(screen.canvas?.items)) {
+    if (it.hidden) continue;
+    // (a Rotativa's card: the Rotativa's condition is read with the Rotativa itself)
+    for (const w of it.parent ? [it.own] : [it.when]) if (w?.src === 'ha' && w.entity) out.add(w.entity);
+  }
   return out;
 }
 
@@ -1853,23 +1877,28 @@ export function conditionEntities(screen) {
 export function conditionKeys(screen) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
-  for (const it of canvasCards(screen.canvas?.items)) if (!it.hidden && it.when?.src === 'value' && it.when.key) out.add(it.when.key);
+  for (const it of canvasCards(screen.canvas?.items)) {
+    if (it.hidden) continue;
+    for (const w of it.parent ? [it.own] : [it.when]) if (w?.src === 'value' && w.key) out.add(w.key);
+  }
   return out;
 }
 
 /**
  * The items of a screen its conditions hide right now: `ha(entity)` gives the entity's state string (null when not
  * known), `value(key)` a Valor value (null when none). On a private screen every item with a condition is hidden
- * (what it would say about the house is not shown either). The cards of a Rotativa its condition hides are in it too.
+ * (what it would say about the house is not shown either). The cards of a Rotativa its condition hides are in it too,
+ * and so is a card of a Rotativa its own condition hides (the Rotativa skips it).
  */
 export function conditionHidden(screen, { ha = () => null, value = () => null, isPrivate = false } = {}) {
   const out = new Set();
   if (screen?.layout?.preset !== 'canvas') return out;
   for (const it of canvasCards(screen.canvas?.items)) {
-    const w = it.when;
-    if (it.hidden || !w) continue;
-    if ((w.src === 'ha' && !w.entity) || (w.src === 'value' && !w.key)) continue;
-    if (isPrivate || !conditionMet(w, w.src === 'ha' ? ha(w.entity) : value(w.key))) out.add(it.id);
+    if (it.hidden) continue;
+    for (const w of [it.when, it.own]) {
+      if (!w || (w.src === 'ha' && !w.entity) || (w.src === 'value' && !w.key)) continue;
+      if (isPrivate || !conditionMet(w, w.src === 'ha' ? ha(w.entity) : value(w.key))) out.add(it.id);
+    }
   }
   return out;
 }
@@ -2155,7 +2184,9 @@ export function projectCanvas(screen, opts = {}) {
         const off = offOf(cd.kind);
         const x = { id: cd.id, kind: cd.kind, props: off ? {} : propsOf(cd) };
         if (off) x.disabled = off;
-        x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '']));
+        // its own condition: which feed says whether it is skipped now (as an item's)
+        if (cd.when && (cd.when.src === 'ha' ? cd.when.entity : cd.when.key)) x.when = { src: cd.when.src };
+        x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '', ...(x.when ? [x.when.src] : [])]));
         return x;
       });
     }
@@ -2645,9 +2676,9 @@ function stripItem(it) {
   if (it.kind === 'rotator' && Array.isArray(p.cards)) {
     p.cards = p.cards.map((cd) => {
       if (!isObj(cd)) return cd;
-      const r = stripItem({ kind: cd.kind, props: isObj(cd.props) ? cd.props : {} });
+      const r = stripItem({ kind: cd.kind, props: isObj(cd.props) ? cd.props : {}, ...(isObj(cd.when) ? { when: cd.when } : {}) });
       for (const k of r.removed) removed.add(k);
-      return { ...cd, props: r.item.props };
+      return { ...cd, props: r.item.props, ...(r.item.when ? { when: r.item.when } : {}) };
     });
   }
   if (Array.isArray(p.sourceIds) && p.sourceIds.length) removed.add('calendars');
@@ -2738,6 +2769,13 @@ export function readCanvasFile(raw, refs = {}, opts = {}) {
     if (r.item.when?.src === 'ha' && !haConds) {
       delete r.item.when;
       conditions++;
+    }
+    if (r.item.kind === 'rotator' && !haConds) {
+      for (const cd of r.item.props.cards ?? []) {
+        if (cd?.when?.src !== 'ha') continue;
+        delete cd.when;
+        conditions++;
+      }
     }
     const id = newCanvasId(taken);
     taken.add(id);

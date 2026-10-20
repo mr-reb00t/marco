@@ -2,7 +2,8 @@
 // crossfade (none in lite mode, on a slow device or with reduced motion) and small dots that say which card is on.
 // The controller (widgets/canvas.ts) makes one slide per card, each a card body with the card's own adapter, and
 // fits every slide to the box (the hidden ones too, so a card is ready when its turn comes); this adapter only picks
-// the slide on show. A card with nothing to show (.is-empty) is skipped; no touch is needed.
+// the slide on show. A card with nothing to show (.is-empty) or whose own condition is off (.is-cond-off) is skipped,
+// at once when that changes; with one card left it stays on it, with no dots. No touch is needed.
 import type { DisplayCanvasItem } from '../../../shared/types';
 import { ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MAX, ROTATOR_EVERY_MIN } from '../../../../server/core/canvasCore.js';
 import type { AdapterEnv, CanvasAdapter } from './types';
@@ -51,7 +52,7 @@ class Rotator implements CanvasAdapter {
   /** The slides that have something to show (all of them while none has: the Rotativa is then hidden anyway). */
   private live(): HTMLElement[] {
     const all = this.all();
-    const some = all.filter((el) => !el.classList.contains('is-empty'));
+    const some = all.filter((el) => !el.classList.contains('is-empty') && !el.classList.contains('is-cond-off'));
     return some.length ? some : all;
   }
 
@@ -63,7 +64,7 @@ class Rotator implements CanvasAdapter {
     const live = this.live();
     const pin = rotatorPins.get(this.env.item().id);
     if (pin && live.some((el) => el.dataset.card === pin)) this.cur = pin;
-    // the card on show went away or became empty: the next one, at once
+    // the card on show went away, became empty or its condition went off: the next one, at once
     if (!live.some((el) => el.dataset.card === this.cur)) {
       this.cur = live[0]?.dataset.card ?? '';
       this.since = Date.now();

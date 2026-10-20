@@ -1,6 +1,7 @@
 // The cards of a Rotativa (kind 'rotator') in the inspector: 2 to 6 cards, each a kind of its own with its own options
-// (the same fields as that card on its own, ContentFields), in the order they show. Opening a card holds it on the
-// preview while it is edited (FieldEnv.pinCard). Which kinds may go inside: canvasCore rotatorKindOk, the kinds this
+// (the same fields as that card on its own, ContentFields) and its own "Mostrar" (ConditionField: while it does not
+// hold, the Rotativa skips the card), in the order they show. Opening a card holds it on the preview while it is
+// edited (FieldEnv.pinCard). Which kinds may go inside: canvasCore rotatorKindOk, the kinds this
 // server offers, and Home Assistant only where Home Assistant is on.
 import { useEffect, useState } from 'preact/hooks';
 import type { CanvasItem, CanvasKind, RotatorCard } from '../../shared/types';
@@ -8,6 +9,7 @@ import { CANVAS_CATEGORIES, CANVAS_KINDS, DEFAULT_CANVAS_KINDS, ROTATOR_MAX, ROT
 import { Icon } from '../components/icons';
 import { Field, Select } from '../components/ui';
 import { t } from '../i18n';
+import { ConditionField } from './ConditionField';
 import { ContentFields, type FieldEnv } from './fields';
 import { GROUPS, KIND_META, groupOf, kindName } from './kinds';
 
@@ -85,6 +87,22 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
                       env={env}
                       put={(k, v, merge) => set(cards.map((x) => (x.id === c.id ? { ...x, props: { ...x.props, [k]: v } } : x)), merge)}
                     />
+                    <ConditionField
+                      item={{ ...item, id: c.id, kind: c.kind, props: c.props, hidden: false, when: c.when }}
+                      ha={env.ha}
+                      values={env.values ?? []}
+                      raw={env.haRaw ?? {}}
+                      offText="Ahora la Rotativa se salta esta tarjeta: no se cumple la condición."
+                      upd={(fn, merge) => {
+                        const x: CanvasItem = { ...item, id: c.id, kind: c.kind, props: c.props, when: c.when };
+                        fn(x);
+                        set(cards.map((y) => {
+                          if (y.id !== c.id) return y;
+                          const { when: _w, ...rest } = y;
+                          return x.when ? { ...rest, when: x.when } : rest;
+                        }), merge);
+                      }}
+                    />
                   </div>
                 )}
               </li>
@@ -102,6 +120,12 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
         <p class="muted small">{cards.length >= ROTATOR_MAX ? t('Ya tiene {n} tarjetas, el máximo.', { n: ROTATOR_MAX }) : t('La pantalla ya tiene todas las tarjetas que caben.')}</p>
       )}
       {cards.some((c) => CANVAS_KINDS[c.kind]?.controls) && <p class="muted small">{t('Las tarjetas de una Rotativa solo se ven: no se pueden tocar en la pantalla.')}</p>}
+      {/* one card or another in the same place, by what happens at home (#19) */}
+      <p class="muted small">
+        {env.ha && !env.cloud
+          ? t('Para cambiar una tarjeta por otra según Home Assistant: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.')
+          : t('Para cambiar una tarjeta por otra según un valor: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.')}
+      </p>
     </div>
   );
 }

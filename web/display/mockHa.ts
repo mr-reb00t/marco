@@ -1,9 +1,10 @@
 // Demo Home Assistant states (?demo=1&preset=canvas&shot=home): made-up states for the aliases of the demo screen,
 // chosen by each item's kind and domain, so the Casa cards can be shown and screenshotted without a server.
-import { canvasCards } from '../../server/core/canvasCore.js';
+import { canvasCards, conditionHidden } from '../../server/core/canvasCore.js';
 import type { DisplayConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic } from '../shared/types';
 import { controlsFor, tileFeatures } from '../../server/core/haCore.js';
 import { attrsFromSlim } from '../shared/haGuess';
+import { DEMO_SAVED } from './mockCanvas';
 import { mockDoorbellFrame } from './mockDoorbell';
 import { SHOW_ACTIVE, showArt, showCamera, showcaseOf } from './showcase';
 import { now as clockNow } from './time';
@@ -128,6 +129,21 @@ const DEMO: Record<string, HaSlim[]> = {
   ],
   update: [{ d: 'update', on: true, cur: '2026.9.3', next: '2026.10.1', n: 'Home Assistant' }, { d: 'update', on: false, cur: '1.4.2', next: '1.4.2', n: 'Router' }],
 };
+/**
+ * Demo entities with a state that can change (the demo 'motion', mockCanvas.ts): the raw state by entity id, from
+ * &motion= at first, then from the 'marco:demo-ha' event ({ entity, state }; haFeed.ts asks for the states again).
+ */
+export const DEMO_RAW: Record<string, string> = {
+  'binary_sensor.hall_motion': typeof location === 'undefined' ? 'off' : new URLSearchParams(location.search).get('motion') ?? 'off',
+};
+
+/** The demo screen's items a server would hide now by their conditions (canvasCore conditionHidden). */
+export function demoHaHidden(): Set<string> {
+  const canvas = DEMO_SAVED.canvas;
+  if (!canvas) return new Set();
+  return conditionHidden({ layout: { preset: 'canvas' }, canvas }, { ha: (e: string) => DEMO_RAW[e] ?? null });
+}
+
 /** The sensor a demo camera waits for (showWhen): on, so the card is seen. */
 const DEMO_GATE: HaSlim = { d: 'binary', on: demoCam !== 'off', dc: 'motion', n: 'Movimiento' };
 DEMO.input_boolean = DEMO.switch;
@@ -157,7 +173,10 @@ export function demoHaStates(cfg: DisplayConfig | null): Record<string, HaState>
       const n = used[key] ?? 0;
       used[key] = n + 1;
       const mine = own?.(r.a) ?? null;
-      const base: HaSlim = mine ?? (list ? list[n % list.length] : { d: 'other', v: 'home', n: 'Casa' });
+      // a demo entity with a state of its own (DEMO_RAW): a motion sensor on or off, or unavailable
+      const raw = DEMO_RAW[DEMO_SAVED.entities.get(r.a) ?? ''];
+      const moving: HaSlim | null = raw === undefined ? null : raw === 'on' || raw === 'off' ? { d: 'binary', on: raw === 'on', dc: 'motion', n: 'Movimiento' } : { d: 'other', v: raw, n: 'Movimiento' };
+      const base: HaSlim = mine ?? moving ?? (list ? list[n % list.length] : { d: 'other', v: 'home', n: 'Casa' });
       // a showcase player: a made-up track with its cover (unless the screen plays its own), two minutes in
       let slim: HaSlim = showcase && base.d === 'media' && base.state === 'playing' && !mine ? { ...base, title: 'Harbour Lights', artist: 'The Low Tides', art: true } : base;
       if (showcase && slim.d === 'media' && slim.state === 'playing' && slim.dur === undefined) slim = { ...slim, pos: 132, dur: 247 };

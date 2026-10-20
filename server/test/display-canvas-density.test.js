@@ -3,14 +3,18 @@
 // with no "No cabe" and no text cut by the card's edge, the way display-canvas-flex.test.js checks the boxes a screen
 // of the old 12×8 grid had. Every kind's minimum (its compact look, data-mini) and the largest box still below its full
 // look (fullLookMin) are drawn in both densities, landscape, portrait and next to a wide sidebar. And the Rotativa on
-// the screen: one card on show at a time, its dots, the next card after its seconds, no fade in lite mode. Skipped
-// without Chrome.
+// the screen: one card on show at a time, its dots, the next card after its seconds, no fade in lite mode. The
+// Indicador at its 3×1 (#9): its name and number on one line over the bar. Skipped without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 import { densitySweep } from './densitySweep.js';
 
 const LAND = { width: 1920, height: 1080 };
+const PORT = { width: 1080, height: 1920 };
+// the same check as the normal grid's sweep (one source of truth for "fits")
+const CHECK = eval(fs.readFileSync(new URL('./display-canvas-flex.test.js', import.meta.url), 'utf8').match(/const CHECK = (`[\s\S]*?`);/)[1]);
 
 // the old grid's boxes in Densidad compacta here; the fine grid in display-canvas-density-fine*.test.js
 densitySweep(['compact']);
@@ -52,6 +56,54 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
     assert.ok(Math.abs(normal.w - (4 * cw + 3 * normal.gap)) < 1.5, JSON.stringify({ normal, cw }));
     // Densidad compacta: half the gap between cards, and larger cards in the same cells
     assert.ok(dense.gap < normal.gap * 0.6 && dense.w > normal.w, JSON.stringify({ normal, dense }));
+  });
+
+  test('Indicador at 3×1 (#9): the name and the number on one line over the bar, or the number and the bar alone, never cut', { timeout: 300_000 }, async () => {
+    // each gauge: its name shown whole (or left out), on the number's line, the bar under both
+    const LOOK = `[...document.querySelectorAll('.cv-item[data-kind="ha.gauge"] .cv-ha-gauge')].map((g) => {
+      const r = (q) => g.querySelector(q)?.getBoundingClientRect() ?? null;
+      const name = g.querySelector('.cv-ha-head .cv-ha-name');
+      const head = r('.cv-ha-head');
+      const shown = !!head && head.width > 0 && getComputedStyle(g.querySelector('.cv-ha-head')).display !== 'none';
+      return { noname: g.classList.contains('is-noname'), shown, whole: !shown || name.scrollWidth <= name.clientWidth + 1, head, big: r('.cv-ha-big'), bar: r('.cv-ha-gaugebar'), body: g.getBoundingClientRect() };
+    })`;
+    const bad = [];
+    let names = 0;
+    for (const flags of ['', ':compact']) {
+      for (const [o, side, size] of [['landscape', 'none', LAND], ['portrait', 'none', PORT], ['landscape', 'left', LAND]]) {
+        for (const sz of ['3x1', '3x2', '4x1']) {
+          const shot = `size:ha.gauge:${sz}:${o}:${side}:ambient${flags}`;
+          const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=${shot}`, size);
+          try {
+            await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 900)))');
+            for (const c of await p.eval(CHECK)) {
+              if (c.cramped) bad.push(`${shot}: does not fit`);
+              if (c.cut.length) bad.push(`${shot}: cuts ${c.cut.join(', ')}`);
+            }
+            if (sz !== '3x1') continue;
+            const looks = await p.eval(LOOK);
+            if (!looks.length) bad.push(`${shot}: no gauges`);
+            for (const g of looks) {
+              if (g.shown === g.noname) bad.push(`${shot}: name ${g.shown ? 'shown' : 'hidden'} but is-noname ${g.noname}`);
+              if (!g.whole) bad.push(`${shot}: name cut`);
+              if (g.shown) {
+                names++;
+                // on the number's line: the two overlap in height
+                if (g.head.bottom < g.big.top || g.head.top > g.big.bottom) bad.push(`${shot}: name not beside the number`);
+              }
+              // the bar under the number and the name, across the card
+              if (!g.bar || g.bar.top < g.big.bottom - 1 || (g.shown && g.bar.top < g.head.bottom - 1)) bad.push(`${shot}: bar not under the line`);
+              if (g.bar && g.bar.width < g.body.width * 0.6) bad.push(`${shot}: bar too short`);
+            }
+          } finally {
+            await p.close();
+          }
+        }
+      }
+    }
+    assert.deepEqual(bad, []);
+    // the short names ("Humedad", "Fuera") are read on the wide screens
+    assert.ok(names > 6, `names shown: ${names}`);
   });
 
   test('Rotativa: one card on show, its dots, the next card after its seconds, and no fade in lite mode', { timeout: 120_000 }, async () => {

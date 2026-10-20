@@ -41,6 +41,8 @@ export interface FieldEnv {
   haStates?: Record<string, HaState>;
   /** values pushed by POST /api/hooks/values (valuesPreview.ts) */
   values?: HookValueInfo[];
+  /** the raw state of each entity the draft binds or its conditions read, by entity id (a Rotativa's card conditions) */
+  haRaw?: Record<string, string>;
 }
 
 const fmt = (unit: string | undefined, v: number) =>

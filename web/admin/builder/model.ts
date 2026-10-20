@@ -599,7 +599,8 @@ export function newItem(cv: CanvasConfig, k: CanvasKind, extra: Record<string, u
     kind: k,
     pos: { zone: 'main', x: 0, y: 0, size: kind(k).def },
     style: { ...(defaultItemStyle() as CanvasItem['style']), ...(kind(k).defStyle ?? {}) },
-    props: { ...canvasDefaults(k), ...extra },
+    // (a copy: a palette tile's props are added again and again, and the ids of a Rotativa's cards are set below)
+    props: { ...canvasDefaults(k), ...structuredClone(extra) },
   };
   freshCardIds(cv, it);
   if (kind(k).controls) {
@@ -619,7 +620,8 @@ export function addItem(
   voids?: ReadonlySet<string>,
 ): Result & { drop?: MainDrop } {
   if (readOnly(cv0, o)) return no('auto');
-  const cap = canAdd(cv0, k);
+  // (a Rotativa from a palette tile of its own: its cards, else the default ones)
+  const cap = canAdd(cv0, k, ...(k === 'rotator' && Array.isArray(extra.cards) ? [(extra.cards as { kind: CanvasKind }[]).map((c) => c.kind)] : []));
   if (cap) return no(cap);
   const cv = clone(cv0);
   const it = newItem(cv, k, extra);

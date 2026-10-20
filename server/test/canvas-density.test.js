@@ -94,6 +94,10 @@ test('the grid: 24×16 cells (16×24 portrait), every named size and range twice
     assert.equal(boxAllowed(kind, 1, 1), false, `${kind} 1×1 is too narrow`);
     if (kind !== 'ha.cover') assert.ok(boxAllowed(kind, 4, 2), `${kind} 4×2 (the old 2×1) as before`);
   }
+  // the Indicador one row high from three cells wide (#9): its name and number on one line over the bar (browser test)
+  assert.ok(boxAllowed('ha.gauge', 3, 1) && boxAllowed('ha.gauge', 3, 2) && boxAllowed('ha.gauge', 4, 1));
+  assert.equal(boxAllowed('ha.gauge', 2, 1), false, 'ha.gauge 2×1 is too narrow');
+  assert.deepEqual(fullLookMin('ha.gauge'), [4, 4], 'its full look from 4×4, as before');
   // a box exactly a named size is stored as the name
   assert.deepEqual(boxOf('todo', 6, 8), { size: 't' });
   assert.deepEqual(boxOf('ha.tile', 4, 1), { size: 'row', w: 4, h: 1 });

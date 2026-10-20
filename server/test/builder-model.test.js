@@ -481,3 +481,29 @@ test('palette on Marco Cloud: the Home Assistant cards and HTML propio are out o
   assert.ok(K.PALETTE_KINDS.some((k) => K.groupOf(k) === 'adv' && !away.includes(k)));
   assert.equal(dict.EN[K.AWAY_NOTE], 'Only on the self-hosted version');
 });
+
+test('a Rotativa from a palette tile of its own (Cambiar según Casa, #19): its cards and their conditions, new ids each time', ts, () => {
+  const spec = {
+    cards: [
+      { id: '', kind: 'ha.tile', props: {}, when: { src: 'ha', entity: '', op: 'eq', value: 'off' } },
+      { id: '', kind: 'ha.camera', props: {}, when: { src: 'ha', entity: '', op: 'eq', value: 'on' } },
+    ],
+  };
+  let cv = defaultCanvas();
+  const a = M.addItem(cv, 'landscape', 'rotator', null, spec);
+  cv = ok(a);
+  const first = M.itemOf(cv, a.id).props.cards.map((c) => c.id);
+  const b = M.addItem(cv, 'landscape', 'rotator', null, spec);
+  cv = ok(b);
+  const cards = M.itemOf(cv, b.id).props.cards;
+  assert.deepEqual(cards.map((c) => [c.kind, c.when.value]), [['ha.tile', 'off'], ['ha.camera', 'on']]);
+  // the tile's props are not shared: the first Rotativa keeps its ids, every id is its own
+  assert.deepEqual(M.itemOf(cv, a.id).props.cards.map((c) => c.id), first);
+  assert.equal(new Set([...first, ...cards.map((c) => c.id)]).size, 4);
+  assert.deepEqual(spec.cards.map((c) => c.id), ['', '']);
+  // the server keeps the cards and their conditions
+  const c = clean();
+  const out = sanitizeCanvas(c, 'canvas', structuredClone(cv), {}, {});
+  assert.deepEqual(c.errors, []);
+  assert.deepEqual(out.items[1].props.cards.map((x) => x.when.value), ['off', 'on']);
+});
