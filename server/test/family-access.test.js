@@ -251,7 +251,7 @@ test('phone: the link gives this phone its own token; a new link stops new phone
     // a new link: the old one is refused, the phone already in still works
     const fresh = await call('POST', `/api/admin/family-access/${person.id}/link`, { cookie, body: {} });
     assert.equal(fresh.status, 200);
-    assert.notEqual(fresh.json.link.path, `/my/${link}`);
+    assert.notEqual(fresh.json.link.path.replace(/\?.*$/, ''), `/my/${link}`);
     assert.equal((await redeem(link)).status, 403);
     assert.equal((await redeem(link)).json.code, 'invalid_link');
     assert.equal((await call('GET', '/api/member/state', { headers: phone(r.json.token) })).status, 200);
