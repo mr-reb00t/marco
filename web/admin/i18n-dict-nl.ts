@@ -9,6 +9,7 @@ import { NL_NAV } from './i18n-dict-nav';
 import { NL_TILE } from './i18n-dict-tile';
 import { NL_WXPLACES } from './i18n-dict-wxplaces';
 import { NL_BGRULES } from './i18n-dict-bgrules';
+import { NL_TODO } from './i18n-dict-todo';
 
 /** Every admin row but the Familia ones. */
 export const NL: Record<string, string> = {
@@ -19,6 +20,7 @@ export const NL: Record<string, string> = {
   ...NL_TILE,
   ...NL_WXPLACES,
   ...NL_BGRULES,
+  ...NL_TODO,
   '(ninguno)': '(geen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Je gebruikt het startwachtwoord. Wijzig het: tot dan wordt het alleen vanuit je lokale netwerk geaccepteerd.',
   'Sesiones': 'Sessies',

@@ -18,6 +18,7 @@ import type {
 } from '../shared/types';
 import { LANGS } from '../shared/i18n';
 import { api, ApiError, paths, prefetchJSON } from './api';
+import { initTodoTaps, isListTask } from './todoTaps';
 import { parseColor, toHex } from './color';
 import { ctx, setCtxConfig } from './ctx';
 import { normalizeAgendaDays, normalizeConfig } from './defaults';
@@ -706,6 +707,20 @@ function renderView(tick: Tick): void {
 function kidsTouch(): boolean {
   return !!state.family?.touch && !!ctx.cfg.family?.touch && (state.online || state.demo) && !state.config?.privacy?.active && !isPreview;
 }
+
+// Taps on Microsoft To Do tasks (todoTaps.ts): sent for the screen on display, the config asked for again after each
+// one (the server also tells every display), the side card and the Personalizado to-do cards drawn again.
+initTodoTaps({
+  allowed: () => state.online && !state.demo && !isPreview && !state.config?.privacy?.active,
+  redraw: () => {
+    renderTodo($('#todo'));
+    canvasView.onData('config');
+  },
+  send: async (id, done) => {
+    await api.todoToggle(id, done);
+    void fetchConfig();
+  },
+});
 
 /** Last time the family data was asked for again because it was from another day. */
 let staleFamilyAsk = 0;
@@ -2348,6 +2363,11 @@ const liveHandlers: StreamHandlers = {
   },
   // a routine ticked (here, on a phone or in the admin), stars, a new family link
   family: () => void fetchFamily(),
+  // the tasks of the Microsoft To Do lists changed (they come in the config's to-do items)
+  todo: () => {
+    carousel?.invalidate(null, ['config']);
+    void fetchConfig();
+  },
   // Home Assistant states of a Personalizado screen (aliases only)
   ha: (d) => haFeed.apply(d),
   // pushed values of a Personalizado screen (only the keys it shows)
@@ -2435,7 +2455,16 @@ if (isPreview) {
     previewFocus(typeof e.data.focus === 'string' ? e.data.focus : null);
     const draft = e.data.config as DisplayConfig | null;
     if (!draft || typeof draft !== 'object') return setConfigOverlay(null);
-    setConfigOverlay((c) => (c.screenId !== draft.screenId ? c : { ...draft, revision: c.revision, privacy: c.privacy, target: c.target, carousel: c.carousel }));
+    // the tasks of the Microsoft To Do lists only come from the server: they stay after the draft's typed items
+    const tasks = (c: DisplayConfig) => (c.todo?.items ?? []).filter((i) => isListTask(i.id));
+    setConfigOverlay((c) =>
+      c.screenId !== draft.screenId
+        ? c
+        : {
+            ...draft, revision: c.revision, privacy: c.privacy, target: c.target, carousel: c.carousel,
+            todo: { ...draft.todo, items: [...(draft.todo?.items ?? []).filter((i) => !isListTask(i.id)), ...tasks(c)], touch: false },
+          },
+    );
   });
 }
 

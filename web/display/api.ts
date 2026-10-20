@@ -94,6 +94,11 @@ export const api = {
     request<{ ok: boolean; state: FamilyDisplayState }>(withScreen('/api/display/family/toggle', screen), {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ choreId, done }),
     }, 8000),
+  /** A tap on a Microsoft To Do task (`id`: the opaque id of the display config; only screens with touch on). */
+  todoToggle: (id: string, done: boolean, screen?: string) =>
+    request<{ ok: boolean }>(withScreen('/api/display/todo/toggle', screen), {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, done }),
+    }, 15000),
   health: () => getJSON<HealthResponse>('/api/health', 5000),
   /** `q` from stream.ts pollUrl (client, cursor, rev, hidden, preview). Asks for what the display is bound to. */
   poll: (q: string) => getJSON<PollResponse>(withTarget(`/api/display/poll?${q}`), 10000),

@@ -958,10 +958,13 @@ permitidos**. Los servidores que ya entran solo con Google (contraseña desactiv
 
 ## Conectar Outlook, Hotmail o Microsoft 365
 
-Opcional y de solo lectura. Con tu propia app de Microsoft Entra, *Calendarios → Cuentas vinculadas → Vincular
-cuenta* ofrece también **Microsoft**: cuentas personales (Outlook.com, Hotmail, Live) y cuentas del trabajo o del
-centro educativo (Microsoft 365). Sin ella la opción no aparece, y la dirección ICS del calendario (*Outlook →
-Configuración → Calendario → Calendarios compartidos → Publicar un calendario*) sigue funcionando.
+Opcional. Con tu propia app de Microsoft Entra, *Calendarios → Cuentas vinculadas → Vincular cuenta* ofrece también
+**Microsoft**: cuentas personales (Outlook.com, Hotmail, Live) y cuentas del trabajo o del centro educativo
+(Microsoft 365). Sin ella la opción no aparece, y la dirección ICS del calendario (*Outlook → Configuración →
+Calendario → Calendarios compartidos → Publicar un calendario*) sigue funcionando. Los calendarios son de solo
+lectura. La misma cuenta trae también sus listas de **Microsoft To Do** a *Tareas → Listas de Microsoft To Do*: sus
+tareas pendientes salen en la pantalla con su fecha y una estrella si son importantes, y en una pantalla con
+*Permitir marcar tocando esta pantalla* activado, tocar una tarea la marca como hecha también en To Do.
 
 1. Entra en <https://entra.microsoft.com/> → **Registros de aplicaciones → Nuevo registro**:
    - **Tipos de cuenta compatibles**: *Cuentas en cualquier directorio organizativo y cuentas personales de
@@ -970,8 +973,11 @@ Configuración → Calendario → Calendarios compartidos → Publicar un calend
      `http://localhost:3000/auth/microsoft/callback` (Microsoft, como Google, solo acepta `http://` para
      `localhost`; mira las opciones de la URI de redirección más arriba).
 2. **Permisos de API → Agregar un permiso → Microsoft Graph → Permisos delegados**: `Calendars.Read`,
-   `Calendars.Read.Shared`, `offline_access`, `openid`, `email`, `profile`. Las cuentas personales no necesitan
-   consentimiento de administrador.
+   `Calendars.Read.Shared`, `Tasks.ReadWrite`, `offline_access`, `openid`, `email`, `profile`. Las cuentas
+   personales no necesitan consentimiento de administrador. `Tasks.ReadWrite` es para las listas de To Do (leerlas y
+   marcar una tarea desde una pantalla táctil; Marco no cambia nada más). Las cuentas vinculadas antes de añadirlo
+   siguen mostrando sus calendarios; la página Tareas muestra *Volver a vincular* junto a ellas, que entra otra vez
+   en la misma cuenta y conserva sus calendarios y listas.
 3. **Certificados y secretos → Nuevo secreto de cliente**, copia su **Valor**, y el **Id. de aplicación (cliente)**
    de *Información general*. Ponlos en `.env` y reinicia:
 

@@ -130,7 +130,7 @@ test('projection: taps need touch, a screen that is not private and a trusted di
 
 test('the server passes the household\'s screens and whether the display is trusted (family rule)', () => {
   assert.match(read('server/core/screens.js'), /screens: \(cfg\.screens \?\? \[\]\)\.map\(\(x\) => \(\{ id: x\.id, name: x\.name \}\)\), trusted,/);
-  assert.match(read('server/routes/public.js'), /familyQr: familyQrUrl\(req\), trusted: trustedDisplay\(req\) \}\);/);
+  assert.match(read('server/routes/public.js'), /familyQr: familyQrUrl\(req\), trusted: trustedDisplay\(req\),/);
 });
 
 // ---------------------------------------------------------------- what a display may read

@@ -18,8 +18,8 @@ const MAX_POLLERS = 200;
 export const MAX_POLLERS_PER_IP = 24;
 
 /** How long a command stays deliverable. `announce` and `doorbell` live until their own expiresAt. */
-const TTL_MS = { reload: 600_000, night: 600_000, identify: 60_000, 'announce-clear': 600_000, photos: 600_000, events: 600_000, privacy: 600_000, 'doorbell-end': 600_000, family: 600_000 };
-export const POLL_EVENTS = Object.freeze(['reload', 'night', 'identify', 'announce', 'announce-clear', 'photos', 'events', 'privacy', 'doorbell', 'doorbell-end', 'family']);
+const TTL_MS = { reload: 600_000, night: 600_000, identify: 60_000, 'announce-clear': 600_000, photos: 600_000, events: 600_000, privacy: 600_000, 'doorbell-end': 600_000, family: 600_000, todo: 600_000 };
+export const POLL_EVENTS = Object.freeze(['reload', 'night', 'identify', 'announce', 'announce-clear', 'photos', 'events', 'privacy', 'doorbell', 'doorbell-end', 'family', 'todo']);
 
 let epoch = crypto.randomBytes(4).toString('hex');
 let seq = 0;
@@ -125,7 +125,7 @@ export function publish(event, data, target = null, filter = null) {
   const reachedIds = new Set(listClients().filter((c) => matches(c, target) && (!filter || filter(c))).map((c) => c.clientId));
   const n = broadcast(event, data, target, filter);
   record(event, data, target, filter, now);
-  if (event !== 'events' && event !== 'photos') markFast(3 * 60_000, now);
+  if (event !== 'events' && event !== 'photos' && event !== 'todo') markFast(3 * 60_000, now);
   return n + pollersReached(target, filter, reachedIds, now);
 }
 

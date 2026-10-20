@@ -112,6 +112,20 @@ export function adminRouter({ onConfigSaved } = {}) {
       res.status(502).json({ error: 'microsoft_unavailable' });
     }
   }));
+  // Microsoft To Do lists of an account, for the To-do page. 409 microsoft_tasks_reconnect: linked before Marco asked
+  // for To Do access (connect it again).
+  r.get('/microsoft/todo-lists', msOn, wrap(async (req, res) => {
+    const account = String(req.query.account || '').toLowerCase();
+    if (!account) return res.status(400).json({ error: 'account required' });
+    if (!microsoft.listAccounts().some((a) => a.email === account)) return res.status(404).json({ error: 'not found' });
+    try {
+      res.json(await microsoft.listTodoLists(account));
+    } catch (err) {
+      if (err.code === 'tasks_scope') return res.status(409).json({ error: 'microsoft_tasks_reconnect' });
+      if (err.code === 'auth_failed') return res.status(409).json({ error: 'microsoft_reconnect' });
+      res.status(502).json({ error: 'microsoft_unavailable' });
+    }
+  }));
 
   // --- connectivity tests ---
   r.post('/test/ics', wrap(async (req, res) => {

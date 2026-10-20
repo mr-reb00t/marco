@@ -13,6 +13,12 @@ All notable changes to this project are documented here. The format is based on
   normal background. Rules work with every layout, the photo card of *Personalizado* included, and privacy mode with
   *hide photos* still shows stock photos only. The screen changes photos within a minute when another rule takes
   over (#14).
+- Microsoft To Do lists on the to-do list: pick one or more lists of a linked Microsoft account on the To-do page and
+  their open tasks show on every screen with the to-do list, after the ones typed in Marco, with their due date and
+  a star when important. They update every 5 minutes. On a screen where ticking by touch is on, a tap marks a task
+  done in To Do as well (a second tap while it is still shown puts it back). Needs the delegated Microsoft Graph
+  permission `Tasks.ReadWrite` in your Entra app. Accounts linked before keep their calendars and get a *Reconnect*
+  button that signs in to the same account again, keeping its calendars and lists (#15).
 
 ## [0.16.10] - 2026-10-19
 

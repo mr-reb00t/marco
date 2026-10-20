@@ -9,6 +9,7 @@ import type { ChoreSlot, DisplayConfig, FamilyChoreView, FamilyDisplayState, Fam
 import { addDays, formatDateLine, formatTime, relativeDayLabel, weekdayName } from '../../shared/i18n';
 import { qrSvg } from '../../shared/qr';
 import { chipColors } from '../color';
+import { todoMetaHtml } from './extras';
 import { ctx } from '../ctx';
 import { esc, setHTML } from '../dom';
 import { isPreview, mediaUrl, withScreen } from '../identity';
@@ -501,7 +502,7 @@ export class Kids {
     const items = (todo.items || []).filter((i) => i.text?.trim());
     if (todo.enabled && items.length) {
       const sorted = [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
-      const rows = sorted.map((i) => `<div class="kf-task${i.done ? ' is-done' : ''}"><span class="k-check">${i.done ? CHECK : ''}</span><span>${esc(i.text)}</span></div>`);
+      const rows = sorted.map((i) => `<div class="kf-task${i.done ? ' is-done' : ''}"><span class="k-check">${i.done ? CHECK : ''}</span><span>${esc(i.text)}</span>${todoMetaHtml(i)}</div>`);
       side.push(card('kf-tasks', '✅', t('kidsTasks'), `<div class="kf-list">${rows.join('')}</div><div class="kf-more"></div>`));
     }
     if (f) {

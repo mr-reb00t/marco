@@ -128,6 +128,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use('/api/hooks/values', express.json({ limit: '8kb' })); // core/valuesCore.js VALUES_LIMITS.bodyBytes
   app.use('/api/hooks', express.json({ limit: '16kb' }));
   app.use(['/api/family', '/api/display/family'], express.json({ limit: '4kb' }));
+  app.use('/api/display/todo', express.json({ limit: '2kb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(['/api/admin', '/api/auth', '/api/setup'], csrfGuard({ multipartPaths: ['/photos', /^\/photos\/[^/]+\/thumb$/] }));
 

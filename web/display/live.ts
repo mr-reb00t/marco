@@ -98,6 +98,8 @@ export interface StreamHandlers {
   doorbellEnd?: (d: { id: string | null }) => void;
   /** Familia changed (a routine ticked, stars, a new family link): refetch the family state */
   family?: (d: { rev?: number }) => void;
+  /** the tasks of the Microsoft To Do lists changed: refetch the config (they come in todo.items) */
+  todo?: () => void;
   /** Home Assistant states of a Personalizado screen changed (aliases only; haFeed.ts) */
   ha?: (d: HaSnapshot) => void;
   /** pushed values of a Personalizado screen changed (only the keys it shows; valuesFeed.ts) */
@@ -128,6 +130,7 @@ export function dispatch(name: string, d: any, h: StreamHandlers): boolean {
     case 'privacy': h.privacy?.({ active: d?.active === true, ...(typeof d?.screenId === 'string' ? { screenId: d.screenId } : {}) }); return true;
     case 'doorbell': if (d && typeof d.id === 'string' && typeof d.expiresAt === 'string') h.doorbell?.(d); return true;
     case 'family': h.family?.({ ...(typeof d?.rev === 'number' ? { rev: d.rev } : {}) }); return true;
+    case 'todo': h.todo?.(); return true;
     case 'ha':
       if (d && typeof d.rev === 'number' && d.states && typeof d.states === 'object' && !Array.isArray(d.states)) h.ha?.(d);
       return true;

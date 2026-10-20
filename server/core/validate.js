@@ -193,6 +193,8 @@ const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
 export const ALERT_STYLES = ['info', 'success', 'warning', 'urgent'];
 export const MAX_SCREENS = 12;
+/** Microsoft To Do lists in todo.lists. */
+export const MAX_TODO_LISTS = 10;
 
 /** Strict YYYY-MM-DD (real calendar date). */
 export function isValidDate(s) {
@@ -881,6 +883,24 @@ export function validateConfig(input, opts = {}) {
     items: list(ctx, 'todo.items', td.items, [], 100, (cx, p, it, seen) => {
       if (!isObj(it)) { cx.err(p, 'expected object'); return null; }
       return { id: id(cx, `${p}.id`, it.id, 't_', seen), text: str(cx, `${p}.text`, it.text, '', 200), done: bool(cx, `${p}.done`, it.done, false) };
+    }),
+    // Microsoft To Do lists (server/microsoftTodo.js, or Marco Cloud): shown with the items on every screen with the
+    // to-do list. A server without a Microsoft app keeps them and shows no tasks.
+    lists: list(ctx, 'todo.lists', td.lists, [], MAX_TODO_LISTS, (cx, p, l, seen) => {
+      if (!isObj(l)) { cx.err(p, 'expected object'); return null; }
+      oneOf(cx, `${p}.type`, l.type, 'microsoft', ['microsoft']);
+      const listId = str(cx, `${p}.microsoftListId`, l.microsoftListId, '', 512).trim();
+      if (!listId) cx.err(`${p}.microsoftListId`, 'Microsoft To Do list id required');
+      const acct = str(cx, `${p}.microsoftAccount`, l.microsoftAccount, '', 320).trim().toLowerCase();
+      if (!EMAIL.test(acct)) cx.err(`${p}.microsoftAccount`, 'Microsoft account email required');
+      return {
+        id: id(cx, `${p}.id`, l.id, 'tl_', seen),
+        type: 'microsoft',
+        microsoftAccount: acct,
+        microsoftListId: listId,
+        name: str(cx, `${p}.name`, l.name, '', 80).trim(),
+        enabled: bool(cx, `${p}.enabled`, l.enabled, true),
+      };
     }),
   };
 

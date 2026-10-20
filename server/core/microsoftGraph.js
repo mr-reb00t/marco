@@ -1,10 +1,16 @@
-// Microsoft calendars (Outlook.com, Hotmail, Microsoft 365) through Microsoft Graph, read only: the parts both
-// editions share (endpoints, scopes, ID token checks, calendar list items and the event mapping). The HTTP calls and
-// the token storage live in each server (server/microsoft.js here, microsoftApi.ts in Marco Cloud).
+// Microsoft calendars and To Do lists (Outlook.com, Hotmail, Microsoft 365) through Microsoft Graph, read only: the
+// parts both editions share (endpoints, scopes, ID token checks, calendar list items, the event mapping and the To Do
+// task mapping). The HTTP calls and the token storage live in each server (server/microsoft.js and
+// server/microsoftTodo.js here, microsoftApi.ts and microsoftTodo.ts in Marco Cloud).
 //
-// Scopes: openid email profile offline_access Calendars.Read Calendars.Read.Shared
+// Scopes: openid email profile offline_access Calendars.Read Calendars.Read.Shared Tasks.ReadWrite
 //   Calendars.Read          read the account's own calendars and their events
 //   Calendars.Read.Shared   read the calendars other people shared with the account (a family calendar, a partner's)
+//   Tasks.ReadWrite         read the account's Microsoft To Do lists and their tasks (lists shared with it too),
+//                           and mark a task done (or not done) from a touch screen. Nothing else is ever written.
+//                           Accounts linked before Marco asked for it do not have it: their refresh asks only for
+//                           what they granted (refreshScopes) and the admin offers to connect them again. An
+//                           account that granted only Tasks.Read shows its lists without ticking.
 //   offline_access          a refresh token, so screens keep updating with nobody signed in
 //   openid email profile    an ID token with the account's email (email, else preferred_username), to name the
 //                           account. User.Read is not needed.
@@ -16,12 +22,24 @@ export const MS_TOKEN_URL = `${MS_AUTHORITY}/token`;
 export const GRAPH_API = 'https://graph.microsoft.com/v1.0';
 export const CALENDAR_SCOPE = 'Calendars.Read';
 export const SHARED_CALENDAR_SCOPE = 'Calendars.Read.Shared';
-export const CONNECT_SCOPES = `openid email profile offline_access ${CALENDAR_SCOPE} ${SHARED_CALENDAR_SCOPE}`;
-/** A refresh asks for the Graph permissions again, so the access token is for Graph. */
+export const TASKS_SCOPE = 'Tasks.ReadWrite';
+export const TASKS_READ_SCOPE = 'Tasks.Read';
+export const CONNECT_SCOPES = `openid email profile offline_access ${CALENDAR_SCOPE} ${SHARED_CALENDAR_SCOPE} ${TASKS_SCOPE}`;
+/**
+ * A refresh asks for the Graph permissions again, so the access token is for Graph. These are the ones every linked
+ * account has; refreshScopes() adds Tasks.Read for the accounts that granted it.
+ */
 export const REFRESH_SCOPES = `offline_access ${CALENDAR_SCOPE} ${SHARED_CALENDAR_SCOPE}`;
 export const CONNECT_CALLBACK_PATH = '/auth/microsoft/callback';
 /** Where the owner removes the app's access at Microsoft (there is no revoke endpoint for these tokens). */
 export const MANAGE_ACCESS_URLS = ['https://account.live.com/consent/Manage', 'https://myapps.microsoft.com'];
+/**
+ * Where the admin lands after a connect (`back` of /auth/microsoft/connect): the linked accounts card in Calendars,
+ * or the Microsoft To Do card on the Tareas page.
+ */
+export const CONNECT_BACK = { calendars: '#/calendars/cal-accounts', todo: '#/todo/todo-microsoft' };
+export const connectBack = (b) => CONNECT_BACK[Object.hasOwn(CONNECT_BACK, b) ? b : 'calendars'];
+
 /** OAuth error codes Microsoft may send back to the redirect URI; each becomes microsoft_<code>. */
 export const MICROSOFT_OAUTH_ERRORS = new Set([
   'access_denied', 'consent_required', 'interaction_required', 'login_required', 'invalid_request', 'invalid_scope',
@@ -36,8 +54,11 @@ export const CALENDAR_FIELDS = 'id,name,color,hexColor,isDefaultCalendar,owner';
 /** Calendar groups read for calendars the flat list may leave out (shared calendars under "People's calendars"). */
 export const MAX_CALENDAR_GROUPS = 10;
 
-/** The authorize URL of a connect: code flow with PKCE (S256), the account picker always shown. */
-export function microsoftAuthUrl({ clientId, redirectUri, state, challenge, lang }) {
+/**
+ * The authorize URL of a connect: code flow with PKCE (S256), the account picker always shown. `loginHint`: the
+ * account a reconnect is for, preselected in the picker (another one can still be chosen there).
+ */
+export function microsoftAuthUrl({ clientId, redirectUri, state, challenge, lang, loginHint }) {
   const q = new URLSearchParams({
     client_id: clientId,
     response_type: 'code',
@@ -50,6 +71,7 @@ export function microsoftAuthUrl({ clientId, redirectUri, state, challenge, lang
     prompt: 'select_account',
   });
   if (lang) q.set('ui_locales', lang);
+  if (loginHint) q.set('login_hint', loginHint);
   return `${MS_AUTH_URL}?${q}`;
 }
 
@@ -59,6 +81,24 @@ export function microsoftAuthUrl({ clientId, redirectUri, state, challenge, lang
  */
 export function scopeGranted(scope) {
   return String(scope || '').split(/\s+/).some((s) => /^(?:https:\/\/graph\.microsoft\.com\/)?calendars\.read(?:write)?$/i.test(s));
+}
+
+const hasScope = (scope, re) => String(scope || '').split(/\s+/).some((s) => re.test(s.replace(/^https:\/\/graph\.microsoft\.com\//i, '')));
+
+/** The scope list lets Marco read To Do lists: Tasks.Read or Tasks.ReadWrite (short form or with the Graph resource). */
+export const tasksGranted = (scope) => hasScope(scope, /^tasks\.read(?:write)?$/i);
+/** The scope list lets Marco mark To Do tasks done: Tasks.ReadWrite. */
+export const tasksWritable = (scope) => hasScope(scope, /^tasks\.readwrite$/i);
+
+/**
+ * The scopes a refresh asks for, from the scopes the account granted (its stored `scope`). Asking Microsoft for a
+ * permission the account never granted fails the refresh (invalid_grant or consent_required), which would also stop
+ * its calendars, so a Tasks permission is only asked for when it was granted.
+ */
+export function refreshScopes(granted) {
+  if (tasksWritable(granted)) return `${REFRESH_SCOPES} ${TASKS_SCOPE}`;
+  if (tasksGranted(granted)) return `${REFRESH_SCOPES} ${TASKS_READ_SCOPE}`;
+  return REFRESH_SCOPES;
 }
 
 const EMAIL = /^[^\s@<>()",;:]+@[^\s@<>()",;:]+\.[^\s@<>()",;:]+$/;
@@ -195,3 +235,89 @@ export function graphToRaw(it) {
   if (end < start) end = new Date(start);
   return { ...base, allDay: false, start, end };
 }
+
+// ---- Microsoft To Do ----------------------------------------------------------------------------------------------
+
+/** Tasks read per list: pages of TASK_PAGE_SIZE, at most MAX_TASK_PAGES of them, and TASKS_PER_LIST kept. */
+export const TASK_PAGE_SIZE = 100;
+export const MAX_TASK_PAGES = 5;
+export const TASKS_PER_LIST = 100;
+/** To Do lists read for the admin's picker (pages of 100). */
+export const MAX_TODO_LIST_PAGES = 4;
+/** How often a list is read again, and how long after a failure. */
+export const TODO_REFRESH_MS = 5 * 60_000;
+export const TODO_RETRY_MS = 2 * 60_000;
+
+export const todoListsUrl = () => `${GRAPH_API}/me/todo/lists?${new URLSearchParams({ $top: '100' })}`;
+
+/** The open tasks of one list (completed ones are filtered by Graph). */
+export function todoTasksUrl(listId) {
+  const q = new URLSearchParams({
+    $filter: "status ne 'completed'",
+    $select: 'id,title,status,importance,dueDateTime',
+    $top: String(TASK_PAGE_SIZE),
+  });
+  return `${GRAPH_API}/me/todo/lists/${encodeURIComponent(listId)}/tasks?${q}`;
+}
+
+/**
+ * A Graph todoTaskList as a MicrosoftTodoListItem ({ id, name, isDefault?, shared? }), or null. The "Flagged email"
+ * list To Do makes from Outlook is left out: it holds emails, not tasks.
+ */
+export function todoListItem(l) {
+  if (!l || typeof l.id !== 'string' || !l.id || l.id.length > 512) return null;
+  if (l.wellknownListName === 'flaggedEmails') return null;
+  const item = { id: l.id, name: String(l.displayName || 'Tasks').slice(0, 200) };
+  if (l.wellknownListName === 'defaultList') item.isDefault = true;
+  if (l.isShared === true) item.shared = true;
+  return item;
+}
+
+/** One task, to mark it done or not done (PATCH { status }). */
+export const todoTaskUrl = (listId, taskId) => `${GRAPH_API}/me/todo/lists/${encodeURIComponent(listId)}/tasks/${encodeURIComponent(taskId)}`;
+export const todoStatusBody = (done) => ({ status: done ? 'completed' : 'notStarted' });
+
+/**
+ * A Graph todoTask as a cached task ({ taskId, text, due?, important? }), or null (completed, no title, unreadable).
+ * `due` is the calendar day (YYYY-MM-DD): To Do keeps due dates at midnight of the owner's zone, which Graph may send
+ * moved into UTC, so the nearest midnight is the day (as for all-day events). The Graph id stays on the server: a
+ * display gets an opaque id instead (displayTodoItem).
+ */
+export function todoTaskItem(t) {
+  if (!t || typeof t.id !== 'string' || !t.id || t.id.length > 512) return null;
+  if (t.status === 'completed') return null;
+  const text = String(t.title ?? '').replace(/\s+/g, ' ').trim().slice(0, 200);
+  if (!text) return null;
+  const item = { taskId: t.id, text };
+  const due = t.dueDateTime ? allDayDate(t.dueDateTime) : null;
+  if (due) item.due = due;
+  if (t.importance === 'high') item.important = true;
+  return item;
+}
+
+/** Graph tasks as cached tasks: open ones only, those with a due date first (soonest first), at most TASKS_PER_LIST. */
+export function todoItems(tasks) {
+  const items = (Array.isArray(tasks) ? tasks : []).map(todoTaskItem).filter(Boolean);
+  const seen = new Set();
+  const unique = items.filter((it) => !seen.has(it.taskId) && seen.add(it.taskId));
+  const dated = unique.filter((it) => it.due).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : 0));
+  return [...dated, ...unique.filter((it) => !it.due)].slice(0, TASKS_PER_LIST);
+}
+
+/**
+ * A cached task as the display sees it: { id, text, done, due?, important?, tick? }. `id` is the opaque id the server
+ * made for it (ms_...), `tick` that a touch screen may mark it done (the account granted Tasks.ReadWrite).
+ */
+export function displayTodoItem(it, id, tick) {
+  const out = { id, text: it.text, done: it.done === true };
+  if (it.due) out.due = it.due;
+  if (it.important) out.important = true;
+  if (tick) out.tick = true;
+  return out;
+}
+
+/** Ids of to-do items that come from a Microsoft To Do list (displayTodoItem), not typed in the admin. */
+export const isListTask = (id) => typeof id === 'string' && id.startsWith('ms_');
+
+/** The Microsoft To Do lists of a config that are on (todo.lists). */
+export const enabledTodoLists = (cfg) => (Array.isArray(cfg?.todo?.lists) ? cfg.todo.lists : []).filter((l) => l && l.enabled !== false && l.type === 'microsoft');

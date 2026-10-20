@@ -183,7 +183,7 @@ function onColor(hex: string) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? '#111' : '#fff';
 }
 
-function oauthErrorMessage(code: string): string {
+function oauthErrorMessage(code: string, account = ''): string {
   const map: Record<string, string> = {
     email_not_allowed: 'Esta cuenta de Google no tiene permiso para entrar.',
     google_not_configured: 'Google no está configurado en el servidor.',
@@ -196,12 +196,14 @@ function oauthErrorMessage(code: string): string {
     google_exchange_failed: 'Error al comunicar con Google. Inténtalo de nuevo.',
     google_access_denied: 'Has cancelado el acceso con Google.',
   };
-  if (code.startsWith('microsoft_')) return microsoftErrorMessage(code);
+  if (code.startsWith('microsoft_')) return microsoftErrorMessage(code, account);
   return map[code] ? t(map[code]) : `${t('Error de Google')}: ${code}`;
 }
 
 /** Codes the Microsoft calendar connect (Marco Cloud, /auth/microsoft/callback) sends back, all prefixed microsoft_. */
-function microsoftErrorMessage(code: string): string {
+function microsoftErrorMessage(code: string, account = ''): string {
+  // a reconnect signed in with another account than the one it was for (nothing was changed)
+  if (code === 'microsoft_wrong_account' && account) return t('Esa es otra cuenta. Entra como {email}.', { email: account });
   const map: Record<string, string> = {
     microsoft_not_configured: 'Los calendarios de Microsoft no están disponibles para esta cuenta.',
     microsoft_invalid_state: 'La sesión con Microsoft caducó. Inténtalo de nuevo.',
@@ -214,6 +216,7 @@ function microsoftErrorMessage(code: string): string {
     microsoft_temporarily_unavailable: 'Microsoft no responde ahora mismo. Inténtalo de nuevo en unos minutos.',
     microsoft_access_denied: 'Has cancelado el acceso con Microsoft.',
     microsoft_consent_required: 'Tu organización tiene que aprobar Marco antes de que puedas vincular esta cuenta.',
+    microsoft_wrong_account: 'Esa es otra cuenta. Entra con la cuenta que querías volver a vincular.',
   };
   return map[code] ? t(map[code]) : `${t('Error de Microsoft')}: ${code.slice('microsoft_'.length)}`;
 }
@@ -316,7 +319,7 @@ export function App() {
     const err = qs.get('error');
     const g = qs.get('connected') || qs.get('google');
     const ms = qs.get('microsoft');
-    const errMsg = err ? oauthErrorMessage(err) : '';
+    const errMsg = err ? oauthErrorMessage(err, (qs.get('account') || '').slice(0, 254)) : '';
     if (g) setTimeout(() => toast(`${t('Cuenta de Google vinculada')}: ${g}`, 'ok'), 400);
     if (ms) setTimeout(() => toast(`${t('Cuenta de Microsoft vinculada')}: ${ms}`, 'ok'), 400);
     if (err || g || ms) history.replaceState(null, '', location.pathname + location.hash);

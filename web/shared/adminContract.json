@@ -1427,7 +1427,9 @@
       "response": "MicrosoftAccount[]",
       "responseArray": true,
       "responseKeys": [
-        "email"
+        "email",
+        "tasks?",
+        "tasksWrite?"
       ]
     },
     {
@@ -1462,6 +1464,26 @@
         "color?",
         "isDefault?",
         "owner?"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/microsoft/todo-lists",
+      "query": [
+        "account"
+      ],
+      "feature": "microsoftCalendar",
+      "callers": [
+        "microsoftTodoLists"
+      ],
+      "request": null,
+      "response": "MicrosoftTodoListItem[]",
+      "responseArray": true,
+      "responseKeys": [
+        "id",
+        "name",
+        "isDefault?",
+        "shared?"
       ]
     },
     {

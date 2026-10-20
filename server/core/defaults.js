@@ -144,7 +144,9 @@ export function defaultConfig() {
       feeds: [{ id: 'n1', name: 'BBC News – World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', enabled: true }],
       maxItems: 30,
     },
-    todo: { items: [] },
+    // lists: Microsoft To Do lists shown with the typed items ({ id, type: 'microsoft', microsoftAccount,
+    // microsoftListId, name, enabled }); their open tasks are read by the server, never stored here
+    todo: { items: [], lists: [] },
     localEvents: { enabled: true, name: 'Family', color: '#e76f51', emoji: '', privacy: 'busy', items: [] },
     // tidyTitles: birthday titles from any calendar ("Astrid's Birthday", "Cumple de Ana") show only the name next
     // to the 🎂 (server/rules.js tidyTitleWhy); off keeps the calendar's own title

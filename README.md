@@ -911,10 +911,12 @@ then add the allowed addresses in **Security → Allowed Google emails**. Server
 
 ## Connecting Outlook, Hotmail or Microsoft 365
 
-Optional, read only. With your own Microsoft Entra app, *Calendars → Linked accounts → Link account* also offers
+Optional. With your own Microsoft Entra app, *Calendars → Linked accounts → Link account* also offers
 **Microsoft**: personal accounts (Outlook.com, Hotmail, Live) and work or school accounts (Microsoft 365). Without it
 the option is not shown, and the calendar's ICS address (*Outlook → Settings → Calendar → Shared calendars → Publish a
-calendar*) still works.
+calendar*) still works. Calendars are read only. The same account also brings its **Microsoft To Do** lists to
+*To-do → Microsoft To Do lists*: their open tasks show on the screen with their due date and a star when important,
+and on a screen with *Allow ticking by touching this screen* on, a tap marks a task done in To Do too.
 
 1. Go to <https://entra.microsoft.com/> → **App registrations → New registration**:
    - **Supported account types**: *Accounts in any organizational directory and personal Microsoft accounts*.
@@ -922,7 +924,10 @@ calendar*) still works.
      `http://localhost:3000/auth/microsoft/callback` (Microsoft, like Google, accepts `http://` only for
      `localhost`; see the redirect URI options above).
 2. **API permissions → Add a permission → Microsoft Graph → Delegated**: `Calendars.Read`, `Calendars.Read.Shared`,
-   `offline_access`, `openid`, `email`, `profile`. No admin consent is needed for personal accounts.
+   `Tasks.ReadWrite`, `offline_access`, `openid`, `email`, `profile`. No admin consent is needed for personal
+   accounts. `Tasks.ReadWrite` is for the To Do lists (reading them and ticking a task from a touch screen; Marco
+   changes nothing else). Accounts linked before you added it keep showing their calendars; the To-do page shows
+   *Reconnect* next to them, which signs in to the same account again and keeps its calendars and lists.
 3. **Certificates & secrets → New client secret**, copy its **Value**, and the **Application (client) ID** from
    *Overview*. Put them in `.env` and restart:
 

@@ -14,7 +14,7 @@ import { activeBackgroundRule } from '../photoRules.js';
 import { backgroundRuleSig } from '../core/bgRules.js';
 import { sseHandler } from '../sse.js';
 import { streamInit, streamHello, onStreamOpen, onStreamClose, pollDisplay } from '../displays.js';
-import { displayConfig as projectDisplayConfig } from '../core/screens.js';
+import { displayConfig as projectDisplayConfig, todoTouch } from '../core/screens.js';
 import { requestScreen, resolveDisplayAccess, KEY_HEADER } from '../displayAccess.js';
 import { needsSetup } from '../auth.js';
 import { addDays, localDate, isDateStr, daysBetween } from '../core/lib/tz.js';
@@ -24,9 +24,11 @@ import { hostAllowed, hostnameOf, untrustedProxy } from '../lib/net.js';
 import { screenPrivacy, screenPrivacyNext } from '../privacy.js';
 import { privatizeEvents } from '../core/privacy.js';
 import { hash } from '../lib/text.js';
-import { familyQrUrl, trustedDisplay } from '../family.js';
+import { allowDisplayToggle, familyQrUrl, trustedDisplay } from '../family.js';
 import { haStreamHello } from './ha.js';
 import { valuesStreamHello } from '../values.js';
+import { todoTasks, toggleTask } from '../microsoftTodo.js';
+import { jsonOnly } from './family.js';
 
 /** How long the display's price request waits for a first fetch of grid tariffs (its own timeout is 15 s). */
 const GRID_WAIT_MS = 5_000;
@@ -41,7 +43,9 @@ export function displayConfig(cfg, screenKey) {
 /** Display config for a request (screen or carousel bound to its key / device, else ?screen=). */
 function displayConfigFor(cfg, req) {
   const { screen, carousel } = requestScreen(cfg, req);
-  return projectDisplayConfig(cfg, screen, { privacy: privacyOf(cfg, screen), carousel, familyQr: familyQrUrl(req), trusted: trustedDisplay(req) });
+  return projectDisplayConfig(cfg, screen, {
+    privacy: privacyOf(cfg, screen), carousel, familyQr: familyQrUrl(req), trusted: trustedDisplay(req), todoTasks: todoTasks(cfg),
+  });
 }
 
 /**
@@ -93,6 +97,35 @@ export function publicRouter({ version }) {
   r.get('/health', (req, res) => res.json(healthBody({ version, lanAddresses: onThisMachine(req) ? lanAddresses() : undefined })));
 
   r.get('/display/config', (req, res) => res.json(displayConfigFor(getConfig(), req)));
+
+  // A tap on a Microsoft To Do task (microsoftTodo.js). Only screens that show the to-do list with their touch setting
+  // on, not private, from a display that may tap (the rules of routines ticked on a TV, family.js), and only a task
+  // this server shows right now. { id, done } → { ok } | 403 touch_off | 403 read_only | 404 not_found |
+  // 409 microsoft_reconnect | 429 rate_limited | 502 microsoft_unavailable
+  r.post('/display/todo/toggle', jsonOnly, async (req, res, next) => {
+    try {
+      const cfg = getConfig();
+      const { screen, empty } = requestScreen(cfg, req);
+      if (empty || !todoTouch(screen, screenPrivacy(cfg, screen).active, trustedDisplay(req))) {
+        return res.status(403).json({ error: 'touch is off on this screen', code: 'touch_off' });
+      }
+      if (!allowDisplayToggle(screen.id)) {
+        res.set('retry-after', '60');
+        return res.status(429).json({ error: 'too many changes, wait a minute', code: 'rate_limited' });
+      }
+      const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+      const out = await toggleTask(cfg, b.id, b.done === true, { screen, req });
+      if (out.ok) return res.json({ ok: true });
+      const fail = {
+        not_found: [404, 'this task is not on the list any more'], read_only: [403, 'this list can only be read'],
+        reconnect: [409, 'the Microsoft account must be connected again'], unavailable: [502, 'Microsoft did not answer'],
+      }[out.error];
+      const code = { reconnect: 'microsoft_reconnect', unavailable: 'microsoft_unavailable' }[out.error] ?? out.error;
+      res.status(fail[0]).json({ error: fail[1], code });
+    } catch (err) {
+      next(err);
+    }
+  });
 
   r.get('/events', async (req, res, next) => {
     try {

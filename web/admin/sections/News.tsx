@@ -1,11 +1,12 @@
-import { useState } from 'preact/hooks';
-import type { NewsFeed, TestRssResponse } from '../../shared/types';
+import { useEffect, useState } from 'preact/hooks';
+import type { MicrosoftAccount, MicrosoftTodoListItem, NewsFeed, TestRssResponse } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { fetchErrorText } from '../apiErrors';
-import { Icon } from '../components/icons';
-import { Button, Card, EmojiPicker, Empty, Field, NumberInput, PageHeader, ReorderButtons, Slider, Textarea, TextInput, Toggle, ToggleRow } from '../components/ui';
+import { confirmDialog } from '../components/feedback';
+import { Icon, MicrosoftLogo } from '../components/icons';
+import { Button, Callout, Card, EmojiPicker, Empty, Field, NumberInput, PageHeader, ReorderButtons, Slider, Textarea, TextInput, Toggle, ToggleRow } from '../components/ui';
 import { ScopeBadge } from '../components/ui';
-import { atLimit } from '../caps';
+import { atLimit, has } from '../caps';
 import { LimitNote } from '../components/LimitNote';
 import { t } from '../i18n';
 import { isHttpUrl, moveItem, uid } from '../util';
@@ -126,7 +127,150 @@ export function NewsSection({ cfg, set, errors }: SectionProps) {
   );
 }
 
-export function TodoSection({ cfg, set }: SectionProps) {
+/** Most Microsoft To Do lists on the to-do list (server/core/validate.js MAX_TODO_LISTS). */
+const MAX_TODO_LISTS = 10;
+
+/**
+ * Microsoft To Do lists shown with the typed tasks: each linked Microsoft account (linked in Calendars) lists its To
+ * Do lists to pick from, like its calendars. An account linked before Marco asked for To Do access offers to connect
+ * it again. Shown only where Microsoft accounts can be linked.
+ */
+function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
+  const [accounts, setAccounts] = useState<MicrosoftAccount[] | null>(null);
+  const [lists, setLists] = useState<Record<string, MicrosoftTodoListItem[] | 'reconnect' | 'error' | undefined>>({});
+  const chosen = cfg.todo.lists ?? [];
+  useEffect(() => {
+    api.microsoftAccounts().then(
+      (list) => {
+        setAccounts(list);
+        for (const a of list) {
+          if (a.tasks === false) {
+            setLists((m) => ({ ...m, [a.email]: 'reconnect' }));
+            continue;
+          }
+          api.microsoftTodoLists(a.email).then(
+            (l) => setLists((m) => ({ ...m, [a.email]: l })),
+            (e) => setLists((m) => ({ ...m, [a.email]: ((e as ApiError).body as { error?: string } | undefined)?.error === 'microsoft_tasks_reconnect' ? 'reconnect' : 'error' })),
+          );
+        }
+      },
+      () => setAccounts([]),
+    );
+  }, []);
+
+  /** Connect the same account again (Microsoft preselects it); its calendars and lists stay. */
+  const reconnect = async (email: string) => {
+    if (dirty) {
+      const ok = await confirmDialog({
+        title: t('Guardar cambios antes de continuar'),
+        body: t('Vas a salir a Microsoft para vincular la cuenta. ¿Guardamos primero los cambios pendientes?'),
+        confirm: t('Guardar y continuar'),
+      });
+      if (!ok || !(await save())) return;
+    }
+    window.location.href = `/auth/microsoft/connect?account=${encodeURIComponent(email)}&back=todo`;
+  };
+  const isOn = (email: string, id: string) => chosen.some((l) => l.microsoftAccount === email && l.microsoftListId === id);
+  const toggle = (email: string, l: MicrosoftTodoListItem, on: boolean) =>
+    set((d) => {
+      d.todo.lists ??= [];
+      if (on) {
+        if (isOn(email, l.id) || d.todo.lists.length >= MAX_TODO_LISTS) return;
+        d.todo.lists.push({ id: uid('tl'), type: 'microsoft', microsoftAccount: email, microsoftListId: l.id, name: l.name, enabled: true });
+      } else {
+        d.todo.lists = d.todo.lists.filter((x) => !(x.microsoftAccount === email && x.microsoftListId === l.id));
+      }
+    });
+  const readOnly = (a: MicrosoftAccount) => a.tasks !== false && a.tasksWrite === false && chosen.some((l) => l.microsoftAccount === a.email);
+
+  return (
+    <Card
+      id="todo-microsoft"
+      title={t('Listas de Microsoft To Do')}
+      icon="microsoft"
+      scope="global"
+      desc={t('Las tareas pendientes de las listas que elijas salen junto a las de aquí, con su fecha y una estrella si son importantes. Se actualizan cada 5 minutos.')}
+    >
+      {accounts === null ? (
+        <div class="skeleton" />
+      ) : accounts.length === 0 ? (
+        <Empty icon="link" title={t('Ninguna cuenta de Microsoft vinculada')}>
+          {t('Vincula tu cuenta de Microsoft en')} <a href="#/calendars/cal-accounts">{t('Calendarios')}</a>.
+        </Empty>
+      ) : (
+        <div class="gaccounts">
+          {accounts.map((a) => {
+            const l = lists[a.email];
+            return (
+              <div class="gaccount">
+                <div class="gaccount__head">
+                  <span class="avatar avatar--letter">{a.email[0].toUpperCase()}</span>
+                  <div class="gaccount__who">
+                    <strong>{a.email}</strong>
+                    <span class="muted small">
+                      <MicrosoftLogo size={12} /> Microsoft To Do
+                    </span>
+                  </div>
+                </div>
+                {l === undefined ? (
+                  <div class="skeleton" />
+                ) : l === 'reconnect' ? (
+                  <Callout kind="warn">
+                    {t('Vuelve a vincular la cuenta para ver tus listas de To Do.')}{' '}
+                    <Button size="sm" variant="ghost" icon="link" onClick={() => reconnect(a.email)}>
+                      {t('Volver a vincular')}
+                    </Button>
+                  </Callout>
+                ) : l === 'error' ? (
+                  <Callout kind="error">{t('No se pudieron leer las listas de To Do. Inténtalo más tarde.')}</Callout>
+                ) : l.length === 0 ? (
+                  <p class="muted small">{t('Esta cuenta no tiene listas de To Do.')}</p>
+                ) : (
+                  <>
+                  {readOnly(a) && (
+                    <p class="muted small">
+                      {t('Estas listas solo se pueden leer: vuelve a vincular la cuenta para poder marcarlas desde la pantalla.')}{' '}
+                      <Button size="sm" variant="ghost" icon="link" onClick={() => reconnect(a.email)}>
+                        {t('Volver a vincular')}
+                      </Button>
+                    </p>
+                  )}
+                  <ul class="gcal-list">
+                    {l.map((x) => {
+                      const on = isOn(a.email, x.id);
+                      return (
+                        <li>
+                          <label class={`gcal ${on ? 'is-on' : ''}`}>
+                            <input type="checkbox" checked={on} disabled={!on && chosen.length >= MAX_TODO_LISTS} onChange={(e) => toggle(a.email, x, e.currentTarget.checked)} />
+                            <span class="check-box">
+                              <Icon name="check" size={12} />
+                            </span>
+                            <span class="gcal__name">{x.name}</span>
+                            {x.shared && <span class="badge badge--soft">{t('Compartida')}</span>}
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <ToggleRow
+        label={<>{t('Permitir marcar tocando esta pantalla')} <ScopeBadge scope="screen" /></>}
+        hint={t('Una tarea de To Do tocada en la pantalla se marca como hecha también en Microsoft. Es el mismo ajuste que el de las rutinas de Familia. No funciona en modo privado.')}
+        checked={!!cfg.family.touch}
+        onChange={(v) => set((d) => void (d.family.touch = v))}
+      />
+    </Card>
+  );
+}
+
+export function TodoSection(props: SectionProps) {
+  const { cfg, set, me } = props;
   const td = cfg.todo;
   const [text, setText] = useState('');
   const add = (e: Event) => {
@@ -174,6 +318,7 @@ export function TodoSection({ cfg, set }: SectionProps) {
           </Button>
         )}
       </Card>
+      {has('microsoftCalendar') && !!me.microsoftConfigured && <MicrosoftTodoCard {...props} />}
     </>
   );
 }

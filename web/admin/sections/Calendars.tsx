@@ -235,6 +235,8 @@ interface LinkedAccount {
   email: string;
   name?: string;
   picture?: string;
+  /** Microsoft: false when it was linked before Marco asked for To Do access (it can be reconnected in place) */
+  tasks?: boolean;
 }
 interface LinkedCalendar {
   id: string;
@@ -340,7 +342,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
     else setAccounts([]);
   }, [configuredKey]);
 
-  const go = async (p: Provider) => {
+  const go = async (p: Provider, account = '') => {
     if (dirty) {
       const ok = await confirmDialog({
         title: t('Guardar cambios antes de continuar'),
@@ -350,7 +352,7 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       if (!ok) return;
       if (!(await save())) return;
     }
-    window.location.href = p.connectPath;
+    window.location.href = account ? `${p.connectPath}?account=${encodeURIComponent(account)}` : p.connectPath;
   };
 
   /** Ask which provider (Apple iCloud is always there); with no account provider set up, straight to the iCloud guide. */
@@ -385,6 +387,8 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       await p.remove(a.email);
       set((d) => {
         d.calendar.sources = d.calendar.sources.filter((s) => !ofAccount(s, a));
+        // its Microsoft To Do lists go too
+        if (a.provider === 'microsoft' && d.todo.lists) d.todo.lists = d.todo.lists.filter((l) => l.microsoftAccount !== a.email);
       });
       toast(t('Cuenta desvinculada. Guarda para aplicar los cambios en los calendarios.'), 'info');
       load();
@@ -485,6 +489,14 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
                     {t('Desvincular')}
                   </Button>
                 </div>
+                {a.provider === 'microsoft' && a.tasks === false && (
+                  <Callout kind="info">
+                    {t('Vuelve a vincular la cuenta para ver tus listas de To Do.')}{' '}
+                    <Button size="sm" variant="ghost" icon="link" onClick={() => go(byId('microsoft'), a.email)}>
+                      {t('Volver a vincular')}
+                    </Button>
+                  </Callout>
+                )}
                 {list === undefined ? (
                   <div class="skeleton" />
                 ) : list === 'error' ? (

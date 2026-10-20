@@ -45,7 +45,7 @@ describe('self-hosted Microsoft calendars', () => {
     process.env.MICROSOFT_CLIENT_ID = CLIENT_ID;
     process.env.MICROSOFT_CLIENT_SECRET = 'ms-secret';
     process.env.PUBLIC_URL = 'http://localhost:3000';
-    fake = { email: 'ana@outlook.com', challenge: '', issued: [], tokenCalls: [], graph: [], refreshError: '', events: [] };
+    fake = { email: 'ana@outlook.com', connectScope: 'Calendars.Read Calendars.Read.Shared', challenge: '', issued: [], tokenCalls: [], graph: [], refreshError: '', events: [] };
     realFetch = globalThis.fetch;
     globalThis.fetch = async (url, init = {}) => {
       const u = new URL(String(url));
@@ -58,7 +58,7 @@ describe('self-hosted Microsoft calendars', () => {
           const ch = crypto.createHash('sha256').update(form.get('code_verifier')).digest('base64url');
           if (ch !== fake.challenge || form.get('redirect_uri') !== 'http://localhost:3000/auth/microsoft/callback') return Response.json({ error: 'invalid_grant' }, { status: 400 });
           return Response.json({
-            access_token: 'AT-secret-1', expires_in: 3600, scope: 'Calendars.Read Calendars.Read.Shared', refresh_token: issue(),
+            access_token: 'AT-secret-1', expires_in: 3600, scope: fake.connectScope, refresh_token: issue(),
             id_token: idToken({ aud: CLIENT_ID, tid: TID, iss: `https://login.microsoftonline.com/${TID}/v2.0`, exp: Date.now() / 1000 + 600, email: fake.email }),
           });
         }
@@ -93,8 +93,8 @@ describe('self-hosted Microsoft calendars', () => {
     return to;
   };
 
-  async function connect(sess = session()) {
-    const r = req({ session: sess });
+  async function connect(sess = session(), query = {}) {
+    const r = req({ session: sess, query });
     const loc = new URL(await redirectOf(microsoftConnectHandler, r));
     fake.challenge = loc.searchParams.get('code_challenge');
     return { loc, sess: r.session };
@@ -112,7 +112,7 @@ describe('self-hosted Microsoft calendars', () => {
   test('connect: PKCE and state in the session, single use; tokens stored, never in the redirect', async () => {
     const { loc, sess } = await connect();
     assert.equal(loc.origin + loc.pathname, 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize');
-    assert.equal(loc.searchParams.get('scope'), 'openid email profile offline_access Calendars.Read Calendars.Read.Shared');
+    assert.equal(loc.searchParams.get('scope'), 'openid email profile offline_access Calendars.Read Calendars.Read.Shared Tasks.ReadWrite');
     assert.equal(loc.searchParams.get('redirect_uri'), 'http://localhost:3000/auth/microsoft/callback');
     assert.equal(loc.searchParams.get('code_challenge_method'), 'S256');
     const state = loc.searchParams.get('state');
@@ -124,7 +124,8 @@ describe('self-hosted Microsoft calendars', () => {
     assert.equal(store.getSecrets().microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-1');
     // Replayed: refused.
     assert.equal(await redirectOf(microsoftCallbackHandler, req({ session: sess, query: { state, code: 'c' } })), '/admin/?error=microsoft_invalid_state#/calendars/cal-accounts');
-    assert.deepEqual(microsoft.listAccounts(), [{ email: 'ana@outlook.com' }]);
+    // linked with the calendar permissions only (an account from before To Do lists): no To Do access
+    assert.deepEqual(microsoft.listAccounts(), [{ email: 'ana@outlook.com', tasks: false, tasksWrite: false }]);
   });
 
   test('connect errors map to microsoft_ codes; without the app nothing is offered', async () => {
@@ -154,6 +155,8 @@ describe('self-hosted Microsoft calendars', () => {
     assert.equal(entry.ok, true, entry.error);
     assert.equal(entry.count, 2);
     assert.equal(fake.tokenCalls.at(-1).get('refresh_token'), 'RT-secret-1');
+    // the account never granted a Tasks permission: the refresh does not ask for one (it would fail the calendars too)
+    assert.equal(fake.tokenCalls.at(-1).get('scope'), 'offline_access Calendars.Read Calendars.Read.Shared');
     assert.equal(store.getSecrets().microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-2');
     const view = fake.graph.find((u) => u.pathname.endsWith('/calendarView'));
     assert.equal(view.searchParams.get('$select'), 'id,subject,bodyPreview,location,start,end,isAllDay,isCancelled,type');
@@ -166,6 +169,37 @@ describe('self-hosted Microsoft calendars', () => {
     assert.ok(!String(failed.error).includes('secret'));
     const w = dashboardWarnings({ secrets: store.getSecrets(), sources: sourceStatus(), displays: [], cfg: store.getConfig() });
     assert.ok(w.includes('microsoft_auth_failed'), w.join());
+  });
+
+  test('reconnect: the same account in place (its calendars stay, new scopes); another account is refused', async () => {
+    const first = await connect();
+    await redirectOf(microsoftCallbackHandler, req({ session: first.sess, query: { state: first.loc.searchParams.get('state'), code: 'c' } }));
+    const src = { id: 'c_ms', type: 'microsoft', name: 'Outlook', microsoftAccount: 'ana@outlook.com', microsoftCalendarId: 'cal-1', enabled: true, refreshMin: 5, color: '#123456', emoji: '', kind: 'generic' };
+    store.updateConfig((c) => { c.calendar.sources = [src]; c.todo.lists = [{ id: 'tl_a', type: 'microsoft', microsoftAccount: 'ana@outlook.com', microsoftListId: 'l1', name: 'Shopping', enabled: true }]; });
+    assert.equal(microsoft.listAccounts()[0].tasks, false);
+
+    // Reconnect from the Tareas page: Microsoft preselects the account, the picker stays (prompt=select_account)
+    fake.connectScope = 'Calendars.Read Calendars.Read.Shared Tasks.ReadWrite';
+    const again = await connect(session(), { account: 'ana@outlook.com', back: 'todo' });
+    assert.equal(again.loc.searchParams.get('login_hint'), 'ana@outlook.com');
+    assert.equal(again.loc.searchParams.get('prompt'), 'select_account');
+    const to = await redirectOf(microsoftCallbackHandler, req({ session: again.sess, query: { state: again.loc.searchParams.get('state'), code: 'c' } }));
+    assert.equal(to, '/admin/?microsoft=ana%40outlook.com#/todo/todo-microsoft');
+    assert.deepEqual(microsoft.listAccounts(), [{ email: 'ana@outlook.com', tasks: true, tasksWrite: true }]);
+    assert.equal(store.getSecrets().microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-2');
+    assert.equal(store.getConfig().calendar.sources[0].id, 'c_ms');
+    assert.equal(store.getConfig().todo.lists[0].microsoftAccount, 'ana@outlook.com');
+
+    // the person picks another Microsoft account in the popup: nothing is stored, the message names the right one
+    fake.email = 'luis@outlook.com';
+    const wrong = await connect(session(), { account: 'ana@outlook.com' });
+    const refused = await redirectOf(microsoftCallbackHandler, req({ session: wrong.sess, query: { state: wrong.loc.searchParams.get('state'), code: 'c' } }));
+    assert.equal(refused, '/admin/?error=microsoft_wrong_account&account=ana%40outlook.com#/calendars/cal-accounts');
+    assert.deepEqual(Object.keys(store.getSecrets().microsoft.accounts), ['ana@outlook.com']);
+    assert.equal(store.getSecrets().microsoft.accounts['ana@outlook.com'].refresh_token, 'RT-secret-2');
+    // an account that is not linked: a plain connect (no hint)
+    const plain = await connect(session(), { account: 'nobody@outlook.com' });
+    assert.equal(plain.loc.searchParams.get('login_hint'), null);
   });
 
   test('unlink deletes the tokens; exports with secrets carry them and imports keep them', async () => {

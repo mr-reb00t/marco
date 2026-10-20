@@ -1911,3 +1911,12 @@ html.widget-only.theme-light .pw--side { --pw-bg: rgb(20 24 32 / 0.9) !important
 .fxw-body { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 /* the card says itself how old its numbers are ("Actualizado hace…") */
 .uw-currency .uw-pill { display: none; }
+
+/* Microsoft To Do tasks (widgets/extras.ts todoMetaHtml, todoTaps.ts): due day, importance, rows a touch screen ticks */
+.todo li .td-due, .bd-task .td-due, .kf-task .td-due { margin-left: auto; flex: none; font-size: 0.7em; opacity: 0.7; white-space: nowrap; }
+.todo li .td-due.late, .bd-task .td-due.late, .kf-task .td-due.late { color: #ff8a7a; opacity: 1; }
+.todo li .td-star, .bd-task .td-star, .kf-task .td-star { flex: none; color: #ffc94d; font-size: 0.8em; }
+.todo li .td-due + .td-star { margin-left: 0.4em; }
+.todo li > .td-star:not(.td-due + .td-star), .bd-task > .td-star:not(.td-due + .td-star), .kf-task > .td-star:not(.td-due + .td-star) { margin-left: auto; }
+.todo li.tap { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.todo li.tap-fail .td-err { flex: none; font-size: 0.65em; font-style: normal; color: #ff8a7a; }

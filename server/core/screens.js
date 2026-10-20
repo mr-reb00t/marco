@@ -91,6 +91,21 @@ export function displayFamilyBlock(cfg, screen, priv, familyQr = null) {
   };
 }
 
+/** The screen shows the to-do list: its own switch, or a to-do card on a Personalizado screen. */
+export function showsTodo(screen) {
+  if (screen?.todo?.enabled) return true;
+  return screen?.layout?.preset === 'canvas' && (screen.canvas?.items ?? []).some((it) => it?.kind === 'todo');
+}
+
+/**
+ * To-do tasks may be ticked on this screen: it shows the to-do list and its touch setting is on (screen.family.touch,
+ * "check off by touching this screen"), it is not private, and the display may tap (`trusted` false: open mode from
+ * outside the local network).
+ */
+export function todoTouch(screen, isPrivate, trusted) {
+  return Boolean(showsTodo(screen) && screen?.family?.touch && !isPrivate && trusted !== false);
+}
+
 /** Short, stable hash of a string (FNV-1a, 32 bits, hex). Plain JS: the admin bundles this file (livePreview.ts). */
 function shortHash(s) {
   let h = 0x811c9dc5;
@@ -152,8 +167,10 @@ export function displayWidgets(cfg, screen, { isPrivate = false, widgetSrc = nul
  * `widgetSrc` = how the display loads widgets (displayWidgets): null = the URL itself.
  * `canvasKinds` / `haControls` = what a Personalizado screen may show on this server (core/canvasCore.js projectCanvas).
  * `trusted` = false for a display that may not tap (open mode from outside the local network): no navigation taps.
+ * `todoTasks` = the open tasks of the Microsoft To Do lists (todo.lists), as to-do items: shown after the typed ones.
+ *   The lists themselves (account, list id) never reach the display.
  */
-export function displayConfig(cfg, screen, { privacy = null, carousel = null, familyQr = null, widgetSrc = null, canvasKinds, haControls, trusted } = {}) {
+export function displayConfig(cfg, screen, { privacy = null, carousel = null, familyQr = null, widgetSrc = null, canvasKinds, haControls, trusted, todoTasks = [] } = {}) {
   const f = flatView(cfg, screen);
   const priv = displayPrivacy(screen, privacy?.status, privacy?.next ?? null);
   // the special background rules stay on the server (their words name events): /api/photos applies them. The display
@@ -174,7 +191,9 @@ export function displayConfig(cfg, screen, { privacy = null, carousel = null, fa
     datetime: f.datetime,
     weather,
     news: { enabled: f.news.enabled, rotateSec: f.news.rotateSec },
-    todo: { enabled: f.todo.enabled, items: f.todo.items },
+    // touch: Microsoft To Do tasks with `tick` may be marked done by touching this screen (its touch setting, the one
+    // routines use; never while private or on a display that may not tap)
+    todo: { enabled: f.todo.enabled, items: [...f.todo.items, ...todoTasks], touch: todoTouch(screen, priv.active, trusted) && todoTasks.some((x) => x.tick) },
     message: f.message,
     countdowns: { enabled: f.countdowns.enabled, max: f.countdowns.max },
     alerts: f.alerts,

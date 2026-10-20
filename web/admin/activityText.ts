@@ -162,6 +162,14 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
         text: (d.done ? t('Rutina hecha: {chore} ({member})', vars) : t('Rutina desmarcada: {chore} ({member})', vars)) + ` · ${via}` + (d.date ? ` · ${str(d.date)}` : ''),
       };
     }
+    case 'todo.task': {
+      const vars = { task: q(d.task), list: str(d.list) };
+      const via = t('tocando la pantalla {screen}', { screen: str(d.screen) });
+      return {
+        icon: d.done ? 'check' : 'x',
+        text: (d.done ? t('Tarea hecha: {task}', vars) : t('Tarea desmarcada: {task}', vars)) + (d.list ? ` (${str(d.list)})` : '') + ` · ${via}`,
+      };
+    }
     case 'family.redeemed':
       return {
         icon: 'star',

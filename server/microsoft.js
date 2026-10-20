@@ -1,4 +1,4 @@
-// Microsoft calendars (Outlook.com, Hotmail, Microsoft 365), read only, through Microsoft Graph with your own Microsoft
+// Microsoft calendars and To Do lists (Outlook.com, Hotmail, Microsoft 365), read only, through Microsoft Graph with your own Microsoft
 // Entra app (MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in .env; see README "Connecting Outlook, Hotmail or Microsoft 365"). Optional: without them
 // the admin does not offer Microsoft accounts.
 //
@@ -12,9 +12,10 @@ import { request, HttpError } from './lib/http.js';
 import { getSecrets, updateSecrets } from './store.js';
 import { publicUrl } from './google.js';
 import {
-  CONNECT_CALLBACK_PATH, CONNECT_SCOPES, MICROSOFT_AUTH_ERRORS, MS_TOKEN_URL, REFRESH_SCOPES,
+  CONNECT_CALLBACK_PATH, CONNECT_SCOPES, MAX_TASK_PAGES, MAX_TODO_LIST_PAGES, MICROSOFT_AUTH_ERRORS, MS_TOKEN_URL,
   calendarGroupsUrl, calendarItem, calendarViewUrl, calendarsUrl, graphHeaders, graphNextLink, groupCalendarsUrl,
-  idTokenEmail, microsoftAuthUrl, scopeGranted,
+  idTokenEmail, microsoftAuthUrl, refreshScopes, scopeGranted, tasksGranted, tasksWritable, todoItems, todoListItem,
+  todoListsUrl, todoStatusBody, todoTaskUrl, todoTasksUrl,
 } from './core/microsoftGraph.js';
 
 export { graphToRaw, MANAGE_ACCESS_URLS, MICROSOFT_OAUTH_ERRORS } from './core/microsoftGraph.js';
@@ -25,7 +26,10 @@ export const redirectUri = (req) => `${publicUrl(req)}${CONNECT_CALLBACK_PATH}`;
 /** Events read per calendar refresh (500 per page). */
 const MAX_EVENT_PAGES = 10;
 
-/** A failed Microsoft call. code 'auth_failed': the account must be connected again. */
+/**
+ * A failed Microsoft call. code 'auth_failed': the account must be connected again. 'tasks_scope': the account was
+ * linked before Marco asked for Tasks.Read, so it must be connected again to read its To Do lists.
+ */
 export class MicrosoftError extends HttpError {
   constructor(message, status = 0, code = '') {
     super(message, status);
@@ -35,13 +39,18 @@ export class MicrosoftError extends HttpError {
 
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 
-/** Starts a connect: state and PKCE verifier in the session, returns Microsoft's sign-in URL. */
-export function startConnect(req, lang = '') {
+/**
+ * Starts a connect: state and PKCE verifier in the session, returns Microsoft's sign-in URL. `account`: a linked
+ * account this connect reconnects (its new tokens and scopes replace the stored ones, everything that uses it stays;
+ * another account signed in there is refused). `back`: where the admin lands (core connectBack).
+ */
+export function startConnect(req, lang = '', { account = '', back = '' } = {}) {
   const state = b64url(crypto.randomBytes(32));
   const verifier = b64url(crypto.randomBytes(48));
-  req.session.msOauth = { state, verifier, at: Date.now() };
+  const reconnect = account && accounts()[account] ? account : '';
+  req.session.msOauth = { state, verifier, at: Date.now(), ...(reconnect ? { account: reconnect } : {}), ...(back ? { back } : {}) };
   const challenge = b64url(crypto.createHash('sha256').update(verifier).digest());
-  return microsoftAuthUrl({ clientId: process.env.MICROSOFT_CLIENT_ID, redirectUri: redirectUri(req), state, challenge, lang });
+  return microsoftAuthUrl({ clientId: process.env.MICROSOFT_CLIENT_ID, redirectUri: redirectUri(req), state, challenge, lang, loginHint: reconnect });
 }
 
 /** Takes the session's pending connect (single use). Null when missing, older than 10 minutes, or another state. */
@@ -104,9 +113,18 @@ export function storeAccount(email, tokens) {
 
 const accounts = () => getSecrets().microsoft?.accounts || {};
 
+/**
+ * Linked accounts. `tasks` false: linked before Marco asked for To Do access (its lists need a new connect);
+ * `tasksWrite` false with `tasks` true: Tasks.Read only, its tasks cannot be ticked from a screen.
+ */
 export function listAccounts() {
-  return Object.keys(accounts()).map((email) => ({ email }));
+  return Object.entries(accounts()).map(([email, a]) => ({ email, tasks: tasksGranted(a?.scope), tasksWrite: tasksWritable(a?.scope) }));
 }
+
+/** The account may read its To Do lists (false for an unknown account). */
+export const accountHasTasks = (email) => tasksGranted(accounts()[email]?.scope);
+/** The account may mark its To Do tasks done (Tasks.ReadWrite). */
+export const accountWritesTasks = (email) => tasksWritable(accounts()[email]?.scope);
 
 /** Deletes an account's tokens (Microsoft has no revoke endpoint). */
 export function removeAccount(email) {
@@ -116,7 +134,11 @@ export function removeAccount(email) {
 }
 
 const refreshing = new Map();
-/** Valid access token for an account, refreshing (and storing the rotated refresh token) when it expires within 60 s. */
+/**
+ * Valid access token for an account, refreshing (and storing the rotated refresh token) when it expires within 60 s.
+ * The refresh asks only for the permissions the account granted (refreshScopes of its stored scope): an account
+ * linked before Tasks.Read keeps reading its calendars.
+ */
 export async function getAccessToken(email) {
   const acct = accounts()[email];
   if (!acct) throw new MicrosoftError(`Microsoft account not connected: ${email}`, 0, 'auth_failed');
@@ -126,7 +148,7 @@ export async function getAccessToken(email) {
   if (!refreshing.has(email)) {
     refreshing.set(email, (async () => {
       try {
-        const tok = await tokenRequest({ grant_type: 'refresh_token', refresh_token: acct.refresh_token, scope: REFRESH_SCOPES });
+        const tok = await tokenRequest({ grant_type: 'refresh_token', refresh_token: acct.refresh_token, scope: refreshScopes(acct.scope) });
         updateSecrets((s) => {
           const a = s.microsoft?.accounts?.[email];
           if (!a) return;
@@ -143,22 +165,24 @@ export async function getAccessToken(email) {
   return refreshing.get(email);
 }
 
-async function graphGet(url, token) {
-  const res = await request(url, { headers: graphHeaders(token), throwOnError: false });
+async function graphGet(url, token, write = null) {
+  const res = await request(url, write
+    ? { method: 'PATCH', headers: { ...graphHeaders(token), 'content-type': 'application/json' }, body: JSON.stringify(write), throwOnError: false }
+    : { headers: graphHeaders(token), throwOnError: false });
   let json;
   try { json = JSON.parse(res.text); } catch { json = {}; }
   if (!res.ok) throw new MicrosoftError(`Microsoft Graph: HTTP ${res.status}`, res.status, res.status === 401 ? 'auth_failed' : '');
   return json;
 }
 
-/** Graph call for an account. A 401 drops the access token and tries once more with a fresh one. */
-async function api(email, url) {
+/** Graph call for an account (`write`: a PATCH body). A 401 drops the access token and tries once more with a fresh one. */
+async function api(email, url, write = null) {
   try {
-    return await graphGet(url, await getAccessToken(email));
+    return await graphGet(url, await getAccessToken(email), write);
   } catch (err) {
     if (err.status !== 401) throw err;
     updateSecrets((s) => { const a = s.microsoft?.accounts?.[email]; if (a) a.expiry = 0; });
-    return graphGet(url, await getAccessToken(email));
+    return graphGet(url, await getAccessToken(email), write);
   }
 }
 
@@ -202,4 +226,39 @@ export async function listEvents(email, calendarId, timeMin, timeMax) {
     url = graphNextLink(j);
   }
   return items;
+}
+
+/** The account's Microsoft To Do lists (its own and the ones shared with it). Throws 'tasks_scope' without To Do access. */
+export async function listTodoLists(email) {
+  if (!accountHasTasks(email)) throw new MicrosoftError('To Do access not granted; reconnect the account', 0, 'tasks_scope');
+  const out = [];
+  let url = todoListsUrl();
+  for (let i = 0; i < MAX_TODO_LIST_PAGES && url; i++) {
+    const j = await api(email, url);
+    for (const l of Array.isArray(j.value) ? j.value : []) {
+      const item = todoListItem(l);
+      if (item && !out.some((x) => x.id === item.id)) out.push(item);
+    }
+    url = graphNextLink(j);
+  }
+  return out;
+}
+
+/** The open tasks of one list (core todoItems: Graph id, title, due day, importance), all pages up to MAX_TASK_PAGES. */
+export async function listTodoTasks(email, listId) {
+  if (!accountHasTasks(email)) throw new MicrosoftError('To Do access not granted; reconnect the account', 0, 'tasks_scope');
+  const tasks = [];
+  let url = todoTasksUrl(listId);
+  for (let i = 0; i < MAX_TASK_PAGES && url; i++) {
+    const j = await api(email, url);
+    if (Array.isArray(j.value)) tasks.push(...j.value);
+    url = graphNextLink(j);
+  }
+  return todoItems(tasks);
+}
+
+/** Marks one task done (completed) or not done (notStarted). Throws 'tasks_scope' without Tasks.ReadWrite. */
+export async function setTodoTaskDone(email, listId, taskId, done) {
+  if (!accountWritesTasks(email)) throw new MicrosoftError('Tasks.ReadWrite not granted', 0, 'tasks_scope');
+  await api(email, todoTaskUrl(listId, taskId), todoStatusBody(done));
 }

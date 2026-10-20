@@ -1,12 +1,14 @@
 // Background refresher: keeps calendar sources fresh (respecting refreshMin) and broadcasts SSE `events`
-// when the merged events (default window) change. Also pre-warms weather/news caches and checks which special
-// background rule holds on each screen (photoRules.js).
+// when the merged events (default window) change. Also pre-warms weather/news caches, checks which special
+// background rule holds on each screen (photoRules.js) and reads the Microsoft To Do lists of the to-do list
+// (microsoftTodo.js, every 5 minutes; SSE `todo` when their tasks change).
 import { getConfig } from './store.js';
 import { refreshAll, getEvents, defaultWindow } from './calendars.js';
 import { getWeather } from './weather.js';
 import { getNews } from './news.js';
 import { publish } from './pollHub.js';
 import { syncPhotoRules } from './photoRules.js';
+import { refreshTodo } from './microsoftTodo.js';
 
 let timer = null;
 let running = null;
@@ -24,6 +26,8 @@ export function runRefresh() {
   running = (async () => {
     try {
       const cfg = getConfig();
+      // not awaited: a slow Microsoft To Do list never holds up the calendars (it queues its own next run)
+      refreshTodo().catch(() => {});
       await refreshAll();
       const win = defaultWindow(cfg.datetime.timezone);
       const { hash } = await getEvents(win);

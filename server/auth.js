@@ -6,6 +6,7 @@ import cookieSession from 'cookie-session';
 import { getConfig, getSecrets, updateSecrets, updateConfig } from './store.js';
 import * as google from './google.js';
 import * as microsoft from './microsoft.js';
+import { CONNECT_BACK, connectBack } from './core/microsoftGraph.js';
 import { logActivity, logActivityThrottled } from './activity.js';
 import { passwordProblem, PASSWORD_MESSAGES } from './lib/password.js';
 import { isPrivateIp, isLanClient, clientBucket, hostAllowed, hostnameOf } from './lib/net.js';
@@ -646,19 +647,25 @@ export async function googleCallbackHandler(req, res) {
 
 // --- Microsoft calendars (server/microsoft.js) ---
 
-const MS_BACK = '#/calendars/cal-accounts';
-
-/** GET /auth/microsoft/connect: a signed in admin goes to Microsoft (PKCE, state in the session). */
+/**
+ * GET /auth/microsoft/connect: a signed in admin goes to Microsoft (PKCE, state in the session). `?account=<email>`
+ * reconnects that linked account (Microsoft preselects it; its tokens and scopes are replaced in place), `?back=todo`
+ * comes back to the Tareas page.
+ */
 export function microsoftConnectHandler(req, res) {
-  if (!microsoft.microsoftConfigured()) return res.redirect(`/admin/?error=microsoft_not_configured${MS_BACK}`);
+  const backTo = connectBack(req.query?.back);
+  if (!microsoft.microsoftConfigured()) return res.redirect(`/admin/?error=microsoft_not_configured${backTo}`);
   if (!sessionValid(req)) return res.redirect('/admin/?error=login_required');
   const lang = LANGS.includes(getConfig().screens?.[0]?.screen?.language) ? getConfig().screens[0].screen.language : '';
-  res.redirect(microsoft.startConnect(req, lang));
+  const account = typeof req.query?.account === 'string' ? req.query.account.trim().toLowerCase().slice(0, 320) : '';
+  const back = typeof req.query?.back === 'string' && Object.hasOwn(CONNECT_BACK, req.query.back) ? req.query.back : '';
+  res.redirect(microsoft.startConnect(req, lang, { account, back }));
 }
 
 /** GET /auth/microsoft/callback: the redirect URI registered in the Entra app (PUBLIC_URL + this path). */
 export async function microsoftCallbackHandler(req, res) {
-  const back = (q) => res.redirect(`/admin/?${q}${MS_BACK}`);
+  let backTo = connectBack('');
+  const back = (q) => res.redirect(`/admin/?${q}${backTo}`);
   const failEarly = (code) => {
     logActivityThrottled('auth.login_failed', `microsoft|${req.ip}|${code}`, { everyMs: 60_000, perMinute: 10 },
       { req, actor: 'anonymous', level: 'warn', data: { method: 'microsoft', reason: code } });
@@ -666,6 +673,7 @@ export async function microsoftCallbackHandler(req, res) {
   };
   if (!microsoft.microsoftConfigured()) return back('error=microsoft_not_configured');
   const pendingConnect = microsoft.takeConnect(req, req.query.state);
+  if (pendingConnect) backTo = connectBack(pendingConnect.back);
   if (req.query.error) {
     const e = String(req.query.error);
     return failEarly(microsoft.MICROSOFT_OAUTH_ERRORS.has(e) ? `microsoft_${e}` : 'microsoft_error');
@@ -680,6 +688,10 @@ export async function microsoftCallbackHandler(req, res) {
     const known = { scope_denied: 'microsoft_scope_denied', no_refresh_token: 'microsoft_no_refresh_token', no_email: 'microsoft_no_email' };
     console.warn('[auth] microsoft connect failed:', err.code || err.status || 'error');
     return back(`error=${known[err.code] || 'microsoft_exchange_failed'}`);
+  }
+  // A reconnect signed in as another account: nothing is stored (the tokens of the other account are dropped).
+  if (pendingConnect.account && result.email !== pendingConnect.account) {
+    return back(`error=microsoft_wrong_account&account=${encodeURIComponent(pendingConnect.account)}`);
   }
   microsoft.storeAccount(result.email, result.tokens);
   logActivity('microsoft.connected', { req, data: { email: result.email } });

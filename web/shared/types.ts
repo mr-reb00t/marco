@@ -584,11 +584,31 @@ export interface TodoItem {
   id: string;
   text: string;
   done: boolean;
+  /** Display config only, tasks of a Microsoft To Do list (id ms_..., opaque): the due day, YYYY-MM-DD */
+  due?: string;
+  /** Display config only: the task is marked important in Microsoft To Do (a star) */
+  important?: boolean;
+  /** Display config only: a touch screen may tick it (POST /api/display/todo/toggle) */
+  tick?: boolean;
+}
+
+/** A Microsoft To Do list shown on the to-do list (config todo.lists). Its tasks are read by the server. */
+export interface TodoList {
+  id: string; // tl_...
+  type: 'microsoft';
+  microsoftAccount: string;
+  microsoftListId: string;
+  name: string;
+  enabled: boolean;
 }
 
 export interface TodoConfig {
   enabled: boolean;
   items: TodoItem[];
+  /** Microsoft To Do lists (admin config; never in the display config, which gets their tasks in `items`) */
+  lists?: TodoList[];
+  /** Display config only: tasks with `tick` may be ticked by touching this screen */
+  touch?: boolean;
 }
 
 export interface MessageConfig {
@@ -1842,6 +1862,8 @@ export type StreamEvent =
   | ({ type: 'doorbell' } & DoorbellRing)
   | { type: 'doorbell-end'; id: string }
   | { type: 'family'; rev: number }
+  /** the tasks of the Microsoft To Do lists changed: refetch the config */
+  | { type: 'todo' }
   | { type: 'ping'; t: number };
 
 // ---- Admin API ----
@@ -2012,6 +2034,20 @@ export interface GoogleCalendarListItem {
 
 export interface MicrosoftAccount {
   email: string;
+  /** the account lets Marco read its Microsoft To Do lists (false: linked before Marco asked; connect it again) */
+  tasks?: boolean;
+  /** the account lets Marco tick its To Do tasks from a touch screen (Tasks.ReadWrite) */
+  tasksWrite?: boolean;
+}
+
+/** GET /api/admin/microsoft/todo-lists?account= */
+export interface MicrosoftTodoListItem {
+  id: string;
+  name: string;
+  /** the account's default list ("Tasks") */
+  isDefault?: boolean;
+  /** shared with other people */
+  shared?: boolean;
 }
 
 export interface MicrosoftCalendarListItem {
@@ -2310,7 +2346,7 @@ export interface StoredConfig {
   datetime: { timezone: string };
   weather: Omit<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { feeds: NewsFeed[]; maxItems: number };
-  todo: { items: TodoItem[] };
+  todo: { items: TodoItem[]; lists: TodoList[] };
   localEvents: LocalEventsConfig;
   birthdays: BirthdaysConfig;
   eventRules: { items: EventRule[] };
@@ -2517,7 +2553,9 @@ export type DisplayCommand =
   | ({ type: 'doorbell' } & DoorbellRing)
   | { type: 'doorbell-end'; id: string }
   /** Familia changed (a routine ticked, stars, the family link): fetch the family state again */
-  | { type: 'family'; rev?: number };
+  | { type: 'family'; rev?: number }
+  /** the tasks of the Microsoft To Do lists changed: fetch the config again */
+  | { type: 'todo' };
 
 /** GET /api/display/poll?client=&cursor=&rev=&hidden=&preview= (docs/API.md) */
 export interface PollResponse {
@@ -2819,6 +2857,7 @@ export type ActivityType =
   | 'family.undone'
   | 'family.link'
   | 'family.key_rejected'
+  | 'todo.task'
   | 'ha.action'
   | 'activity.cleared'
   | 'update.requested'

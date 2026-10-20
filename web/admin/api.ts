@@ -60,6 +60,7 @@ import type {
   GoogleCalendarListItem,
   MicrosoftAccount,
   MicrosoftCalendarListItem,
+  MicrosoftTodoListItem,
   HaAdminHistory, HaEntity, HaLiveStatus, HaSlim,
   TestHomeAssistantResponse,
   WeatherKeyStatus,
@@ -213,6 +214,9 @@ export const api = {
     request<unknown>('DELETE', `/api/admin/microsoft/accounts/${encodeURIComponent(email)}`),
   microsoftCalendars: (account: string) =>
     request<MicrosoftCalendarListItem[]>('GET', `/api/admin/microsoft/calendars?account=${encodeURIComponent(account)}`),
+  // Microsoft To Do lists of a linked account (the To-do page). 409 microsoft_tasks_reconnect: connect it again.
+  microsoftTodoLists: (account: string) =>
+    request<MicrosoftTodoListItem[]>('GET', `/api/admin/microsoft/todo-lists?account=${encodeURIComponent(account)}`),
 
   testIcs: (url: string, insecureTls?: boolean) =>
     request<TestIcsResponse>('POST', '/api/admin/test/ics', insecureTls ? { url, insecureTls: true } : { url }),
