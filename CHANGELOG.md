@@ -5,6 +5,11 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- The language picker is a menu now: the panel's sidebar and the setup wizard show the current language by its own
+  name, and a click (or Enter, Space or the arrow keys) lists all six with the current one checked. It replaces the
+  row of six buttons in the sidebar and the six cards on the wizard's first step, which no longer fit well on a phone.
+
 ## [0.19.0] - 2026-10-20
 
 ### Added

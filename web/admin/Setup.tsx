@@ -10,6 +10,7 @@ import { kioskInstallCommand, REPO_URL } from '../shared/project';
 import type { GeocodeResult, Lang, LayoutPreset, SetupRequest, SetupStatus, TestIcsResponse } from '../shared/types';
 import { api, ApiError } from './api';
 import { Icon, type IconName } from './components/icons';
+import { LangMenu } from './components/LangMenu';
 import { Button, Callout, Field, Segmented, TextInput } from './components/ui';
 import { getLang, kmh, setLang, t } from './i18n';
 import { LOCALES } from '../shared/i18n';
@@ -68,14 +69,8 @@ const STEPS: { id: string; label: string; icon: IconName }[] = [
   { id: 'done', label: 'Listo', icon: 'check' },
 ];
 
-const LANG_CARDS: { value: Lang; name: string; hello: string }[] = [
-  { value: 'en', name: 'English', hello: 'Hello' },
-  { value: 'es', name: 'Español', hello: 'Hola' },
-  { value: 'pt', name: 'Português', hello: 'Olá' },
-  { value: 'nl', name: 'Nederlands', hello: 'Hallo' },
-  { value: 'da', name: 'Dansk', hello: 'Hej' },
-  { value: 'pl', name: 'Polski', hello: 'Cześć' },
-];
+// "Hello" in each language, under its name in the language menu of the first step.
+const HELLO: Record<Lang, string> = { es: 'Hola', en: 'Hello', pt: 'Olá', nl: 'Hallo', da: 'Hej', pl: 'Cześć' };
 
 const browserTz = () => {
   try {
@@ -502,21 +497,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           </li>
         </ul>
         <Field label={t('Idioma')}>
-          <div class="wz-langs" role="radiogroup" aria-label={t('Idioma')}>
-            {LANG_CARDS.map((l, i) => (
-              <button
-                type="button"
-                role="radio"
-                aria-checked={lang === l.value}
-                class={`wz-lang ${lang === l.value ? 'is-active' : ''}`}
-                onClick={() => changeLang(l.value)}
-                {...(i === 0 && !needToken ? { 'data-autofocus': true } : {})}
-              >
-                <span class="wz-lang__hello">{l.hello}</span>
-                <span class="wz-lang__name">{l.name}</span>
-              </button>
-            ))}
-          </div>
+          <LangMenu variant="field" value={lang} onChange={changeLang} label={t('Idioma')} detail={HELLO} autofocus={!needToken} />
         </Field>
         {needToken && (
           <Field
@@ -972,7 +953,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
         <span class="wz-top__step">{t('Paso {n} de {total}', { n: step + 1, total: STEPS.length })}</span>
         {step > 0 && step < 5 && (
           <div class="wz-top__lang">
-            <Segmented size="sm" value={lang} options={LANG_CARDS.map((l) => ({ value: l.value, label: l.value.toUpperCase(), title: l.name }))} onChange={changeLang} />
+            <LangMenu value={lang} onChange={changeLang} label={t('Idioma')} align="end" />
           </div>
         )}
       </header>

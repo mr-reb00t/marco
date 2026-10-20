@@ -317,30 +317,6 @@ button {
   padding: 12px 14px;
   border-top: 1px solid var(--border);
 }
-.lang-switch {
-  display: inline-flex;
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 2px;
-  box-shadow: inset 0 0 0 1px var(--border);
-}
-/* six languages fit next to the theme and help buttons */
-.lang-switch button {
-  border: 0;
-  background: transparent;
-  padding: 4px 6px;
-  font-size: 11px;
-  font-weight: 650;
-  border-radius: 6px;
-  color: var(--muted);
-  cursor: pointer;
-}
-.lang-switch button.is-active {
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
 .main-col {
   min-width: 0;
   display: flex;

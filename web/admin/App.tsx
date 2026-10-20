@@ -8,6 +8,7 @@ import { choiceDialog, confirmDialog, DialogHost, toast, ToastHost } from './com
 import { saveWithRevision, type ConflictChoice } from './configMerge';
 import { Icon, type IconName } from './components/icons';
 import { ScreenSwitcher } from './components/ScreenSwitcher';
+import { LangMenu } from './components/LangMenu';
 import { openPairDialog, PairDialogHost } from './components/DisplayAccess';
 import { UpdateBanner, UpdateDialogHost, WhatsNewHost } from './components/Updates';
 import { PrivacyBanner } from './components/Privacy';
@@ -15,7 +16,6 @@ import { FeedbackDialog } from './components/FeedbackDialog';
 import { feedbackMeta } from './feedbackForm';
 import { Button, setScopeScreenName } from './components/ui';
 import { getLang, initialLang, setLang, nScreens, t } from './i18n';
-import { LANG_NAMES, LANGS } from '../shared/i18n';
 import { setIntent } from './intent';
 import { Login } from './Login';
 import { SetupWizard, takeSetupToken } from './Setup';
@@ -943,13 +943,7 @@ export function App() {
           ))}
         </nav>
         <div class="sidebar__foot">
-          <div class="lang-switch" role="group" aria-label={t('Idioma del panel')}>
-            {LANGS.map((l) => (
-              <button type="button" class={getLang() === l ? 'is-active' : ''} title={LANG_NAMES[l]} lang={l} onClick={() => changeLang(l)}>
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <LangMenu value={getLang()} onChange={changeLang} label={t('Idioma del panel')} up />
           <div class="sidebar__tools">
             <button
               type="button"
