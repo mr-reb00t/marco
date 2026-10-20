@@ -30,7 +30,7 @@ export default [
     match: [
       'vuelo', 'flight', 'fly to', 'voo', 'aeropuerto', 'airport', 'aeroporto', 'boarding', 'embarque', 'vlucht naar',
       'vlucht van', 'heenvlucht', 'terugvlucht', 'vliegveld', 'luchthaven', 'vliegen naar', 'schiphol', 'zaventem',
-      'fly', 'flyet', 'flyrejse', 'flyver til', 'lufthavn', 'lot do', 'lotnisk', 'samolot', 'odlot', 'przylot', 'wylot',
+      'fly', 'flyet', 'flyrejse', 'flyver til', 'lufthavn', 'lotnisk', 'samolot', 'odlot', 'przylot', 'wylot',
     ],
   },
   {
@@ -268,7 +268,7 @@ export default [
     match: [
       'veterinario', 'veterinário', 'vet', 'veterinary', 'grooming', 'peluquería canina', 'dog', 'perro', 'cão',
       'puppy', 'cachorro', 'dierenarts', 'hond', 'kat', 'poes', 'trimmen', 'dyrlæge', 'dyreklinik', 'hund', 'hunden',
-      'hvalp', 'weteryn', 'z psem', 'psa', 'kota', 'kotem',
+      'hvalp', 'weteryn', 'z psem', 'kota', 'kotem',
     ],
   },
   {

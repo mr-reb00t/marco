@@ -87,7 +87,9 @@ test('admin: every singular form has a Dutch, a Danish and a Polish value', ts, 
       assert.ok(one[k], `${lang} misses the singular of ${k}`);
       assert.equal(holes(one[k]), holes(es), `${lang} singular placeholders: ${k}`);
     }
-    assert.deepEqual(Object.keys(one).filter((k) => !(k in plural.SINGULAR)), [], `${lang} has singular forms nobody uses`);
+    // Polish may also need a singular where the other languages do not change ("kończy 1 rok", "turns 1")
+    const polishOnly = (k) => lang === 'pl' && k in dict.EN && /\{n\}/.test(k);
+    assert.deepEqual(Object.keys(one).filter((k) => !(k in plural.SINGULAR) && !polishOnly(k)), [], `${lang} has singular forms nobody uses`);
   }
 });
 
@@ -261,10 +263,13 @@ test('icon rules: Dutch, Danish and Polish keywords, within the limits, for exis
   assert.equal(emoji('Dentysta Lucía'), '🩺');
   assert.equal(emoji('Lekcja pływania'), emoji('Swimming lesson'));
   assert.equal(emoji('Wywóz śmieci'), '🗑️');
-  assert.equal(emoji('Lot do Madrytu'), '✈️');
+  assert.equal(emoji('Wylot do Madrytu'), '✈️');
   assert.equal(emoji('Dziadek Luis'), null);
   // Polish stems must not catch other languages' titles
   assert.equal(emoji('Terminar el informe'), null);
+  assert.equal(emoji('Pilot doctor visit'), emoji('Doctor visit'));
+  assert.equal(emoji('Parking lot downtown'), null);
+  assert.equal(emoji('PSA test'), null);
   assert.equal(emoji('Apple pies'), null);
   assert.equal(emoji('Praça do Comércio'), null);
   for (const r of DEFAULT_ICON_RULES) assert.ok(r.match.length <= 100, `${r.id}: ${r.match.length} keywords`);
@@ -340,7 +345,25 @@ test('Polish: three count forms in the admin and the family tables, every "few" 
   } finally {
     i18n.setLang('es');
   }
+  // ages: "kończy 1 rok", "kończy 3 lata", "kończy 5 lat"
+  i18n.setLang('pl');
+  try {
+    assert.equal(i18n.t('cumple {n}', { n: 1 }), 'kończy 1 rok');
+    assert.equal(i18n.t('cumple {n}', { n: 23 }), 'kończy 23 lata');
+    assert.equal(i18n.t('cumple {n}', { n: 12 }), 'kończy 12 lat');
+  } finally {
+    i18n.setLang('es');
+  }
   const counts = new Set(Object.keys(dict.EN).filter((k) => /\{n\}/.test(k)));
+  // A Polish count row with a noun after {n} needs a "few" twin, unless that word reads the same for 2-4 and 5+
+  // (genitive after a preposition, "dni", units, a label-first form).
+  const fewKeys = new Set([...Object.keys(plMod.PL_FEW), ...Object.keys(family.PL_FEW_FAMILY)]);
+  const invariant = new Set(['dni', 'wiadomości', 'z', 'znaków', 'zdjęć', 'ekranów', 'miejsc', 'więcej', 's', 'h', 'min', '%', '⭐']);
+  for (const [k, v] of Object.entries({ ...plMod.PL, ...family.PL_FAMILY })) {
+    if (!counts.has(k) || fewKeys.has(k)) continue;
+    const word = v.match(/\{n\}\s*([^\s{}.,:;()·]+)/)?.[1];
+    if (word) assert.ok(invariant.has(word), `PL_FEW needs a "few" form for: ${k} (${v})`);
+  }
   for (const [name, few] of [['PL_FEW', plMod.PL_FEW], ['PL_FEW_FAMILY', family.PL_FEW_FAMILY]]) {
     for (const [k, v] of Object.entries(few)) {
       assert.ok(counts.has(k), `${name}: ${k} is not a count key`);
@@ -354,6 +377,7 @@ test('Polish: dates with the month in the genitive, Monday first, "Ndz" for Sund
   assert.equal(shared.formatDateLine('pl', '2026-10-12', 'weekday_month_d'), 'Poniedziałek, październik 12');
   assert.equal(shared.formatDatePattern('pl', '2026-10-12', '{dddd} {d} {mmmm}'), 'Poniedziałek 12 października');
   assert.equal(shared.formatDatePattern('pl', '2026-10-12', '{mmmm} {yyyy}'), 'październik 2026');
+  assert.equal(shared.formatDatePattern('pl', '2026-10-11', '{ddd} {d}'), 'Ndz 11');
   assert.equal(shared.monthName('pl', 10), 'Październik');
   assert.deepEqual(shared.weekdayNames('pl', 1), ['Pon', 'Wt', 'Śr', 'Czw', 'Pt', 'Sob', 'Ndz']);
   assert.equal(shared.formatDateLine('es', '2026-10-12', 'weekday_d_month'), 'Lunes, 12 de octubre');

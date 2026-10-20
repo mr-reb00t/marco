@@ -927,7 +927,7 @@ export const PL_FAMILY: Record<string, string> = {
   'Miembros': 'Członkowie',
   '¿Quitar a {name}?': 'Usunąć {name}?',
   'esta persona': 'tę osobę',
-  'También se borran sus rutinas ({n}).': 'Jej rutyny też zostaną usunięte ({n}).',
+  'También se borran sus rutinas ({n}).': 'Rutyny tej osoby też zostaną usunięte ({n}).',
   'Hasta 6 personas. Los niños ganan estrellas con sus rutinas; los adultos pueden tener rutinas sin estrellas.': 'Do 6 osób. Dzieci zdobywają gwiazdki za rutyny; dorośli mogą mieć rutyny bez gwiazdek.',
   'Añadir miembro': 'Dodaj członka',
   'Todavía no hay nadie': 'Nikogo tu jeszcze nie ma',
@@ -1158,7 +1158,7 @@ export const PL_FAMILY: Record<string, string> = {
 
 /** Polish singular forms (n = 1) of the Familia count rows. */
 export const PL_SINGULAR_FAMILY: Record<string, string> = {
-  'También se borran sus rutinas ({n}).': 'Jej rutyna też zostanie usunięta.',
+  'También se borran sus rutinas ({n}).': 'Rutyna tej osoby też zostanie usunięta.',
   '{n} rutinas': '1 rutyna',
   '{n} días con menú en la plantilla.': '1 dzień z posiłkami w szablonie.',
   '{n} estrellas': '1 gwiazdka',

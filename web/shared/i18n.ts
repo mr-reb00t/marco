@@ -2073,7 +2073,11 @@ export function formatDatePattern(lang: Lang, key: string, pattern: string): str
   const withDay = /\{dd?\}/i.test(pattern);
   const val: Record<string, () => string> = {
     dddd: () => capitalize(fmt(lang, { weekday: 'long', timeZone: 'UTC' }).format(d)),
-    ddd: () => capitalize(fmt(lang, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '')),
+    ddd: () => {
+      const w = fmt(lang, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '');
+      // the same "Ndz" for Sunday as the calendar headers (weekdayName)
+      return capitalize(lang === 'pl' && w === 'niedz' ? 'ndz' : w);
+    },
     d: () => String(d.getUTCDate()),
     dd: () => key.slice(8, 10),
     mmmm: () => { const m = withDay ? monthAfterDay(lang, d) : fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d); return lang === 'en' ? capitalize(m) : m; },

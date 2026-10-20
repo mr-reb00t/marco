@@ -340,6 +340,7 @@ test('entity picker search: name, id, area and the kind in five languages, no ca
   assert.deepEqual(find('SALÓN'), ['light.salon_techo']);
   assert.deepEqual(find('luz'), ['light.salon_techo']);
   assert.deepEqual(find('blind'), ['cover.dormitorio']);
+  assert.deepEqual(find('roleta'), ['cover.dormitorio']);
   assert.deepEqual(find('temp cocina'), ['sensor.temp_cocina']);
   assert.deepEqual(find('enchufe'), ['switch.enchufe_tv']);
   assert.equal(find('').length, 4);

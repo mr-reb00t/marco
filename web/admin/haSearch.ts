@@ -2,13 +2,16 @@
 // can run it.
 import type { HaEntity } from '../shared/types';
 
-/** Words for each domain in the six admin languages, so "luz" or "persiana" finds lights or covers by kind. */
+/**
+ * Words for each domain in the six admin languages, so "luz" or "persiana" finds lights or covers by kind. The search
+ * matches substrings, so a word that hides another language's word stays out ("żaluzja" holds "luz").
+ */
 export const DOMAIN_WORDS: Record<string, string> = {
   light: 'luz luces lámpara light lights lamp luzes licht lamp lys lampe światło lampa oświetlenie',
   switch: 'interruptor enchufe switch plug tomada schakelaar stekker kontakt stik przełącznik gniazdko',
   input_boolean: 'interruptor switch toggle',
   climate: 'clima calefacción aire termostato climate heating thermostat aquecimento klimaat verwarming klima varme klimatyzacja ogrzewanie',
-  cover: 'persiana estor cortina cover blind shutter estore rolluik gordijn rullegardin persienne roleta żaluzja zasłona',
+  cover: 'persiana estor cortina cover blind shutter estore rolluik gordijn rullegardin persienne roleta zasłona',
   sensor: 'sensor', binary_sensor: 'sensor',
   media_player: 'multimedia altavoz tele media speaker tv coluna muziek højttaler głośnik telewizor',
   camera: 'cámara camera câmara kamera',

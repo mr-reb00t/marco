@@ -2922,7 +2922,7 @@ export const PL: Record<string, string> = {
   'Rotativa': 'Karta rotująca',
   'Varias tarjetas en un mismo hueco, una tras otra cada pocos segundos.': 'Kilka kart w jednym miejscu, jedna po drugiej co kilka sekund.',
   'Se ven una tras otra en el mismo hueco, de {min} a {max}. No hace falta tocar la pantalla.': 'Pojawiają się jedna po drugiej w tym samym miejscu, od {min} do {max}. Nie trzeba dotykać ekranu.',
-  'Una Rotativa tiene al menos {n} tarjetas.': 'Karta rotująca ma co najmniej {n} karty.',
+  'Una Rotativa tiene al menos {n} tarjetas.': 'Karta rotująca ma co najmniej {n} kart.',
   'Añadir una tarjeta': 'Dodaj kartę',
   'Ya tiene {n} tarjetas, el máximo.': 'Ma już {n} kart, to maksimum.',
   'La pantalla ya tiene todas las tarjetas que caben.': 'Ekran ma już tyle kart, ile się zmieści.',
@@ -3028,7 +3028,7 @@ export const PL: Record<string, string> = {
   'Lugar': 'Miejsce',
   'Lugares': 'Miejsca',
   'Añadir lugar': 'Dodaj miejsce',
-  'Hacen falta al menos {n} lugares.': 'Potrzebne są co najmniej {n} miejsca.',
+  'Hacen falta al menos {n} lugares.': 'Potrzebne są co najmniej {n} miejsc.',
   'Hasta {n} lugares.': 'Do {n} miejsc.',
   'De {min} a {max} lugares. Una pantalla muestra como mucho 8 lugares además del suyo.': 'Od {min} do {max} miejsc. Ekran pokazuje najwyżej 8 miejsc oprócz własnego.',
   'Máxima y mínima de hoy': 'Dzisiejsza najwyższa i najniższa',
@@ -3083,6 +3083,7 @@ export const PL: Record<string, string> = {
 
 /** Singular forms (n = 1): Spanish key → Polish. */
 export const PL_SINGULAR: Record<string, string> = {
+  'cumple {n}': 'kończy 1 rok',
   '{n} archivos ignorados (solo JPG, PNG o WebP de hasta 100 MB)': '1 plik pominięty (tylko JPG, PNG lub WebP do 100 MB)',
   '{n} días': '1 dzień',
   '{n} entidades disponibles': '1 dostępna encja',
@@ -3154,6 +3155,9 @@ export const PL_SINGULAR: Record<string, string> = {
 
 /** "Few" forms (2-4, 22-24…): Spanish key → Polish. A count key missing here uses its row in PL. */
 export const PL_FEW: Record<string, string> = {
+  'cumple {n}': 'kończy {n} lata',
+  'Una Rotativa tiene al menos {n} tarjetas.': 'Karta rotująca ma co najmniej {n} karty.',
+  'Hacen falta al menos {n} lugares.': 'Potrzebne są co najmniej {n} miejsca.',
   '{n} archivos ignorados (solo JPG, PNG o WebP de hasta 100 MB)': '{n} pliki pominięte (tylko JPG, PNG lub WebP do 100 MB)',
   '{n} entidades disponibles': '{n} dostępne encje',
   '{n} errores': '{n} błędy',
