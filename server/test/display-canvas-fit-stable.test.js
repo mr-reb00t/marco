@@ -25,6 +25,12 @@ const STATE = `(() => [...document.querySelectorAll('.cv-item')].filter((e) => !
   const text = b.innerText.replace(/\\d{1,2}:\\d{2}(:\\d{2})?/g, '#').replace(/\\d+/g, 'N').replace(/\\s+/g, ' ').trim().slice(0, 160);
   const cls = [...b.querySelectorAll('[class]')].map((n) => (n.className.baseVal ?? n.className)).join(' ').replace(/\\s+/g, ' ').slice(0, 400);
   const fs = [...b.querySelectorAll('*')].filter((n) => n.childElementCount === 0 && n.textContent.trim() && n.getClientRects().length).slice(0, 12).map((n) => Math.round(parseFloat(getComputedStyle(n).fontSize) * 2) / 2);
+  // a quote ticker moves on its own (a running line with a second copy, or pages in turn without motion): which
+  // quotes it shows depends on the moment, so only its sizes are compared, each once
+  if (b.classList.contains('is-ticker')) {
+    const once = (a) => [...new Set(a)].sort().join(',');
+    return { id: e.dataset.canvasItem, kind: e.dataset.kind, box: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(','), body: b.className, zoom: st.zoom, wk: st.getPropertyValue('--wk'), dk: st.getPropertyValue('--dk'), grow: st.getPropertyValue('--cv-grow'), text: '', cls: once(cls.split(' ')), fs: once(fs) };
+  }
   return { id: e.dataset.canvasItem, kind: e.dataset.kind, box: [Math.round(r.left), Math.round(r.top), Math.round(r.width), Math.round(r.height)].join(','), body: b.className, zoom: st.zoom, wk: st.getPropertyValue('--wk'), dk: st.getPropertyValue('--dk'), grow: st.getPropertyValue('--cv-grow'), text, cls, fs: fs.join(',') };
 }))()`;
 
