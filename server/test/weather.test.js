@@ -316,7 +316,12 @@ test('server/weather.js: one call for every language, cached until expiry, stale
   fs.writeFileSync(path.join(dir, 'secrets.json'), JSON.stringify({}));
   store.initStore(dir);
   let fail = false;
+  // the fixture's forecast moved to start at this hour: getWeather reads "now" from the clock, and a forecast that
+  // ended days ago has no current conditions
   const body = json('met-norway-oslo.json');
+  const ts = body.properties.timeseries;
+  const shift = Math.floor(Date.now() / 3_600_000) * 3_600_000 - Date.parse(ts[0].time);
+  for (const t of ts) t.time = new Date(Date.parse(t.time) + shift).toISOString().replace('.000Z', 'Z');
   const f = fakeFetch(() => (fail ? { status: 500 } : { body, headers: { expires: new Date(Date.now() + 30 * 60_000).toUTCString(), 'last-modified': 'Sat, 10 Oct 2026 13:47:21 GMT' } }));
   weather.setWeatherFetch(f);
   try {
