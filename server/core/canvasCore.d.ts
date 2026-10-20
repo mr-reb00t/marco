@@ -120,6 +120,9 @@ export const NAV_HOME: 'home';
 export const NAV_TAP_KINDS: CanvasKind[];
 export function navTargets(screen: unknown): string[];
 export function canvasDataItems(screen: unknown, opts?: { now?: Date; tz?: string }): CanvasItem[];
+/** The "now playing" account ids a screen shows (its Sonando ahora cards, or screen.nowPlaying on other layouts). */
+export function nowPlayingAccounts(screen: unknown, opts?: { now?: Date; tz?: string }): string[];
+export const NOW_PLAYING_ACCOUNT_RE: RegExp;
 
 type GridArg = CanvasGridId | string | null | undefined;
 export function sizeCells(size: CanvasSize | string, orientation?: Orientation | string, grid?: GridArg): [number, number];

@@ -84,6 +84,8 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Galería de fotos', route: 'photos', keywords: 'photos upload subir galería' },
   { label: 'Conexión con Home Assistant', route: 'homeassistant', anchor: 'ha-conn', keywords: 'home assistant token url' },
   { label: 'Conexión con Immich', route: 'immich', anchor: 'immich-conn', keywords: 'immich fotos photos álbumes albums api key clave chave url', feature: 'immich' },
+  { label: 'Tu app de Spotify', route: 'spotify', anchor: 'spotify-app', keywords: 'spotify client id secret redirect uri developer app clave', feature: 'spotify' },
+  { label: 'Cuentas de Spotify conectadas', route: 'spotify', anchor: 'spotify-accounts', keywords: 'spotify cuenta account conta konto sonando ahora now playing teraz gra música music muzyka', feature: 'spotify' },
   { label: 'Timbre y cámara', route: 'homeassistant', anchor: 'ha-doorbell', keywords: 'doorbell timbre campainha camera cámara puerta door', feature: 'doorbell' },
   // servers without a live camera (Marco Cloud) have no Home Assistant page: the card is in API & webhooks
   { label: 'Timbre', route: 'api', anchor: 'api-doorbell', keywords: 'doorbell timbre campainha camera cámara puerta door foto snapshot', feature: 'doorbell', unless: 'doorbellLive' },

@@ -55,6 +55,7 @@ export const KIND_META: Partial<Record<CanvasKind, KindMeta>> = {
   news: { name: 'Noticias', help: 'Los titulares de tus fuentes de noticias.', icon: 'news', tags: 'noticias titulares rss news headlines notícias nieuws nyheder wiadomości nagłówki' },
   photo: { name: 'Fotos', help: 'Un pase de fotos dentro de una tarjeta.', icon: 'photos', tags: 'fotos imágenes galería photos pictures gallery imagens foto’s billeder zdjęcia obrazy galeria' },
   value: { name: 'Valor', help: 'Un número o un texto que envías desde Home Assistant u otro programa.', icon: 'activity', words: 'webhook api clave sensor', tags: 'valor webhook api número sensor value number waarde værdi home assistant ha hass domótica smart home wartość liczba czujnik' },
+  nowplaying: { name: 'Sonando ahora', help: 'Lo que suena en una cuenta de Spotify: la canción, el artista y la portada. Si no suena nada, no se ve.', icon: 'music', words: 'spotify música canción', tags: 'spotify música music canción song canção nummer sang podcast sonando playing a tocar speelt afspilles muzyka piosenka utwór teraz gra odtwarzane' },
   rotator: { name: 'Rotativa', help: 'Varias tarjetas en un mismo hueco, una tras otra cada pocos segundos.', icon: 'repeat', words: 'carrusel rotar alternar', tags: 'rotativa carrusel rotar alternar carousel rotate rotating cycle slideshow carrossel rotativo roterend wisselend karrusel skiftende rotująca karuzela zmiana' },
   spacer: { name: 'Espacio', help: 'Un hueco vacío, por ejemplo para dejar ver la foto.', icon: 'layout', group: 'adv', tags: 'espacio hueco vacío space gap empty espaço ruimte plads odstęp przerwa puste' },
   'family.members': { name: 'Familia', help: 'Las caras de la familia, con sus estrellas y lo que llevan hecho hoy.', icon: 'users', tags: 'familia miembros caras family members faces membros gezinsleden familiemedlemmer rodzina członkowie twarze' },
@@ -124,13 +125,15 @@ export const AWAY_NOTE = 'Solo en la versión instalada en casa';
 export const outOfEdition = (k: CanvasKind, env: { cloud: boolean }): boolean => env.cloud && CANVAS_KINDS[k]?.edition === 'local';
 
 /** Why a kind cannot be added here (null: it can). Spanish t() keys. */
-export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean }): string | null {
+export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean }): string | null {
   const d = CANVAS_KINDS[k];
   if (!d) return 'No disponible en este servidor';
   if (env.cloud && d.edition === 'local') return 'Solo en Marco instalado en casa';
   if (!env.allowed.includes(k)) return 'No disponible en este servidor';
   // Bolsa needs a Finnhub key: a server that has none to offer (Marco Cloud without one) says so (feature stockQuotes)
   if (k === 'stocks' && env.stocks === false) return 'Bolsa necesita una clave de Finnhub que este servidor no tiene todavía.';
+  // Sonando ahora reads Spotify accounts linked on this server (feature spotify)
+  if (k === 'nowplaying' && env.spotify === false) return 'No disponible en este servidor';
   if (KIND_META[k]?.soon) return 'Llega en una próxima versión';
   return null;
 }

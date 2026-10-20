@@ -1,11 +1,12 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
-// the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family,
+// the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
 // household, look, values, ink, places, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
 import { cardSnippets } from '../shared/cardSnippets';
 import { SHOWCASES } from './showcase';
+import { DEMO_NOW_PLAYING_ACCOUNT } from './nowPlayingFeed';
 
 /** The saved widget the demo's widget items show (mock.ts adds its definition). */
 export const DEMO_WIDGET = 'w_demo_prices';
@@ -390,6 +391,20 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'widget', pos: M(8, 12, 's'), props: { widgetId: DEMO_WIDGET } },
     ],
   },
+  // Sonando ahora (?np=idle: nothing plays, every card is hidden): the wide card, a big one, one line, one without a
+  // cover, one in the sidebar, and one with no account chosen (never drawn on a TV)
+  nowplaying: {
+    canvas: { background: 'ambient', sidebar: { side: 'right', size: 'normal', fill: 'glass' } },
+    items: [
+      { kind: 'nowplaying', pos: M(0, 0, 'w'), props: { account: DEMO_NOW_PLAYING_ACCOUNT } },
+      { kind: 'nowplaying', pos: M(0, 4, 'l'), props: { account: 'sp_demo0000001' } },
+      { kind: 'nowplaying', pos: B(0, 12, 10, 1), props: { account: DEMO_NOW_PLAYING_ACCOUNT } },
+      { kind: 'nowplaying', pos: B(0, 14, 8, 2), props: { account: 'sp_demo0000001', art: false } },
+      { kind: 'nowplaying', pos: S(0, 3), props: { account: DEMO_NOW_PLAYING_ACCOUNT } },
+      { kind: 'clock.digital', pos: S(1, 'fill') },
+      { kind: 'nowplaying', pos: M(12, 0, 's') },
+    ],
+  },
   // Familia y hogar: everyone's routines, one person's, the faces, the leaderboard, rewards, chores and today's meals
   family: {
     canvas: { background: 'ambient' },
@@ -572,6 +587,8 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
       ];
       return { places: all.slice(0, [2, 4, 8][n % 3]), layout: n % 2 ? 'grid' : 'list', highLow: n % 4 !== 3 };
     }
+    // what plays: two made-up tracks by turns, every third card without its cover, every other without the bar
+    case 'nowplaying': return { account: n % 2 ? 'sp_demo0000001' : DEMO_NOW_PLAYING_ACCOUNT, art: n % 3 !== 2, progress: n % 2 === 0 };
     case 'ha.scene': return { buttons: ['scene', 'script', 'scene', 'button'].slice(0, 2 + (n % 3)).map((d, i) => ({ entity: `${d}.s_${n}_${i}`, label: '', icon: '' })) };
     default: return {};
   }

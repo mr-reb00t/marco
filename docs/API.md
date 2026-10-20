@@ -119,7 +119,8 @@ The admin and the display read these fields to decide which sections, actions an
   `carousels`, `immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings`,
   `screenBuilder`, `valueHooks` (`/api/hooks/values` and the Valor card), `tokenScopes` (scopes on API tokens),
   `stockQuotes` (the Bolsa card can get quotes; Marco Cloud only when the service has a Finnhub key), `familyAccess`
-  (each person's own phone dashboard, see "Family access"). A self-hosted server turns all of them on, except
+  (each person's own phone dashboard, see "Family access"), `spotify` ("now playing" with the household's own Spotify
+  app, see [Now playing](#now-playing)). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -768,6 +769,46 @@ with Marco Cloud); `server/dataFeeds.js` does the network part.
   it. Stored in `data/secrets.json` (`data.stocksKey`), sent to Finnhub in a header (never in a URL), never to a display,
   included in exports with secrets.
 - `MARCO_DATA_FAKE=1`: made-up answers (`server/core/dataFake.js`), nothing leaves the machine.
+
+## Now playing
+
+What a linked Spotify account plays now, for the *Sonando ahora* card (Personalizado kind `nowplaying`, props
+`{ account, art, progress }`) and the line under the clock of the other layouts (`screen.nowPlaying`, an account id,
+stored only when chosen). Each household links its own Spotify app; an account is known everywhere else by an opaque
+id (`sp_` and 10 to 24 lower case letters or digits). Shared logic: `server/core/nowPlayingCore.js`; self-hosted:
+`server/nowPlaying.js`, `server/routes/spotify.js` (feature `spotify`).
+
+| Method & path | Auth | Response |
+|---|---|---|
+| `GET /auth/spotify/connect` | session | `302` to Spotify's consent page: authorization code with PKCE (S256), `state` in the session (single use, 10 minutes), scopes `user-read-currently-playing user-read-playback-state`, `show_dialog=true` (another person can sign in). Without the app: back to `/admin/?error=spotify_not_configured#/spotify` |
+| `GET /auth/spotify/callback?code=&state=` | session | The Redirect URI. `302` to `/admin/?spotify=<id>#/spotify`, or `/admin/?error=spotify_<code>#/spotify` (`invalid_state`, `missing_code`, `no_refresh_token`, `scope_denied`, `exchange_failed`, `app_refused`, `unavailable`, `too_many_accounts`, or Spotify's own `access_denied`...). A browser without the admin's session (the loopback page of paste mode) gets a short page, in its own language, that says to paste the address |
+| `GET /api/admin/spotify` | session | `SpotifyStatus`: `{ clientId, secretSet, appRefused, redirectUri, paste, accounts: [{ id, name, connectedAt, status: 'ok' \| 'reconnect' }], max }`. Never the secret, a token or the Spotify user id |
+| `PUT /api/admin/spotify/app` | session | `{ clientId, clientSecret? }` (32 hexadecimal characters each) → `SpotifyStatus`. An empty `clientSecret` keeps the stored one; a new Client ID needs its secret and forgets the accounts (their tokens belong to the old app); `clientId: ''` removes the app and every account. `400 client_id_invalid \| client_secret_invalid \| client_secret_required` |
+| `POST /api/admin/spotify/finish` | session | `{ url }`: paste mode, the address the browser landed on after Spotify (`…/auth/spotify/callback?code=&state=`) → `{ ok, id, ...SpotifyStatus }`; `400 spotify_bad_address` or a connect error code |
+| `GET /api/admin/spotify/accounts/:id/now` | session | `{ ok, item: NowPlayingData \| null, error? }` (`auth`, `app`, `rate_limited`, `unavailable`): the admin's test, a fresh read unless one ran in the last 3 s |
+| `DELETE /api/admin/spotify/accounts/:id` | session | `{ ok, manageAccess }`: deletes the account's tokens (Spotify has no revoke call; `manageAccess` is <https://www.spotify.com/account/apps/>) |
+| `GET /api/display/nowplaying?accounts=sp_a,sp_b` | display | `{ items: { [id]: NowPlayingData \| null }, next }` for the asked accounts (at most 8) this display may read: a key or a paired TV only the accounts its own screen shows (its shown cards, or `screen.nowPlaying` on other layouts), an admin session (the builder's preview) any linked account. `403 private` while the screen is private. `next`: seconds until it should ask again (3 to 30) |
+| `GET /api/display/nowplaying/art/:token` | display | The cover (JPEG, PNG or WebP, at most 512 KB) of a track one of those accounts plays now; `404` for any other token. `Cache-Control: no-store`: the display keeps the cover itself while it shows |
+
+`NowPlayingData`: `{ provider: 'spotify', kind: 'track' | 'episode', title, artist, album, art, playing: true,
+progress, duration }`: a song's title, artists and album, or an episode's title, show and publisher; `art` a 16
+character token ('' without a cover); `progress` and `duration` in seconds (null when unknown). Paused, stopped, an ad
+or nothing at all is `null`, and the card and the line vanish.
+
+Polling: only on a display's demand, one entry per account shared by every screen. Spotify's
+`/v1/me/player/currently-playing` is asked at most every 10 s while something plays (just after the track ends when
+that is sooner) and every 20 s while nothing does; a `429` waits for its `Retry-After` (30 s without one); failures
+back off from 30 s to 5 minutes, keeping the last track for up to 2 minutes. A `401` refreshes the access token once
+(the app's Client ID and Client Secret in the `Authorization` header); `invalid_grant` marks the account `reconnect`
+(connect it again: the same Spotify person keeps the id, so the screens that show it go on working).
+`invalid_client` or `unauthorized_client` is about the app, not the account: `appRefused` becomes true, the accounts
+keep their tokens, and saving the right Client Secret makes them read again at once. The dashboard warns with
+`spotify_auth_failed` or `spotify_app_refused`. A display that cannot reach the server keeps the last track for at most
+2 minutes (and never well past its end).
+Covers are fetched from Spotify's image hosts only (`i.scdn.co` and the like, https, no redirects), for the tracks on
+the entries now, and kept in memory while they are (at most 12). Activity: `spotify.connected`, `spotify.removed`
+(`{ name }`), `spotify.app_saved`, `spotify.app_removed`. Backups with secrets carry the app and the accounts' refresh
+tokens.
 
 ## Familia
 

@@ -55,6 +55,11 @@ export function dashboardWarnings({ secrets, sources, displays, cfg }) {
   if (msSources.some((s) => !msAccounts[s.microsoftAccount] || msFail.test(sources.find((x) => x.id === s.id)?.error || ''))) {
     w.push('microsoft_auth_failed');
   }
+  // Spotify (now playing): app keys Spotify refuses, or an account whose access was removed
+  if (secrets.spotify?.clientId) {
+    if (secrets.spotify.appRefused) w.push('spotify_app_refused');
+    if (Object.values(secrets.spotify.accounts || {}).some((a) => a?.status === 'reconnect')) w.push('spotify_auth_failed');
+  }
   return w;
 }
 
@@ -159,6 +164,7 @@ export function systemRouter({ version = getServerVersion() } = {}) {
         if (s.stocksKey !== undefined) { x.data = { ...(x.data || {}), stocksKey: s.stocksKey }; applied.push('data'); }
         if (s.googleAccounts) { x.google.accounts = s.googleAccounts; applied.push('google'); }
         if (s.microsoftAccounts) { x.microsoft = { accounts: s.microsoftAccounts }; applied.push('microsoft'); }
+        if (s.spotify) { x.spotify = s.spotify; applied.push('spotify'); }
         if (s.apiTokens) { x.apiTokens = s.apiTokens; applied.push('apiTokens'); }
         if (s.displayKeys) { x.displayKeys = { ...(x.displayKeys || {}), ...s.displayKeys }; applied.push('displayKeys'); }
         if (s.devices) { x.devices = s.devices; applied.push('devices'); }

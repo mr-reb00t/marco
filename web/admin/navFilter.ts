@@ -44,6 +44,7 @@ export const NAV_ITEMS: NavMeta[] = [
   { id: 'photos', label: 'Galería', icon: 'photos', group: 'Integraciones', feature: 'gallery' },
   { id: 'homeassistant', label: 'Home Assistant', icon: 'home', group: 'Integraciones', feature: 'homeassistant', enabled: (c) => c.homeassistant.enabled },
   { id: 'immich', label: 'Immich', icon: 'image', group: 'Integraciones', feature: 'immich', enabled: (c) => c.immich?.enabled === true, keywords: 'immich fotos photos álbumes albums biblioteca library' },
+  { id: 'spotify', label: 'Spotify', icon: 'music', group: 'Integraciones', feature: 'spotify', keywords: 'spotify música music música muziek musik sonando ahora now playing a tocar canción song canção nummer sang podcast' },
   { id: 'api', label: 'API y webhooks', icon: 'code', group: 'Integraciones', feature: ['apiTokens', 'webhooks'], keywords: 'tokens webhook' },
   { id: 'screens', label: 'Pantallas', icon: 'monitor', group: 'Sistema', keywords: 'perfiles profiles' },
   { id: 'carousels', label: 'Carruseles', icon: 'repeat', group: 'Sistema', feature: 'carousels', keywords: 'rotación rotation bucle loop playlist escena scene carrusel carousel carrossel' },

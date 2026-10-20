@@ -44,6 +44,7 @@ import { FiltersSection } from './sections/Filters';
 import { HomeSection } from './sections/Home';
 import { HomeAssistantSection } from './sections/HomeAssistant';
 import { ImmichSection } from './sections/Immich';
+import { spotifyErrorText, SpotifySection } from './sections/Spotify';
 import { IconRulesSection } from './sections/IconRules';
 import { LayoutSection } from './sections/Layout';
 import { LocalEventsSection } from './sections/LocalEvents';
@@ -87,6 +88,7 @@ const SECTIONS: Record<string, (p: SectionProps) => any> = {
   widgets: WidgetsSection,
   homeassistant: HomeAssistantSection,
   immich: ImmichSection,
+  spotify: SpotifySection,
   api: ApiSection,
   screens: ScreensSection,
   carousels: CarouselsSection,
@@ -197,6 +199,7 @@ function oauthErrorMessage(code: string, account = ''): string {
     google_access_denied: 'Has cancelado el acceso con Google.',
   };
   if (code.startsWith('microsoft_')) return microsoftErrorMessage(code, account);
+  if (code.startsWith('spotify_')) return spotifyErrorText(code);
   return map[code] ? t(map[code]) : `${t('Error de Google')}: ${code}`;
 }
 
@@ -319,10 +322,23 @@ export function App() {
     const err = qs.get('error');
     const g = qs.get('connected') || qs.get('google');
     const ms = qs.get('microsoft');
+    const sp = qs.get('spotify');
     const errMsg = err ? oauthErrorMessage(err, (qs.get('account') || '').slice(0, 254)) : '';
     if (g) setTimeout(() => toast(`${t('Cuenta de Google vinculada')}: ${g}`, 'ok'), 400);
     if (ms) setTimeout(() => toast(`${t('Cuenta de Microsoft vinculada')}: ${ms}`, 'ok'), 400);
-    if (err || g || ms) history.replaceState(null, '', location.pathname + location.hash);
+    if (sp) {
+      // the callback carries only the opaque id: the name comes from the account list, as the other toasts show it
+      setTimeout(() => {
+        api.spotify().then(
+          (s) => {
+            const name = s.accounts.find((a) => a.id === sp)?.name;
+            toast(name ? t('Cuenta de Spotify conectada: {name}', { name }) : t('Cuenta de Spotify conectada'), 'ok');
+          },
+          () => toast(t('Cuenta de Spotify conectada'), 'ok'),
+        );
+      }, 400);
+    }
+    if (err || g || ms || sp) history.replaceState(null, '', location.pathname + location.hash);
     loadMe().then((m) => {
       if (m?.user) {
         loadConfig();

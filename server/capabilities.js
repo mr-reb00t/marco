@@ -13,7 +13,7 @@ export const FEATURE_KEYS = Object.freeze([
   'webhooks', 'backups', 'importExport', 'includeSecrets', 'activity', 'setupWizard', 'status', 'accountMenu',
   'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich',
   'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder',
-  'valueHooks', 'tokenScopes', 'stockQuotes', 'familyAccess',
+  'valueHooks', 'tokenScopes', 'stockQuotes', 'familyAccess', 'spotify',
 ]);
 
 /** Feature flags of a self-hosted server: all on (`updates` too: the update banner and settings), Google and
@@ -32,7 +32,8 @@ export const FEATURE_KEYS = Object.freeze([
  *  POST /api/hooks/values and the Valor card (server/values.js); `tokenScopes`: what each API token may do
  *  (core/valuesCore.js TOKEN_SCOPES); `stockQuotes`: the Bolsa card can get quotes (here with the owner's own Finnhub
  *  key, saved from the card). `familyAccess`: each person's own dashboard on the phone (/my) with the controls the
- *  admin allows (server/familyAccess.js). */
+ *  admin allows (server/familyAccess.js). `spotify`: "now playing" with the household's own Spotify app
+ *  (server/nowPlaying.js). */
 export function selfHostedFeatures() {
   const google = googleConfigured();
   const out = {};

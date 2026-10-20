@@ -72,6 +72,14 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
       return { icon: 'microsoft', text: t('Cuenta de Microsoft vinculada: {email}', { email: str(d.email ?? d.account) }) };
     case 'microsoft.removed':
       return { icon: 'microsoft', text: t('Cuenta de Microsoft desvinculada: {email}', { email: str(d.email ?? d.account) }) };
+    case 'spotify.connected':
+      return { icon: 'music', text: t('Cuenta de Spotify conectada: {name}', { name: str(d.name) }) };
+    case 'spotify.removed':
+      return { icon: 'music', text: t('Cuenta de Spotify desconectada: {name}', { name: str(d.name) }) };
+    case 'spotify.app_saved':
+      return { icon: 'music', text: t('App de Spotify guardada') };
+    case 'spotify.app_removed':
+      return { icon: 'music', text: t('App de Spotify quitada') };
     case 'config.saved': {
       const secs: string[] = Array.isArray(d.sections) ? d.sections : [];
       const list = secs.slice(0, 4).map(sectionLabel).join(', ') + (secs.length > 4 ? ` +${secs.length - 4}` : '');

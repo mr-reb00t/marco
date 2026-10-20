@@ -443,7 +443,7 @@ test('the phone page, the display overlay and the texts are wired up', async () 
   assert.match(read('server/pollHub.js'), /POLL_EVENTS = Object\.freeze\(\[[^\]]*'access-code'/);
   assert.match(read('web/index.html'), /<div id="access-code"/);
   const i18n = read('web/shared/i18n.ts');
-  for (const k of ['accessCodeFor', 'accessCodeHint', 'accessCodeHintNoUrl', 'accessCodeScan']) assert.equal(i18n.split(`  ${k}: '`).length - 1, 5, `${k} in 5 languages`);
+  for (const k of ['accessCodeFor', 'accessCodeHint', 'accessCodeHintNoUrl', 'accessCodeScan']) assert.equal(i18n.split(`  ${k}: '`).length - 1, 6, `${k} in 6 languages`);
 });
 
 test('the phone page needs only its own table: every text it shows has all six languages', async (t) => {

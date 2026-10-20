@@ -1884,6 +1884,104 @@
     },
     {
       "method": "GET",
+      "path": "/api/admin/spotify",
+      "query": [],
+      "feature": "spotify",
+      "callers": [
+        "spotify"
+      ],
+      "request": null,
+      "response": "SpotifyStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "clientId",
+        "secretSet",
+        "appRefused",
+        "redirectUri",
+        "paste",
+        "accounts",
+        "max"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/spotify/accounts/:id",
+      "query": [],
+      "feature": "spotify",
+      "callers": [
+        "removeSpotifyAccount"
+      ],
+      "request": null,
+      "response": "SpotifyRemoveResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "ok",
+        "manageAccess"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/spotify/accounts/:id/now",
+      "query": [],
+      "feature": "spotify",
+      "callers": [
+        "spotifyNow"
+      ],
+      "request": null,
+      "response": "SpotifyNowResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "ok",
+        "item",
+        "error?"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/spotify/app",
+      "query": [],
+      "feature": "spotify",
+      "callers": [
+        "setSpotifyApp"
+      ],
+      "request": "SpotifyAppRequest",
+      "response": "SpotifyStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "clientId",
+        "secretSet",
+        "appRefused",
+        "redirectUri",
+        "paste",
+        "accounts",
+        "max"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/spotify/finish",
+      "query": [],
+      "feature": "spotify",
+      "callers": [
+        "finishSpotify"
+      ],
+      "request": "{url}",
+      "response": "SpotifyFinishResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "clientId",
+        "secretSet",
+        "appRefused",
+        "redirectUri",
+        "paste",
+        "accounts",
+        "max",
+        "ok",
+        "id"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "/api/admin/status",
       "query": [],
       "feature": "status",

@@ -5,9 +5,10 @@ import type { Tick } from '../../time';
 import type { HaSource } from '../../haFeed';
 import type { ValueSource } from '../../valuesFeed';
 import type { DataSource } from '../../dataFeed';
+import type { NowPlayingSource } from '../../nowPlayingFeed';
 
 /** Data topics an adapter can be told about. */
-export type CanvasTopic = 'events' | 'weather' | 'news' | 'countdowns' | 'photos' | 'family' | 'announcements' | 'config' | 'ha' | 'values' | 'data' | 'nav';
+export type CanvasTopic = 'events' | 'weather' | 'news' | 'countdowns' | 'photos' | 'family' | 'announcements' | 'config' | 'ha' | 'values' | 'data' | 'nowplaying' | 'nav';
 
 /** The family data as the kids layouts get it (main.ts): today's state, and whether taps check routines off now. */
 export interface FamilyView {
@@ -75,6 +76,8 @@ export interface AdapterEnv {
   values: ValueSource;
   /** numbers of the data cards (market, sports, stocks, currency), from this server only (dataFeed.ts) */
   data: DataSource;
+  /** what the linked Spotify accounts play, from this server only (nowPlayingFeed.ts) */
+  nowPlaying: NowPlayingSource;
   /** the navigation cards: taps, the carousel's progress (main.ts) */
   nav: NavSource;
 }

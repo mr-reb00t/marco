@@ -15,7 +15,6 @@ All notable changes to this project are documented here. The format is based on
 - Holidays: a quick-add calendar for Poland, and holiday names from the Polish Google feed shown in every language.
 - Vacation rental and birthday titles in Polish are recognised ("Niedostępne", "Rezerwacja", guest lines with "Gość",
   "Urodziny: Ania").
-
 - *Family access* in *Family → Access*: each person of the household can get a dashboard of their own on the phone
   (`/my`), without the admin password. Add a person (optionally one of the family members), tick what they may do
   (send a message to all screens or to chosen ones, turn private mode on or off, switch night, day or auto mode on
@@ -24,6 +23,16 @@ All notable changes to this project are documented here. The format is based on
   gets in is listed and can be removed alone; removing the person stops their link, phones and codes at once. Every
   action is checked on the server against what the person may do at that moment, and each one is in the activity log
   with their name. An export with private data keeps the people and their phones (#16).
+- *Now playing* with Spotify (#18): a screen can show what someone is listening to on Spotify, the song (or podcast
+  episode), the artist and the cover. On a *Custom* screen it is the *Now playing* card, with an optional thin
+  progress bar that moves along with the song; on the other layouts it is *Now playing under the clock* in *Layout →
+  Appearance*, one line under the date. Both are gone when nothing plays, and each card or screen picks the Spotify
+  account it shows. Marco only reads what plays and never controls playback. Each household links its own Spotify app
+  in the new *Spotify* page (Client ID and Client Secret from Spotify's developer dashboard, with the exact Redirect URI
+  to register and a step-by-step guide); a server on plain http finishes the link with a pasted address. Spotify is
+  asked at most every 10 seconds per account and only while a screen shows it, and covers come through the server.
+  An account whose access was removed shows *Connect again* (it keeps its place on every screen) and a warning on the
+  home page; a rotated Client Secret only asks for the new secret, never for a new sign in.
 
 ### Changed
 - Search, keyword rules and screen addresses treat "ł" as "l", so "pilka" finds "piłka" and a screen called

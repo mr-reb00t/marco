@@ -11,6 +11,7 @@ import { NL_WXPLACES } from './i18n-dict-wxplaces';
 import { NL_BGRULES } from './i18n-dict-bgrules';
 import { NL_TODO } from './i18n-dict-todo';
 import { NL_ACCESS } from './i18n-dict-access';
+import { NL_SPOTIFY } from './i18n-dict-spotify';
 
 /** Every admin row but the Familia ones. */
 export const NL: Record<string, string> = {
@@ -23,6 +24,7 @@ export const NL: Record<string, string> = {
   ...NL_BGRULES,
   ...NL_TODO,
   ...NL_ACCESS,
+  ...NL_SPOTIFY,
   '(ninguno)': '(geen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Je gebruikt het startwachtwoord. Wijzig het: tot dan wordt het alleen vanuit je lokale netwerk geaccepteerd.',
   'Sesiones': 'Sessies',

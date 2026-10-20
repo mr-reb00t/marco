@@ -14,6 +14,7 @@ import { HA_CONTROL_ADAPTERS } from './haControls';
 import { HA_TILE_ADAPTERS } from './haTile';
 import { HTML_ADAPTERS } from './html';
 import { NAV_ADAPTERS } from './nav';
+import { NOW_PLAYING_ADAPTERS } from './nowPlaying';
 import { ROTATOR_ADAPTERS } from './rotator';
 import type { CanvasAdapter } from './types';
 import { WEATHER_ADAPTERS } from './weather';
@@ -31,6 +32,7 @@ const ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
   ...CAMERA_ADAPTERS,
   ...HTML_ADAPTERS,
   ...DATA_ADAPTERS,
+  ...NOW_PLAYING_ADAPTERS,
   ...NAV_ADAPTERS,
   ...ROTATOR_ADAPTERS,
 };

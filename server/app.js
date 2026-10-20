@@ -29,6 +29,7 @@ import { hostGuard } from './lib/net.js';
 import { redactSecrets } from './core/activityCore.js';
 import { canvasCards } from './core/canvasCore.js';
 import { displayAuth, mediaAuth } from './displayAccess.js';
+import { spotifyAdminRouter, spotifyCallbackHandler, spotifyConnectHandler, spotifyDisplayRouter } from './routes/spotify.js';
 import { checkTrustProxy } from './lib/trustProxy.js';
 import { immichMedia } from './immich.js';
 import { galleryMedia, thumbMedia } from './photos.js';
@@ -147,6 +148,9 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.get('/auth/google/callback', (req, res, next) => googleCallbackHandler(req, res).catch(next));
   app.get('/auth/microsoft/connect', microsoftConnectHandler);
   app.get('/auth/microsoft/callback', (req, res, next) => microsoftCallbackHandler(req, res).catch(next));
+  // Spotify accounts for "now playing" (routes/spotify.js), with the household's own Spotify app
+  app.get('/auth/spotify/connect', spotifyConnectHandler);
+  app.get('/auth/spotify/callback', (req, res, next) => spotifyCallbackHandler(req, res).catch(next));
 
   // --- APIs ---
   // First-run setup wizard (open only while no admin password exists; server/setup.js).
@@ -160,14 +164,14 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   // Two-step sign-in settings (routes/twofactor.js).
   app.use('/api/admin', twoFactorRouter());
   app.use('/api/admin', updatesRouter({ version, updater }));
-  app.use('/api/admin', screensAdminRouter(), announceRouter(), systemRouter({ version }), eventsAdminRouter(), accessAdminRouter(), doorbellAdminRouter(), familyAdminRouter(), familyAccessAdminRouter(), haAdminRouter(), valuesAdminRouter(), dataAdminRouter());
+  app.use('/api/admin', screensAdminRouter(), announceRouter(), systemRouter({ version }), eventsAdminRouter(), accessAdminRouter(), doorbellAdminRouter(), familyAdminRouter(), familyAccessAdminRouter(), haAdminRouter(), valuesAdminRouter(), dataAdminRouter(), spotifyAdminRouter());
   // Display access (private links / paired devices / admin session; open mode = legacy LAN). displayAccess.js
   app.use(DISPLAY_API_PATHS, displayAuth());
   app.use('/api/stream', displayAuth({ allowQuery: true }));
   // Pairing (unauthenticated, rate-limited), the family page (its own key, rate-limited), the phone dashboards of
   // family access (their own tokens, rate-limited) and the public (display) routers.
   app.use('/api', pairPublicRouter(), familyPublicRouter(), familyAccessMemberRouter());
-  app.use('/api', displayPublicRouter(), eventsPublicRouter(), doorbellPublicRouter(), familyDisplayRouter(), haDisplayRouter(), valuesDisplayRouter(), dataDisplayRouter());
+  app.use('/api', displayPublicRouter(), eventsPublicRouter(), doorbellPublicRouter(), familyDisplayRouter(), haDisplayRouter(), valuesDisplayRouter(), dataDisplayRouter(), spotifyDisplayRouter());
   app.use('/api', publicRouter({ version }));
   app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 

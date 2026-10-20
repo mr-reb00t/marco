@@ -461,6 +461,13 @@ body {
 .hl-lead { color: var(--tint); font-weight: 700; flex: none; }
 .hl-em { font-family: var(--font-emoji); font-size: 1.1em; flex: none; }
 .hl-tt { overflow: hidden; text-overflow: ellipsis; min-width: 0; font-weight: 500; }
+/* "Sonando ahora bajo el reloj" (screen.nowPlaying, widgets/nowPlayingLine.ts): one pill under the highlights, in
+   Spotify's green, with a small credit at its end */
+.np-line { margin-top: 0.8rem; }
+.highlights[style*='display: none'] + .np-line { margin-top: 2.2rem; }
+.np-pill { --c: 30 215 96; --tint: #1ed760; }
+.np-ico { display: inline-flex; width: 1.1em; height: 1.1em; }
+.np-src { flex: none; font-size: 0.65em; font-weight: 600; opacity: 0.65; }
 .hl-pill.live { border-color: rgb(var(--c) / 0.8); }
 .hl-pill.live .hl-lead::before {
   content: '';

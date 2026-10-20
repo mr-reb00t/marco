@@ -30,6 +30,7 @@ const FEATURE_RULES = [
   [/^\/api\/admin\/test\/rss$/, 'news'],
   [/^\/api\/admin\/google\//, 'googleCalendar'],
   [/^\/api\/admin\/microsoft\//, 'microsoftCalendar'],
+  [/^\/api\/admin\/spotify(\/|$)/, 'spotify'],
   [/^\/api\/admin\/photos/, 'gallery'],
   [/^\/api\/admin\/values/, 'valueHooks'],
   [/^\/api\/admin\/tokens/, 'apiTokens'],

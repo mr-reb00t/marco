@@ -4,10 +4,12 @@
 // Intl.PluralRules('pl') picks the form (i18n.ts). The Familia rows (admin and family page) are PL_FAMILY,
 // PL_SINGULAR_FAMILY and PL_FEW_FAMILY in i18n-dict-family.ts, so the family page does not load this file.
 import { PL_ACCESS } from './i18n-dict-access';
+import { PL_SPOTIFY } from './i18n-dict-spotify';
 
 /** Every admin row but the Familia ones. */
 export const PL: Record<string, string> = {
   ...PL_ACCESS,
+  ...PL_SPOTIFY,
   '(ninguno)': '(brak)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Używasz hasła początkowego. Zmień je: do tego czasu działa tylko z sieci lokalnej.',
   'Sesiones': 'Sesje',

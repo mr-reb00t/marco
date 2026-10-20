@@ -19,7 +19,7 @@ import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
-import { currencyProps, sanitizeCanvas } from './canvasCore.js';
+import { currencyProps, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
@@ -279,6 +279,9 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     // the pills under the date of the usual designs (next event, happening now, birthdays, check-in/out)
     highlights: bool(ctx, `${p}.screen.highlights`, sc.highlights, D.screen.highlights),
   };
+  // "Sonando ahora bajo el reloj": a linked Spotify account's opaque id, stored only when one is chosen
+  const np = nowPlayingAccountOf(ctx, `${p}.screen.nowPlaying`, sc.nowPlaying);
+  if (np) screen.nowPlaying = np;
 
   const ly = obj(ctx, `${p}.layout`, x.layout);
   const layout = {

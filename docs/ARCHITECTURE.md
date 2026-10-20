@@ -48,7 +48,7 @@ failing source never breaks the others.
 | Path | Content |
 |---|---|
 | `config.json` | The whole configuration (schema v2 below). Bumped `revision` on every save. The admin sends the revision it loaded (`baseRevision`) and a stale one gets `409 conflict`, so only real saves may bump it: background work (calendar refresh, pairing, display links, commands) never writes `config.json`. |
-| `secrets.json` | Password hash (scrypt; absent on a fresh install → setup wizard, `server/setup.js`), `setupCompletedAt`, session secret/epoch, Google refresh tokens per account, Home Assistant token, Immich API key (`immich.apiKey`), API tokens (SHA-256 hashes), `displayKeys` (one private-link key per screen id), `devices` (paired devices: name, screen, SHA-256 of the token, last seen), `familyAccess` (people with a phone dashboard: permissions, SHA-256 of their link and of each phone's token). Mode 600. Never sent to displays. |
+| `secrets.json` | Password hash (scrypt; absent on a fresh install → setup wizard, `server/setup.js`), `setupCompletedAt`, session secret/epoch, Google refresh tokens per account, Home Assistant token, Immich API key (`immich.apiKey`), the household's Spotify app and its accounts (`spotify.clientId`, `clientSecret`, `accounts[<sp_ id>]` with their tokens; see *Now playing*), API tokens (SHA-256 hashes), `displayKeys` (one private-link key per screen id), `devices` (paired devices: name, screen, SHA-256 of the token, last seen), `familyAccess` (people with a phone dashboard: permissions, SHA-256 of their link and of each phone's token). Mode 600. Never sent to displays. |
 | `photos/` | Gallery images; `photos/.thumbs/` thumbnails (480 px); `photos/.meta.json` size + focal point per file |
 | `immich/` | Immich source (`server/immich.js`): `albums/<albumId>[-fav].json` (last good asset list per album, used for up to 24 h while Immich is down) and `cache/` (preview images, 500 MB LRU, `MARCO_IMMICH_CACHE_MB`). Not in backups |
 | `cache/` | Source and feed caches |
@@ -168,6 +168,8 @@ The stored config has **global** sections shared by every screen and a list of *
   "message":    { "enabled": false, "text": "", "emoji": "💬" },
   "countdowns": { "enabled": true, "max": 4 },
   "alerts":     { "enabled": true, "sound": true, "volume": 0.6 },
+  // screen.nowPlaying: "Sonando ahora bajo el reloj", the opaque id of a linked Spotify account (stored only when
+  //   chosen); one line under the date of the usual designs, gone when nothing plays (see "Now playing")
   "privacy":    { "hidePhotos": false, "showLock": true, "schedule": [{ "id", "enabled", "days", "from", "to" }] },
                   // privacy mode of this screen (docs/API.md "Privacy mode"); the on / off state is runtime data
   "family":     { "memberIds": null, "touch": false, "showQr": true } }
@@ -559,6 +561,39 @@ numbers out from `server/core/dataFake.js` with the same code. The Currency widg
 draws the Divisas card in a corner, the side column or the whole screen (`web/display/widgets/currency.ts`, the same
 adapter) from `GET /api/display/currency`, which reads the same cache entries. Details and limits: docs/API.md, Data
 cards and Exchange rates.
+
+## Now playing
+
+What a linked Spotify account plays now (issue #18): the *Sonando ahora* card of Personalizado (kind `nowplaying`) and
+the line under the clock of the other layouts (`screen.nowPlaying`). Endpoints and data shapes: docs/API.md, *Now
+playing*.
+
+- **Provider abstraction**: `server/core/nowPlayingCore.js` holds everything that does not touch the network: the
+  provider's endpoints and scopes, the authorize URL, the Redirect URI rules, the mapping of its answer to
+  `{ provider, kind, title, artist, album, artUrl, progress, duration }`, the refresh policy of one account's entry
+  (`nextEntry`), what a display gets (`displayItem`), the cover tokens and the accounts a screen shows
+  (`nowPlayingAccounts`, in canvasCore). Spotify is the only provider today (`NOW_PLAYING_PROVIDERS`); another one
+  adds its own mapping and account prefix there and its HTTP part in each server.
+- **The household's own app**: Client ID and Client Secret in `secrets.json` (Marco Cloud: sealed in D1). The admin
+  only learns that a secret is stored. Each account has a random id; displays and configs only ever hold that id.
+- **Connect**: authorization code with PKCE, the state in the admin's session. Spotify accepts https Redirect URIs and
+  `http://127.0.0.1` (never "localhost"): a self-hosted server on plain http in the home network registers
+  `http://127.0.0.1:<port>/auth/spotify/callback`, the browser ends on a page that does not load, and the owner pastes
+  that address into the admin (`POST /api/admin/spotify/finish`).
+- **Reading** (`server/nowPlaying.js`): on a display's demand only (`GET /api/display/nowplaying`), one entry per
+  account for every screen; Spotify is asked at most every 10 s while something plays and 20 s while nothing does,
+  just after the track ends when that is sooner, never during a `Retry-After`, and less often after failures (30 s up
+  to 5 minutes). No display showing an account means no call for it.
+- **Display** (`web/display/nowPlayingFeed.ts`): asks while a card or the line is on screen and the page is visible,
+  when the server says (`next`), draws again only when the track changes, and moves the thin progress bar by itself
+  each second in between. When the server stops answering, the last track goes after the same 2 minutes the
+  server keeps it (sooner when it is well past its end). Covers come from `GET /api/display/nowplaying/art/:token` as blobs (the display CSP is
+  unchanged and no third-party address reaches a screen); a cover is let go when its track leaves. The card
+  (`widgets/canvas/nowPlaying.ts`) uses the Home Assistant media card's look without controls and credits Spotify in
+  small type; the line (`widgets/nowPlayingLine.ts`) is a pill like the highlights above it. Both vanish when nothing
+  plays; privacy mode hides both.
+- **Marco Cloud**: the same core; credentials and refresh tokens sealed per household in D1, the entry of each account
+  in the Cache API for about 10 s (shared by the household's screens), no cron.
 
 ## Display access
 

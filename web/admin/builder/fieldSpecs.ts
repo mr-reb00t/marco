@@ -55,7 +55,9 @@ export type Spec =
   /** a Rotativa's cards: each with its own kind and options (RotatorFields.tsx) */
   | { type: 'rotatorCards' }
   /** a to-do card's lists, title, icon and which tasks (components/TodoViewFields.tsx, core todoCore.js) */
-  | { type: 'todoView' };
+  | { type: 'todoView' }
+  /** the Spotify account a Sonando ahora card shows (sections/Spotify.tsx SpotifyAccountSelect) */
+  | { k: 'account'; type: 'spotifyAccount'; label: string };
 
 /** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
 const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
@@ -91,6 +93,12 @@ const NAV_RETURN: Spec = {
 };
 
 export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
+  nowplaying: [
+    { k: 'account', type: 'spotifyAccount', label: 'Cuenta de Spotify' },
+    { k: 'art', type: 'bool', label: 'Portada' },
+    { k: 'progress', type: 'bool', label: 'Barra de progreso', hint: 'Una línea fina que avanza con la canción.' },
+    { type: 'note', text: 'Si no suena nada (o está en pausa), la tarjeta no se ve en la pantalla.', go: { label: 'Cuentas de Spotify', route: 'spotify' } },
+  ],
   'nav.button': [
     { k: 'target', type: 'screen', label: 'Pantalla' },
     NAV_SHOW_FIELD,

@@ -27,6 +27,7 @@ import type { AdapterEnv, CanvasAdapter, CanvasTopic, FamilyView, NavSource } fr
 import type { HaSource } from '../haFeed';
 import type { ValueSource } from '../valuesFeed';
 import type { DataSource } from '../dataFeed';
+import type { NowPlayingSource } from '../nowPlayingFeed';
 
 export interface CanvasDeps {
   /** every normalised event of the screen */
@@ -48,6 +49,8 @@ export interface CanvasDeps {
   values: ValueSource;
   /** numbers of this screen's data cards (dataFeed.ts) */
   data: DataSource;
+  /** what the linked Spotify accounts of this screen play (nowPlayingFeed.ts) */
+  nowPlaying: NowPlayingSource;
   /** the navigation cards (main.ts, web/display/nav.ts) */
   nav: NavSource;
 }
@@ -403,7 +406,7 @@ export class Canvas {
     // a card grown to its box (FILL) was measured with what it showed then (a "loading" line, last minute's list):
     // with new content it is fitted again, so how it looks never depends on when the data came
     // (Home Assistant, pushed values and data cards draw none of them)
-    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'photos' && topic !== 'nav') for (const e of this.every()) if (FILL[e.kind]) this.relayoutSoon(e.parent?.id ?? e.id);
+    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'nowplaying' && topic !== 'photos' && topic !== 'nav') for (const e of this.every()) if (FILL[e.kind]) this.relayoutSoon(e.parent?.id ?? e.id);
   }
 
   /** Fit every card to its box again (resize, fonts, the sidebar changed size), or only the cards of `only`. */
@@ -665,6 +668,7 @@ export class Canvas {
       ha: this.deps.ha,
       values: this.deps.values,
       data: this.deps.data,
+      nowPlaying: this.deps.nowPlaying,
       nav: this.deps.nav,
     };
   }
