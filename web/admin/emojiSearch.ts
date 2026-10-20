@@ -1,9 +1,9 @@
 // Emoji picker index and search. Pure functions (no imports at runtime) so the server tests can load them.
 
-export type EmojiLang = 'es' | 'en' | 'pt' | 'nl' | 'da';
+export type EmojiLang = 'es' | 'en' | 'pt' | 'nl' | 'da' | 'pl';
 export type EmojiEntry = {
   e: string;
-  /** keywords per language [es, en, pt, nl, da]; the first one is the name */
+  /** keywords per language [es, en, pt, nl, da, pl]; the first one is the name */
   kw: string[][];
   /** folded words of every keyword, per language */
   words: string[][];
@@ -11,14 +11,15 @@ export type EmojiEntry = {
 export type EmojiSection = { id: string; icon: string; title: string; list: EmojiEntry[] };
 export type EmojiIndex = { sections: EmojiSection[]; all: EmojiEntry[]; byEmoji: Map<string, EmojiEntry> };
 
-const LANGS: EmojiLang[] = ['es', 'en', 'pt', 'nl', 'da'];
+const LANGS: EmojiLang[] = ['es', 'en', 'pt', 'nl', 'da', 'pl'];
 
-/** Lowercase, no accents, no punctuation: "Avión" and "avion" match. */
+/** Lowercase, no accents, no punctuation: "Avión" and "avion" match (and "łódka" and "lodka"). */
 export function foldText(s: string): string {
   return s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/ł/g, 'l')
     .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();

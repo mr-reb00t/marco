@@ -162,6 +162,7 @@ export const DA: Record<string, string> = {
   'Festivos de Países Bajos': 'Helligdage i Nederlandene',
   'Festivos de Bélgica': 'Helligdage i Belgien',
   'Festivos de Dinamarca': 'Helligdage i Danmark',
+  'Festivos de Polonia': 'Helligdage i Polen',
   'Fondo': 'Baggrund',
   'Formato': 'Format',
   'Formato de fecha': 'Datoformat',

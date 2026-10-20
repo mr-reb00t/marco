@@ -4,7 +4,8 @@
 
 /** Lowercase + strip diacritics, for accent-insensitive matching. */
 export function fold(s) {
-  return String(s ?? '').normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase();
+  // ł has no combining mark to strip, so it is mapped by hand: "Łódź" and "lodz" match
+  return String(s ?? '').normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase().replace(/ł/g, 'l');
 }
 
 const NAMED = {

@@ -74,6 +74,7 @@ const LANG_CARDS: { value: Lang; name: string; hello: string }[] = [
   { value: 'pt', name: 'Português', hello: 'Olá' },
   { value: 'nl', name: 'Nederlands', hello: 'Hallo' },
   { value: 'da', name: 'Dansk', hello: 'Hej' },
+  { value: 'pl', name: 'Polski', hello: 'Cześć' },
 ];
 
 const browserTz = () => {

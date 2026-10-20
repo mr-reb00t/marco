@@ -97,6 +97,23 @@ const TEXT: Record<Lang, Record<string, string>> = {
     scan: 'Scan med den telefon, du bruger til adminpanelet',
     kiosk: 'Raspberry Pi-kiosk? Den glemmer parringen ved genstart: læg i stedet skærmens private link i KIOSK_URL (~/.config/marco/kiosk.env).',
   },
+  pl: {
+    pairTitle: 'Sparuj ten ekran',
+    pairLead: 'Ten ekran jest prywatny. Połącz go ze swoim Marco z telefonu lub komputera:',
+    invalidTitle: 'Ten link jest już nieważny',
+    invalidLead: 'Prywatny link został zmieniony lub to urządzenie usunięto. Otwórz panel, aby dostać nowy link, albo sparuj ten ekran ponownie:',
+    s1: 'Otwórz panel → Połączone ekrany → Sparuj ekran',
+    s1At: 'Otwórz {where} → Połączone ekrany → Sparuj ekran',
+    s2: 'Wpisz ten kod lub zeskanuj kod QR',
+    s3: 'Ten ekran uruchomi się sam',
+    expires: 'Kod zmieni się za {t}',
+    renewing: 'Pobieranie nowego kodu…',
+    busy: 'Zbyt wiele prób parowania. Ponowna próba za minutę…',
+    offline: 'Brak połączenia z serwerem. Ponawianie…',
+    paired: 'Sparowano! Uruchamianie…',
+    scan: 'Zeskanuj telefonem, na którym używasz panelu',
+    kiosk: 'Kiosk Raspberry Pi? Zapomina parowanie przy restarcie: zamiast tego wpisz prywatny link ekranu w KIOSK_URL (~/.config/marco/kiosk.env).',
+  },
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);

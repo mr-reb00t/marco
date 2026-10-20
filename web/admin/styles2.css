@@ -3708,9 +3708,10 @@ h1 .scope {
   background: var(--surface-3);
   color: var(--accent);
 }
+/* six languages: two rows of three */
 .wz-langs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 .wz-lang {

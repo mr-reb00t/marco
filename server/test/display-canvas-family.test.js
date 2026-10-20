@@ -66,10 +66,10 @@ test('countdowns and news cards read the data the other layouts have; birthdays 
   assert.equal(canvasEventsNeed({ items: [item('family.routines'), item('meals.week')] }), 0);
 });
 
-test('display strings of the family cards: five languages, no em dashes', async () => {
+test('display strings of the family cards: six languages, no em dashes', async () => {
   const [i18n] = await loadWebModules('/web/shared/i18n.ts');
   for (const k of ['cvFamilyOff', 'cvPointsOff', 'cvNoRewards', 'cvNoBirthdays']) {
-    for (const l of ['es', 'en', 'pt', 'nl', 'da']) {
+    for (const l of ['es', 'en', 'pt', 'nl', 'da', 'pl']) {
       const s = i18n.DICTS[l][k];
       assert.ok(s, `${k} ${l}`);
       assert.equal(/—|–/.test(s), false, `${k} ${l}`);

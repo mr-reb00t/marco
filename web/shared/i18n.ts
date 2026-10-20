@@ -1,10 +1,10 @@
-// i18n + date helpers shared by the display and the admin panel (es default, en, pt, nl, da).
+// i18n + date helpers shared by the display and the admin panel (es default, en, pt, nl, da, pl).
 import type { DateFormat, Lang } from './types';
 
-export const LANGS: Lang[] = ['es', 'en', 'pt', 'nl', 'da'];
-export const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT', nl: 'nl-NL', da: 'da-DK' };
+export const LANGS: Lang[] = ['es', 'en', 'pt', 'nl', 'da', 'pl'];
+export const LOCALES: Record<Lang, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT', nl: 'nl-NL', da: 'da-DK', pl: 'pl-PL' };
 /** Each language's own name, for language pickers. */
-export const LANG_NAMES: Record<Lang, string> = { es: 'Español', en: 'English', pt: 'Português', nl: 'Nederlands', da: 'Dansk' };
+export const LANG_NAMES: Record<Lang, string> = { es: 'Español', en: 'English', pt: 'Português', nl: 'Nederlands', da: 'Dansk', pl: 'Polski' };
 
 type Dict = Record<string, string>;
 
@@ -1573,15 +1573,341 @@ const da: Dict = {
   cvNoBirthdays: 'Ingen fødselsdage på vej',
 };
 
-export const DICTS: Record<Lang, Dict> = { es, en, pt, nl, da };
+// Polish counts have three forms: a key with a _few twin ("Jeszcze 3 wydarzenia dziś") uses it for 2-4, 22-24…
+// (see t()); every other count uses the key itself ("Jeszcze 5 wydarzeń dziś").
+const pl: Dict = {
+  // layouts with their own view (web/display/widgets/views.ts)
+  upNext: 'Następnie',
+  nothingMoreToday: 'Na dziś to wszystko',
+  firstTomorrow: 'Jutro',
+  everyone: 'Wszyscy',
+  birthdays: 'Urodziny',
+  agenda: 'Agenda',
+  allDone: 'Wszystko zrobione',
+  noPeople: 'Wybierz kalendarze każdej osoby w Układzie',
+  nothingPlanned: 'Nic zaplanowanego',
+  daysWord: 'dni',
+  today: 'Dziś',
+  tomorrow: 'Jutro',
+  yesterday: 'Wczoraj',
+  now: 'Teraz',
+  allDay: 'Cały dzień',
+  more: '+{n} więcej',
+  dayXofY: 'Dzień {x} z {y}',
+  checkIn: 'Zameldowanie',
+  checkOut: 'Wymeldowanie',
+  privateMode: 'Tryb prywatny',
+  widgetStale: 'nieaktualne',
+  priceTitle: 'Cena prądu',
+  priceCheap: 'Tanio',
+  priceMid: 'Normalnie',
+  priceHigh: 'Drogo',
+  priceNextHour: 'Następna godzina {p}',
+  priceCheapestHours: 'Najtańsze godziny',
+  priceCheapestStretches: 'Najtańsze okna {n} h',
+  priceNoneLeft: 'Nie zostały żadne okna',
+  priceRange: '{a}–{b}',
+  priceMinMax: 'Min {a} · Maks {b}',
+  priceNowIs: 'Teraz: {l}',
+  priceLowest: 'Najniższa',
+  priceAverage: 'Średnia',
+  priceHighest: 'Najwyższa',
+  priceNextHours: 'Najbliższe {n} h',
+  priceInclGrid: 'Z taryfą sieciową',
+  priceInclGridEst: 'Z taryfą sieciową (szacunkowo)',
+  priceInclBands: 'Ze strefami czasowymi',
+  priceNoGrid: 'Bez taryfy sieciowej',
+  priceLoading: 'Wczytywanie cen…',
+  priceLoadingGrid: 'Wczytywanie taryfy {c}…',
+  widgetNone: 'Wybierz widżet w Układzie',
+  widgetSaveToSee: 'Pojawi się po zapisaniu',
+  inMinutes: 'Za {n} min',
+  inHours: 'Za {n} h',
+  inHoursMinutes: 'Za {h} h {m} min',
+  inDays: 'Za {n} dni',
+  happeningNow: 'Teraz',
+  untilTime: 'do {t}',
+  next: 'Następne',
+  noEvents: 'Brak wydarzeń',
+  noUpcoming: 'Nic zaplanowanego',
+  feelsLike: 'Odczuwalna',
+  hiShort: 'Maks.',
+  loShort: 'Min.',
+  humidity: 'Wilgotność',
+  wind: 'Wiatr',
+  sunrise: 'Wschód',
+  sunset: 'Zachód',
+  precip: 'Deszcz',
+  indoor: 'Dom',
+  uv: 'UV',
+  pressure: 'Ciśnienie',
+  news: 'Wiadomości',
+  todo: 'Zadania',
+  offline: 'Offline',
+  photoBy: 'Zdjęcie: {a}',
+  week: 'Tydzień',
+  todayEvents: 'Dziś',
+  upcoming: 'Wkrótce',
+  loading: 'Wczytywanie…',
+  countdowns: 'Odliczania',
+  cdDays: 'Za {n} dni',
+  cdTomorrow: 'Jutro!',
+  cdToday: 'Dziś!',
+  screenNotFound: 'Nie znaleziono ekranu',
+  screenNotChosen: 'Otwórz link do ekranu',
+  identifyScreen: 'Ekran',
+  identifyDevice: 'Urządzenie',
+  carouselShowing: '{name} · teraz: {screen}',
+  doorbell: 'Drzwi',
+  doorbellRinging: 'Ktoś jest przy drzwiach',
+  doorbellNoPicture: 'Kamera niedostępna',
+  until: 'do {t}',
+  nightOn: 'Tryb nocny',
+  // kids layouts (web/display/widgets/kids.ts)
+  kidsMorning: 'Rano',
+  kidsAfternoon: 'Po południu',
+  kidsEvening: 'Wieczorem',
+  kidsAnytime: 'W ciągu dnia',
+  kidsAllDone: 'Wszystko zrobione!',
+  kidsScan: 'Odhaczaj rutyny w telefonie',
+  kidsNone: 'Dziś bez rutyn',
+  kidsNoMembers: 'Dodaj rodzinę w panelu, w sekcji Rodzina',
+  kidsRoutines: 'Rutyny',
+  kidsMealsToday: 'Dzisiejsze posiłki',
+  kidsMealsWeek: 'Posiłki w tym tygodniu',
+  kidsMealsOff: 'Włącz posiłki w panelu, w sekcji Posiłki',
+  meal_breakfast: 'Śniadanie',
+  meal_lunch: 'Obiad',
+  meal_snack: 'Podwieczorek',
+  meal_dinner: 'Kolacja',
+  greetMorning: 'Dzień dobry',
+  greetAfternoon: 'Dzień dobry',
+  greetEvening: 'Dobry wieczór',
+  kidsEventsLeft: 'Jeszcze {n} wydarzeń dziś',
+  kidsEventsLeft_few: 'Jeszcze {n} wydarzenia dziś',
+  kidsEventsLeft1: 'Jeszcze 1 wydarzenie dziś',
+  kidsNoEventsLeft: 'Na dziś to wszystko',
+  kidsRoutinesDone: 'Rutyny zrobione: {done} z {total}',
+  kidsRewards: 'Nagrody',
+  kidsStarsLeft: 'Jeszcze {n} ⭐',
+  kidsStarsLeft1: 'Jeszcze 1 ⭐',
+  kidsLeft: 'Do zrobienia: {n}',
+  kidsRewardReady: 'Można odebrać!',
+  kidsTasks: 'Do zrobienia',
+  kidsNoMeal: '·',
+  kidsNoMealsDay: 'Brak posiłków na dziś',
+  kidsPrivate: 'Rutyny wrócą po wyłączeniu trybu prywatnego',
+  // Personalizado (web/display/widgets/canvas.ts)
+  cvEmpty: 'Ten układ jest pusty. Otwórz go w edytorze w panelu.',
+  cvNotAvailable: 'Niedostępne na tym serwerze',
+  cvHtmlError: 'Ta karta ma błąd. Popraw go w edytorze.',
+  cvHtmlTitle: 'Karta z własnym HTML',
+  cvPrivate: 'Ukryte, gdy ekran jest w trybie prywatnym',
+  cvSoon: 'Ten widżet pojawi się w jednej z kolejnych wersji',
+  navHome: 'Start',
+  navPick: 'Wybierz ekran',
+  navPause: 'Wstrzymaj',
+  navResume: 'Wznów',
+  navPaused: 'Wstrzymano',
+  navAway: 'Poza karuzelą',
+  navMin: '{n} min',
+  navStep: 'Ekran {n}',
+  navUnavailable: 'Ten ekran nie jest tu dostępny',
+  cvSetup: 'Dokończ konfigurację w edytorze',
+  cvWeek: 'Tydzień {n}',
+  cvNoValue: 'Oczekiwanie na dane',
+  cvNoData: 'Brak danych',
+  valYes: 'Tak',
+  valNo: 'Nie',
+  haUnavailable: 'Niedostępne',
+  haWaiting: 'Oczekiwanie na Home Assistant',
+  haNoSignal: 'Brak sygnału',
+  haCamLan: 'Widoczne tylko w sieci domowej',
+  haCamGated: 'Widoczne tylko, gdy czujnik jest aktywny',
+  haCamLive: 'Na żywo',
+  haCamWaiting: 'Oczekiwanie na obraz',
+  haOffline: 'Brak połączenia z Home Assistant',
+  haOffTitle: 'Połącz Home Assistant',
+  haOffHint: 'Włącz go w sekcji Home Assistant w panelu, aby widzieć tu swoje urządzenia.',
+  haOffTv: 'Home Assistant nie jest połączony',
+  haJustNow: 'przed chwilą',
+  haAgoMin: '{n} min temu',
+  haAgoH: '{n} h temu',
+  haAgoD: '{n} d temu',
+  haOn: 'Włączone',
+  haOff: 'Wyłączone',
+  haOpen: 'Otwarte',
+  haClosed: 'Zamknięte',
+  haOpening: 'Otwieranie',
+  haClosing: 'Zamykanie',
+  haOpenPct: 'Otwarte w {n}%',
+  haDetected: 'Wykryto',
+  haClear: 'Spokój',
+  haLocked: 'Zamknięte',
+  haUnlocked: 'Otwarte',
+  haArmed: 'Uzbrojony',
+  haDisarmed: 'Rozbrojony',
+  haPlaying: 'Odtwarzanie',
+  haPaused: 'Wstrzymano',
+  haIdle: 'Bezczynny',
+  haNothingPlaying: 'Nic nie gra',
+  haHome: 'W domu',
+  haAway: 'Poza domem',
+  haModeOff: 'Wył.',
+  haModeHeat: 'Grzanie',
+  haModeCool: 'Chłodzenie',
+  haModeHeatCool: 'Grzanie i chłodzenie',
+  haModeAuto: 'Auto',
+  haModeDry: 'Osuszanie',
+  haModeFan: 'Wentylator',
+  haHeating: 'Grzeje',
+  haCooling: 'Chłodzi',
+  haNoData: 'Jeszcze brak danych',
+  haMin: 'min',
+  haMax: 'maks',
+  haPeriod1h: 'Ostatnia godzina',
+  haPeriod6h: 'Ostatnie 6 godzin',
+  haPeriod24h: 'Ostatnie 24 godziny',
+  haPeriod7d: 'Ostatnie 7 dni',
+  haTapAgain: 'Dotknij ponownie lub przytrzymaj',
+  haDone: 'Gotowe',
+  haErrRate: 'Za szybko, poczekaj chwilę',
+  haErrDown: 'Home Assistant nie odpowiada',
+  haErrHa: 'Home Assistant tego nie zaakceptował',
+  haErrTouchOff: 'Przyciski są wyłączone na tym ekranie',
+  haErrUntrusted: 'Sparuj ten ekran, aby używać przycisków',
+  haErrFailed: 'Nie zadziałało',
+  haTurnOnOff: 'Włącz lub wyłącz',
+  haBrightness: 'Jasność',
+  haSpeed: 'Prędkość',
+  haWarm: 'Ciepłe',
+  haNeutral: 'Neutralne',
+  haCool: 'Zimne',
+  haDrying: 'Osusza',
+  haFanAction: 'Wentylator',
+  haClimateIdle: 'Bezczynny',
+  haHumidityPct: 'Wilgotność {n}%',
+  haColder: 'Obniż temperaturę',
+  haWarmer: 'Podnieś temperaturę',
+  haPosition: 'Położenie',
+  haUp: 'Góra',
+  haStop: 'Stop',
+  haDown: 'Dół',
+  haPlayPause: 'Odtwórz lub wstrzymaj',
+  haNext: 'Następny',
+  haPrev: 'Poprzedni',
+  haVolume: 'Głośność',
+  haFanAuto: 'Auto',
+  haFanLow: 'Niska',
+  haFanMedium: 'Średnia',
+  haFanHigh: 'Wysoka',
+  haVacCleaning: 'Sprząta',
+  haVacDocked: 'W bazie',
+  haVacReturning: 'Wraca do bazy',
+  haVacError: 'Ma problem',
+  haVacStart: 'Start',
+  haVacPause: 'Pauza',
+  haVacDock: 'Do bazy',
+  haUpToDate: 'Aktualne',
+  haUpdateNew: 'Dostępna wersja {v}',
+  haUpdateAvail: 'Jest nowa wersja',
+  haUpdating: 'Aktualizacja',
+  haOpenValve: 'Otwórz',
+  haCloseValve: 'Zamknij',
+  haStatToday: 'Dziś',
+  haStatWeek: 'Ten tydzień',
+  haStatMonth: 'Ten miesiąc',
+  haStatMean: 'Średnia',
+  haStatMin: 'Najniższa',
+  haStatMax: 'Najwyższa',
+  haBinMotion: 'Ruch',
+  haBinNoMotion: 'Brak ruchu',
+  haBinOccupied: 'Zajęte',
+  haBinFree: 'Wolne',
+  haBinWet: 'Mokro',
+  haBinDry: 'Sucho',
+  haBinNormal: 'Normalnie',
+  haBinConnected: 'Połączone',
+  haBinDisconnected: 'Rozłączone',
+  haBinBatteryLow: 'Słaba bateria',
+  haBinCharging: 'Ładowanie',
+  haBinNotCharging: 'Nie ładuje',
+  haBinProblem: 'Problem',
+  haBinOk: 'OK',
+  haBinUnsafe: 'Niebezpiecznie',
+  haBinSafe: 'Bezpiecznie',
+  haBinTampered: 'Naruszone',
+  haBinSound: 'Dźwięk',
+  haBinQuiet: 'Cisza',
+  haBinVibration: 'Wibracje',
+  haBinStill: 'Bez ruchu',
+  haBinLight: 'Jasno',
+  haBinNoLight: 'Ciemno',
+  haBinHot: 'Gorąco',
+  haBinCold: 'Zimno',
+  haColRed: 'Czerwony',
+  haColOrange: 'Pomarańczowy',
+  haColGreen: 'Zielony',
+  haColBlue: 'Niebieski',
+  haColPurple: 'Fioletowy',
+  haColPink: 'Różowy',
+  haTurnOn: 'Włącz',
+  haNowTemp: 'teraz {t}',
+  haTurnOff: 'Wyłącz',
+  haVersion: 'Wersja {v}',
+  haUnknown: 'Nieznany',
+  haSunUp: 'Dzień',
+  haSunDown: 'Noc',
+  haStandby: 'Czuwanie',
+  // data cards (widgets/canvas/data.ts)
+  dtUpdated: 'Zaktualizowano {when}',
+  dtNoData: 'Teraz brak danych',
+  dtLoading: 'Wczytywanie…',
+  dt1d: '24 h',
+  dt7d: '7 dni',
+  dt30d: '30 dni',
+  dtNoGames: 'W tych dniach nie ma meczów',
+  dtHalf: 'Przerwa',
+  dtLive: 'Na żywo',
+  dtFinal: 'Koniec',
+  dtPens: 'Karne',
+  dtAet: 'Dogrywka',
+  dtNote_postponed: 'Przełożony',
+  dtNote_canceled: 'Odwołany',
+  dtNote_suspended: 'Przerwany',
+  dtNote_delayed: 'Opóźniony',
+  dtNeedsKey: 'Brak klucza Finnhub. Dodaj go w edytorze, na karcie Giełda.',
+  dt1y: '1 rok',
+  dtNoDataFor: 'Brak danych dla {s}',
+  dtNoDataRow: 'Brak danych',
+  haLess: 'Mniej',
+  haMore: 'Więcej',
+  haOptions: 'Opcje',
+  cvFamilyOff: 'Włącz Rodzinę w panelu',
+  cvPointsOff: 'Gwiazdki są wyłączone',
+  cvNoRewards: 'Nie ma jeszcze nagród',
+  cvNoBirthdays: 'Brak nadchodzących urodzin',
+};
+
+export const DICTS: Record<Lang, Dict> = { es, en, pt, nl, da, pl };
 
 export function normLang(l: string | undefined | null): Lang {
   return LANGS.includes(l as Lang) ? (l as Lang) : 'en';
 }
 
+let plRules: Intl.PluralRules | null = null;
+/** Polish "few" counts: 2-4, 22-24, 32-34… but not 12-14 ("3 wydarzenia", "5 wydarzeń", "22 wydarzenia"). */
+export function isPolishFew(n: number): boolean {
+  if (!Number.isFinite(n)) return false;
+  plRules ??= new Intl.PluralRules('pl-PL');
+  return plRules.select(n) === 'few';
+}
+
 export function t(lang: Lang, key: string, vars?: Record<string, string | number>): string {
-  // A key missing in a language falls back to English, then to Spanish (the source).
-  const s = DICTS[lang]?.[key] ?? DICTS.en[key] ?? DICTS.es[key] ?? key;
+  // A key missing in a language falls back to English, then to Spanish (the source). A Polish count in the "few"
+  // range takes the key's _few twin when it has one.
+  const few = lang === 'pl' && vars?.n !== undefined && isPolishFew(Number(vars.n)) ? DICTS.pl[`${key}_few`] : undefined;
+  const s = few ?? DICTS[lang]?.[key] ?? DICTS.en[key] ?? DICTS.es[key] ?? key;
   if (!vars) return s;
   return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? String(vars[k]) : `{${k}}`));
 }
@@ -1706,7 +2032,9 @@ function fmt(lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat 
 export function weekdayName(lang: Lang, key: string, style: 'long' | 'short' | 'narrow' = 'short'): string {
   let s = fmt(lang, { weekday: style, timeZone: 'UTC' }).format(keyToUTC(key));
   s = s.replace(/\.$/, '');
-  // some locales (pt-PT) return full names for "short" ("segunda"); keep labels compact
+  // some locales (pt-PT) return full names for "short" ("segunda"); keep labels compact. Polish shortens Sunday
+  // to "niedz.": calendars write "Ndz" ("Nie" would read as "no").
+  if (lang === 'pl' && style === 'short' && s === 'niedz') s = 'ndz';
   if (style === 'short' && s.length > 4) s = s.replace(/-feira$/, '').slice(0, 3);
   return capitalize(s);
 }
@@ -1725,6 +2053,15 @@ export function monthName(lang: Lang, month1: number, style: 'long' | 'short' = 
   return capitalize(s);
 }
 
+/**
+ * Long month name as it reads after a day number: Polish needs the genitive ("12 października"), which Intl gives
+ * only when the day is formatted too; every other language uses the plain month name.
+ */
+function monthAfterDay(lang: Lang, d: Date): string {
+  if (lang !== 'pl') return fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d);
+  return fmt(lang, { day: 'numeric', month: 'long', timeZone: 'UTC' }).formatToParts(d).find((p) => p.type === 'month')?.value ?? '';
+}
+
 /** Localized long date line, e.g. es weekday_d_month → "viernes, 9 de octubre". */
 /** Tokens of the custom date pattern, longest first so {dddd} wins over {ddd} and {d}. */
 export const DATE_TOKENS = ['dddd', 'ddd', 'dd', 'd', 'mmmm', 'mmm', 'mm', 'm', 'yyyy', 'yy'] as const;
@@ -1732,12 +2069,18 @@ export const DATE_TOKENS = ['dddd', 'ddd', 'dd', 'd', 'mmmm', 'mmm', 'mm', 'm', 
 /** Custom date line: {dddd} Saturday, {ddd} Sat, {d} 7, {dd} 07, {mmmm} March, {mmm} Mar, {m} 3, {mm} 03, {yyyy} 2026, {yy} 26. */
 export function formatDatePattern(lang: Lang, key: string, pattern: string): string {
   const d = keyToUTC(key);
+  // Polish: "{d} {mmmm}" is "12 października" (genitive); a month without a day stays "październik"
+  const withDay = /\{dd?\}/i.test(pattern);
   const val: Record<string, () => string> = {
     dddd: () => capitalize(fmt(lang, { weekday: 'long', timeZone: 'UTC' }).format(d)),
-    ddd: () => capitalize(fmt(lang, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '')),
+    ddd: () => {
+      const w = fmt(lang, { weekday: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, '');
+      // the same "Ndz" for Sunday as the calendar headers (weekdayName)
+      return capitalize(lang === 'pl' && w === 'niedz' ? 'ndz' : w);
+    },
     d: () => String(d.getUTCDate()),
     dd: () => key.slice(8, 10),
-    mmmm: () => { const m = fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d); return lang === 'en' ? capitalize(m) : m; },
+    mmmm: () => { const m = withDay ? monthAfterDay(lang, d) : fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d); return lang === 'en' ? capitalize(m) : m; },
     mmm: () => { const m = fmt(lang, { month: 'short', timeZone: 'UTC' }).format(d).replace(/\.$/, ''); return lang === 'en' ? capitalize(m) : m; },
     m: () => String(d.getUTCMonth() + 1),
     mm: () => key.slice(5, 7),
@@ -1751,14 +2094,16 @@ export function formatDateLine(lang: Lang, key: string, format: DateFormat = 'we
   if (format === 'custom' && custom.trim()) return formatDatePattern(lang, key, custom.trim());
   const d = keyToUTC(key);
   const wd = fmt(lang, { weekday: 'long', timeZone: 'UTC' }).format(d);
+  // month before the day ("October 12"): the plain name; after the day: Polish uses the genitive ("12 października")
   const mo = fmt(lang, { month: 'long', timeZone: 'UTC' }).format(d);
+  const moAfter = monthAfterDay(lang, d);
   const day = d.getUTCDate();
   const W = capitalize(wd);
   switch (format) {
     case 'weekday_month_d':
       return lang === 'en' ? `${W}, ${capitalize(mo)} ${day}` : `${W}, ${mo} ${day}`;
     case 'weekday_d_dot_month':
-      return `${W} ${day}. ${lang === 'en' ? capitalize(mo) : mo}`;
+      return `${W} ${day}. ${lang === 'en' ? capitalize(moAfter) : moAfter}`;
     case 'weekday_month_d_y':
       return `${W}, ${lang === 'en' ? capitalize(mo) : mo} ${day}, ${d.getUTCFullYear()}`;
     case 'weekday_mdy':
@@ -1772,6 +2117,7 @@ export function formatDateLine(lang: Lang, key: string, format: DateFormat = 'we
       if (lang === 'en') return `${W}, ${day} ${capitalize(mo)}`;
       if (lang === 'nl') return `${W} ${day} ${mo}`; // "Maandag 13 oktober"
       if (lang === 'da') return `${W} den ${day}. ${mo}`; // "Mandag den 13. oktober"
+      if (lang === 'pl') return `${W}, ${day} ${moAfter}`; // "Poniedziałek, 13 października"
       return `${W}, ${day} de ${mo}`;
   }
 }

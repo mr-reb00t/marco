@@ -2,24 +2,27 @@
 // can run it.
 import type { HaEntity } from '../shared/types';
 
-/** Words for each domain in the five admin languages, so "luz" or "persiana" finds lights or covers by kind. */
+/**
+ * Words for each domain in the six admin languages, so "luz" or "persiana" finds lights or covers by kind. The search
+ * matches substrings, so a word that hides another language's word stays out ("żaluzja" holds "luz").
+ */
 export const DOMAIN_WORDS: Record<string, string> = {
-  light: 'luz luces lámpara light lights lamp luzes licht lamp lys lampe',
-  switch: 'interruptor enchufe switch plug tomada schakelaar stekker kontakt stik',
+  light: 'luz luces lámpara light lights lamp luzes licht lamp lys lampe światło lampa oświetlenie',
+  switch: 'interruptor enchufe switch plug tomada schakelaar stekker kontakt stik przełącznik gniazdko',
   input_boolean: 'interruptor switch toggle',
-  climate: 'clima calefacción aire termostato climate heating thermostat aquecimento klimaat verwarming klima varme',
-  cover: 'persiana estor cortina cover blind shutter estore rolluik gordijn rullegardin persienne',
+  climate: 'clima calefacción aire termostato climate heating thermostat aquecimento klimaat verwarming klima varme klimatyzacja ogrzewanie',
+  cover: 'persiana estor cortina cover blind shutter estore rolluik gordijn rullegardin persienne roleta zasłona',
   sensor: 'sensor', binary_sensor: 'sensor',
-  media_player: 'multimedia altavoz tele media speaker tv coluna muziek højttaler',
+  media_player: 'multimedia altavoz tele media speaker tv coluna muziek højttaler głośnik telewizor',
   camera: 'cámara camera câmara kamera',
-  fan: 'ventilador fan ventoinha ventilator blæser',
-  scene: 'escena scene cena scène', script: 'script', button: 'botón button botão knop knap',
-  lock: 'cerradura lock fechadura slot lås', vacuum: 'aspirador robot vacuum stofzuiger støvsuger',
-  valve: 'válvula valve klep ventil', select: 'selector select', input_select: 'selector select',
-  number: 'número number', input_number: 'número number', weather: 'tiempo weather tempo weer vejr',
-  person: 'persona person pessoa persoon', update: 'actualización update atualização',
+  fan: 'ventilador fan ventoinha ventilator blæser wentylator',
+  scene: 'escena scene cena scène scena', script: 'script skrypt', button: 'botón button botão knop knap przycisk',
+  lock: 'cerradura lock fechadura slot lås zamek', vacuum: 'aspirador robot vacuum stofzuiger støvsuger odkurzacz',
+  valve: 'válvula valve klep ventil zawór', select: 'selector select wybór', input_select: 'selector select wybór',
+  number: 'número number liczba', input_number: 'número number liczba', weather: 'tiempo weather tempo weer vejr pogoda',
+  person: 'persona person pessoa persoon osoba', update: 'actualización update atualização aktualizacja',
 };
-const fold = (x: string) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const fold = (x: string) => x.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ł/g, 'l');
 
 /** An entity matches a search: every word in its name, id, area or domain words, ignoring case and accents. */
 export function haEntityMatches(e: HaEntity, q: string): boolean {

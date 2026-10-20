@@ -2,7 +2,7 @@
 // Keep in sync with the server (server/core/validate.js, server/core/defaults.js).
 import type { PhotoFrame } from './focus';
 
-export type Lang = 'es' | 'en' | 'pt' | 'nl' | 'da';
+export type Lang = 'es' | 'en' | 'pt' | 'nl' | 'da' | 'pl';
 export type LayoutPreset =
   | 'bigCalendar' | 'leftRight' | 'topBottom' | 'bigTime' | 'agenda'
   | 'today' | 'people' | 'photoFrame' | 'twoWeeks' | 'board' | 'bedside' | 'planner'

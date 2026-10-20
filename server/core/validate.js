@@ -205,7 +205,7 @@ export function isValidDate(s) {
   return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
 }
 
-/** "Salón principal" → "salon-principal" (lowercase ascii, dashes, ≤ 32 chars). */
+/** "Salón principal" → "salon-principal", "Łazienka" → "lazienka" (lowercase ascii, dashes, ≤ 32 chars). */
 export function slugify(s) {
   return fold(s).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32).replace(/-+$/, '');
 }

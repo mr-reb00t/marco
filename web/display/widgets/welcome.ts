@@ -56,6 +56,16 @@ const TEXT: Record<Lang, Record<string, string>> = {
     local: 'På en anden enhed skal du skrive denne computers adresse i stedet for “localhost”.',
     scan: 'Scan for at komme i gang',
   },
+  pl: {
+    hello: 'Witaj',
+    ready: 'Ten ekran jest gotowy. Dokończ konfigurację na telefonie lub komputerze:',
+    s1: 'Zeskanuj kod lub otwórz adres',
+    s2: 'Utwórz hasło panelu i wybierz kalendarze',
+    s3: 'Ten ekran odświeży się sam',
+    code: 'Pojawia się prośba o kod konfiguracji? Znajdziesz go w dzienniku serwera.',
+    local: 'Na innym urządzeniu zamień „localhost” na adres tego komputera.',
+    scan: 'Zeskanuj, aby skonfigurować',
+  },
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);

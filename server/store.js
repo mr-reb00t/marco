@@ -129,12 +129,12 @@ function loadConfig() {
 
 /**
  * One-time, additive update of the icon rules in an existing config (v2 rule set: more keywords in English,
- * Spanish and Portuguese, and new categories; v3: Dutch and Danish keywords). Rules the user kept from the defaults
- * gain the missing keywords; new default rules are appended after the user's own, so custom rules keep their
- * priority. Nothing is removed.
+ * Spanish and Portuguese, and new categories; v3: Dutch and Danish keywords; v4: Polish keywords). Rules the user kept
+ * from the defaults gain the missing keywords; new default rules are appended after the user's own, so custom rules
+ * keep their priority. Nothing is removed.
  * A marker file in the data folder makes it run once: rules deleted afterwards stay deleted.
  */
-const ICON_RULES_MARKER = '.iconrules-v3';
+const ICON_RULES_MARKER = '.iconrules-v4';
 function mergeIconRuleUpdates(cfg) {
   const marker = path.join(paths.data, ICON_RULES_MARKER);
   if (fs.existsSync(marker)) return;

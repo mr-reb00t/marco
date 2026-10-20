@@ -136,7 +136,7 @@ test('the new layouts have Spanish, English and Portuguese texts (Dutch and Dani
   }
   const i18n = read('web/shared/i18n.ts');
   for (const k of ['upNext', 'nothingMoreToday', 'everyone', 'birthdays', 'allDone', 'noPeople', 'nothingPlanned', 'daysWord']) {
-    assert.equal(i18n.split(`  ${k}: '`).length - 1, 5, `display string ${k} not in es, en, pt, nl and da`);
+    assert.equal(i18n.split(`  ${k}: '`).length - 1, 6, `display string ${k} not in es, en, pt, nl, da and pl`);
   }
 });
 

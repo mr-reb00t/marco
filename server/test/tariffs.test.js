@@ -449,7 +449,7 @@ test('display and admin wiring: next 24 h view in every look, strings in every l
   assert.match(modern, /#app\.is-kids \.pw-stat/);
   const i18n = read('web/shared/i18n.ts');
   for (const k of ['priceNowIs', 'priceLowest', 'priceAverage', 'priceHighest', 'priceNextHours', 'priceInclGrid', 'priceInclGridEst', 'priceInclBands', 'priceNoGrid']) {
-    assert.equal(i18n.split(`  ${k}: '`).length, 6, k);
+    assert.equal(i18n.split(`  ${k}: '`).length, 7, k);
   }
   for (const f of ['server/core/tariffsCore.js', 'server/tariffs.js', 'web/admin/sections/PriceTariff.tsx', 'web/admin/sections/PriceWidget.tsx', 'web/admin/i18n-dict-prices.ts', 'web/display/widgets/prices.ts']) {
     assert.doesNotMatch(read(f), /—/, `no em dashes in ${f}`);

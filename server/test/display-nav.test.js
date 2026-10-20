@@ -433,11 +433,11 @@ test('the editor: why a button does not show without touch, the swipe switch, th
   assert.match(insp, /t\('Deslizar para cambiar de pantalla'\)/);
   assert.match(insp, /p\.env\.go\('background\/bg-ambient'\)/);
   assert.match(read('web/admin/sections/Background.tsx'), /<Card id="bg-ambient"/);
-  // every string of the cards in the five languages
+  // every string of the cards in the six languages
   const dict = read('web/admin/i18n-dict-nav.ts');
   for (const k of ['Ir a pantalla', 'Pausar carrusel', 'Progreso del carrusel', 'Volver solo tras', 'Sin tocar', 'Ir a Efecto ambiental']) assert.ok(dict.includes(`['${k}',`), k);
   const shared = read('web/shared/i18n.ts');
-  for (const k of ['navHome', 'navPause', 'navResume', 'navPaused', 'navUnavailable']) assert.equal(shared.split(`  ${k}: `).length - 1, 5, k);
+  for (const k of ['navHome', 'navPause', 'navResume', 'navPaused', 'navUnavailable']) assert.equal(shared.split(`  ${k}: `).length - 1, 6, k);
 });
 
 // ---------------------------------------------------------------- in a browser

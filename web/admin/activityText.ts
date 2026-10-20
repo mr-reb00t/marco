@@ -5,8 +5,8 @@ import { getLang, nScreens, t } from './i18n';
 import { fetchErrorText } from './apiErrors';
 
 const str = (v: unknown) => (v === undefined || v === null ? '' : String(v));
-// quoted value: Dutch and Danish use “ ”, the other languages « »
-const q = (v: unknown) => (str(v) ? (['nl', 'da'].includes(getLang()) ? `“${str(v)}”` : `«${str(v)}»`) : '');
+// quoted value: Polish uses „ ”, Dutch and Danish “ ”, the other languages « »
+const q = (v: unknown) => (str(v) ? (getLang() === 'pl' ? `„${str(v)}”` : ['nl', 'da'].includes(getLang()) ? `“${str(v)}”` : `«${str(v)}»`) : '');
 
 export const ACTIVITY_GROUPS: { value: string; label: string; icon: IconName }[] = [
   { value: '', label: 'Todo', icon: 'list' },

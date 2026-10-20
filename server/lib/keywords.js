@@ -1,8 +1,8 @@
 // Icon-rule keyword matching, shared by the server (server/rules.js) and the admin preview
 // (web/admin/util.ts imports this file directly, typed by keywords.d.ts). Pure, dependency-free.
 
-/** Lowercase + strip diacritics (same as server/core/lib/text.js fold). */
-export const foldText = (s) => String(s ?? '').normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase();
+/** Lowercase + strip diacritics, ł as l (same as server/core/lib/text.js fold). */
+export const foldText = (s) => String(s ?? '').normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase().replace(/ł/g, 'l');
 
 export const SHORT_KEYWORD = 4;
 const reCache = new Map();
