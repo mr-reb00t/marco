@@ -74,7 +74,7 @@ export function SpotifyAccountSelect(props: { value: string; onChange: (v: strin
         {t('Todavía no hay cuentas de Spotify conectadas.')}{' '}
         {props.go && (
           <button type="button" class="link-btn" onClick={() => props.go!('spotify')}>
-            {t('Conectar en Spotify')}
+            {t('Ir a la página Spotify')}
           </button>
         )}
       </Callout>
@@ -179,7 +179,8 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
       const out = await api.finishSpotify(pasted.trim());
       apply(out);
       setPasted('');
-      toast(`${t('Cuenta de Spotify conectada')}: ${out.accounts.find((a) => a.id === out.id)?.name ?? ''}`, 'ok');
+      const name = out.accounts.find((a) => a.id === out.id)?.name;
+      toast(name ? t('Cuenta de Spotify conectada: {name}', { name }) : t('Cuenta de Spotify conectada'), 'ok');
     } catch (e) {
       toast(spotifyErrorText(errorCode(e) || 'spotify_exchange_failed'), 'error');
     } finally {
@@ -193,9 +194,10 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
       const r = await api.spotifyNow(a.id);
       if (r.item) toast(t('Suena: {what}', { what: r.item.artist ? `${r.item.title} · ${r.item.artist}` : r.item.title }), 'ok');
       else if (r.error === 'auth') toast(t('Spotify no acepta esta cuenta. Vuelve a conectarla.'), 'error');
+      else if (r.error === 'app') toast(t('Spotify no acepta el Client Secret de tu app. Revísalo y guárdalo otra vez.'), 'error');
       else if (r.error) toast(t('Spotify no responde ahora mismo. Inténtalo de nuevo en unos minutos.'), 'error');
       else toast(t('Conectada. Ahora mismo no suena nada.'));
-      if (r.error === 'auth') api.spotify().then(apply, () => {});
+      if (r.error === 'auth' || r.error === 'app') api.spotify().then(apply, () => {});
     } catch {
       toast(t('No se pudo comprobar.'), 'error');
     } finally {
@@ -207,7 +209,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
     const on = usedOn(full, a.id);
     const ok = await confirmDialog({
       title: t('¿Desconectar {name}?', { name: a.name }),
-      body: on.length ? t('Lo muestran estas pantallas, que dejarán de verlo: {list}.', { list: on.join(', ') }) : t('Marco borra sus claves de acceso.'),
+      body: on.length ? t('Estas pantallas la muestran y dejarán de mostrarla: {list}.', { list: on.join(', ') }) : t('Marco borra sus claves de acceso.'),
       confirm: t('Desconectar'),
       danger: true,
     });
@@ -227,6 +229,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
   if (loadErr) return <Callout kind="error">{t('No se pudo cargar.')}</Callout>;
   const ready = !!st?.clientId && !!st?.secretSet;
   const full_ = !!st && st.accounts.length >= st.max;
+  const needsReconnect = !!st?.accounts.some((a) => a.status === 'reconnect');
 
   return (
     <>
@@ -238,7 +241,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
         <ol class="howto">
           <li>
             {t('Abre el panel de desarrolladores de Spotify y crea una app (el nombre y la descripción que quieras).')}{' '}
-            <a href={SPOTIFY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
+            <a class="ext-link" href={SPOTIFY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
               developer.spotify.com/dashboard <Icon name="external" size={13} />
             </a>
           </li>
@@ -252,8 +255,13 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
         </ol>
         {st?.paste && (
           <Callout kind="warn">
-            {t('Spotify solo devuelve a direcciones https, o a http://127.0.0.1 en el propio equipo («localhost» no vale). Este servidor no tiene una dirección https, así que usa la de arriba: después de permitir el acceso el navegador mostrará una página que no carga. Copia la dirección de esa página y pégala aquí abajo.')}
+            {t('Spotify solo devuelve a direcciones https, o a http://127.0.0.1 en el propio equipo («localhost» no vale). Este servidor no tiene una dirección https, así que usa la de arriba: después de permitir el acceso el navegador mostrará una página que no carga, o un aviso de Marco. Copia la dirección de esa página y pégala aquí abajo.')}
             {isSelfHosted() && <> {t('Con una dirección https propia (PUBLIC_URL en el archivo .env, por ejemplo detrás de un proxy como Caddy), Spotify vuelve aquí solo.')}</>}
+          </Callout>
+        )}
+        {st?.appRefused && (
+          <Callout kind="error">
+            {t('Spotify no acepta el Client Secret de tu app. Si lo cambiaste en el panel de desarrolladores, pega aquí el nuevo y guárdalo: las cuentas conectadas siguen valiendo y no hay que volver a conectarlas.')}
           </Callout>
         )}
         <div class="grid grid--2">
@@ -304,32 +312,45 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
         ) : st.accounts.length === 0 ? (
           <Empty icon="music" title={t('Todavía no hay cuentas de Spotify conectadas.')} />
         ) : (
-          <ul class="immich-albums">
+          <ul class="sp-accounts">
             {st.accounts.map((a) => {
               const on = usedOn(full, a.id);
               return (
-                <li class="immich-album">
-                  <span class="immich-album__cover immich-album__cover--empty">
+                <li class="sp-account">
+                  <span class="sp-account__icon">
                     <Icon name="music" size={18} />
                   </span>
-                  <div class="immich-album__text">
+                  <div class="sp-account__text">
                     <strong>{a.name}</strong>
                     <small class="muted">{on.length ? t('En: {list}', { list: on.join(', ') }) : t('Ninguna pantalla la muestra todavía')}</small>
+                    {a.status === 'reconnect' && (
+                      <span>
+                        <span class="badge badge--soft">{t('hay que volver a conectarla')}</span>
+                      </span>
+                    )}
                   </div>
-                  {a.status === 'reconnect' && <span class="badge badge--soft">{t('hay que volver a conectarla')}</span>}
-                  <Button size="sm" variant="ghost" icon="play" loading={busy === `test:${a.id}`} onClick={() => test(a)}>
-                    {t('Probar')}
-                  </Button>
-                  <Button size="sm" variant="danger" loading={busy === `rm:${a.id}`} onClick={() => remove(a)}>
-                    {t('Desconectar')}
-                  </Button>
+                  <div class="sp-account__actions">
+                    {a.status === 'reconnect' ? (
+                      // the same Spotify person keeps this id, so the screens that show it go on working
+                      <Button size="sm" variant="primary" icon="link" disabled={!!busy} onClick={connect}>
+                        {t('Volver a conectar')}
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="ghost" icon="play" loading={busy === `test:${a.id}`} onClick={() => test(a)}>
+                        {t('Probar')}
+                      </Button>
+                    )}
+                    <Button size="sm" variant="danger" loading={busy === `rm:${a.id}`} onClick={() => remove(a)}>
+                      {t('Desconectar')}
+                    </Button>
+                  </div>
                 </li>
               );
             })}
           </ul>
         )}
         {full_ && <p class="muted small">{t('Como mucho {n} cuentas.', { n: st!.max })}</p>}
-        {st?.paste && ready && !full_ && (
+        {st?.paste && ready && (!full_ || needsReconnect) && (
           <form
             class="stack"
             onSubmit={(e) => {
@@ -341,7 +362,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
               <div class="search-row">
                 <TextInput mono autocomplete="off" value={pasted} onValue={setPasted} placeholder={`${st.redirectUri}?code=…&state=…`} />
                 <Button type="submit" variant="primary" loading={busy === 'finish'} disabled={!pasted.trim()}>
-                  {t('Terminar')}
+                  {t('Terminar la conexión')}
                 </Button>
               </div>
             </Field>

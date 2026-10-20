@@ -4,7 +4,7 @@
 // the page is visible, when the server says (`next`: sooner when the track is about to end). Covers come by token
 // from GET /api/display/nowplaying/art/:token as blobs. Nothing here ever talks to Spotify.
 // The demo (?demo=1) plays a made-up track without a server.
-import { nowPlayingAccounts } from '../../server/core/nowPlayingCore.js';
+import { NOW_PLAYING_TIMING, nowPlayingAccounts } from '../../server/core/nowPlayingCore.js';
 import type { DisplayConfig, DisplayNowPlayingResponse, NowPlayingData } from '../shared/types';
 import { ApiError, getJSON } from './api';
 import { authHeaders, withScreen } from './identity';
@@ -22,6 +22,10 @@ export interface NowPlayingSource {
 const isObj = (x: unknown): x is Record<string, any> => !!x && typeof x === 'object' && !Array.isArray(x);
 const TOKEN_RE = /^[0-9a-f]{16}$/;
 const DEFAULT_NEXT = 10;
+/** An answer older than this is not shown (the server's own rule, core NOW_PLAYING_TIMING.stale): the server is gone. */
+const STALE_MS = NOW_PLAYING_TIMING.stale;
+/** Seconds past the end of a track before it counts as over even without a new answer. */
+const PAST_END = 5;
 
 /**
  * The accounts the screen of `cfg` shows, in a stable order: its Sonando ahora cards and the line under the clock (the
@@ -109,8 +113,8 @@ export class NowPlayingFeed implements NowPlayingSource {
     this.busy = true;
     const asked = this.accounts.join(',');
     const done = (items: Record<string, unknown>, next: number) => {
-      this.next = next;
       if (asked !== this.accounts.join(',')) return;
+      this.next = next;
       const now = Date.now();
       const sig = JSON.stringify([...this.items.entries()].map(([k, v]) => [k, v.d?.title, v.d?.artist, v.d?.art]));
       this.items.clear();
@@ -129,13 +133,42 @@ export class NowPlayingFeed implements NowPlayingSource {
           (e) => {
             // private or not allowed: nothing shows; anything else keeps what is on screen and asks again later
             if (e instanceof ApiError && (e.status === 403 || e.status === 404)) done({}, 30);
-            else this.next = 30;
+            else if (asked === this.accounts.join(',')) this.dropOld(30);
           },
         );
     void p.catch(() => undefined).finally(() => {
       this.busy = false;
-      this.schedule();
+      // the accounts changed while this request ran (its answer was let go): ask for the new ones now
+      if (asked !== this.accounts.join(',')) this.refresh();
+      else this.schedule();
     });
+  }
+
+  /**
+   * The server did not answer: what it said last stays only while it can still be true. An answer older than the
+   * server's own stale time, or a track well past its end, goes, so a screen cut off from the server does not show an
+   * old track for hours.
+   */
+  private dropOld(next: number): void {
+    this.next = next;
+    let gone = false;
+    for (const [k, v] of this.items) {
+      if (v.d && this.over(v)) {
+        this.items.set(k, { d: null, at: v.at });
+        gone = true;
+      }
+    }
+    if (!gone) return;
+    this.prune();
+    this.changed();
+  }
+
+  private over(hit: { d: NowPlayingData | null; at: number }): boolean {
+    const d = hit.d;
+    if (!d) return true;
+    const age = Date.now() - hit.at;
+    if (age > STALE_MS) return true;
+    return d.duration !== null && d.progress !== null && d.progress + age / 1000 > d.duration + PAST_END;
   }
 
   /** The positions the adapters drew last are far from the new ones (a seek): draw again. */
@@ -156,14 +189,14 @@ export class NowPlayingFeed implements NowPlayingSource {
 
   get(account: string): NowPlayingData | null | undefined {
     const hit = this.items.get(account);
-    if (hit) return hit.d;
+    if (hit) return this.over(hit) ? null : hit.d;
     return this.answered || !this.accounts.includes(account) ? null : undefined;
   }
 
   position(account: string): number | null {
     const hit = this.items.get(account);
     const d = hit?.d;
-    if (!d || d.progress === null) return null;
+    if (!hit || !d || d.progress === null || this.over(hit)) return null;
     const p = d.progress + Math.max(0, (Date.now() - hit.at) / 1000);
     return d.duration ? Math.min(d.duration, p) : p;
   }

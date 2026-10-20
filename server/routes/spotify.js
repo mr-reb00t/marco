@@ -21,13 +21,14 @@ import { getConfig } from '../store.js';
 import { requestScreen } from '../displayAccess.js';
 import { screenPrivacy } from '../privacy.js';
 import { askedAccounts, nowPlayingAccounts, pastedCallback, SPOTIFY_APPS_URL, SPOTIFY_OAUTH_ERRORS } from '../core/nowPlayingCore.js';
+import { langFromHeader, t } from '../core/lib/i18n.js';
 import * as np from '../nowPlaying.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const BACK = '#/spotify';
 
 /** Codes of a failed connect, as /admin/?error= carries them (App.tsx spotifyErrorMessage). */
-const EXCHANGE_ERRORS = { no_refresh_token: 'spotify_no_refresh_token', scope_denied: 'spotify_scope_denied', unavailable: 'spotify_unavailable', auth: 'spotify_app_refused' };
+const EXCHANGE_ERRORS = { no_refresh_token: 'spotify_no_refresh_token', scope_denied: 'spotify_scope_denied', unavailable: 'spotify_unavailable', app: 'spotify_app_refused' };
 
 /** GET /auth/spotify/connect */
 export function spotifyConnectHandler(req, res) {
@@ -59,10 +60,10 @@ async function finish(req, { state, code, error }) {
     console.warn('[auth] spotify connect failed:', err.code || err.status || 'error');
     return { error: EXCHANGE_ERRORS[err.code] || 'spotify_exchange_failed' };
   }
-  const id = np.storeAccount(got);
-  if (!id) return { error: 'spotify_too_many_accounts' };
+  const stored = np.storeAccount(got);
+  if (stored.error) return { error: stored.error === 'too_many' ? 'spotify_too_many_accounts' : 'spotify_not_configured' };
   logActivity('spotify.connected', { req, data: { name: got.name } });
-  return { id };
+  return { id: stored.id, name: got.name };
 }
 
 /**
@@ -73,7 +74,8 @@ export async function spotifyCallbackHandler(req, res) {
   res.set('cache-control', 'no-store');
   const q = { state: String(req.query.state ?? ''), code: typeof req.query.code === 'string' ? req.query.code : '', error: typeof req.query.error === 'string' ? req.query.error : '' };
   if ((q.code || q.error) && !sessionValid(req)) {
-    return res.type('text/plain').send('Marco: copy the address of this page and paste it on the Spotify page of the admin.\n');
+    const l = langFromHeader(req.headers['accept-language']);
+    return res.type('html').send(`<!doctype html><html lang="${l}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Marco</title><p style="font:16px/1.5 system-ui,sans-serif;margin:24px">${t('spotifyPaste', l)}</p></html>\n`);
   }
   const out = await finish(req, q);
   if (out.error) return res.redirect(`/admin/?error=${encodeURIComponent(out.error)}${BACK}`);
@@ -154,8 +156,8 @@ export function spotifyDisplayRouter() {
       return res.status(502).json({ error: 'unavailable' });
     }
     if (!img) return res.status(404).json({ error: 'not found' });
-    // kept by the browser only while the page needs it, never by anything in between
-    res.set('cache-control', 'private, max-age=600');
+    // the display keeps the cover itself (a blob URL) while it shows it: nothing else keeps a copy
+    res.set('cache-control', 'no-store');
     res.set('content-type', img.type);
     res.set('content-length', String(img.buf.length));
     res.set('x-content-type-options', 'nosniff');

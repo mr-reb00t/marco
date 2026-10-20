@@ -5,7 +5,8 @@
 //
 // - The app: secrets.spotify.clientId and clientSecret (data/secrets.json, like every other secret). The secret is
 //   never sent back to the browser, never logged and never reaches a display. A new Client ID forgets the accounts:
-//   their tokens belong to the old app.
+//   their tokens belong to the old app. secrets.spotify.appRefused: Spotify refused the app's keys on the last token
+//   refresh (a rotated or mistyped Client Secret); the accounts keep their tokens and work again once it is fixed.
 // - Accounts: secrets.spotify.accounts[<id>] = { name, user, access_token, refresh_token, expiry, scope, connectedAt,
 //   status? }. The id (sp_...) is random and is all a screen or a card ever names; the Spotify user id is kept only to
 //   reconnect an account in place.
@@ -25,7 +26,7 @@ import { sniffImage } from './core/imageInfo.js';
 import { retryAfterMs } from './core/pricesCore.js';
 import {
   artUrls, codeExchangeBody, displayItem, entryDue, NOW_PLAYING_ART_MAX_BYTES, NOW_PLAYING_ART_TOKEN_RE, NOW_PLAYING_MAX_ACCOUNTS,
-  NOW_PLAYING_TIMING, nextEntry, nextPollSec, newAccountId, refreshBody, SPOTIFY_AUTH_ERRORS, SPOTIFY_CLIENT_ID_RE, SPOTIFY_ME_URL,
+  NOW_PLAYING_TIMING, nextEntry, nextPollSec, newAccountId, refreshBody, SPOTIFY_APP_ERRORS, SPOTIFY_AUTH_ERRORS, SPOTIFY_CLIENT_ID_RE, SPOTIFY_ME_URL,
   SPOTIFY_NOW_URL, SPOTIFY_SCOPES, SPOTIFY_SECRET_RE, SPOTIFY_TOKEN_URL, spotifyAccountName, spotifyAuthUrl, spotifyBasicAuth, spotifyRedirect,
 } from './core/nowPlayingCore.js';
 
@@ -33,7 +34,7 @@ const TIMEOUT_MS = 10_000;
 const CONNECT_TTL_MS = 10 * 60_000;
 const ART_KEEP = 12;
 
-/** A failed Spotify call. code 'auth': the account has to be connected again (or the app's keys are wrong). */
+/** A failed Spotify call. code 'auth': the account has to be connected again; 'app': Spotify refused the app's keys. */
 export class SpotifyError extends Error {
   constructor(message, status = 0, code = '') {
     super(message);
@@ -58,7 +59,7 @@ export const accountIds = () => Object.keys(accounts());
 /** GET /api/admin/spotify (SpotifyStatus). */
 export function spotifyStatus(req) {
   const { redirectUri, paste } = redirectFor(req);
-  return { clientId: String(sp().clientId || ''), secretSet: Boolean(sp().clientSecret), redirectUri, paste, accounts: listAccounts(), max: NOW_PLAYING_MAX_ACCOUNTS };
+  return { clientId: String(sp().clientId || ''), secretSet: Boolean(sp().clientSecret), appRefused: Boolean(sp().appRefused), redirectUri, paste, accounts: listAccounts(), max: NOW_PLAYING_MAX_ACCOUNTS };
 }
 
 /**
@@ -82,9 +83,13 @@ export function saveApp({ clientId, clientSecret }) {
   if (!secret && !(sameApp && cur.clientSecret)) return { ok: false, error: 'client_secret_required' };
   const dropped = sameApp ? 0 : Object.keys(cur.accounts || {}).length;
   updateSecrets((s) => {
-    s.spotify = { clientId: id, clientSecret: secret || cur.clientSecret, accounts: sameApp ? cur.accounts || {} : {} };
+    const kept = sameApp ? s.spotify?.accounts || {} : {};
+    // a new secret for the same app: the accounts' own tokens were never the problem, so they are tried again
+    if (secret) for (const a of Object.values(kept)) if (a && a.status !== 'reconnect') delete a.status;
+    s.spotify = { clientId: id, clientSecret: secret || cur.clientSecret, accounts: kept };
   });
-  if (!sameApp) forgetAll();
+  // the entries keep their back-off from the refused keys: read again at once with the new ones
+  if (!sameApp || secret) forgetAll();
   return { ok: true, dropped };
 }
 
@@ -129,10 +134,12 @@ async function tokenRequest(params) {
   if (!res.ok) {
     const code = typeof json.error === 'string' ? json.error.slice(0, 40) : '';
     // Only Spotify's short error code goes into the message: never a token or the app's keys.
-    throw new SpotifyError(`Spotify token error: ${code || `HTTP ${res.status}`}`, res.status, SPOTIFY_AUTH_ERRORS.has(code) ? 'auth' : res.status >= 500 || res.status === 429 ? 'unavailable' : '');
+    const kind = SPOTIFY_AUTH_ERRORS.has(code) ? 'auth' : SPOTIFY_APP_ERRORS.has(code) ? 'app' : res.status >= 500 || res.status === 429 ? 'unavailable' : '';
+    throw new SpotifyError(`Spotify token error: ${code || `HTTP ${res.status}`}`, res.status, kind);
   }
   if (typeof json.access_token !== 'string' || !json.access_token) throw new SpotifyError('Spotify token error: no access token', res.status);
-  return json;
+  // the app that issued these tokens, so they are never stored under another one
+  return { ...json, clientId: app.clientId };
 }
 
 async function apiGet(url, token) {
@@ -156,19 +163,24 @@ export async function exchangeCode(code, verifier, redirectUri) {
   let json = {};
   try { json = JSON.parse(me.text); } catch { /* no name */ }
   if (!me.ok || typeof json.id !== 'string' || !json.id) throw new SpotifyError(`Spotify profile: HTTP ${me.status}`, me.status, me.status ? '' : 'unavailable');
-  return { user: json.id.slice(0, 128), name: spotifyAccountName(json), tokens: tok };
+  return { user: json.id.slice(0, 128), name: spotifyAccountName(json), tokens: tok, clientId: tok.clientId };
 }
 
 /**
  * Saves (or replaces) an account. The same Spotify user keeps its id, so the cards and screens that show it keep
- * working after a reconnect. Returns the id, or null when the household already has the most accounts.
+ * working after a reconnect. `clientId`: the app the code was exchanged with. Returns { id }, or { error }:
+ * too_many (the household already has the most accounts) or not_configured (the app was removed or changed meanwhile).
  */
-export function storeAccount({ user, name, tokens }) {
+export function storeAccount({ user, name, tokens, clientId }) {
+  if (!sp().clientId || sp().clientId !== clientId) return { error: 'not_configured' };
   const found = Object.entries(accounts()).find(([, a]) => a?.user === user)?.[0];
-  if (!found && Object.keys(accounts()).length >= NOW_PLAYING_MAX_ACCOUNTS) return null;
+  if (!found && Object.keys(accounts()).length >= NOW_PLAYING_MAX_ACCOUNTS) return { error: 'too_many' };
   let id = found;
   while (!id || (!found && accounts()[id])) id = newAccountId(crypto.randomBytes(16));
+  let stored = false;
   updateSecrets((s) => {
+    if (!s.spotify || s.spotify.clientId !== clientId) return;
+    stored = true;
     s.spotify.accounts ??= {};
     s.spotify.accounts[id] = {
       name, user,
@@ -179,8 +191,9 @@ export function storeAccount({ user, name, tokens }) {
       connectedAt: new Date().toISOString(),
     };
   });
+  if (!stored) return { error: 'not_configured' };
   entries.delete(id);
-  return id;
+  return { id };
 }
 
 /** Deletes an account's tokens (Spotify has no revoke call: access is removed at spotify.com/account/apps). */
@@ -193,7 +206,10 @@ export function removeAccount(id) {
 }
 
 const refreshing = new Map();
-/** A valid access token, refreshed when it expires within 60 s. invalid_grant marks the account 'reconnect'. */
+/**
+ * A valid access token, refreshed when it expires within 60 s. invalid_grant marks the account 'reconnect'; refused
+ * app keys (invalid_client) set appRefused instead and leave the account as it is.
+ */
 async function accessToken(id) {
   const a = accounts()[id];
   if (!a) throw new SpotifyError('unknown account', 0, 'auth');
@@ -204,6 +220,7 @@ async function accessToken(id) {
       try {
         const tok = await tokenRequest(refreshBody(a.refresh_token));
         updateSecrets((s) => {
+          if (s.spotify?.appRefused) delete s.spotify.appRefused;
           const x = s.spotify?.accounts?.[id];
           if (!x) return;
           x.access_token = tok.access_token;
@@ -214,6 +231,7 @@ async function accessToken(id) {
         return tok.access_token;
       } catch (err) {
         if (err.code === 'auth') updateSecrets((s) => { const x = s.spotify?.accounts?.[id]; if (x) x.status = 'reconnect'; });
+        if (err.code === 'app') updateSecrets((s) => { if (s.spotify) s.spotify.appRefused = true; });
         throw err;
       } finally {
         refreshing.delete(id);
@@ -229,7 +247,7 @@ async function readSpotify(id) {
   try {
     token = await accessToken(id);
   } catch (err) {
-    return { status: 0, auth: err.code === 'auth' };
+    return { status: 0, auth: err.code === 'auth', app: err.code === 'app' };
   }
   let res = await apiGet(SPOTIFY_NOW_URL, token);
   if (res.status === 401) {
@@ -237,7 +255,7 @@ async function readSpotify(id) {
     try {
       res = await apiGet(SPOTIFY_NOW_URL, await accessToken(id));
     } catch (err) {
-      return { status: 0, auth: err.code === 'auth' };
+      return { status: 0, auth: err.code === 'auth', app: err.code === 'app' };
     }
   }
   let json = null;

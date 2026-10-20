@@ -62,6 +62,14 @@ const STRINGS = {
   busy: { es: 'Ocupado', en: 'Busy', pt: 'Ocupado', nl: 'Bezet', da: 'Optaget' },
   blocked: { es: 'No disponible', en: 'Not available', pt: 'Indisponível', nl: 'Niet beschikbaar', da: 'Ikke ledig' },
   untitled: { es: '(Sin título)', en: '(No title)', pt: '(Sem título)', nl: '(Geen titel)', da: '(Uden titel)' },
+  // the Spotify callback opened on the server itself in paste mode (routes/spotify.js)
+  spotifyPaste: {
+    es: 'Copia la dirección de esta página y pégala en la página Spotify del panel de Marco.',
+    en: 'Copy the address of this page and paste it on the Spotify page of the Marco admin.',
+    pt: 'Copie o endereço desta página e cole-o na página Spotify da administração do Marco.',
+    nl: 'Kopieer het adres van deze pagina en plak het op de Spotify-pagina van het Marco-beheer.',
+    da: 'Kopiér adressen på denne side, og indsæt den på Spotify-siden i Marcos administration.',
+  },
 };
 
 export function t(key, l) {

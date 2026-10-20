@@ -38,6 +38,8 @@ const WARN_TEXT: Record<string, { text: string; route: string; kind: 'warn' | 'e
   outdated_displays: { text: 'Alguna pantalla ejecuta una versión antigua: recárgala.', route: 'displays', kind: 'warn' },
   google_auth_failed: { text: 'Una cuenta de Google ha perdido el acceso. Vuelve a vincularla.', route: 'calendars', kind: 'error' },
   microsoft_auth_failed: { text: 'Una cuenta de Microsoft ha perdido el acceso. Vuelve a vincularla.', route: 'calendars', kind: 'error' },
+  spotify_auth_failed: { text: 'Una cuenta de Spotify ha perdido el acceso. Vuelve a conectarla.', route: 'spotify', kind: 'error' },
+  spotify_app_refused: { text: 'Spotify no acepta el Client Secret de tu app. Revísalo en la página Spotify.', route: 'spotify', kind: 'error' },
 };
 
 export function HomeSection({ me, full, go, setScreenId, cfg, saved }: SectionProps) {

@@ -33,8 +33,13 @@ export const SPOTIFY_SECRET_RE = /^[0-9a-f]{32}$/i;
 export const NOW_PLAYING_MAX_ACCOUNTS = 6;
 /** Error codes Spotify may send back to the Redirect URI; each becomes spotify_<code>, anything else spotify_error. */
 export const SPOTIFY_OAUTH_ERRORS = new Set(['access_denied', 'invalid_request', 'invalid_scope', 'unauthorized_client', 'server_error', 'temporarily_unavailable']);
-/** Token endpoint errors that mean the account has to be connected again (or the app's keys are wrong). */
-export const SPOTIFY_AUTH_ERRORS = new Set(['invalid_grant', 'invalid_client', 'unauthorized_client']);
+/** Token endpoint errors that mean the account itself has to be connected again (its refresh token was revoked or expired). */
+export const SPOTIFY_AUTH_ERRORS = new Set(['invalid_grant']);
+/**
+ * Token endpoint errors about the household's app (a rotated or mistyped Client Secret): every account's own tokens are
+ * still good, so nobody has to sign in again once the right secret is saved.
+ */
+export const SPOTIFY_APP_ERRORS = new Set(['invalid_client', 'unauthorized_client']);
 
 /**
  * How often one account is read (ms): every 10 s while something plays (sooner when the track ends first), every
@@ -191,7 +196,8 @@ export function mapSpotifyNow(status, json) {
  * The entry of one account after a read. `res`: { status, json?, retryAfterMs? } of the currently-playing call (the
  * server already refreshed the token and tried once more after a 401; status 0 = the network failed). Entry:
  * { at, value, fails, until, error }: `value` what plays (mapSpotifyNow) as of `at`, `until` when to read it again,
- * `error` '' or a short code (auth, rate_limited, unavailable). A failure keeps the last value until it is stale.
+ * `error` '' or a short code (auth, app, rate_limited, unavailable; `res.app`: Spotify refused the household's app keys).
+ * A failure keeps the last value until it is stale.
  */
 export function nextEntry(prev, res, now) {
   const T = NOW_PLAYING_TIMING;
@@ -210,7 +216,7 @@ export function nextEntry(prev, res, now) {
   }
   const fails = (prev?.fails ?? 0) + 1;
   const wait = Math.min(T.errorMax, T.errorMin * 2 ** Math.min(8, fails - 1));
-  return { ...keep, fails, until: now + wait, error: status === 401 || status === 403 || res?.auth ? 'auth' : 'unavailable' };
+  return { ...keep, fails, until: now + wait, error: res?.app ? 'app' : status === 401 || status === 403 || res?.auth ? 'auth' : 'unavailable' };
 }
 
 /** The entry should be read again (none yet, or its time came). */

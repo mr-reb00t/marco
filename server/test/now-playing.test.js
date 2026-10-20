@@ -27,6 +27,7 @@ import { _resetDisplays, setServerVersion } from '../displays.js';
 import { _resetDisplayAccess, listDisplayLinks, syncDisplayKeys } from '../displayAccess.js';
 import { _resetPrivacy } from '../privacy.js';
 import { _resetActivityThrottle, listActivity } from '../activity.js';
+import * as np from '../nowPlaying.js';
 import { resetNowPlaying } from '../nowPlaying.js';
 import { selfHostedFeatures } from '../capabilities.js';
 import { makeJpeg } from './photoBytes.js';
@@ -377,6 +378,7 @@ test('connect: PKCE and state, the app\'s own keys, an opaque id, and what a dis
     const art = await display(`/api/display/nowplaying/art/${d.art}`);
     assert.equal(art.status, 200);
     assert.equal(art.headers.get('content-type'), 'image/jpeg');
+    assert.equal(art.headers.get('cache-control'), 'no-store', 'the display keeps the cover itself, nothing else does');
     await display(`/api/display/nowplaying/art/${d.art}`);
     assert.equal(fake.artCalls, 1);
     assert.equal((await display('/api/display/nowplaying/art/0123456789abcdef')).status, 404);
@@ -420,12 +422,34 @@ test('connect: PKCE and state, the app\'s own keys, an opaque id, and what a dis
     await call('GET', `/api/admin/spotify/accounts/${id}/now`, { headers: { cookie } });
     assert.equal(fake.tokenCalls.at(-1).form.get('grant_type'), 'refresh_token');
     assert.equal(fake.tokenCalls.at(-1).form.get('refresh_token'), 'RT-secret-1');
+
+    // a rotated Client Secret (invalid_client) is about the app: the account keeps its tokens, and saving the right
+    // secret makes it read again at once, with no new sign in
+    const OTHER_SECRET = '00112233445566778899aabbccddeeff';
+    assert.equal((await call('PUT', '/api/admin/spotify/app', { body: { clientId: CLIENT_ID, clientSecret: OTHER_SECRET }, headers: { cookie } })).status, 200);
+    store.updateSecrets((s) => { s.spotify.accounts[id].expiry = 0; });
+    tick(NOW_PLAYING_TIMING.playing + 1);
+    const refused = await call('GET', `/api/admin/spotify/accounts/${id}/now`, { headers: { cookie } });
+    assert.deepEqual([refused.json.ok, refused.json.error], [false, 'app']);
+    let app = (await call('GET', '/api/admin/spotify', { headers: { cookie } })).json;
+    assert.deepEqual([app.appRefused, app.accounts[0].status], [true, 'ok']);
+    assert.ok((await call('GET', '/api/admin/dashboard', { headers: { cookie } })).json.warnings.includes('spotify_app_refused'));
+    assert.equal(store.getSecrets().spotify.accounts[id].refresh_token, 'RT-secret-1');
+    assert.equal((await call('PUT', '/api/admin/spotify/app', { body: { clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }, headers: { cookie } })).status, 200);
+    const fixed = await call('GET', `/api/display/nowplaying?screen=kitchen&accounts=${id}`, { headers: { cookie } });
+    assert.equal(fixed.status, 200, fixed.text);
+    assert.equal(fixed.json.items[id]?.title, 'Sunday Morning', 'read again at once with the right secret');
+    app = (await call('GET', '/api/admin/spotify', { headers: { cookie } })).json;
+    assert.deepEqual([app.appRefused, app.accounts[0].status], [false, 'ok']);
+    assert.equal((await call('GET', '/api/admin/dashboard', { headers: { cookie } })).json.warnings.includes('spotify_app_refused'), false);
+
     store.updateSecrets((s) => { s.spotify.accounts[id].expiry = 0; });
     fake.refreshError = 'invalid_grant';
     tick(NOW_PLAYING_TIMING.playing + 1);
     const failed = await call('GET', `/api/admin/spotify/accounts/${id}/now`, { headers: { cookie } });
     assert.deepEqual([failed.json.ok, failed.json.error], [false, 'auth']);
     assert.equal((await call('GET', '/api/admin/spotify', { headers: { cookie } })).json.accounts[0].status, 'reconnect');
+    assert.ok((await call('GET', '/api/admin/dashboard', { headers: { cookie } })).json.warnings.includes('spotify_auth_failed'));
 
     // disconnect: the tokens go, with where to remove the access at Spotify
     const del = await call('DELETE', `/api/admin/spotify/accounts/${id}`, { headers: { cookie } });
@@ -448,9 +472,11 @@ test('connect on plain http: the loopback Redirect URI and the pasted address', 
     const { cookie: jar, state, to } = await connect(cookie);
     assert.equal(to.searchParams.get('redirect_uri'), 'http://127.0.0.1:3000/auth/spotify/callback');
     // the loopback page opened without the admin's cookie: a page that says to paste the address
-    const page = await call('GET', `/auth/spotify/callback?code=CODE-1&state=${state}`);
+    const page = await call('GET', `/auth/spotify/callback?code=CODE-1&state=${state}`, { headers: { 'accept-language': 'es-ES,es;q=0.9' } });
     assert.equal(page.status, 200);
-    assert.match(page.text, /paste it/);
+    assert.match(page.headers.get('content-type'), /text\/html/);
+    assert.match(page.text, /lang="es"/);
+    assert.match(page.text, /pégala en la página Spotify/);
     assert.equal((await call('POST', '/api/admin/spotify/finish', { body: { url: 'not an address' }, headers: { cookie: jar } })).json.error, 'spotify_bad_address');
     const done = await call('POST', '/api/admin/spotify/finish', { body: { url: `http://127.0.0.1:3000/auth/spotify/callback?code=CODE-1&state=${state}` }, headers: { cookie: jar } });
     assert.equal(done.status, 200, done.text);
@@ -460,4 +486,18 @@ test('connect on plain http: the loopback Redirect URI and the pasted address', 
     const twice = await call('POST', '/api/admin/spotify/finish', { body: { url: `http://127.0.0.1:3000/auth/spotify/callback?code=CODE-1&state=${state}` }, headers: { cookie: cookieOf(done, jar) } });
     assert.equal(twice.json.error, 'spotify_invalid_state');
   }, { publicUrl: 'http://marco.local:3000' });
+});
+
+test('connect: an app removed or changed while Spotify was asking stores no account', async () => {
+  await withApp(async ({ call, login }) => {
+    const cookie = await login();
+    const tokens = { access_token: 'a', refresh_token: 'r' };
+    // the code was exchanged with this app, then the app went before the account was stored
+    assert.deepEqual(np.storeAccount({ user: 'ana.listens', name: 'Ana', tokens, clientId: CLIENT_ID }), { error: 'not_configured' });
+    await call('PUT', '/api/admin/spotify/app', { body: { clientId: CLIENT_ID, clientSecret: CLIENT_SECRET }, headers: { cookie } });
+    // tokens of another app are never stored under this one
+    assert.deepEqual(np.storeAccount({ user: 'ana.listens', name: 'Ana', tokens, clientId: 'ffffffffffffffffffffffffffffffff' }), { error: 'not_configured' });
+    assert.deepEqual(store.getSecrets().spotify.accounts, {});
+    assert.match(np.storeAccount({ user: 'ana.listens', name: 'Ana', tokens, clientId: CLIENT_ID }).id, /^sp_/);
+  });
 });

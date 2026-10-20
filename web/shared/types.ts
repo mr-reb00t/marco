@@ -2098,13 +2098,18 @@ export interface SpotifyAccount {
   /** the account's display name on Spotify (else its user id) */
   name: string;
   connectedAt: string;
-  /** 'reconnect': Spotify refused its tokens (the app changed or access was removed); connect it again */
+  /** 'reconnect': Spotify refused its refresh token (access was removed at spotify.com or it expired); connect it again */
   status: 'ok' | 'reconnect';
 }
 /** GET /api/admin/spotify: the household's own Spotify app (the secret is never sent back) and its linked accounts. */
 export interface SpotifyStatus {
   clientId: string;
   secretSet: boolean;
+  /**
+   * Spotify refused the app's keys on the last token refresh (a rotated or mistyped Client Secret). The accounts keep
+   * their own tokens: saving the right secret is enough.
+   */
+  appRefused: boolean;
   /** the exact Redirect URI to add to the app in Spotify's developer dashboard */
   redirectUri: string;
   /**
@@ -3004,6 +3009,9 @@ export interface DashboardResponse {
   announcements: Announcement[];
   schedulesNow: { id: string; title: string; emoji: string; screenIds: string[]; until: string }[];
   activity: ActivityEntry[];
-  /** codes: default_password | source_errors | no_displays | outdated_displays | google_auth_failed | microsoft_auth_failed */
+  /**
+   * codes: default_password | source_errors | no_displays | outdated_displays | google_auth_failed | microsoft_auth_failed
+   * | spotify_auth_failed | spotify_app_refused
+   */
   warnings: string[];
 }

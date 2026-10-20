@@ -554,7 +554,8 @@ playing*.
   to 5 minutes). No display showing an account means no call for it.
 - **Display** (`web/display/nowPlayingFeed.ts`): asks while a card or the line is on screen and the page is visible,
   when the server says (`next`), draws again only when the track changes, and moves the thin progress bar by itself
-  each second in between. Covers come from `GET /api/display/nowplaying/art/:token` as blobs (the display CSP is
+  each second in between. When the server stops answering, the last track goes after the same 2 minutes the
+  server keeps it (sooner when it is well past its end). Covers come from `GET /api/display/nowplaying/art/:token` as blobs (the display CSP is
   unchanged and no third-party address reaches a screen); a cover is let go when its track leaves. The card
   (`widgets/canvas/nowPlaying.ts`) uses the Home Assistant media card's look without controls and credits Spotify in
   small type; the line (`widgets/nowPlayingLine.ts`) is a pill like the highlights above it. Both vanish when nothing

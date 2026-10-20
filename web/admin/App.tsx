@@ -326,7 +326,18 @@ export function App() {
     const errMsg = err ? oauthErrorMessage(err, (qs.get('account') || '').slice(0, 254)) : '';
     if (g) setTimeout(() => toast(`${t('Cuenta de Google vinculada')}: ${g}`, 'ok'), 400);
     if (ms) setTimeout(() => toast(`${t('Cuenta de Microsoft vinculada')}: ${ms}`, 'ok'), 400);
-    if (sp) setTimeout(() => toast(t('Cuenta de Spotify conectada'), 'ok'), 400);
+    if (sp) {
+      // the callback carries only the opaque id: the name comes from the account list, as the other toasts show it
+      setTimeout(() => {
+        api.spotify().then(
+          (s) => {
+            const name = s.accounts.find((a) => a.id === sp)?.name;
+            toast(name ? t('Cuenta de Spotify conectada: {name}', { name }) : t('Cuenta de Spotify conectada'), 'ok');
+          },
+          () => toast(t('Cuenta de Spotify conectada'), 'ok'),
+        );
+      }, 400);
+    }
     if (err || g || ms || sp) history.replaceState(null, '', location.pathname + location.hash);
     loadMe().then((m) => {
       if (m?.user) {

@@ -18,6 +18,7 @@ export const SPOTIFY_SECRET_RE: RegExp;
 export const NOW_PLAYING_MAX_ACCOUNTS: number;
 export const SPOTIFY_OAUTH_ERRORS: Set<string>;
 export const SPOTIFY_AUTH_ERRORS: Set<string>;
+export const SPOTIFY_APP_ERRORS: Set<string>;
 export const NOW_PLAYING_TIMING: { playing: number; idle: number; soonest: number; errorMin: number; errorMax: number; rateLimited: number; stale: number };
 export const NOW_PLAYING_ART_TOKEN_RE: RegExp;
 export const NOW_PLAYING_ART_MAX_BYTES: number;
@@ -38,7 +39,7 @@ export interface NowPlayingEntry {
   value: NowPlayingValue | null;
   fails: number;
   until: number;
-  error: '' | 'auth' | 'rate_limited' | 'unavailable';
+  error: '' | 'auth' | 'app' | 'rate_limited' | 'unavailable';
 }
 
 export function spotifyAuthUrl(o: { clientId: string; redirectUri: string; state: string; challenge: string }): string;
@@ -52,7 +53,7 @@ export function artAllowed(url: unknown): boolean;
 export function pickArt(images: unknown): string;
 export function artToken(url: string): string;
 export function mapSpotifyNow(status: number, json: unknown): NowPlayingValue | null;
-export function nextEntry(prev: NowPlayingEntry | null | undefined, res: { status: number; json?: unknown; retryAfterMs?: number | null; auth?: boolean }, now: number): NowPlayingEntry;
+export function nextEntry(prev: NowPlayingEntry | null | undefined, res: { status: number; json?: unknown; retryAfterMs?: number | null; auth?: boolean; app?: boolean }, now: number): NowPlayingEntry;
 export function entryDue(entry: NowPlayingEntry | null | undefined, now: number): boolean;
 export function displayItem(entry: NowPlayingEntry | null | undefined, now: number): NowPlayingData | null;
 export function nextPollSec(entries: (NowPlayingEntry | null | undefined)[], now: number): number;

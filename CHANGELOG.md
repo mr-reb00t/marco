@@ -14,6 +14,8 @@ All notable changes to this project are documented here. The format is based on
   in the new *Spotify* page (Client ID and Client Secret from Spotify's developer dashboard, with the exact Redirect URI
   to register and a step-by-step guide); a server on plain http finishes the link with a pasted address. Spotify is
   asked at most every 10 seconds per account and only while a screen shows it, and covers come through the server.
+  An account whose access was removed shows *Connect again* (it keeps its place on every screen) and a warning on the
+  home page; a rotated Client Secret only asks for the new secret, never for a new sign in.
 
 ## [0.18.0] - 2026-10-20
 
