@@ -24,8 +24,9 @@ display and the server guarantee. The HTTP endpoints and event formats are in [A
 |---|---|
 | `server/` | API and logic: ICS + recurrences (`node-ical`, `rrule`), Google Calendar, weather, RSS, photos, auth, SSE and the poll channel (`pollHub.js`), backups, activity |
 | `server/app.js` | `createApp()`: the whole Express stack (host guard, sessions, CSRF, display access, routers, static files); `server/index.js` adds the store, listen and shutdown |
-| `server/core/` | Pure logic shared with Marco Cloud, which copies the folder as it is: config schema and validation (`validate.js`, `defaults.js`, `screens.js`, `iconRules.js`), backups and import (`backupsCore.js`), announcements (`announceCore.js`), doorbell rings (`doorbellCore.js`), feed parsing (`newsParse.js`), image headers and photo names (`imageInfo.js`), activity helpers (`activityCore.js`), pairing codes (`pairCore.js`), privacy mode (`privacy.js`), special background rules (`bgRules.js`), CSV, schedules and `lib/` (text, time zones, server strings). No Node built-ins, no store, SSE or HTTP modules (checked by `server/test/core-lint.test.js`); the files next to it (`backups.js`, `announce.js`, `photos.js`, `news.js`, `activity.js`, `pairing.js`, `doorbell.js`) add the files, network and SSE |
+| `server/core/` | Pure logic shared with Marco Cloud, which copies the folder as it is: config schema and validation (`validate.js`, `defaults.js`, `screens.js`, `iconRules.js`), backups and import (`backupsCore.js`), announcements (`announceCore.js`), doorbell rings (`doorbellCore.js`), feed parsing (`newsParse.js`), image headers and photo names (`imageInfo.js`), activity helpers (`activityCore.js`), pairing codes (`pairCore.js`), privacy mode (`privacy.js`), family access rules (`familyAccessCore.js`), special background rules (`bgRules.js`), CSV, schedules and `lib/` (text, time zones, server strings). No Node built-ins, no store, SSE or HTTP modules (checked by `server/test/core-lint.test.js`); the files next to it (`backups.js`, `announce.js`, `photos.js`, `news.js`, `activity.js`, `pairing.js`, `doorbell.js`) add the files, network and SSE |
 | `server/displayAccess.js`, `server/pairing.js` | Private display links, paired devices and pairing codes (see *Display access* below) |
+| `server/familyAccess.js` | Family access: each person's phone dashboard, its links, codes and device tokens, and the actions it may run (see *Familia* below) |
 | `server/routes/` | Express routers: `public.js` (display API), `admin.js`, `screens.js`, `announce.js`, `hooks.js`, `doorbell.js`, `system.js`, `localEvents.js`, `access.js` (links, devices, pairing), `updates.js` |
 | `server/updates.js` | Daily check for a newer release, update settings, the request read by `marco-update.path` (see *Updates* below) |
 | `server/test/` | `node --test` suites and fixtures |
@@ -47,7 +48,7 @@ failing source never breaks the others.
 | Path | Content |
 |---|---|
 | `config.json` | The whole configuration (schema v2 below). Bumped `revision` on every save. The admin sends the revision it loaded (`baseRevision`) and a stale one gets `409 conflict`, so only real saves may bump it: background work (calendar refresh, pairing, display links, commands) never writes `config.json`. |
-| `secrets.json` | Password hash (scrypt; absent on a fresh install → setup wizard, `server/setup.js`), `setupCompletedAt`, session secret/epoch, Google refresh tokens per account, Home Assistant token, Immich API key (`immich.apiKey`), API tokens (SHA-256 hashes), `displayKeys` (one private-link key per screen id), `devices` (paired devices: name, screen, SHA-256 of the token, last seen). Mode 600. Never sent to displays. |
+| `secrets.json` | Password hash (scrypt; absent on a fresh install → setup wizard, `server/setup.js`), `setupCompletedAt`, session secret/epoch, Google refresh tokens per account, Home Assistant token, Immich API key (`immich.apiKey`), API tokens (SHA-256 hashes), `displayKeys` (one private-link key per screen id), `devices` (paired devices: name, screen, SHA-256 of the token, last seen), `familyAccess` (people with a phone dashboard: permissions, SHA-256 of their link and of each phone's token). Mode 600. Never sent to displays. |
 | `photos/` | Gallery images; `photos/.thumbs/` thumbnails (480 px); `photos/.meta.json` size + focal point per file |
 | `immich/` | Immich source (`server/immich.js`): `albums/<albumId>[-fav].json` (last good asset list per album, used for up to 24 h while Immich is down) and `cache/` (preview images, 500 MB LRU, `MARCO_IMMICH_CACHE_MB`). Not in backups |
 | `cache/` | Source and feed caches |
@@ -452,6 +453,32 @@ uses only its own days.
   stays in the address (a home-screen shortcut keeps it) and in `localStorage` for `/f`.
 - **Admin**: *Family* (`web/admin/sections/Family.tsx`) and *Meals* (`Meals.tsx`); the *Kids* style card in
   *Layout* is the Modern style with a kids preset (`styleChoiceOf`), not a stored style.
+
+### Family access (phone dashboards)
+
+Each person of the household can have a dashboard of their own on the phone (#16). People are not config: they live
+in `secrets.json` as `familyAccess: [{ id (fp_), name, memberId, perms, createdAt, lastUsedAt, link: { hash,
+createdAt } | null, devices: [{ id (fv_), name, via, hash, createdAt, lastSeenAt, lastIp }] }]`, so adding or changing
+one never bumps the config revision, and an export without secrets has none of them.
+
+- **Pure rules** (`server/core/familyAccessCore.js`, shared with Marco Cloud): permissions (`effectivePerms` drops
+  deleted screens and never widens a message list to every screen), the requests of each action, the to-do and local
+  event they add, and `memberState` (what the phone sees: the name, the controls, the screens a message may go to).
+- **Credentials**: the private link carries `fa_` + 32 characters; opening it on a phone trades it for a device token
+  `fd_` + 43 characters that the phone keeps in `localStorage`. A code (6 characters of the pairing alphabet, two
+  minutes, single use, one per person at a time) shown on a screen through the `access-code` live event is the other
+  way to get one. Only SHA-256 digests are stored; codes live in memory. Lookups are constant time over every stored
+  digest. Every request reads the person again, so a permission taken away, a phone revoked or a person removed
+  counts from the next request (the page holds no stream).
+- **Actions** (`server/familyAccess.js`) go through the server's own paths: `createAnnouncement` (`via: "family"`, the
+  name as title), `applyPrivacy` (every screen, `by: "family"`), `runCommand` night, and `updateConfig` with the reason
+  `family` for to-dos and local events (`index.js` leaves those out of `config.saved`; `family.todo` and `family.event`
+  say who added them).
+- **Phone page** (`web/member/`, `/my/<link>` and `/my`): its own small Preact bundle (`vite.config.ts` input
+  `member`) with only the access texts (`web/admin/i18n-dict-access.ts`). The link and the code (from the QR code's
+  fragment) are taken out of the address bar at once. **Display**: `web/display/widgets/accessCode.ts` draws the code
+  above the announcements. **Admin**: the *Family access* card on the *Access* tab of *Family*
+  (`web/admin/components/FamilyAccess.tsx`).
 
 ## Special backgrounds
 

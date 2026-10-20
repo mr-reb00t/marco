@@ -23,6 +23,7 @@ import { valuesAdminRouter, valuesDisplayRouter } from './routes/values.js';
 import { dataAdminRouter, dataDisplayRouter } from './routes/data.js';
 import { setupRouter } from './setup.js';
 import { familyAdminRouter, familyPublicRouter, familyDisplayRouter, familyPhotoMedia } from './routes/family.js';
+import { familyAccessAdminRouter, familyAccessMemberRouter } from './routes/familyAccess.js';
 import { geocodeRouter } from './geocode.js';
 import { hostGuard } from './lib/net.js';
 import { redactSecrets } from './core/activityCore.js';
@@ -127,10 +128,12 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use('/api/pair', express.json({ limit: '2kb' }));
   app.use('/api/hooks/values', express.json({ limit: '8kb' })); // core/valuesCore.js VALUES_LIMITS.bodyBytes
   app.use('/api/hooks', express.json({ limit: '16kb' }));
-  app.use(['/api/family', '/api/display/family'], express.json({ limit: '4kb' }));
+  app.use(['/api/family', '/api/display/family', '/api/member'], express.json({ limit: '4kb' }));
   app.use('/api/display/todo', express.json({ limit: '2kb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(['/api/admin', '/api/auth', '/api/setup'], csrfGuard({ multipartPaths: ['/photos', /^\/photos\/[^/]+\/thumb$/] }));
+  // The phone dashboards of family access (/my): same origin only, JSON only, the token in a header.
+  app.use('/api/member', csrfGuard());
 
   // --- auth ---
   app.get('/api/auth/me', meHandler);
@@ -157,13 +160,13 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   // Two-step sign-in settings (routes/twofactor.js).
   app.use('/api/admin', twoFactorRouter());
   app.use('/api/admin', updatesRouter({ version, updater }));
-  app.use('/api/admin', screensAdminRouter(), announceRouter(), systemRouter({ version }), eventsAdminRouter(), accessAdminRouter(), doorbellAdminRouter(), familyAdminRouter(), haAdminRouter(), valuesAdminRouter(), dataAdminRouter());
+  app.use('/api/admin', screensAdminRouter(), announceRouter(), systemRouter({ version }), eventsAdminRouter(), accessAdminRouter(), doorbellAdminRouter(), familyAdminRouter(), familyAccessAdminRouter(), haAdminRouter(), valuesAdminRouter(), dataAdminRouter());
   // Display access (private links / paired devices / admin session; open mode = legacy LAN). displayAccess.js
   app.use(DISPLAY_API_PATHS, displayAuth());
   app.use('/api/stream', displayAuth({ allowQuery: true }));
-  // Pairing (unauthenticated, rate-limited), the family page (its own key, rate-limited) and the public (display)
-  // routers.
-  app.use('/api', pairPublicRouter(), familyPublicRouter());
+  // Pairing (unauthenticated, rate-limited), the family page (its own key, rate-limited), the phone dashboards of
+  // family access (their own tokens, rate-limited) and the public (display) routers.
+  app.use('/api', pairPublicRouter(), familyPublicRouter(), familyAccessMemberRouter());
   app.use('/api', displayPublicRouter(), eventsPublicRouter(), doorbellPublicRouter(), familyDisplayRouter(), haDisplayRouter(), valuesDisplayRouter(), dataDisplayRouter());
   app.use('/api', publicRouter({ version }));
   app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
@@ -235,6 +238,13 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
       if (!fs.existsSync(path.join(dist, 'family', 'index.html'))) return next();
       res.set('x-robots-tag', 'noindex, nofollow');
       sendHtml('family/index.html', 'private, no-store')(req, res);
+    });
+    // A person's own dashboard (/my/<link>, or /my on a phone already authorised or typing a code): the page reads
+    // the link from the path and trades it for a token of that phone (routes/familyAccess.js).
+    app.get(['/my', '/my/', '/my/:token'], (req, res, next) => {
+      if (!fs.existsSync(path.join(dist, 'member', 'index.html'))) return next();
+      res.set('x-robots-tag', 'noindex, nofollow');
+      sendHtml('member/index.html', 'private, no-store')(req, res);
     });
   } else {
     app.get('/', (req, res) => res.type('text/plain').send(

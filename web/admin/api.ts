@@ -43,6 +43,11 @@ import type {
   PairedDevice,
   EventsPreviewRequest,
   FamilyAdminState,
+  FamilyAccessCodeResponse,
+  FamilyAccessLinkResponse,
+  FamilyAccessListResponse,
+  FamilyAccessPerson,
+  FamilyAccessPersonRequest,
   EventsPreviewResponse,
   ExportBundle,
   ImportApplyRequest,
@@ -308,6 +313,18 @@ export const api = {
   revokeFamilyLink: () => request<{ ok: true }>('DELETE', '/api/admin/family/link'),
   /** A cropped profile photo (base64 of a small square JPEG): its id, for family.members[].photo. */
   familyPhoto: (data: string) => request<{ photo: string }>('POST', '/api/admin/family/photos', { data }),
+
+  // ---- Family access: each person's own dashboard on the phone (server/routes/familyAccess.js) ----
+  familyAccess: () => request<FamilyAccessListResponse>('GET', '/api/admin/family-access'),
+  /** The private link comes in this answer only. */
+  familyAccessCreate: (body: FamilyAccessPersonRequest) => request<FamilyAccessLinkResponse>('POST', '/api/admin/family-access', body),
+  familyAccessUpdate: (id: string, body: FamilyAccessPersonRequest) => request<{ person: FamilyAccessPerson }>('PATCH', `/api/admin/family-access/${encodeURIComponent(id)}`, body),
+  familyAccessLink: (id: string) => request<FamilyAccessLinkResponse>('POST', `/api/admin/family-access/${encodeURIComponent(id)}/link`, {}),
+  /** Show a code for this person on one screen for two minutes. */
+  familyAccessCode: (id: string, screenId: string) => request<FamilyAccessCodeResponse>('POST', `/api/admin/family-access/${encodeURIComponent(id)}/code`, { screenId }),
+  familyAccessRevokeDevice: (id: string, deviceId: string) =>
+    request<{ ok: true }>('DELETE', `/api/admin/family-access/${encodeURIComponent(id)}/devices/${encodeURIComponent(deviceId)}`),
+  familyAccessDelete: (id: string) => request<{ ok: true }>('DELETE', `/api/admin/family-access/${encodeURIComponent(id)}`),
 
   eventsPreview: (body: EventsPreviewRequest) => request<EventsPreviewResponse>('POST', '/api/admin/events/preview', body),
   parseBirthdaysCsv: (text: string) => request<BirthdayCsvResult>('POST', '/api/admin/birthdays/parse-csv', { text }),

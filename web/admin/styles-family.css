@@ -607,3 +607,35 @@
 .avatar-crop__error p {
   margin: 0;
 }
+
+/* ---------------------------------------------------------------- Accesos de la familia (components/FamilyAccess.tsx) */
+.fa-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.fa-person { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 12px; box-shadow: 0 0 0 1px var(--border); }
+.fa-person__head { display: flex; align-items: center; gap: 12px; }
+.fa-person__avatar { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font-size: 22px; background: var(--surface-2, var(--surface)); }
+.fa-person__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.fa-person__name { font-weight: 650; overflow-wrap: anywhere; }
+.fa-person__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fa-code { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fa-code .select { min-width: 140px; }
+.fa-code-live { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0; }
+.fa-code-live__code { font-family: var(--mono, ui-monospace, monospace); font-size: 22px; letter-spacing: 0.18em; }
+.fa-fresh { padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.fa-devices { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.fa-devices li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fa-devices__name { font-weight: 550; }
+.fa-perms { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.fa-screens { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px 36px; }
+.fa-chip {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 99px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border-strong);
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+.fa-chip.is-on { box-shadow: 0 0 0 1.5px var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); font-weight: 600; }

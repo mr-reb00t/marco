@@ -924,6 +924,119 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/admin/family-access",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccess"
+      ],
+      "request": null,
+      "response": "FamilyAccessListResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "people",
+        "max",
+        "lanAddresses?",
+        "publicUrl?"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/family-access",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessCreate"
+      ],
+      "request": "FamilyAccessPersonRequest",
+      "response": "FamilyAccessLinkResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "person",
+        "link"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/family-access/:id",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessDelete"
+      ],
+      "request": null,
+      "response": "inline",
+      "responseArray": false,
+      "responseKeys": [
+        "ok"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/admin/family-access/:id",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessUpdate"
+      ],
+      "request": "FamilyAccessPersonRequest",
+      "response": "inline",
+      "responseArray": false,
+      "responseKeys": [
+        "person"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/family-access/:id/code",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessCode"
+      ],
+      "request": "{screenId}",
+      "response": "FamilyAccessCodeResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "code",
+        "expiresAt",
+        "screenId",
+        "delivered"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/admin/family-access/:id/devices/:deviceId",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessRevokeDevice"
+      ],
+      "request": null,
+      "response": "inline",
+      "responseArray": false,
+      "responseKeys": [
+        "ok"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/family-access/:id/link",
+      "query": [],
+      "feature": "familyAccess",
+      "callers": [
+        "familyAccessLink"
+      ],
+      "request": "{}",
+      "response": "FamilyAccessLinkResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "person",
+        "link"
+      ]
+    },
+    {
       "method": "DELETE",
       "path": "/api/admin/family/:param/:id",
       "query": [],

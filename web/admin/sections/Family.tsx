@@ -8,6 +8,8 @@ import { api, ApiError } from '../api';
 import { isLocalhost, shareOrigin } from '../components/DisplayAccess';
 import { choiceDialog, confirmDialog, toast } from '../components/feedback';
 import { AvatarFace, MemberAvatarPicker } from '../components/AvatarPhoto';
+import { FamilyAccessCard } from '../components/FamilyAccess';
+import { has } from '../caps';
 import { Icon, type IconName } from '../components/icons';
 import { CopyField, Qr } from '../components/share';
 import { Button, Callout, Card, ColorPicker, EmojiPicker, Empty, Field, Modal, NumberInput, PageHeader, ReorderButtons, Segmented, Select, TextInput, Toggle, ToggleRow, WeekdayPicker } from '../components/ui';
@@ -28,7 +30,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
 /** Tab named by the route anchor: #/family/fam-routines (or #/family/routines). */
 function tabFromHash(): Tab | null {
   const a = (location.hash.replace(/^#\/?/, '').split('/')[1] || '').replace(/^fam-/, '');
-  if (a === 'screen') return 'access';
+  if (a === 'screen' || a === 'people') return 'access';
   return TABS.some((x) => x.id === a) ? (a as Tab) : null;
 }
 
@@ -768,6 +770,7 @@ function AccessTab(props: SectionProps & { fam: FamilyStateApi }) {
   const { full, setFull, saved, fam } = props;
   return (
     <div id="fam-access" class="fam-stack">
+      {has('familyAccess') && <FamilyAccessCard saved={saved} />}
       <FamilyLinkCard saved={saved} fam={fam} />
       <Card id="fam-screen" scope="screen" title={t('En esta pantalla')} icon="monitor" desc={t('Quién sale, el código QR y si se puede marcar tocando la pantalla.')}>
         <FamilyScreenOptions cfg={props.cfg} set={props.set} />

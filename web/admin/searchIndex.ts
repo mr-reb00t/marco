@@ -70,6 +70,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Familia: miembros', route: 'family', anchor: 'fam-members', keywords: 'family familia família members miembros membros niños kids crianças avatar emoji color cor', feature: 'family' },
   { label: 'Rutinas de los niños', route: 'family', anchor: 'fam-routines', keywords: 'routines rutinas rotinas chores tareas tarefas estrellas stars estrelas puntos points pontos mañana tarde noche', feature: 'family' },
   { label: 'Premios y estrellas', route: 'family', anchor: 'fam-rewards', keywords: 'rewards premios prémios stars estrellas estrelas canjear redeem resgatar puntos points pontos historial history', feature: 'family' },
+  { label: 'Accesos de la familia', route: 'family', anchor: 'fam-people', keywords: 'family access accesos acessos persona person pessoa móvil phone telemóvel mensaje message privado private noche night tarea todo evento event código code', feature: 'familyAccess' },
   { label: 'Enlace familiar', route: 'family', anchor: 'fam-access', keywords: 'family link enlace familiar ligação familiar qr móvil phone mobile telemóvel acceso access acesso', feature: 'family' },
   { label: 'Permitir marcar tocando esta pantalla', route: 'family', anchor: 'fam-screen', keywords: 'touch táctil tátil tocar touchscreen tablet marcar check tick', feature: 'family' },
   { label: 'Menú de la semana', route: 'meals', anchor: 'meals-week', keywords: 'meals menús menu ementa comidas refeições semana week desayuno comida merienda cena breakfast lunch snack dinner', feature: 'family' },

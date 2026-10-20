@@ -169,6 +169,15 @@ how much of it.
   get `421`. The
   pairing status endpoint needs the secret session id.
 
+- *Family access* (each person's dashboard on the phone, `/my`): the person's private link and each phone's token
+  are bearer secrets stored as SHA-256 digests only; the link is shown to the admin once. A code shown on a screen
+  (6 characters, two minutes, single use) is limited to 10 wrong tries per address and 50 overall per 10 minutes,
+  wrong links and tokens to 20 and 200. The token travels in a header, POST bodies must be JSON and the `Origin` must
+  match, so another site cannot act for the phone. Every action is checked against the person's permissions of that
+  moment, the token never opens an admin route, and the phone gets nothing but the person's name and their controls.
+  Anyone who can read a screen while a code is on it can use the code: show codes only on screens in front of the
+  person, and remove a phone you do not know from the person's list.
+
 **Residual risks**: the private link is a bearer secret: whoever has it sees that screen until it is regenerated.
 Device tokens live in the display browser's `localStorage`, readable by scripts on the same origin (custom CSS is the
 only user-supplied content the display injects, and it is CSS only). Anybody standing in front of the screen sees

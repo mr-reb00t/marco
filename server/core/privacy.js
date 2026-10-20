@@ -186,7 +186,7 @@ export function pruneStates(cfg, states, now = new Date()) {
   const out = {};
   for (const [id, st] of Object.entries(states && typeof states === 'object' ? states : {})) {
     if (!ids.has(id) || !live(st, now)) continue;
-    out[id] = { on: Boolean(st.on), until: st.until ?? null, by: st.by === 'hook' ? 'hook' : 'admin', at: typeof st.at === 'string' ? st.at : now.toISOString() };
+    out[id] = { on: Boolean(st.on), until: st.until ?? null, by: st.by === 'hook' || st.by === 'family' ? st.by : 'admin', at: typeof st.at === 'string' ? st.at : now.toISOString() };
   }
   return out;
 }

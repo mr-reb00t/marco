@@ -119,6 +119,10 @@ color de la foto, transparencia, desenfoque y borde de luz:
   tarde y noche que dan estrellas, premios en los que gastarlas y el menú de la semana. Los niños marcan sus rutinas
   en la tele (pantallas táctiles) o en el móvil, con un código QR de la pantalla; mira
   [Familia: rutinas, estrellas y comidas](#familia-rutinas-estrellas-y-comidas).
+- **Un panel en cada móvil:** cada persona de casa puede enviar un mensaje a las pantallas, activar o quitar el modo
+  privado, cambiar entre noche y día, y añadir tareas y eventos desde su propio móvil, solo con lo que permitas y sin
+  la contraseña del panel. Entra con un enlace privado o con un código que sale en una pantalla; mira
+  [Accesos de la familia](#accesos-de-la-familia-un-panel-en-cada-móvil).
 - **Opciones de cristal** del estilo Moderno, por pantalla: automático (se adapta a cada foto), transparente o
   tintado; transparencia, desenfoque, tono oscuro, claro o de la foto y borde de luz, con vista previa en *Diseño*.
 - **Emojis automáticos:** 🎂 cumpleaños, ✈️ vuelos, 🩺 médico, 🎒 colegio, ⚽ deporte, 🍽️ cenas, 💼 reuniones, 🏖️
@@ -599,6 +603,31 @@ Las fotos de perfil se guardan en `data/avatars` y solo llegan a la página fami
 pantallas que muestran a esa persona. Una pantalla en modo privado sigue con el emoji. Al exportar se incluyen las
 fotos. Una foto que cambias o quitas, o la de alguien que borras, se elimina una semana después, así que restaurar una
 copia reciente la recupera.
+
+### Accesos de la familia: un panel en cada móvil
+
+*Familia → Acceso → Accesos de la familia* da a una persona su propio panel en el móvil (`/my`), sin la contraseña del
+panel. *Añadir persona*, pon un nombre (y elige qué miembro de la familia es, para su avatar y su color) y marca qué
+puede hacer:
+
+- enviar un mensaje a las pantallas (a todas o solo a las que elijas); sale como un aviso con su nombre durante 1
+  minuto, 10 minutos o una hora
+- activar o quitar el modo privado, en todas las pantallas a la vez
+- cambiar entre noche, día y automático en todas las pantallas
+- añadir tareas a la lista escrita en Marco
+- añadir eventos al calendario local (un día, todo el día o con hora)
+
+Hay dos formas de entrar: el enlace privado que el panel muestra una vez al añadir a la persona (cópialo o escanea su
+código QR; *Crear un enlace nuevo* lo cambia), o *Mostrar un código*: eliges una pantalla y en ella sale durante dos
+minutos un código de 6 caracteres con un código QR. La persona lo escribe en `/my` o escanea el QR. En los dos casos el
+móvil recibe un token propio y sale en la lista de esa persona, así que se puede quitar un móvil solo. *Quitar
+persona* deja sin efecto su enlace, sus móviles y sus códigos al momento.
+
+El móvil solo recibe el nombre de la persona y los controles que has permitido. Cada acción se vuelve a comprobar en el
+servidor, así que un permiso que quitas cuenta desde el siguiente toque. Nadie con este acceso entra en el panel ni ve
+calendarios, fotos o contraseñas. Los mensajes, el modo privado, el modo noche, las tareas y los eventos quedan en la
+actividad con el nombre de la persona. Los tokens y los códigos se guardan como hash en `secrets.json`; los enlaces,
+tokens y códigos incorrectos tienen un límite de intentos por dirección y en total.
 
 ## Pantallas personalizadas
 
@@ -1283,6 +1312,7 @@ Haz copia de seguridad de toda la carpeta (o usa *Exportar*) para conservarlo to
 | `?compact=0\|1` `?weeks=1..8` | Desactiva (o activa) los días llenos en compacto: un día en el que no caben sus eventos los muestra en líneas pequeñas y las filas de semanas se reparten el alto según los eventos que tienen (*Calendarios → Vista del calendario*); `?weeks=` muestra ese número de semanas. Con `?demo=1`, `&busy=2` llena todo el mes |
 | `?style=modern&preset=kidsRoutines\|kidsFamily\|kidsMeals` | Los diseños para niños. Con `?demo=1`: `&members=6`, `&touch=0`, `&qr=0`, `&stars=0`, `&meals=0`, `&snack=1` (cuatro comidas al día), `&todo=1`, `&famPrivacy=hide` (con `&private=1`) |
 | `/f/<clave>` | La página familiar para el móvil (la clave sale de *Familia → Acceso*) |
+| `/my/<enlace>`, `/my` | El panel propio de una persona en el móvil (*Familia → Acceso → Accesos de la familia*) |
 | `?client=<name>` | Nombre de este dispositivo en *Pantallas conectadas* (lo define el script del kiosco) |
 
 ## Seguridad

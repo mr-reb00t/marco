@@ -16,7 +16,7 @@ export function streamUrl(): string {
 }
 
 /** Events the stream listens for (besides `revoked` and `ping`). */
-export const STREAM_EVENTS = ['hello', 'config', 'events', 'photos', 'reload', 'announce', 'announce-clear', 'identify', 'night', 'doorbell', 'doorbell-end', 'privacy', 'family', 'todo', 'ha', 'values'] as const;
+export const STREAM_EVENTS = ['hello', 'config', 'events', 'photos', 'reload', 'announce', 'announce-clear', 'identify', 'night', 'doorbell', 'doorbell-end', 'privacy', 'family', 'todo', 'ha', 'values', 'access-code'] as const;
 
 /** Query string for GET /api/display/poll (the screen is added by api.ts; the credential travels in X-Marco-Key). */
 export function pollUrl(cursor: string, revision: number | undefined, hidden: boolean): string {
