@@ -22,7 +22,7 @@ const ROWS: [string, string, string, string, string][] = [
   ['Entre dos fechas', 'Between two dates', 'Entre duas datas', 'Tussen twee datums', 'Mellem to datoer'],
   ['Un solo día', 'A single day', 'Um só dia', 'Eén dag', 'En enkelt dag'],
   ['Un cumpleaños', 'A birthday', 'Um aniversário', 'Een verjaardag', 'En fødselsdag'],
-  ['Palabra del título, p. ej. Navidad', 'Word in the title, e.g. Christmas', 'Palavra do título, p. ex. Natal', 'Woord in de titel, bijv. Kerst', 'Ord i titlen, f.eks. Jul'],
+  ['Palabras del título, separadas por comas, p. ej. Navidad, Reyes', 'Words in the title, separated by commas, e.g. Christmas, Xmas', 'Palavras do título, separadas por vírgulas, p. ex. Natal, Reis', 'Woorden in de titel, gescheiden door komma\'s, bijv. Kerst, Sinterklaas', 'Ord i titlen, adskilt med kommaer, f.eks. Jul, Juleaften'],
   ['Calendarios de esta pantalla', 'Calendars of this screen', 'Calendários deste ecrã', 'Agenda’s van dit scherm', 'Kalendere på denne skærm'],
   ['al', 'to', 'a', 't/m', 'til'],
   ['Cuando alguien de Cumpleaños cumple años hoy.', 'When someone in Birthdays has a birthday today.', 'Quando alguém de Aniversários faz anos hoje.', 'Als iemand uit Verjaardagen vandaag jarig is.', 'Når nogen fra Fødselsdage har fødselsdag i dag.'],

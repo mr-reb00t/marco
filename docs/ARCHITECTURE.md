@@ -458,8 +458,8 @@ uses only its own days.
 `background.rules` (#14, at most 30 per screen) swaps a screen's photos for others on some days. A rule is
 `{ id, when, photos }`:
 
-- `when`: `{ type: 'event', text, calendars }` (an event today whose title contains `text`, up to 60 characters,
-  accents and case ignored; `calendars` = source ids, `[]` = the calendars the screen shows, even with its calendar
+- `when`: `{ type: 'event', text, calendars }` (an event today whose title contains `text`, or any of its parts
+  separated by commas, up to 120 characters, accents and case ignored; `calendars` = source ids, `[]` = the calendars the screen shows, even with its calendar
   hidden), `{ type: 'range', from, to }` (`MM-DD` to `MM-DD` every year, inclusive; `to < from` wraps the year end),
   `{ type: 'date', on }` (`MM-DD`; 29 February falls on the 28th in other years) or `{ type: 'birthday' }` (someone of
   `birthdays.items` today, with that calendar on).

@@ -48,6 +48,15 @@ test('event rules: a word of the title, accents and case ignored, only on the ca
   assert.equal(matchBackgroundRule(rules, at('2026-12-26', { events: [ev('Navidad')] })), null);
 });
 
+test('event rules: several words separated by commas, any of them is enough (issue #14)', () => {
+  const games = [rule('g', { type: 'event', text: '14 @, 14u vs ,', calendars: [] })];
+  assert.equal(matchBackgroundRule(games, at('2026-12-24', { events: [ev('Soccer 14 @ Riverside')] }))?.id, 'g');
+  assert.equal(matchBackgroundRule(games, at('2026-12-24', { events: [ev('14U VS Eagles')] }))?.id, 'g');
+  assert.equal(matchBackgroundRule(games, at('2026-12-24', { events: [ev('Practice 15u')] })), null);
+  // only commas: nothing to look for
+  assert.equal(matchBackgroundRule([rule('e', { type: 'event', text: ' , ', calendars: [] })], at('2026-12-24', { events: [ev('Anything')] })), null);
+});
+
 test('event rules: timed events count on the local day of the screen time zone, near midnight too', () => {
   const tz = 'Europe/Madrid';
   // 23:30 in Madrid on the 24th is 22:30 UTC: still the 24th there
@@ -142,14 +151,14 @@ test('validation: caps, bad dates and empty words refused, unknown photos and ca
   const bad = [];
   sanitizeBackgroundRules([
     { when: { type: 'event', text: '' }, photos: { files: ['a.jpg'] } },
-    { when: { type: 'event', text: 'x'.repeat(61) }, photos: { files: ['a.jpg'] } },
+    { when: { type: 'event', text: 'x'.repeat(121) }, photos: { files: ['a.jpg'] } },
     { when: { type: 'range', from: '13-01', to: '02-30' }, photos: { files: ['a.jpg'] } },
     { when: { type: 'date', on: '2026-12-25' }, photos: { files: [] } },
     { when: { type: 'sometimes' }, photos: { source: 'immich', albumId: 'nope' } },
     { when: { type: 'birthday' }, photos: { files: Array.from({ length: MAX_BG_RULE_PHOTOS + 1 }, (_, i) => `p${i}.jpg`) } },
   ], { err: (p, m) => bad.push(`${p}: ${m}`) });
   assert.ok(bad.includes('background.rules[0].when.text: required'));
-  assert.ok(bad.includes('background.rules[1].when.text: too long (max 60)'));
+  assert.ok(bad.includes('background.rules[1].when.text: too long (max 120)'));
   assert.ok(bad.includes('background.rules[2].when.from: invalid date (MM-DD)'));
   assert.ok(bad.includes('background.rules[3].photos.files: at least one photo'));
   assert.ok(bad.includes('background.rules[4].when.type: must be one of event, range, date, birthday'));

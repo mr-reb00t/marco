@@ -13,7 +13,7 @@ export const BG_RULE_TYPES = ['event', 'range', 'date', 'birthday'];
 export const BG_RULE_SOURCES = ['gallery', 'immich'];
 export const MAX_BG_RULES = 30;
 export const MAX_BG_RULE_PHOTOS = 50;
-export const MAX_BG_RULE_TEXT = 60;
+export const MAX_BG_RULE_TEXT = 120;
 const MAX_RULE_CALENDARS = 60;
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MONTH_DAY = /^(\d{2})-(\d{2})$/;
@@ -166,10 +166,11 @@ export function matchBackgroundRule(rules, { today, tz, events = [], screenSourc
     const w = r?.when;
     if (!w) continue;
     if (w.type === 'event') {
-      const word = fold(w.text).trim();
-      if (!word) continue;
+      // several words separated by commas: any of them in the title is enough ("14 @, 14u vs")
+      const words = fold(w.text).split(',').map((x) => x.trim()).filter(Boolean);
+      if (!words.length) continue;
       const ids = new Set(w.calendars?.length ? w.calendars : screenSources);
-      if (evs.some((e) => ids.has(e.sourceId) && fold(e.title).includes(word))) return r;
+      if (evs.some((e) => ids.has(e.sourceId) && words.some((word) => fold(e.title).includes(word)))) return r;
     } else if (w.type === 'range') {
       if (inYearlyRange(today, w.from, w.to)) return r;
     } else if (w.type === 'date') {

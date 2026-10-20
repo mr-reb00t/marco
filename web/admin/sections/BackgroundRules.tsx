@@ -15,7 +15,7 @@ import type { SectionProps } from './common';
 /** Caps of server/core/bgRules.js. */
 export const MAX_BG_RULES = 30;
 export const MAX_BG_RULE_PHOTOS = 50;
-export const MAX_BG_RULE_TEXT = 60;
+export const MAX_BG_RULE_TEXT = 120;
 
 const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -172,7 +172,7 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
                           value={w.text}
                           maxLength={MAX_BG_RULE_TEXT}
                           error={!!err('text')}
-                          placeholder={t('Palabra del título, p. ej. Navidad')}
+                          placeholder={t('Palabras del título, separadas por comas, p. ej. Navidad, Reyes')}
                           onValue={(v) => upd(r.id, (x) => void (x.when.type === 'event' && (x.when.text = v)))}
                         />
                         <SourcePicker

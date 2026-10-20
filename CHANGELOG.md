@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.18.1] - 2026-10-20
+
+### Changed
+- *Special backgrounds*: an event rule can look for several words at once, separated by commas (for example
+  `14 @, 14u vs`), and matches when the title has any of them. The text can be up to 120 characters (#14).
+
 ## [0.18.0] - 2026-10-20
 
 ### Added
