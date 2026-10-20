@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-10-20
+
 ### Added
 - *Special backgrounds* in *Background*: a screen can show other photos on some days. Each rule says when (an event
   today whose title has a word, for example "Christmas", optionally on some calendars only; a range of days every
