@@ -1,10 +1,12 @@
 // Background refresher: keeps calendar sources fresh (respecting refreshMin) and broadcasts SSE `events`
-// when the merged events (default window) change. Also pre-warms weather/news caches.
+// when the merged events (default window) change. Also pre-warms weather/news caches and checks which special
+// background rule holds on each screen (photoRules.js).
 import { getConfig } from './store.js';
 import { refreshAll, getEvents, defaultWindow } from './calendars.js';
 import { getWeather } from './weather.js';
 import { getNews } from './news.js';
 import { publish } from './pollHub.js';
+import { syncPhotoRules } from './photoRules.js';
 
 let timer = null;
 let running = null;
@@ -33,6 +35,8 @@ export function runRefresh() {
       // every language).
       for (const screen of cfg.screens.filter((s) => s.weather.enabled)) getWeather({ screen }).catch(() => {});
       if (cfg.screens.some((s) => s.news.enabled)) getNews().catch(() => {});
+      // special backgrounds: screens whose active rule changed (midnight, events, a rule edit) get new photos
+      await syncPhotoRules();
     } catch (err) {
       console.warn('[refresher]', err.message);
     } finally {

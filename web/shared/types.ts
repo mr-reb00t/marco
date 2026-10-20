@@ -272,6 +272,30 @@ export interface BackgroundConfig {
   calendarOpacity?: number;
   /** Blur of the photo behind that calendar glass, 0..40 (0 = none). */
   calendarBlur?: number;
+  /** "Fondos especiales" (#14): other photos on some days, the first rule that matches wins (server/core/bgRules.js).
+   *  Admin only: the display config never carries them, /api/photos applies them. */
+  rules?: BackgroundRule[];
+  /** Display config only: the screen has special background rules (never the rules themselves), so the display asks for
+   *  its photos again when the events, the config or the day change (Marco Cloud pushes no `photos` event for them). */
+  special?: boolean;
+}
+
+/** When a special background rule holds: an event today whose title has `text` (accents and case ignored; in
+ *  `calendars`, [] = the calendars the screen shows), a yearly range of days (MM-DD to MM-DD, `to < from` wraps the
+ *  year end), one yearly day, or someone's birthday today (the Cumpleaños list). */
+export type BackgroundRuleWhen =
+  | { type: 'event'; text: string; calendars: string[] }
+  | { type: 'range'; from: string; to: string }
+  | { type: 'date'; on: string }
+  | { type: 'birthday' };
+
+/** The photos of a special background rule: gallery files (at most 50) or one Immich album. */
+export type BackgroundRulePhotos = { source: 'gallery'; files: string[] } | { source: 'immich'; albumId: string };
+
+export interface BackgroundRule {
+  id: string;
+  when: BackgroundRuleWhen;
+  photos: BackgroundRulePhotos;
 }
 
 export interface CalendarSource {
@@ -1582,6 +1606,9 @@ export interface Photo {
 
 export interface PhotosResponse {
   photos: Photo[];
+  /** Signature of the special background rule that holds on the screen ('' or absent = none). It changes when another
+   *  rule takes over or the rule is edited, so the display replaces the photo on screen at once. Never the rule itself. */
+  rule?: string;
 }
 
 /** Feature flags in GET /api/health. A self-hosted server turns them all on except googleCalendar and googleLogin

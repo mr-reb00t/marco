@@ -566,3 +566,22 @@ test('carousel: a step screen private with hide photos closes its photos to the 
     },
   });
 });
+
+test('special background rule with an Immich album: its photos on that screen only, the proxy serves them to it', async () => {
+  await withApp(async ({ call, photos, k, kitchenKey }) => {
+    // the kitchen shows stock photos; its rule (every day) plays album B
+    const r = (await call('GET', '/api/photos?count=50', { key: kitchenKey })).json;
+    assert.deepEqual(r.photos.map((p) => p.id).sort(), [assetId(11), assetId(12), assetId(20), assetId(21)].sort());
+    assert.match(r.rule, /^[0-9a-f]{12}$/);
+    await settle();
+    const only = r.photos.find((p) => p.id === assetId(20));
+    assert.equal((await call('GET', `${only.url}&k=${kitchenKey}`)).status, 200);
+    // the main screen plays album A only: album B's own photos stay closed to it
+    assert.equal((await call('GET', `${only.url}&k=${k}`)).status, 404);
+    assert.ok((await photos()).every((p) => p.source === 'immich'));
+  }, {
+    mutate: (c) => {
+      c.screens[1].background.rules = [{ id: 'r_all', when: { type: 'range', from: '01-01', to: '12-31' }, photos: { source: 'immich', albumId: ALBUM_B } }];
+    },
+  });
+});

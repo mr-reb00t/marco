@@ -30,13 +30,15 @@ export function findChrome() {
 }
 
 /** Vite dev server for web/ on a free port of 127.0.0.1. Returns { url, close }. */
-export async function startWeb() {
+export async function startWeb({ api = '' } = {}) {
   const { createServer } = await import('vite');
+  // `api`: a running Marco server (http://127.0.0.1:port) that /api and /media go to, for a display on real data
+  const proxy = api ? { '/api': { target: api }, '/media': { target: api } } : undefined;
   const server = await createServer({
     configFile: false,
     root: path.join(root, 'web'),
     logLevel: 'error',
-    server: { host: '127.0.0.1', port: 0, strictPort: false, hmr: false, ws: false, watch: null },
+    server: { host: '127.0.0.1', port: 0, strictPort: false, hmr: false, ws: false, watch: null, proxy },
     optimizeDeps: { noDiscovery: true, include: [] },
     define: { __APP_VERSION__: '"test"', __APP_BUILD__: '"test"', __APP_NOTES__: '""' },
   });

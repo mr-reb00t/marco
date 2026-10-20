@@ -7,6 +7,7 @@ import { has } from '../caps';
 import { t } from '../i18n';
 import type { SectionProps } from './common';
 import { AlbumCover, immichErrorText } from './Immich';
+import { BackgroundRulesCard } from './BackgroundRules';
 
 const INTERVALS = [30, 60, 120, 300, 600, 900, 1800, 3600, 10800, 86400];
 
@@ -17,7 +18,7 @@ function intervalLabel(s: number) {
   return t('1 día');
 }
 
-export function BackgroundSection({ cfg, set, errors }: SectionProps) {
+export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
   const b = cfg.background;
   const fx = b.weatherFx ?? 'simple';
   const fit: PortraitFit = b.portraitFit ?? 'auto';
@@ -155,6 +156,7 @@ export function BackgroundSection({ cfg, set, errors }: SectionProps) {
           </Field>
         </div>
       </Card>
+      <BackgroundRulesCard cfg={cfg} set={set} errors={errors} full={full} />
       <Card id="bg-ambient" scope="screen" title={t('Efecto ambiental')} icon="sparkles" desc={t('Animación three.js detrás del calendario. Limitada a 30 fps para la Raspberry Pi.')}>
         <div class="fx-grid">
           {(

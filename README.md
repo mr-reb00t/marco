@@ -1043,6 +1043,12 @@ asked again after each day's auction until tomorrow's are in, and never more oft
   or *Realistic* (drops on the glass that bend the photo, faint rain streaks, layered snow, soft sun rays on clear
   days). Both draw only over the photo and need WebGL (Realistic also needs the WebGL photo transition);
   `?lite=1` turns them off.
+- **Special backgrounds** (*Background*): other photos on some days. A rule says when (*Event today with…* a word of
+  the title, accents and capitals ignored, on the screen's calendars or the ones you pick; *Between two dates*, every
+  year, also across New Year; *A single day*; *A birthday* from *Birthdays*) and which photos (picked from the
+  gallery, or an Immich album). The first rule that matches wins; with none, the normal background. The server checks
+  the rules every minute in the server's time zone, so the screen changes at midnight or soon after an event is
+  added or removed. Privacy mode with *hide photos* still shows stock photos.
 - **Photo order** (*Background*): *Random* (shuffled, without repeating the previous batch), *Newest first* or
   *By name*. The sequential orders continue where the screen left off and start over at the end.
 - **Choose which photos are shown**: every photo in the gallery has an eye toggle to take it out of the rotation (or

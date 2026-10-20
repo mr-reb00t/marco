@@ -20,6 +20,7 @@ import {
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
 import { currencyProps, sanitizeCanvas } from './canvasCore.js';
+import { sanitizeBackgroundRules } from './bgRules.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
 } from './pricesCore.js';
@@ -318,6 +319,11 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     scope: oneOf(ctx, `${p}.background.scope`, bg.scope, D.background.scope, ['side', 'screen']),
     calendarOpacity: num(ctx, `${p}.background.calendarOpacity`, bg.calendarOpacity, D.background.calendarOpacity, 0, 1),
     calendarBlur: num(ctx, `${p}.background.calendarBlur`, bg.calendarBlur, D.background.calendarBlur, 0, 40, true),
+    // "Fondos especiales" (#14, core/bgRules.js): other photos on some days; the first rule that matches wins
+    rules: sanitizeBackgroundRules(bg.rules, {
+      err: (path, m) => ctx.err(path, m), path: `${p}.background.rules`, sourceIds: canvasRefs.sourceIds ? [...canvasRefs.sourceIds] : null,
+      immichAvailable: opts.immichAvailable !== false,
+    }),
   };
 
   const ca = obj(ctx, `${p}.calendar`, x.calendar);

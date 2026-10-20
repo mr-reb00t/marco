@@ -82,6 +82,8 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       // calendar over it as glass; calendarOpacity: how solid that glass is (0 = most see-through, 1 = almost opaque);
       // calendarBlur: how much the photo behind it is blurred (0 = sharp, 40 = most)
       scope: 'side', calendarOpacity: 0.5, calendarBlur: 18,
+      // rules: "Fondos especiales" (core/bgRules.js), other photos on some days ({ id, when, photos }; first match wins)
+      rules: [],
     },
     calendar: {
       enabled: true, view: 'month', weeks: 5, weekStart: 1, showLocation: false, showEndTime: false,

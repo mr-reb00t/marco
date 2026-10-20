@@ -179,6 +179,11 @@ export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors
   }
   const b = c.background;
   if (!(b.intervalSec >= 10)) e['background.intervalSec'] = 'Mínimo 10 s';
+  // "Fondos especiales": a word to look for and photos to show (server/core/bgRules.js refuses them too)
+  for (const r of b.rules ?? []) {
+    if (r.when.type === 'event' && !r.when.text.trim()) e[`background.rules.${r.id}.text`] = 'Obligatorio';
+    if (r.photos.source === 'gallery' ? !r.photos.files.length : !r.photos.albumId) e[`background.rules.${r.id}.photos`] = 'Elige al menos una foto';
+  }
   const cal = c.calendar;
   if (cal.weeks !== 'auto' && !(cal.weeks >= 1 && cal.weeks <= 6)) e['calendar.weeks'] = 'Entre 1 y 6';
   if (!(cal.maxEventsPerDay >= 1 && cal.maxEventsPerDay <= 12)) e['calendar.maxEventsPerDay'] = 'Entre 1 y 12';

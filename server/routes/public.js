@@ -10,6 +10,8 @@ import { priceZone } from '../core/pricesCore.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
 import { getPhotos } from '../photos.js';
+import { activeBackgroundRule } from '../photoRules.js';
+import { backgroundRuleSig } from '../core/bgRules.js';
 import { sseHandler } from '../sse.js';
 import { streamInit, streamHello, onStreamOpen, onStreamClose, pollDisplay } from '../displays.js';
 import { displayConfig as projectDisplayConfig } from '../core/screens.js';
@@ -159,7 +161,11 @@ export function publicRouter({ version }) {
       // Privacy mode with "hide photos": stock photos only, gallery file names never reach the display.
       const hide = screen.privacy?.hidePhotos && screenPrivacy(cfg, screen).active;
       const background = hide ? { ...screen.background, source: 'stock' } : screen.background;
-      res.json({ photos: await getPhotos(Number(req.query.count) || 20, background, { key: hide ? `${screen.id}|private` : screen.id, after: hide ? '' : after }) });
+      // a special background rule that holds now (core/bgRules.js) brings its own photos; privacy still wins.
+      // `rule` is only a signature, so the display knows when to change the photo at once (never the rule itself).
+      const rule = hide ? null : await activeBackgroundRule(cfg, screen);
+      const photos = await getPhotos(Number(req.query.count) || 20, background, { key: hide ? `${screen.id}|private` : screen.id, after: hide ? '' : after, rule });
+      res.json({ photos, rule: backgroundRuleSig(rule) });
     } catch (err) {
       next(err);
     }

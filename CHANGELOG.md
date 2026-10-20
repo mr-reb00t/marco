@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- *Special backgrounds* in *Background*: a screen can show other photos on some days. Each rule says when (an event
+  today whose title has a word, for example "Christmas", optionally on some calendars only; a range of days every
+  year, such as 1 to 31 December or 20 December to 6 January; a single day; someone's birthday) and which photos
+  (some from the gallery, or an Immich album). The first rule that matches wins, and with none the screen keeps its
+  normal background. Rules work with every layout, the photo card of *Personalizado* included, and privacy mode with
+  *hide photos* still shows stock photos only. The screen changes photos within a minute when another rule takes
+  over (#14).
+
 ## [0.16.10] - 2026-10-19
 
 ### Added

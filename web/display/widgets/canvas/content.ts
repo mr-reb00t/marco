@@ -155,6 +155,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   let idx = -1;
   let cur: HTMLElement | null = null;
   let listSig = '';
+  let rule = state.photos?.rule ?? '';
   // spread items over the list, so two photo cards do not show the same one
   const offset = [...item0.id].reduce((n, c) => n + c.charCodeAt(0), 0);
   const list = (): Photo[] => state.photos?.photos ?? [];
@@ -222,7 +223,13 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       const sig = list().map((p) => p.url).join('|');
       if (sig === listSig) return;
       listSig = sig;
-      if (!cur) show();
+      // another special background took over (or ended): its photos come in now, not at the next change
+      const r = state.photos?.rule ?? '';
+      if (r !== rule) {
+        rule = r;
+        idx = -1;
+        show();
+      } else if (!cur) show();
     },
     destroy() {
       if (timer) clearTimeout(timer);

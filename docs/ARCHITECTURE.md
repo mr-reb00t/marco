@@ -24,7 +24,7 @@ display and the server guarantee. The HTTP endpoints and event formats are in [A
 |---|---|
 | `server/` | API and logic: ICS + recurrences (`node-ical`, `rrule`), Google Calendar, weather, RSS, photos, auth, SSE and the poll channel (`pollHub.js`), backups, activity |
 | `server/app.js` | `createApp()`: the whole Express stack (host guard, sessions, CSRF, display access, routers, static files); `server/index.js` adds the store, listen and shutdown |
-| `server/core/` | Pure logic shared with Marco Cloud, which copies the folder as it is: config schema and validation (`validate.js`, `defaults.js`, `screens.js`, `iconRules.js`), backups and import (`backupsCore.js`), announcements (`announceCore.js`), doorbell rings (`doorbellCore.js`), feed parsing (`newsParse.js`), image headers and photo names (`imageInfo.js`), activity helpers (`activityCore.js`), pairing codes (`pairCore.js`), privacy mode (`privacy.js`), CSV, schedules and `lib/` (text, time zones, server strings). No Node built-ins, no store, SSE or HTTP modules (checked by `server/test/core-lint.test.js`); the files next to it (`backups.js`, `announce.js`, `photos.js`, `news.js`, `activity.js`, `pairing.js`, `doorbell.js`) add the files, network and SSE |
+| `server/core/` | Pure logic shared with Marco Cloud, which copies the folder as it is: config schema and validation (`validate.js`, `defaults.js`, `screens.js`, `iconRules.js`), backups and import (`backupsCore.js`), announcements (`announceCore.js`), doorbell rings (`doorbellCore.js`), feed parsing (`newsParse.js`), image headers and photo names (`imageInfo.js`), activity helpers (`activityCore.js`), pairing codes (`pairCore.js`), privacy mode (`privacy.js`), special background rules (`bgRules.js`), CSV, schedules and `lib/` (text, time zones, server strings). No Node built-ins, no store, SSE or HTTP modules (checked by `server/test/core-lint.test.js`); the files next to it (`backups.js`, `announce.js`, `photos.js`, `news.js`, `activity.js`, `pairing.js`, `doorbell.js`) add the files, network and SSE |
 | `server/displayAccess.js`, `server/pairing.js` | Private display links, paired devices and pairing codes (see *Display access* below) |
 | `server/routes/` | Express routers: `public.js` (display API), `admin.js`, `screens.js`, `announce.js`, `hooks.js`, `doorbell.js`, `system.js`, `localEvents.js`, `access.js` (links, devices, pairing), `updates.js` |
 | `server/updates.js` | Daily check for a newer release, update settings, the request read by `marco-update.path` (see *Updates* below) |
@@ -129,10 +129,11 @@ The stored config has **global** sections shared by every screen and a list of *
                   //   the month at most 4 weeks. Portrait screens ignore it. ?bar= overrides it.
   "background": { "enabled": true, "source": "stock", "stockTopic": "nature", "order": "random", "intervalSec": 120, "brightness": 0.85,
                   "showMeta": false, "cover": true, "transition": "webgl", "ambient": "aurora", "panelBlur": 18, "panelShade": 0.5, "weatherFx": "simple",
-                  "portraitFit": "auto", "immich": { "albumIds": [], "favoritesOnly": false } },
+                  "portraitFit": "auto", "immich": { "albumIds": [], "favoritesOnly": false }, "rules": [] },
                   // source: stock | gallery | mixed | immich · order: random | newest | name · transition: webgl | fade | none · ambient: aurora | particles | none · weatherFx: off | simple | rich
                   // portraitFit: auto | blur | crop, for photos whose orientation differs from the screen (auto = blurred fill for Immich photos only)
                   // immich: albums played with source immich (UUIDs, at most 20, merged without duplicates; [] = stock photos)
+                  // rules: special backgrounds, see "Special backgrounds" below
   "calendar":   { "enabled": true, "view": "month", "weeks": 5, "weekStart": 1, "startOn": "week",
                   "showLocation": false, "showEndTime": false, "showDayXofY": true, "showLegend": true, "hidePast": false, "maxEventsPerDay": 4,
                   "marquee": true, "rotateBusyDays": true, "compactBusyDays": true, "eventStyle": "lines",
@@ -442,6 +443,35 @@ uses only its own days.
 - **Admin**: *Family* (`web/admin/sections/Family.tsx`) and *Meals* (`Meals.tsx`); the *Kids* style card in
   *Layout* is the Modern style with a kids preset (`styleChoiceOf`), not a stored style.
 
+## Special backgrounds
+
+`background.rules` (#14, at most 30 per screen) swaps a screen's photos for others on some days. A rule is
+`{ id, when, photos }`:
+
+- `when`: `{ type: 'event', text, calendars }` (an event today whose title contains `text`, up to 60 characters,
+  accents and case ignored; `calendars` = source ids, `[]` = the calendars the screen shows, even with its calendar
+  hidden), `{ type: 'range', from, to }` (`MM-DD` to `MM-DD` every year, inclusive; `to < from` wraps the year end),
+  `{ type: 'date', on }` (`MM-DD`; 29 February falls on the 28th in other years) or `{ type: 'birthday' }` (someone of
+  `birthdays.items` today, with that calendar on).
+- `photos`: `{ source: 'gallery', files }` (1 to 50 gallery file names) or `{ source: 'immich', albumId }`. Names that
+  cannot be gallery files and calendars that no longer exist are dropped quietly; Marco Cloud refuses Immich rules.
+
+The matching is pure (`server/core/bgRules.js`, shared with Marco Cloud). The first rule that holds wins, checked
+in `datetime.timezone`; while the screen is private its events go through privacy mode first (a *busy* calendar has
+no titles to match) and birthdays count only when that calendar keeps its names. `server/photoRules.js` finds the
+active rule for `/api/photos`, which then serves that rule's photos (its gallery files still in rotation, or its
+album, in the screen's `order`; nothing to show = the source as usual) with `rule`, a short hash of the rule. Privacy
+with *hide photos* still means stock. The display config never carries the rules (`core/screens.js displayConfig`
+drops them) and the display only sees the hash.
+
+The refresher (every minute, after a calendar refresh and after a config save) calls `syncPhotoRules()`: the screens
+whose active rule changed get a `photos` live event (SSE and the poll channel), so midnight, an added or removed event
+and a rule edit reach the screen within a minute. The display asks for a new batch and, when `rule` changed, shows the
+first photo of it at once; the photo card of *Personalizado* does the same, and a carousel counts `rule` in the
+photo settings it compares between screens (`photoSigOf`). A gallery file that a rule of a screen names may be
+loaded by that screen's displays even when the screen does not show the gallery (never a hidden one); the albums of
+rules count as albums in use for the Immich proxy and the admin's Immich status.
+
 ## Immich source
 
 `background.source: 'immich'` plays one or more Immich albums. Only the Marco server talks to Immich
@@ -515,8 +545,8 @@ starts normally once the screen exists. A credential's own screen always wins ov
 
 - A credential always decides the screen; `?screen=` is ignored with it. `/media/*` follows the same rules (in open
   mode keyless media stays LAN-only). A gallery file is served to a display only when a screen its credential may
-  read (its screen, its carousel's screens, every screen in open mode) shows the gallery (`gallery` or `mixed`) and is
-  not private with *hide photos*, and only when the photo is not hidden; anything else answers the same `404` as a
+  read (its screen, its carousel's screens, every screen in open mode) shows the gallery (`gallery` or `mixed`) or has a
+  special background rule with that file, and is not private with *hide photos*, and only when the photo is not hidden; anything else answers the same `404` as a
   missing file. Thumbnails (`/media/thumbs/*`) are for an admin session only. Hidden file names go only to displays
   that show the gallery (the `photos` event of the others has no `hidden` list). `/api/health`, `/api/setup/*`, `/api/pair/*` and the webhooks are outside it.
 - A key or device bound to a carousel reads the carousel's screens and no other (see [Carousels](#carousels)); when

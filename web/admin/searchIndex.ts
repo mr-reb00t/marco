@@ -25,6 +25,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Diseños para niños (rutinas, familia, comidas)', route: 'layout', anchor: 'layout-kids', keywords: 'kids niños crianças routines rutinas rotinas family familia família meals comidas refeições ementa layout preset', feature: 'family' },
   { label: 'Panel lateral (izquierda/derecha, anchura)', route: 'layout', anchor: 'layout-side', keywords: 'side panel width columna lateral largura' },
   { label: 'Fotos de fondo', route: 'background', anchor: 'bg-photos', keywords: 'background wallpaper fondo stock galería intervalo brillo fotos orden aleatorio order random shuffle newest name immich álbumes albums vertical portrait difuminado blur' },
+  { label: 'Fondos especiales', route: 'background', anchor: 'bg-rules', keywords: 'special backgrounds fondos especiales navidad christmas fechas dates evento event cumpleaños birthday reglas rules temporada season' },
   { label: 'Efecto ambiental (aurora, partículas)', route: 'background', anchor: 'bg-ambient', keywords: 'ambient aurora particles three webgl animación' },
   { label: 'Efecto del tiempo (lluvia, nieve, sol)', route: 'background', anchor: 'bg-weather', keywords: 'weather effect rain snow sun drops lluvia nieve sol gotas webgl' },
   { label: 'Nombre de la pantalla', route: 'screen', anchor: 'scr-general', keywords: 'name nombre nome' },

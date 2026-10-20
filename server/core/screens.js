@@ -156,7 +156,11 @@ export function displayWidgets(cfg, screen, { isPrivate = false, widgetSrc = nul
 export function displayConfig(cfg, screen, { privacy = null, carousel = null, familyQr = null, widgetSrc = null, canvasKinds, haControls, trusted } = {}) {
   const f = flatView(cfg, screen);
   const priv = displayPrivacy(screen, privacy?.status, privacy?.next ?? null);
-  const background = priv.active && screen.privacy?.hidePhotos && f.background.source !== 'stock' ? { ...f.background, source: 'stock' } : f.background;
+  // the special background rules stay on the server (their words name events): /api/photos applies them. The display
+  // only learns that there are some (`special`), so it asks for its photos again when the events or the day change.
+  const { rules, ...rest } = f.background;
+  const bg = Array.isArray(rules) && rules.length ? { ...rest, special: true } : rest;
+  const background = priv.active && screen.privacy?.hidePhotos && bg.source !== 'stock' ? { ...bg, source: 'stock' } : bg;
   const { sources, sourceIds, ...cal } = f.calendar;
   const { haWeatherEntity, haIndoorTempEntity, haIndoorHumidityEntity, ...weather } = f.weather;
   return {

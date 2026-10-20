@@ -21,6 +21,7 @@ import { listClients, dropClient } from './sse.js';
 import { listPollers, dropPollers } from './pollHub.js';
 import { logActivity } from './activity.js';
 import { resolveScreen } from './core/screens.js';
+import { ruleGalleryFiles } from './core/bgRules.js';
 import { untrustedProxy } from './lib/net.js';
 import { screenPrivacy } from './privacy.js';
 import {
@@ -328,6 +329,12 @@ export function mediaScreens(cfg, access, screenId = '') {
 
 /** True when one of `screens` (mediaScreens) shows gallery photos (source gallery or mixed). */
 export const showsGallery = (screens) => screens === null || screens.some((s) => s.background?.source === 'gallery' || s.background?.source === 'mixed');
+
+/**
+ * True when one of `screens` (mediaScreens) may show the gallery file `file`: it shows the gallery, or one of its
+ * special background rules (core/bgRules.js) picks that very file. Hidden photos are refused by the caller.
+ */
+export const galleryFileAllowed = (screens, file) => showsGallery(screens) || screens.some((s) => ruleGalleryFiles(s).has(file));
 
 // ---------------------------------------------------------------------------------------------------------------
 // Admin operations

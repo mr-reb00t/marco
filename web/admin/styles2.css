@@ -5887,3 +5887,22 @@ button.immich-album:hover {
 .place-chosen strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .place-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .place-search .geo-results { margin-top: 6px; }
+
+/* Fondos especiales (#14): the rules of a screen's background and the gallery picker */
+.bg-rule { align-items: flex-start; }
+.bg-rule > .grip, .bg-rule > .rule__n, .bg-rule > .reorder, .bg-rule > .icon-btn { margin-top: 6px; }
+.bg-rule__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.bg-rule__line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.bg-rule__line > .select { width: auto; min-width: 0; }
+.bg-rule__text { flex: 1 1 180px; min-width: 0; }
+.bg-rule__md { display: inline-flex; gap: 6px; }
+.bg-rule__thumbs { display: inline-flex; align-items: center; gap: 4px; }
+.bg-rule__thumbs img { width: 34px; height: 34px; border-radius: 6px; object-fit: cover; background: var(--surface-3); }
+.bg-pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.bg-pick__ph { position: relative; padding: 0; aspect-ratio: 4 / 3; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: var(--surface-3); cursor: pointer; }
+.bg-pick__ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bg-pick__ph.is-active { border-color: var(--accent); }
+.bg-pick__ph.is-hidden img { opacity: 0.45; }
+.bg-pick__ph:disabled { cursor: not-allowed; opacity: 0.5; }
+.bg-pick__check { position: absolute; top: 6px; right: 6px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; }
+.bg-pick__count { margin-right: auto; }

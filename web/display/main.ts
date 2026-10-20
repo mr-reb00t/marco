@@ -1157,14 +1157,35 @@ async function fetchNews(): Promise<void> {
   }
 }
 
+/** When the last photo list came (0 = none yet). */
+let photosAt = 0;
+let ruleDay = '';
+let ruleRev: number | null = null;
+
+/**
+ * A screen with special backgrounds (#14, `background.special`): the rule that holds may change with the events, the
+ * config or the day. A server that pushes a live `photos` event says so itself; Marco Cloud does not, so the display
+ * asks for its photos again then (at most every 10 s, and never before its first list), and fetchPhotos changes the
+ * photo at once when the rule changed.
+ */
+function checkBgRule(): void {
+  if (state.demo || !ctx.cfg?.background?.special || !photosAt || Date.now() - photosAt < 10_000) return;
+  void fetchPhotos();
+}
+
 async function fetchPhotos(): Promise<void> {
   if (state.demo) return set('photos', mockPhotos(ctx.cfg.background.stockTopic));
   try {
     const sid = getActiveScreen();
     const r = await api.photos(20, photos.lastKey);
+    photosAt = Date.now();
     if (sid) carousel?.put(sid, 'photos', r);
     if (sid !== getActiveScreen()) return;
+    // another special background took over (or ended): the new photos show at once, not at the next change
+    const ruleChanged = !!state.photos && (state.photos.rule ?? '') !== (r.rule ?? '');
+    if (photoSig) photoSig = photoSigOf(ctx.cfg.background, r.rule);
     set('photos', r);
+    if (ruleChanged) void photos.next();
   } catch (e) {
     if (deniedBy(e)) return;
     console.warn('[photos]', (e as Error).message);
@@ -1321,9 +1342,12 @@ async function fetchConfig(): Promise<boolean> {
 
 let photoSig = '';
 let privateSig = '';
-/** What decides the photo list of a screen (a carousel keeps the list when the next screen has the same). */
-const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean } }) =>
-  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}`;
+/**
+ * What decides the photo list of a screen (a carousel keeps the list when the next screen has the same): its photo
+ * settings and the special background that holds on it (`rule`, the signature /api/photos answers with).
+ */
+const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean } }, rule = '') =>
+  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}|${rule}`;
 on('config', (s) => {
   if (!s.config) return;
   // before the cards are drawn, so a new Home Assistant card asks for its states with this screen's config
@@ -1339,7 +1363,10 @@ on('config', (s) => {
   armCanvasSchedule(s.config.canvas?.next);
   // photo source changed in the admin → fetch a fresh list right away; privacy mode with "hide photos" also
   // replaces the photo on screen at once
-  const sig = photoSigOf(ctx.cfg.background);
+  const sig = photoSigOf(ctx.cfg.background, state.photos?.rule);
+  // a saved change (another revision) may change which special background holds
+  if (photoSig && sig === photoSig && ruleRev !== null && s.config.revision !== ruleRev) checkBgRule();
+  ruleRev = s.config.revision;
   if (photoSig && sig !== photoSig) void fetchPhotos().then(() => (privChanged ? photos.next() : undefined));
   photoSig = sig;
   syncCarousel(s.config);
@@ -1619,7 +1646,7 @@ const PHOTO_WAIT_MS = 1500;
 function photoStart(b: Bundle): { list: Photo[]; idx: number } | null {
   const bg = b.config?.background;
   if (!bg?.enabled || !photoSig) return null;
-  const sig = photoSigOf(bg);
+  const sig = photoSigOf(bg, b.photos?.rule);
   if (sig === photoSig) return null;
   const spot = photoSpots.get(sig);
   const list = spot ? spot.at.list : b.photos?.photos ?? [];
@@ -1644,7 +1671,7 @@ function showScreen(id: string, b: Bundle, sw: SwitchInfo): void {
     state.events = b.events;
     state.countdowns = b.countdowns;
     // the photo list only changes when the photo settings differ (same source: the slideshow just goes on)
-    const sig = photoSigOf(b.config.background);
+    const sig = photoSigOf(b.config.background, b.photos?.rule);
     const newPhotos = !!photoSig && sig !== photoSig;
     // the slideshow of the screen that leaves is kept where it is, so it goes on from there when that screen is back
     if (newPhotos && state.photos) photoSpots.set(photoSig, { photos: state.photos, at: photos.position() });
@@ -1937,6 +1964,7 @@ function refreshForPrivacy(): void {
 }
 on('events', () => {
   canvasView.onData('events');
+  checkBgRule();
   renderCalendar(current());
   renderCountdowns(current());
   fitSide();
@@ -1990,6 +2018,9 @@ onTick((tick) => {
   views.tick(tick);
   canvasView.tick(tick);
   if (tick.minuteChanged) {
+    // a new day may bring another special background: a few seconds after midnight, so the server sees the new day too
+    if (ruleDay && ruleDay !== tick.dayKey) setTimeout(checkBgRule, 5_000 + Math.random() * 20_000);
+    ruleDay = tick.dayKey;
     renderCalendar(tick);
     renderWeather(tick);
     renderCountdowns(tick);

@@ -8,7 +8,7 @@ import { requestJson } from './lib/http.js';
 import { defaultScreen } from './core/screens.js';
 import { getConfig, paths, writeFileAtomic } from './store.js';
 import { immichItems, warm } from './immich.js';
-import { mediaScreens, showsGallery } from './displayAccess.js';
+import { galleryFileAllowed, mediaScreens } from './displayAccess.js';
 import { screenPrivacy } from './privacy.js';
 import { IMMICH_ID_RE, placeOf } from './core/immichCore.js';
 import {
@@ -263,8 +263,9 @@ export function listGallery() {
 
 /**
  * GET /media/photos/<file> after mediaAuth: an admin session reads every file; a display only a photo in the
- * rotation (not hidden) and only when a screen its credential may read shows the gallery and is not private with
- * "hide photos". Anything else gets the same 404 as a missing file, so names cannot be probed.
+ * rotation (not hidden) and only when a screen its credential may read shows the gallery, or has a special
+ * background rule with that file, and is not private with "hide photos". Anything else gets the same 404 as a
+ * missing file, so names cannot be probed.
  */
 export function galleryMedia(req, res, next) {
   const notFound = () => res.status(404).set('cache-control', 'private, no-store').type('text/plain').send('not found');
@@ -273,7 +274,7 @@ export function galleryMedia(req, res, next) {
   if (!isGalleryFile(file)) return notFound();
   const screens = mediaScreens(getConfig(), req.displayAccess);
   if (screens === null) return next();
-  if (!showsGallery(screens) || readMeta()[file]?.hidden === true) return notFound();
+  if (!galleryFileAllowed(screens, file) || readMeta()[file]?.hidden === true) return notFound();
   // While one of its screens is private, the browser keeps nothing: a photo a guest could see must not stay cached for
   // 30 days on a device the owner no longer controls (app.js reads this flag when it sets the cache header).
   const cfg = getConfig();
@@ -348,8 +349,9 @@ function pickFrom(all, order, n, key, after, { idOf, sort, isHidden = () => fals
   return out;
 }
 
-function pickGallery(order, n, key, after) {
-  const picked = pickFrom(listGallery(), order, n, key, after, {
+function pickGallery(order, n, key, after, only = null) {
+  const all = only ? listGallery().filter((g) => only.has(g.file)) : listGallery();
+  const picked = pickFrom(all, order, n, key, after, {
     idOf: (g) => g.file,
     sort: (l) => sortFor(l, order),
     isHidden: (g) => g.hidden,
@@ -381,22 +383,42 @@ const immichPhoto = (it) => ({
   ...(placeOf(it) ? { place: placeOf(it) } : {}),
 });
 
-async function pickImmich(bg, order, n, key, after) {
-  const items = await immichItems(bg.immich);
+async function pickImmich(bg, order, n, key, after, sel = bg.immich) {
+  const items = await immichItems(sel);
   const picked = pickFrom(items, order, n, `${key}|immich`, after, { idOf: (it) => it.id, sort: (l) => sortImmich(l, order) });
   warm(picked);
   return picked.map(immichPhoto);
 }
 
 /**
- * One batch for the display. `opts.key` identifies the screen (rotation memory), `opts.after` = gallery file or
- * Immich asset id the display showed last. Hidden photos never appear; a gallery with nothing in rotation, or an
- * Immich source with no photos (not set up, no albums, unreachable with nothing cached), falls back to stock.
+ * The photos of a special background rule (core/bgRules.js) in the screen's order: its gallery files that still
+ * exist and are not hidden, or its Immich album. [] when there is nothing to show (the normal background then).
  */
-export async function getPhotos(count = 20, bg = defaultScreen(getConfig()).background, { key = '', after = '' } = {}) {
+async function rulePhotos(rule, bg, order, n, key, after) {
+  const k = `${key}|rule|${rule.id}`;
+  if (rule.photos?.source === 'immich') {
+    if (!IMMICH_ID_RE.test(rule.photos.albumId || '')) return [];
+    return pickImmich(bg, order, n, k, IMMICH_ID_RE.test(after) ? after.toLowerCase() : '', { albumIds: [rule.photos.albumId], favoritesOnly: false });
+  }
+  const files = new Set(rule.photos?.files || []);
+  return files.size ? pickGallery(order, n, k, isGalleryFile(after) ? after : '', files) : [];
+}
+
+/**
+ * One batch for the display. `opts.key` identifies the screen (rotation memory), `opts.after` = gallery file or
+ * Immich asset id the display showed last, `opts.rule` = the special background rule that holds now (its photos
+ * replace the source's; when it has none to show, the source as usual). Hidden photos never appear; a gallery with
+ * nothing in rotation, or an Immich source with no photos (not set up, no albums, unreachable with nothing cached),
+ * falls back to stock.
+ */
+export async function getPhotos(count = 20, bg = defaultScreen(getConfig()).background, { key = '', after = '', rule = null } = {}) {
   count = Math.max(1, Math.min(100, count | 0 || 20));
   const order = PHOTO_ORDERS.includes(bg.order) ? bg.order : 'random';
   key = String(key || 'default');
+  if (rule) {
+    const p = await rulePhotos(rule, bg, order, count, key, String(after || ''));
+    if (p.length) return p;
+  }
   if (bg.source === 'immich') {
     const p = await pickImmich(bg, order, count, key, IMMICH_ID_RE.test(after) ? after.toLowerCase() : '');
     return p.length ? p : stockPhotos(count);
