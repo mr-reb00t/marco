@@ -13,7 +13,8 @@ import { hashPassword, ensurePassword, _resetLoginLimits } from '../auth.js';
 import { createApp } from '../app.js';
 import { closeAll } from '../sse.js';
 import { _resetDisplays, setServerVersion } from '../displays.js';
-import { _resetAnnouncements, listAnnouncements } from '../announce.js';
+import { _resetAnnouncements, createAnnouncement, listAnnouncements, sanitizeAnnounce, ACTIVE_MAX, FAMILY_ACTIVE_MAX } from '../announce.js';
+import { retireFor } from '../core/announceCore.js';
 import { _resetActivityThrottle, listActivity } from '../activity.js';
 import { _resetPrivacy, privacyResponse } from '../privacy.js';
 import { _resetFamily } from '../family.js';
@@ -72,11 +73,13 @@ async function withServer(fn, { mut = () => {} } = {}) {
     return { status: r.status, json, text, headers: r.headers, setCookie: r.headers.getSetCookie?.() || [] };
   };
   const streams = [];
-  /** An SSE stream of a screen, with the display key (private mode). */
-  const sse = async (screenId) => {
-    const key = (await call('GET', '/api/admin/display-links', { cookie: await login() })).json.links.find((l) => l.screenId === screenId).key;
+  /** The display key of a screen. */
+  const keyOf = async (screenId) => (await call('GET', '/api/admin/display-links', { cookie: await login() })).json.links.find((l) => l.screenId === screenId).key;
+  /** An SSE stream of a screen, with the display key (private mode), or with no credential (`open`: open mode). */
+  const sse = async (screenId, { open = false } = {}) => {
+    const q = open ? { client: `c_open_${screenId}`, screen: store.getConfig().screens.find((x) => x.id === screenId).slug } : { client: `c_${screenId}`, k: await keyOf(screenId) };
     const ctl = new AbortController();
-    const r = await realFetch(`${base}/api/stream?${new URLSearchParams({ client: `c_${screenId}`, k: key })}`, { signal: ctl.signal });
+    const r = await realFetch(`${base}/api/stream?${new URLSearchParams(q)}`, { signal: ctl.signal });
     assert.equal(r.status, 200);
     const events = [];
     const reader = r.body.getReader();
@@ -135,7 +138,7 @@ async function withServer(fn, { mut = () => {} } = {}) {
   };
   const redeem = async (link, token) => call('POST', '/api/member/redeem', { body: { link, ...(token ? { token } : {}) }, headers: { 'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Safari/604.1' } });
   try {
-    await fn({ call, login, dir, sse, phone, addPerson, redeem });
+    await fn({ call, login, dir, sse, phone, addPerson, redeem, keyOf });
   } finally {
     await Promise.all(streams.map((x) => x.close()));
     _resetPrivacy();
@@ -539,5 +542,97 @@ test('an export with secrets keeps the people and their phones (digests only), a
     assert.equal(imp.status, 200, imp.text);
     assert.equal((await call('GET', '/api/member/state', { headers: phone(token) })).status, 200);
     assert.equal((await redeem(link, token)).json.token, token);
+  });
+});
+
+test('open display access: a code on a screen only goes to displays with a credential, live and in the poll', async () => {
+  await withServer(async ({ call, login, addPerson, sse, keyOf }) => {
+    const { person } = await addPerson({ name: 'Leo', perms: { night: true } });
+    const cookie = await login();
+    const open = await sse('s_kitchen', { open: true });
+    const keyed = await sse('s_kitchen');
+    const key = await keyOf('s_kitchen');
+    const poll = ({ k, ...q }) => call('GET', `/api/display/poll?${new URLSearchParams({ screen: 'kitchen', ...q })}`, { headers: k ? { 'x-marco-key': k } : {} });
+    const openStart = await poll({ client: 'c_poll_open' });
+    const keyedStart = await poll({ client: 'c_poll_key', k: key });
+    assert.equal(openStart.status, 200, openStart.text);
+    assert.equal(keyedStart.status, 200, keyedStart.text);
+    const r = await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } });
+    assert.equal(r.status, 200, r.text);
+    assert.equal((await keyed.waitFor('access-code')).data.code, r.json.code);
+    const openPoll = await poll({ client: 'c_poll_open', cursor: openStart.json.cursor });
+    const keyedPoll = await poll({ client: 'c_poll_key', k: key, cursor: keyedStart.json.cursor });
+    assert.ok(keyedPoll.json.commands.some((c) => c.type === 'access-code' && c.code === r.json.code), 'the keyed poller gets it');
+    assert.ok(!openPoll.json.commands.some((c) => c.type === 'access-code'), 'the open poller does not');
+    await new Promise((res) => setTimeout(res, 100));
+    assert.ok(!open.events.some((e) => e.event === 'access-code'), 'the open stream does not');
+    assert.ok(!JSON.stringify(open.events).includes(r.json.code));
+  }, { mut: (c) => { c.security = { ...(c.security || {}), displayAccess: 'open' }; } });
+});
+
+test('a valid link or token from outside gets in past the overall limit; codes keep it', async () => {
+  await withServer(async ({ call, login, addPerson, redeem, phone }) => {
+    const { person, link } = await addPerson({ name: 'Ana', perms: { todo: true } });
+    const token = (await redeem(link)).json.token;
+    const from = (i) => ({ 'x-forwarded-for': `203.0.113.${i}` });
+    const ua = { 'user-agent': 'Mozilla/5.0 (Android 14; Mobile) Chrome/120' };
+    for (let i = 1; i <= Math.ceil(BAD_GLOBAL / BAD_LIMIT) + 1; i++) {
+      for (let j = 0; j < BAD_LIMIT; j++) await call('POST', '/api/member/redeem', { headers: from(i), body: { link: `fa_${'A'.repeat(32)}` } });
+    }
+    for (let i = 1; i <= Math.ceil(BAD_CODE_GLOBAL / BAD_CODE_LIMIT) + 1; i++) {
+      for (let j = 0; j < BAD_CODE_LIMIT; j++) await call('POST', '/api/member/pair', { headers: from(100 + i), body: { code: 'ZZZZZZ' } });
+    }
+    // a wrong link from a new public address is refused, the right one gets in
+    assert.equal((await call('POST', '/api/member/redeem', { headers: from(90), body: { link: `fa_${'B'.repeat(32)}` } })).status, 429);
+    const ok = await call('POST', '/api/member/redeem', { headers: { ...from(91), ...ua }, body: { link } });
+    assert.equal(ok.status, 200, ok.text);
+    assert.equal((await call('GET', '/api/member/state', { headers: { ...from(92), ...phone(token) } })).status, 200);
+    // a right code from outside still waits for the overall count to go down (it stops guessing from many addresses)
+    const cookie = await login();
+    const code = (await call('POST', `/api/admin/family-access/${person.id}/code`, { cookie, body: { screenId: 's_kitchen' } })).json.code;
+    assert.equal((await call('POST', '/api/member/pair', { headers: from(93), body: { code } })).status, 429);
+    // the per-address limit still holds for links: a locked address is refused even with the right one
+    assert.equal((await call('POST', '/api/member/redeem', { headers: { ...from(1), ...ua }, body: { link } })).status, 429);
+  });
+});
+
+test('core: a family message only retires the same person\'s messages', () => {
+  const mk = (id, via, by) => ({ id, via, by });
+  const admin = Array.from({ length: 10 }, (_, i) => mk(`a${i}`, 'admin', 'owner'));
+  const ana = [mk('f1', 'family', 'family:Ana'), mk('f2', 'family', 'family:Ana'), mk('f3', 'family', 'family:Ana')];
+  const leo = [mk('l1', 'family', 'family:Leo')];
+  assert.deepEqual(retireFor([...admin, ...leo, ...ana], mk('x', 'family', 'family:Ana')).map((a) => a.id), ['f1']);
+  assert.deepEqual(retireFor([...admin, ...leo], mk('x', 'family', 'family:Ana')), []);
+  const full = Array.from({ length: ACTIVE_MAX }, (_, i) => mk(`a${i}`, 'admin', 'owner'));
+  assert.equal(retireFor(full, mk('x', 'family', 'family:Ana')), null);
+  assert.equal(retireFor([...full.slice(1), ...leo], mk('x', 'family', 'family:Ana')), null);
+  assert.deepEqual(retireFor([...full.slice(1), ana[0]], mk('x', 'family', 'family:Ana')).map((a) => a.id), ['f1']);
+  // an admin announcement retires the oldest, whoever sent them
+  assert.deepEqual(retireFor([...ana, ...full.slice(3)], mk('x', 'admin', 'owner')).map((a) => a.id), ['f1']);
+});
+
+test('family messages never take down announcements someone else sent', async () => {
+  await withServer(async ({ call, phone, addPerson, redeem }) => {
+    const { link } = await addPerson({ name: 'Ana', perms: ALL });
+    const h = phone((await redeem(link)).json.token);
+    const send = (text) => call('POST', '/api/member/message', { headers: h, body: { text, durationSec: 3600 } });
+    const adminOne = (i) => createAnnouncement(sanitizeAnnounce({ title: `Admin ${i}`, durationSec: 3600 }, () => ({ ids: [] })).value, { via: 'admin', by: 'owner' });
+    for (let i = 1; i <= FAMILY_ACTIVE_MAX + 1; i++) assert.equal((await send(`m${i}`)).status, 200);
+    let active = listAnnouncements().active;
+    assert.equal(active.length, FAMILY_ACTIVE_MAX);
+    assert.ok(!active.some((a) => a.body === 'm1'), 'the oldest of her own went');
+    // the household fills up with the owner's announcements: hers make room among her own only
+    for (let i = 0; i < ACTIVE_MAX - FAMILY_ACTIVE_MAX; i++) adminOne(i);
+    assert.equal((await send('m5')).status, 200);
+    active = listAnnouncements().active;
+    assert.equal(active.length, ACTIVE_MAX);
+    assert.equal(active.filter((a) => a.via === 'admin').length, ACTIVE_MAX - FAMILY_ACTIVE_MAX);
+    // the owner's own ones retire the oldest of any kind, and a house full of the owner's refuses her message
+    for (let i = 0; i < ACTIVE_MAX; i++) adminOne(100 + i);
+    assert.equal(listAnnouncements().active.filter((a) => a.via === 'family').length, 0);
+    const full = await send('m6');
+    assert.equal(full.status, 409);
+    assert.equal(full.json.code, 'announcements_full');
+    assert.equal(listAnnouncements().active.filter((a) => a.via === 'admin').length, ACTIVE_MAX);
   });
 });

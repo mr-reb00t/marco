@@ -172,10 +172,15 @@ how much of it.
 - *Family access* (each person's dashboard on the phone, `/my`): the person's private link and each phone's token
   are bearer secrets stored as SHA-256 digests only; the link is shown to the admin once. A code shown on a screen
   (6 characters, two minutes, single use) is kept as a digest too, except in the command to that screen for its two
-  minutes; once it is used, replaced or the person removed, the screen is told to take it down. Wrong codes are
-  limited to 10 per address and 50 overall per 10 minutes, wrong links and tokens to 20 and 200; the overall limits
-  only count and stop clients from outside the local network, so a flood from the Internet cannot lock out the
-  phones at home. The token travels in a header, POST bodies must be JSON and the `Origin` must
+  minutes; once it is used, replaced or the person removed, the screen is told to take it down. That command only
+  goes to displays in with a screen key, a device token or the admin session, never to one in open display access
+  mode (no credential). Wrong codes are limited to 10 per address and 50 overall per 10 minutes, wrong links and
+  tokens to 20 and 200; the overall limits only count and stop clients from outside the local network, so a flood
+  from the Internet cannot lock out the phones at home. A valid link or token is looked up first and gets in past
+  the overall limit; a code does not (6 characters guessed from many addresses at once is what that limit stops), so
+  while it is reached, phones outside the LAN wait to use a code. Behind a reverse proxy or tunnel, set `TRUST_PROXY`:
+  otherwise every remote phone has the proxy's address and shares one per-address limit. A person's messages never
+  take down announcements sent by someone else, and at most 3 of them are on the screens at once. The token travels in a header, POST bodies must be JSON and the `Origin` must
   match, so another site cannot act for the phone. Every action is checked against the person's permissions of that
   moment, the token never opens an admin route, and the phone gets nothing but the person's name and their controls.
   Anyone who can read a screen while a code is on it can use the code: show codes only on screens in front of the

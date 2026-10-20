@@ -6,6 +6,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { MAX_PEOPLE, NAME_MAX } from '../../../server/core/familyAccessCore.js';
 import type { FamilyAccessListResponse, FamilyAccessPerms, FamilyAccessPerson, StoredConfig } from '../../shared/types';
 import { api, ApiError } from '../api';
+import { usesPrivateLinks } from '../displayLinks';
 import { shareOrigin } from './DisplayAccess';
 import { confirmDialog, toast } from './feedback';
 import { Icon } from './icons';
@@ -141,6 +142,8 @@ function PersonRow({ p, saved, origin, fresh, onFresh, onEdit, onChange, onGone 
   const [code, setCode] = useState<{ code: string; expiresAt: string; delivered: number } | null>(null);
   const [now, setNow] = useState(Date.now());
   const member = p.memberId ? saved.family?.members.find((m) => m.id === p.memberId) : null;
+  /** Open display access: the server sends codes only to screens with a private link or paired (familyAccess.js codeClient). */
+  const openMode = !usesPrivateLinks(saved);
   useEffect(() => {
     if (!code) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -163,7 +166,7 @@ function PersonRow({ p, saved, origin, fresh, onFresh, onEdit, onChange, onGone 
       const r = await api.familyAccessCode(p.id, screenId);
       setCode(r);
       setNow(Date.now());
-      if (!r.delivered) toast(t('Esa pantalla no está conectada ahora: el código saldrá si se conecta en los próximos 2 minutos.'), 'error');
+      if (!r.delivered) toast(openMode ? t('Los códigos solo salen en pantallas abiertas con su enlace privado o vinculadas, no en las que usan el modo abierto.') : t('Esa pantalla no está conectada ahora: el código saldrá si se conecta en los próximos 2 minutos.'), 'error');
     });
   const newLink = async () => {
     if (p.link.exists) {
@@ -254,6 +257,7 @@ function PersonRow({ p, saved, origin, fresh, onFresh, onEdit, onChange, onGone 
           {t('Quitar persona')}
         </Button>
       </div>
+      {openMode && screens.length > 0 && <p class="muted small">{t('Los códigos solo salen en pantallas abiertas con su enlace privado o vinculadas, no en las que usan el modo abierto.')}</p>}
       {code && left > 0 && (
         <p class="fa-code-live">
           <b class="fa-code-live__code">{code.code}</b>{' '}

@@ -30,7 +30,10 @@ import {
 export const TOKEN_HEADER = 'x-member-token';
 /**
  * Wrong links, device tokens or codes: per client address and overall, per window. The overall limit only counts and
- * stops clients from outside the LAN, so a flood from the Internet never locks out the phones at home (as auth.js).
+ * stops clients from outside the LAN, so a flood from the Internet never locks out the phones at home (as auth.js),
+ * and it never refuses a valid link or token (only codes are checked against it before the lookup: redeemCode).
+ * Behind a reverse proxy or tunnel missing from TRUST_PROXY every remote phone has the proxy's address, so they all
+ * share one per-address limit.
  */
 export const BAD_LIMIT = 20;
 export const BAD_GLOBAL = 200;
@@ -98,13 +101,25 @@ function countBad(req, { code = false } = {}, now = Date.now()) {
   return true;
 }
 
-/** Locked out right now (before looking anything up, so a locked address learns nothing). */
-function locked(req, { code = false } = {}, now = Date.now()) {
+/**
+ * Locked out right now (before looking anything up, so a locked address learns nothing). `bucketOnly` leaves out the
+ * overall limit: private links and device tokens are looked up first and a match gets through whatever the overall
+ * count, so a flood of wrong ones from the Internet cannot lock out the phones that hold a valid one (only the misses
+ * count and are refused past it, in countBad).
+ */
+function locked(req, { code = false, bucketOnly = false } = {}, now = Date.now()) {
   const map = code ? maps.badCode : maps.bad;
   const all = fresh(code ? badCodeAll : badAll, BAD_WINDOW_MS, now);
   return fresh(map.get(clientBucket(req)), BAD_WINDOW_MS, now).length >= (code ? BAD_CODE_LIMIT : BAD_LIMIT)
-    || (!isLanClient(req) && all.length >= (code ? BAD_CODE_GLOBAL : BAD_GLOBAL));
+    || (!bucketOnly && !isLanClient(req) && all.length >= (code ? BAD_CODE_GLOBAL : BAD_GLOBAL));
 }
+
+/**
+ * Displays that may get a code: the ones in with a screen key, a device token or the admin session. A display in open
+ * mode (`via: 'open'`, no credential at all) never does, as anyone who can reach /api/stream could read the code.
+ */
+const PRIVATE_VIA = new Set(['key', 'device', 'session']);
+export const codeClient = (c) => PRIVATE_VIA.has(c?.access?.via);
 
 const rejected = (req, reason) => logActivityThrottled('family.access_rejected', `${clientBucket(req)}|${reason}`,
   { everyMs: BAD_WINDOW_MS, perMinute: 5 }, { req, actor: 'anonymous', level: 'warn', data: { reason } });
@@ -118,7 +133,7 @@ function clearShown(entry) {
   if (!p || p.clearedAt) return;
   p.clearedAt = new Date().toISOString();
   p.code = '';
-  publish('access-code', { clear: true, id: p.id, code: '', name: '', url: '', expiresAt: p.expiresAt }, { screenIds: [entry.screenId] });
+  publish('access-code', { clear: true, id: p.id, code: '', name: '', url: '', expiresAt: p.expiresAt }, { screenIds: [entry.screenId] }, codeClient);
 }
 
 function pruneCodes(now = Date.now()) {
@@ -219,8 +234,8 @@ export function revokePersonDevice(id, deviceId, { req } = {}) {
 }
 
 /**
- * Show a code for this person on one screen for two minutes (`access-code` live event). A new code replaces the
- * person's previous one. The phone types it at /my, or scans the QR code the screen draws with it.
+ * Show a code for this person on one screen for two minutes (`access-code` live event, only to displays with a
+ * credential: codeClient). A new code replaces the person's previous one. The phone types it at /my, or scans the QR code the screen draws with it.
  * @returns {{ code, expiresAt, screenId, delivered } | { error, status }}
  */
 export function showCode(id, screenId, { req } = {}, now = Date.now()) {
@@ -239,7 +254,7 @@ export function showCode(id, screenId, { req } = {}, now = Date.now()) {
   const origin = familyOrigin(req);
   const payload = { id: newId('ac_'), code, name: p.name, expiresAt: new Date(expiresAt).toISOString(), url: origin ? `${origin}${memberPath(cfg)}` : '' };
   codes.set(shaHex(code), { personId: id, screenId, expiresAt, payload });
-  const delivered = publish('access-code', payload, { screenIds: [screenId] });
+  const delivered = publish('access-code', payload, { screenIds: [screenId] }, codeClient);
   logActivity('family.code', { req, data: { person: p.name, screen: screen.slug, delivered } });
   return { code, expiresAt: payload.expiresAt, screenId, delivered };
 }
@@ -287,7 +302,7 @@ const tooMany = { error: 'too many tries, wait a few minutes', code: 'rate_limit
  * the same person keeps it (no second device). { token, state } or { error, code, status }.
  */
 export function redeemLink(link, current, req) {
-  if (locked(req)) return tooMany;
+  if (locked(req, { bucketOnly: true })) return tooMany;
   const given = typeof link === 'string' ? link.trim() : '';
   let person = null;
   if (LINK_TOKEN_RE.test(given)) {
@@ -308,6 +323,9 @@ export function redeemLink(link, current, req) {
 
 /** A code typed on a phone (single use). { token, state } or { error, code, status }. */
 export function redeemCode(raw, req, now = Date.now()) {
+  // Codes keep the overall limit before the lookup: 6 characters can be guessed by many addresses together, and the
+  // overall count is what stops that. The price is that, while it is reached, phones outside the LAN cannot use a
+  // code either (they still get in with their private link, and the phones at home are never counted or stopped).
   if (locked(req, { code: true }, now)) return tooMany;
   pruneCodes(now);
   const code = normalizeAccessCode(raw);
@@ -351,7 +369,7 @@ export function memberAuth(req, res, next) {
     req.member = hit;
     return next();
   }
-  if (locked(req, {}, now) || !countBad(req, {}, now)) {
+  if (locked(req, { bucketOnly: true }, now) || !countBad(req, {}, now)) {
     res.set('retry-after', String(BAD_WINDOW_MS / 1000));
     return res.status(429).json({ error: 'too many tries, wait a few minutes', code: 'rate_limited' });
   }
@@ -423,7 +441,9 @@ export function memberMessage({ person }, body, { req } = {}) {
   if (!allow(maps.messages, person.id, MESSAGE_WINDOW_MS, MESSAGES_PER_WINDOW) || !budget(person)) return fail('rate_limited', 429);
   const v = sanitizeAnnounce(r.value, (keys) => resolveScreenList(cfg, keys));
   if (!v.ok) return fail(announceError(v), 400);
-  const { announcement, delivered } = createAnnouncement(v.value, { via: 'family', by: actorOf(person) });
+  const out = createAnnouncement(v.value, { via: 'family', by: actorOf(person) });
+  if (out.error) return fail(out.error, 409);
+  const { announcement, delivered } = out;
   const slugs = announcement.screenIds.map((id) => cfg.screens.find((s) => s.id === id)?.slug || id);
   logActivity('family.message', {
     req, actor: actorOf(person),

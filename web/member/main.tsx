@@ -105,6 +105,7 @@ function errorText(e: unknown): string {
     todo_full: 'La lista de tareas está llena.',
     events_full: 'El calendario local está lleno.',
     calendar_off: 'El calendario local está apagado.',
+    announcements_full: 'Ya hay demasiados avisos en las pantallas. Prueba dentro de un rato.',
   };
   return t(map[code] ?? 'No se pudo hacer. Inténtalo otra vez.');
 }

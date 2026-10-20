@@ -620,7 +620,8 @@ puede hacer:
 
 Hay dos formas de entrar: el enlace privado que el panel muestra una vez al añadir a la persona (cópialo o escanea su
 código QR; *Crear un enlace nuevo* lo cambia), o *Mostrar un código*: eliges una pantalla y en ella sale durante dos
-minutos un código de 6 caracteres con un código QR. La persona lo escribe en `/my` o escanea el QR. En los dos casos el
+minutos un código de 6 caracteres con un código QR (solo en una pantalla abierta con su enlace privado o vinculada,
+nunca en una que usa el modo abierto). La persona lo escribe en `/my` o escanea el QR. En los dos casos el
 móvil recibe un token propio y sale en la lista de esa persona, así que se puede quitar un móvil solo. *Quitar
 persona* deja sin efecto su enlace, sus móviles y sus códigos al momento.
 
@@ -629,7 +630,11 @@ servidor, así que un permiso que quitas cuenta desde el siguiente toque. Nadie 
 calendarios, fotos o contraseñas. Los mensajes, el modo privado, el modo noche, las tareas y los eventos quedan en la
 actividad con el nombre de la persona. Los tokens y los enlaces se guardan como hash en `secrets.json` (un código solo
 está en su pantalla durante sus dos minutos y desaparece en cuanto se usa); los enlaces, tokens y códigos incorrectos
-tienen un límite de intentos por dirección, y en total para lo que llega de fuera de tu red. Una exportación con los
+tienen un límite de intentos por dirección, y en total para lo que llega de fuera de tu red (un enlace o un móvil
+válido entra igualmente; los códigos esperan a que baje la cuenta). Detrás de un proxy inverso o un túnel, configura
+`TRUST_PROXY`: si no, todos los móviles de fuera tienen la dirección del proxy y comparten un mismo límite. Cada
+persona tiene como mucho 3 mensajes a la vez en las pantallas (uno nuevo sustituye al más antiguo suyo), y un mensaje
+nunca quita un aviso que ha enviado otra persona. Una exportación con los
 datos privados conserva a las personas, sus permisos y sus móviles.
 
 ## Pantallas personalizadas

@@ -7,6 +7,8 @@ import { randomId } from './lib/text.js';
 export const HISTORY_MAX = 50;
 /** Active announcements at most; past this the oldest are retired. */
 export const ACTIVE_MAX = 50;
+/** Active family messages (via 'family') one person may have at once; past this their oldest is retired. */
+export const FAMILY_ACTIVE_MAX = 3;
 
 /**
  * Validate an AnnounceRequest. `resolveScreens(keys)` → { ids } | { error, unknown }.
@@ -67,6 +69,20 @@ export function makeAnnouncement(value, { via, by, now = new Date(), id = random
     by: String(by || '').slice(0, 120),
     clearedAt: null,
   };
+}
+
+/**
+ * The active announcements to retire so that `next` fits (`active` oldest first), or null when it does not fit.
+ * An admin or webhook announcement retires the oldest ones past ACTIVE_MAX, whoever sent them. A family message only
+ * ever retires messages of the same person (same `by`): their oldest past FAMILY_ACTIVE_MAX, and more of them while
+ * the household is at ACTIVE_MAX. It never takes down an announcement the person could not have sent, so it gets
+ * null when the household is full of other ones.
+ */
+export function retireFor(active, next) {
+  if (next.via !== 'family') return active.slice(0, Math.max(0, active.length + 1 - ACTIVE_MAX));
+  const own = active.filter((a) => a.via === 'family' && a.by === next.by);
+  const n = Math.max(0, own.length + 1 - FAMILY_ACTIVE_MAX, active.length + 1 - ACTIVE_MAX);
+  return n > own.length ? null : own.slice(0, n);
 }
 
 /** Splits `active` into the ones still running and the ones that expired at `now` (ms). */

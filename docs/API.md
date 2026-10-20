@@ -230,7 +230,7 @@ calendar's.
 | `doorbell-end` | `{ id }` | the ring was dismissed |
 | `todo` | `{}` | the tasks of the Microsoft To Do lists changed (read every 5 minutes, or a task ticked on a screen): the display refetches its config, where they are `todo.items` |
 | `family` | `{ rev }` | Familia changed: a routine ticked (phone, TV or admin), stars, a reward, an import, a new or removed family link. Displays with a kids layout ask for `GET /api/display/family` again |
-| `access-code` | `{ id, code, name, expiresAt, url }` or `{ clear: true, id, expiresAt }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` (`url` is `…/my?lang=<household language>`) until `expiresAt` (two minutes). `clear` takes the code with that `id` down early (used, replaced, person removed). Never a token |
+| `access-code` | `{ id, code, name, expiresAt, url }` or `{ clear: true, id, expiresAt }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` (`url` is `…/my?lang=<household language>`) until `expiresAt` (two minutes). `clear` takes the code with that `id` down early (used, replaced, person removed). Never a token, and only sent to displays in with a screen key, a device token or the admin session (never in open display access mode) |
 | `ha` | `HaSnapshot` | Home Assistant states of a Personalizado screen: the full snapshot when the stream opens and when the connection to Home Assistant changes (`full: true`), then only the aliases that changed (`full: false`), at most one event a second per screen, aimed at that screen (`screenId`). Not sent on the poll channel |
 | `values` | `ValuesSnapshot` | Pushed values of a Personalizado screen: the snapshot when the stream opens (`full: true`, only for a screen that shows a key), then the keys that changed (`full: false`, `null` for a key that was cleared), at most one event a second, only to the screens that show those keys and never while one is private. Not sent on the poll channel |
 | `ping` | `{ t }` | every 25 s |
@@ -931,7 +931,7 @@ With `X-Member-Token: fd_…`:
 | Method | Path | Body | Answer |
 |---|---|---|---|
 | GET | `/api/member/state` | | `MemberState`: `{ name, lang, avatar, color, can: { message, privacy, night, todo, events }, screens: [{ id, name }], privacy: { on, total } \| null, calendarOn, durations }`. Never a token, an account or another person |
-| POST | `/api/member/message` | `{ text, screens?, durationSec? }` | an announcement titled with the person's name (`via: "family"`, `by: "family:<name>"`), text up to 200 characters, `durationSec` 60, 600 (default) or 3600, `screens` among the ones allowed (`[]` = all of them) → `{ ok, delivered }`. `400 bad_screens`, `text_required`, `text_too_long`, `bad_duration`; 10 messages per person every 10 minutes |
+| POST | `/api/member/message` | `{ text, screens?, durationSec? }` | an announcement titled with the person's name (`via: "family"`, `by: "family:<name>"`), text up to 200 characters, `durationSec` 60, 600 (default) or 3600, `screens` among the ones allowed (`[]` = all of them) → `{ ok, delivered }`. `400 bad_screens`, `text_required`, `text_too_long`, `bad_duration`; 10 messages per person every 10 minutes. At most 3 of a person's messages are active at once (a new one retires their oldest); a message only ever retires the same person's messages, so `409 announcements_full` when the household has 50 active announcements and none is theirs |
 | POST | `/api/member/privacy` | `{ mode: "on" \| "off" }` | every screen, until turned off → `{ ok, privacy: { on, total } }` |
 | POST | `/api/member/night` | `{ mode: "on" \| "off" \| "auto" }` | the `night` display command for every screen → `{ ok, delivered }` |
 | POST | `/api/member/todo` | `{ text }` | a typed to-do in `config.todo.items` → `{ ok, id }`. `409 todo_full` |
@@ -941,7 +941,7 @@ With `X-Member-Token: fd_…`:
 A permission the person does not have now answers `403 not_allowed`, whatever the request. No token:
 `401 token_required`; a wrong or revoked one: `403 invalid_token`. Wrong links and tokens are limited to 20 per
 10 minutes per address and 200 overall, wrong codes to 10 per address and 50 overall (`429 rate_limited`,
-`Retry-After`; the overall limits leave out clients on the local network); a locked address gets `429` before anything is looked up. With a valid token: 120 requests a minute per
+`Retry-After`; the overall limits leave out clients on the local network); a locked address gets `429` before anything is looked up. A valid link or token gets through even when the overall limit is reached (only misses count against it and are refused past it); a code does not. Behind a reverse proxy or tunnel, set `TRUST_PROXY`, or every remote phone shares the proxy's per-address limit. With a valid token: 120 requests a minute per
 phone and 20 actions a minute per person. A member token is never an admin credential: `/api/admin/*` answers `401`.
 To-dos and events are saved like any config change (the revision goes up, displays get `config`), with the reason
 `family`.

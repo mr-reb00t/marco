@@ -87,7 +87,9 @@ describe('family access in a browser: a code on the screen, the dashboard on the
     assert.equal(add.status, 200);
     const id = add.json.person.id;
 
-    const tv = await browser.page(`${web.url}/?screen=kitchen&lite=1`, { width: 1920, height: 1080 });
+    // opened with its private link: in open mode a display without a credential never gets a code (familyAccess.js codeClient)
+    const key = (await call('GET', '/api/admin/display-links')).json.links.find((l) => l.screenId === 's_kitchen').key;
+    const tv = await browser.page(`${web.url}/d/${key}?lite=1`, { width: 1920, height: 1080 });
     const phone = await browser.page(`${web.url}/member/index.html`, { width: 390, height: 844 });
     try {
       // the kitchen display has its stream open

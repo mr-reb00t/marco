@@ -22,7 +22,9 @@ All notable changes to this project are documented here. The format is based on
   one of the screens for two minutes: they type it on their phone, or scan the QR code next to it. Every phone that
   gets in is listed and can be removed alone; removing the person stops their link, phones and codes at once. Every
   action is checked on the server against what the person may do at that moment, and each one is in the activity log
-  with their name. An export with private data keeps the people and their phones (#16).
+  with their name. Codes only show on screens opened with their private link or paired, never on one in open display
+  access mode. A person has at most 3 messages on the screens at once, and their messages never take down an
+  announcement someone else sent. An export with private data keeps the people and their phones (#16).
 - *Now playing* with Spotify (#18): a screen can show what someone is listening to on Spotify, the song (or podcast
   episode), the artist and the cover. On a *Custom* screen it is the *Now playing* card, with an optional thin
   progress bar that moves along with the song; on the other layouts it is *Now playing under the clock* in *Layout →

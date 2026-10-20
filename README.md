@@ -590,7 +590,7 @@ may do:
 
 Two ways in: the private link the admin shows once when the person is added (copy it or scan its QR code; *Create a
 new link* replaces it), or *Show a code*: pick a screen and it draws a 6 character code for two minutes, with a QR
-code. The person types the code at `/my` or scans the QR code. Either way the phone gets a token of its own, listed
+code (only on a screen opened with its private link or paired, never on one in open display access mode). The person types the code at `/my` or scans the QR code. Either way the phone gets a token of its own, listed
 under the person, so one phone can be removed alone. *Remove person* stops their link, phones and codes at once.
 
 The phone only ever gets the person's name and the controls you allowed. Each action is checked again on the server,
@@ -598,7 +598,10 @@ so a permission you take away counts from the next tap. Nobody with this access 
 calendars, photos or passwords. Messages, private mode changes, night mode, to-dos and events are in the activity log
 with the person's name. Tokens and links are stored as hashes in `secrets.json` (a code is only on its screen for its
 two minutes, and goes away once used); wrong links, tokens and codes are rate limited per address, and overall for
-clients outside your network. An export with private data keeps the people, their permissions and their phones.
+clients outside your network (a valid link or phone still gets in then; codes wait until the count goes down). Behind
+a reverse proxy or a tunnel, set `TRUST_PROXY`: otherwise every phone from outside has the proxy's address and they
+all share one limit. A person has at most 3 messages on the screens at once (a new one replaces their oldest), and a
+message never takes down an announcement someone else sent. An export with private data keeps the people, their permissions and their phones.
 
 ## Custom screens
 

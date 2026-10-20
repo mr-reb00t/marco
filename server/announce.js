@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import { getConfig, paths, writeFileAtomic } from './store.js';
 import { publish } from './pollHub.js';
 import {
-  ACTIVE_MAX, HISTORY_MAX, makeAnnouncement, splitExpired, activeFor as activeIn, alertsFilter as alertsFilterFor,
+  HISTORY_MAX, makeAnnouncement, retireFor, splitExpired, activeFor as activeIn, alertsFilter as alertsFilterFor,
 } from './core/announceCore.js';
 
-export { ACTIVE_MAX, HISTORY_MAX, sanitizeAnnounce } from './core/announceCore.js';
+export { ACTIVE_MAX, FAMILY_ACTIVE_MAX, HISTORY_MAX, sanitizeAnnounce } from './core/announceCore.js';
 
 let state = null; // { active: Announcement[], history: Announcement[] }, history newest first
 let loadedFrom = null;
@@ -56,7 +56,8 @@ function scheduleExpiry() {
 export const alertsFilter = (client, screenIds = []) => alertsFilterFor(getConfig(), screenIds)(client);
 
 /**
- * Create + broadcast an announcement. `value` = sanitised request. Returns { announcement, delivered }.
+ * Create + broadcast an announcement. `value` = sanitised request. Returns { announcement, delivered }, or
+ * { error: 'announcements_full' } for a family message that would have to retire someone else's announcements.
  * @param {object} value
  * @param {{ via: 'admin'|'hook'|'family', by: string, now?: Date }} meta
  */
@@ -64,10 +65,12 @@ export function createAnnouncement(value, { via, by, now = new Date() }) {
   load();
   expire(now.getTime());
   const a = makeAnnouncement(value, { via, by, now });
+  // Hard cap: the oldest active ones are retired (a family message only retires the same person's).
+  const retire = retireFor(state.active, a);
+  if (!retire) return { error: 'announcements_full' };
+  state.active = state.active.filter((x) => !retire.includes(x));
   state.active.push(a);
-  // Hard cap: the oldest active ones are retired.
-  while (state.active.length > ACTIVE_MAX) {
-    const old = state.active.shift();
+  for (const old of retire) {
     old.clearedAt = now.toISOString();
     state.history.unshift(old);
     publish('announce-clear', { id: old.id });
