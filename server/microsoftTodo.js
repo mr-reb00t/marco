@@ -4,8 +4,9 @@
 // typed items (core screens.js displayConfig todoTasks), and a `todo` live event when they change. A list that fails
 // keeps showing its last tasks.
 //
-// A display sees the title, the due day, the importance and an opaque id per task (ms_ + an HMAC of the account, the
-// list and the Graph task id, with a key that lives in this process only): never a Graph id, an account or a token.
+// A display sees the title, the due day, the importance, the Marco id of its list (tl_...) and an opaque id per task
+// (ms_ + an HMAC of the account, the list and the Graph task id, with a key that lives in this process only): never a
+// Graph id, an account or a token.
 // A touch screen may tick a task (POST /api/display/todo/toggle, routes/public.js): the id is looked up among the
 // tasks this server shows right now, and the task is marked done at Microsoft (Tasks.ReadWrite). It stays on screen,
 // struck through, until its list is read again (a second tap before that puts it back).
@@ -43,9 +44,9 @@ function shownTasks(cfg) {
   return out;
 }
 
-/** The cached tasks of every list that is on, as display to-do items (core displayTodoItem). */
+/** The cached tasks of every list that is on, as display to-do items with their list (core displayTodoItem). */
 export function todoTasks(cfg = getConfig()) {
-  return shownTasks(cfg).map(({ it, list }) => displayTodoItem(it, it.id, microsoft.accountWritesTasks(list.microsoftAccount)));
+  return shownTasks(cfg).map(({ it, list }) => displayTodoItem(it, it.id, microsoft.accountWritesTasks(list.microsoftAccount), list.id));
 }
 
 /** Per list of the config: how many tasks are shown, the last good read and the last error (admin status). */

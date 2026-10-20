@@ -271,7 +271,10 @@ test('display config: open tasks after the typed items, opaque ids, nothing abou
     assert.equal(items.find((i) => i.text === 'Milk').tick, true);
     assert.equal(r.json.todo.touch, false, 'touch is off on this screen');
     assert.equal(r.json.todo.lists, undefined);
-    for (const secret of ['graph-task', 'list-shop', 'list-chores', NEW, READ, 'AT-secret', 'RT-secret', 'tl_shop']) assert.ok(!r.text.includes(secret), secret);
+    // each item says its list by its Marco id (todo.lists), the typed ones 'local' (the to-do cards pick by it)
+    assert.equal(items[0].list, 'local');
+    assert.equal(items.find((i) => i.text === 'Milk').list, 'tl_shop');
+    for (const secret of ['graph-task', 'list-shop', 'list-chores', NEW, READ, 'AT-secret', 'RT-secret']) assert.ok(!r.text.includes(secret), secret);
     // no Microsoft app: no tasks
     delete process.env.MICROSOFT_CLIENT_SECRET;
     assert.deepEqual(todoTasks(), []);

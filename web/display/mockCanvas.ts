@@ -1,5 +1,5 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
-// the welcome flow use them): starter (default), kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family,
+// the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family,
 // household, look, values, ink, places, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
@@ -41,6 +41,19 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'nav.button', pos: M(18, 10, 'row'), props: { target: 's_photos', icon: '🖼️' } },
       { kind: 'nav.progress', pos: M(6, 12, 'w'), props: { style: 'bar' } },
       { kind: 'nav.button', pos: B(18, 12, 6, 4), props: { target: 's_agenda', label: 'Agenda', icon: '📅', show: 'both' } },
+    ],
+  },
+  // four to-do cards, each with its own lists, title, icon and filter (core todoCore.js; mock.ts adds the demo To Do
+  // lists): one list with its name as the title, the typed tasks and a second list under a title of its own, the
+  // tasks due today or before, the starred ones
+  todos: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: B(0, 0, 8, 4) },
+      { kind: 'todo', pos: B(0, 4, 8, 12), props: { listIds: ['tl_demo_shop'], icon: '🛒', maxRows: 8 } },
+      { kind: 'todo', pos: B(8, 0, 8, 16), props: { listIds: ['local', 'tl_demo_home'], title: 'Home', icon: '🧹', maxRows: 10 } },
+      { kind: 'todo', pos: B(16, 0, 8, 8), props: { filter: 'due', icon: '📌' } },
+      { kind: 'todo', pos: B(16, 8, 8, 8), props: { filter: 'important', showDone: false } },
     ],
   },
   starter: {

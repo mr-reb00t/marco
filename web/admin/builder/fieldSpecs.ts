@@ -53,7 +53,9 @@ export type Spec =
   /** a small heading over the fields that follow */
   | { type: 'group'; label: string }
   /** a Rotativa's cards: each with its own kind and options (RotatorFields.tsx) */
-  | { type: 'rotatorCards' };
+  | { type: 'rotatorCards' }
+  /** a to-do card's lists, title, icon and which tasks (components/TodoViewFields.tsx, core todoCore.js) */
+  | { type: 'todoView' };
 
 /** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
 const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
@@ -188,6 +190,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { type: 'note', text: 'El texto se escribe en la sección Mensaje.', go: { label: 'Ir a Mensaje', route: 'message' } },
   ],
   todo: [
+    { type: 'todoView' },
     { k: 'maxRows', type: 'num', label: 'Filas como mucho', min: 1, max: 12, unit: 'n' },
     { k: 'showDone', type: 'bool', label: 'Mostrar las hechas' },
     { type: 'note', text: 'Las tareas se escriben en la sección Tareas.', go: { label: 'Ir a Tareas', route: 'todo' } },

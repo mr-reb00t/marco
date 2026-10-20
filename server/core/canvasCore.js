@@ -6,6 +6,7 @@ import { enabledWindows, nextWindowBoundary, windowState } from './schedules.js'
 import { cardErrorText, checkCard, cssProblem } from './cardTemplate.js';
 import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
 import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
+import { defaultTodoView, sanitizeTodoView } from './todoCore.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
@@ -614,10 +615,16 @@ export const CANVAS_KINDS = {
     defaults: () => ({ align: 'center' }),
     props: (c, p, x) => ({ align: P.oneOf(c, `${p}.align`, x.align, 'center', ['left', 'center']) }),
   },
+  // each card picks its lists, its title, its icon and which tasks (#15, todoCore.js), so a screen may show "Shopping"
+  // and "Chores" side by side
   todo: {
-    cat: 'content', sizes: ['s', 't', 'm'], def: 't', cells: [3, 2, 8, 8], side: true, edition: 'all',
-    defaults: () => ({ maxRows: 6, showDone: true }),
-    props: (c, p, x) => ({ maxRows: P.num(c, `${p}.maxRows`, x.maxRows, 6, 1, 12), showDone: P.bool(c, `${p}.showDone`, x.showDone, true) }),
+    cat: 'content', sizes: ['s', 't', 'm'], def: 't', cells: [3, 2, 8, 8], side: true, edition: 'all', perScreen: 4,
+    defaults: () => ({ maxRows: 6, showDone: true, ...defaultTodoView() }),
+    props: (c, p, x, refs) => ({
+      maxRows: P.num(c, `${p}.maxRows`, x.maxRows, 6, 1, 12),
+      showDone: P.bool(c, `${p}.showDone`, x.showDone, true),
+      ...sanitizeTodoView(x, (path, m) => c.err(path, m), p, refs?.todoListIds ?? null),
+    }),
   },
   news: {
     cat: 'content', sizes: ['w', 'm', 'l'], def: 'w', cells: [4, 2, 12, 8], side: true, edition: 'all',

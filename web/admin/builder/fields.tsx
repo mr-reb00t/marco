@@ -1,6 +1,6 @@
 // Inspector, Contenido tab: draws the options of each kind (fieldSpecs.ts) as one small form.
 import { RotatorCards } from './RotatorFields';
-import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, WidgetDef } from '../../shared/types';
+import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, TodoList, WidgetDef } from '../../shared/types';
 import { ColorPicker, EmojiPicker, Field, NumberInput, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { HaEntitySelect } from '../components/HaEntityPicker';
 import { CANVAS_KINDS, NAV_ICONS, TILE_FEATURES } from '../../../server/core/canvasCore.js';
@@ -14,6 +14,7 @@ import { ValueKeyInput } from './ValueKeyInput';
 import { CoinsField, FollowField, PairsField, StocksKeyField, SymbolsField } from './DataPickers';
 import { PlaceChoice, PlaceList } from '../components/PlaceSearch';
 import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
+import { TodoViewFields } from '../components/TodoViewFields';
 
 export interface FieldEnv {
   /** the kinds this server offers (a Rotativa picks its cards among them) */
@@ -27,6 +28,8 @@ export interface FieldEnv {
   screens?: { id: string; name: string }[];
   screenId?: string;
   members: FamilyMember[];
+  /** the Microsoft To Do lists of the household (config todo.lists): the to-do card picks among them */
+  todoLists?: TodoList[];
   widgets: WidgetDef[];
   go: (route: string) => void;
   /** Home Assistant is on (and this is not Marco Cloud): entities can be picked */
@@ -334,6 +337,7 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
           );
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
         if (s.type === 'rotatorCards') return <RotatorCards item={item} env={env} put={put} />;
+        if (s.type === 'todoView') return <TodoViewFields value={p} lists={env.todoLists ?? []} onChange={(k, v, merge) => put(k, v, merge ? `${item.id}.${k}` : undefined)} />;
         if (s.type === 'note')
           return (
             <p class="muted small bld-note">

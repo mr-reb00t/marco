@@ -140,7 +140,9 @@ color de la foto, transparencia, desenfoque y borde de luz:
   pequeña. Cada pantalla puede mostrar el tiempo de su propio lugar, y una pantalla personalizada, varios lugares a la
   vez. También tu propia entidad de tiempo y sensores interiores de [Home Assistant](https://www.home-assistant.io/);
   lluvia/nieve animadas.
-- **Teletipo de noticias** desde cualquier fuente RSS/Atom, una lista de tareas y un mensaje del día.
+- **Teletipo de noticias** desde cualquier fuente RSS/Atom, una lista de tareas y un mensaje del día. Cada tarjeta de
+  tareas elige sus listas, su título, un icono y qué tareas muestra (todas, las importantes o las que vencen hoy), así
+  que una pantalla puede tener *Compra* y *Casa* una al lado de la otra; las pantallas clásicas lo eligen en Tareas.
 - **Precio de la luz:** un widget con el precio del mercado diario de tu zona (casi toda Europa): gráfica de hoy y
   mañana, el precio de ahora, las horas más baratas que quedan o las próximas 24 horas, con tus peajes e IVA (en
   Dinamarca, la tarifa de tu compañía de red hora a hora; en cualquier país, tus tramos horarios). Mira

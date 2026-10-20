@@ -9,7 +9,7 @@ import type { ChoreSlot, DisplayConfig, FamilyChoreView, FamilyDisplayState, Fam
 import { addDays, formatDateLine, formatTime, relativeDayLabel, weekdayName } from '../../shared/i18n';
 import { qrSvg } from '../../shared/qr';
 import { chipColors } from '../color';
-import { todoMetaHtml } from './extras';
+import { todoHeadOf, todoItemsOf, todoMetaHtml } from './extras';
 import { ctx } from '../ctx';
 import { esc, setHTML } from '../dom';
 import { isPreview, mediaUrl, withScreen } from '../identity';
@@ -498,12 +498,11 @@ export class Kids {
       const rows = mealRowsHtml(meals, today);
       side.push(card('kf-meals', '🍽️', t('kidsMealsToday'), rows.length ? `<div class="kf-list">${rows.join('')}</div>` : `<div class="kf-none">${esc(t('kidsNoMealsDay'))}</div>`));
     }
-    const todo = ctx.cfg.todo;
-    const items = (todo.items || []).filter((i) => i.text?.trim());
-    if (todo.enabled && items.length) {
-      const sorted = [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
+    const sorted = todoItemsOf(ctx.cfg);
+    if (ctx.cfg.todo.enabled && sorted.length) {
       const rows = sorted.map((i) => `<div class="kf-task${i.done ? ' is-done' : ''}"><span class="k-check">${i.done ? CHECK : ''}</span><span>${esc(i.text)}</span>${todoMetaHtml(i)}</div>`);
-      side.push(card('kf-tasks', '✅', t('kidsTasks'), `<div class="kf-list">${rows.join('')}</div><div class="kf-more"></div>`));
+      const head = todoHeadOf(ctx.cfg, t('kidsTasks'));
+      side.push(card('kf-tasks', esc(head.icon), head.title, `<div class="kf-list">${rows.join('')}</div><div class="kf-more"></div>`));
     }
     if (f) {
       const rows = rewardRowsHtml(f);

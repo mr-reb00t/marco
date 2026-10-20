@@ -135,7 +135,9 @@ transparency, blur and a light edge:
   Each screen can show the weather of its own place, and a Custom screen can show several places at once.
   Add your own [Home Assistant](https://www.home-assistant.io/) weather entity and indoor sensors; animated rain/snow, or an optional
   realistic effect with drops on the glass, layered snow and sun rays on clear days (the photo is never blurred).
-- **News ticker** from any RSS/Atom feed, a to-do list and a message of the day.
+- **News ticker** from any RSS/Atom feed, a to-do list and a message of the day. Each to-do card picks its lists, its
+  title, an icon and which tasks (all, the important ones, or those due today), so one screen can show *Shopping* and
+  *Chores* side by side; classic screens set the same on the To-do page.
 - **Electricity price:** a widget with the day-ahead price of your bidding zone (most of Europe): a chart of today
   and tomorrow, the price now, the cheapest hours ahead or the next 24 hours, with your own grid fees and VAT (in
   Denmark, your grid company's tariff hour by hour; in any country, your own time bands). See

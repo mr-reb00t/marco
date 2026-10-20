@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-10-20
+
+### Added
+- Each to-do card has its own settings: which lists (all of them, or some of *Tasks typed in Marco* and the Microsoft
+  To Do lists, shown with their account in the editor), a title (the usual one, the list's name when there is one
+  list, or your own), an icon, and which tasks (all, only the important ones, or only those due today or overdue).
+  A *Personalizado* screen can show up to four to-do cards, for example *Shopping* and *Chores* side by side. Classic
+  screens get the same settings on the To-do page (#15).
+
 ## [0.17.1] - 2026-10-20
 
 ### Fixed

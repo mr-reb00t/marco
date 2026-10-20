@@ -590,6 +590,25 @@ export interface TodoItem {
   important?: boolean;
   /** Display config only: a touch screen may tick it (POST /api/display/todo/toggle) */
   tick?: boolean;
+  /** Display config only: the list it comes from, 'local' (typed in Marco) or a todo.lists id (tl_...) */
+  list?: string;
+}
+
+/** Which tasks a to-do surface shows (server/core/todoCore.js): all, the starred ones, the ones due today or before. */
+export type TodoFilter = 'all' | 'important' | 'due';
+
+/**
+ * What one to-do surface shows (#15): the to-do part of a screen (screen.todo) or a to-do card on a Personalizado
+ * screen (its props). server/core/todoCore.js validates and applies it.
+ */
+export interface TodoView {
+  /** 'local' (the typed tasks) and todo.lists ids; null = every list */
+  listIds: string[] | null;
+  /** '' = "Tareas", or the list's name when there is one list */
+  title: string;
+  /** an emoji before the title ('' = the usual one) */
+  icon: string;
+  filter: TodoFilter;
 }
 
 /** A Microsoft To Do list shown on the to-do list (config todo.lists). Its tasks are read by the server. */
@@ -602,13 +621,15 @@ export interface TodoList {
   enabled: boolean;
 }
 
-export interface TodoConfig {
+export interface TodoConfig extends Partial<TodoView> {
   enabled: boolean;
   items: TodoItem[];
   /** Microsoft To Do lists (admin config; never in the display config, which gets their tasks in `items`) */
   lists?: TodoList[];
   /** Display config only: tasks with `tick` may be ticked by touching this screen */
   touch?: boolean;
+  /** Display config only: the names of the lists this screen's headings use (todo.lists id → name) */
+  listNames?: Record<string, string>;
 }
 
 export interface MessageConfig {
@@ -2194,7 +2215,8 @@ export interface ScreenProfile {
   datetime: Omit<DateTimeConfig, 'timezone'>;
   weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { enabled: boolean; rotateSec: number };
-  todo: { enabled: boolean };
+  /** older servers: only `enabled` */
+  todo: { enabled: boolean } & Partial<TodoView>;
   message: MessageConfig;
   countdowns: ScreenCountdownsConfig;
   alerts: ScreenAlertsConfig;

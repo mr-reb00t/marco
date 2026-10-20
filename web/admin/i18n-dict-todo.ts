@@ -53,6 +53,49 @@ const ROWS: [string, string, string, string, string][] = [
   ],
   ['Tarea hecha: {task}', 'Task done: {task}', 'Tarefa feita: {task}', 'Taak gedaan: {task}', 'Opgave udført: {task}'],
   ['Tarea desmarcada: {task}', 'Task unticked: {task}', 'Tarefa desmarcada: {task}', 'Taak niet meer afgevinkt: {task}', 'Opgave ikke længere udført: {task}'],
+  // what one to-do surface shows (components/TodoViewFields.tsx)
+  ['Listas', 'Lists', 'Listas', 'Lijsten', 'Lister'],
+  ['Tareas escritas en Marco', 'Tasks typed in Marco', 'Tarefas escritas no Marco', 'Taken getypt in Marco', 'Opgaver skrevet i Marco'],
+  ['Lista sin nombre', 'Unnamed list', 'Lista sem nome', 'Lijst zonder naam', 'Liste uden navn'],
+  [
+    'Las listas de Microsoft To Do se eligen en la sección Tareas.',
+    'Microsoft To Do lists are picked on the To-do page.',
+    'As listas do Microsoft To Do escolhem-se na secção Tarefas.',
+    'Microsoft To Do-lijsten kies je op de pagina Taken.',
+    'Microsoft To Do-lister vælges på siden Opgaver.',
+  ],
+  [
+    'Vacío: «Tareas», o el nombre de la lista cuando eliges solo una.',
+    'Empty: "To-do", or the name of the list when you pick only one.',
+    'Vazio: «Tarefas», ou o nome da lista quando escolhes só uma.',
+    'Leeg: "Taken", of de naam van de lijst als je er maar één kiest.',
+    'Tom: "Opgaver", eller listens navn, når du kun vælger én.',
+  ],
+  ['Sin icono: ✅.', 'No icon: ✅.', 'Sem ícone: ✅.', 'Geen pictogram: ✅.', 'Intet ikon: ✅.'],
+  ['Qué tareas', 'Which tasks', 'Que tarefas', 'Welke taken', 'Hvilke opgaver'],
+  ['Importantes', 'Important', 'Importantes', 'Belangrijk', 'Vigtige'],
+  ['Para hoy', 'Due today', 'Para hoje', 'Voor vandaag', 'Til i dag'],
+  [
+    '«Para hoy»: las que vencen hoy o ya vencieron. Las tareas escritas en Marco no tienen estrella ni fecha, así que solo salen con «Todas».',
+    '"Due today": the ones due today or overdue. Tasks typed in Marco have no star and no date, so they only show with "All".',
+    '«Para hoje»: as que vencem hoje ou já venceram. As tarefas escritas no Marco não têm estrela nem data, por isso só aparecem com «Todas».',
+    '"Voor vandaag": de taken die vandaag of eerder moesten. Taken getypt in Marco hebben geen ster en geen datum, dus ze staan er alleen bij "Alle".',
+    '"Til i dag": dem med frist i dag eller tidligere. Opgaver skrevet i Marco har ingen stjerne og ingen dato, så de vises kun med "Alle".',
+  ],
+  [
+    'Qué listas y qué tareas muestra la lista de tareas de esta pantalla, con su título.',
+    'Which lists and which tasks the to-do list of this screen shows, and its title.',
+    'Que listas e que tarefas mostra a lista de tarefas deste ecrã, e o seu título.',
+    'Welke lijsten en welke taken de takenlijst van dit scherm toont, en de titel.',
+    'Hvilke lister og hvilke opgaver denne skærms opgaveliste viser, og dens titel.',
+  ],
+  [
+    'En una pantalla Personalizado, cada tarjeta de tareas tiene estos ajustes en el editor. Puedes poner varias, por ejemplo «Compra» y «Casa».',
+    'On a Custom screen each to-do card has these settings in the editor. You can add several, for example "Shopping" and "Chores".',
+    'Num ecrã Personalizado, cada cartão de tarefas tem estas definições no editor. Podes pôr vários, por exemplo «Compras» e «Casa».',
+    'Op een Aangepast scherm heeft elke takenkaart deze instellingen in de editor. Je kunt er meerdere zetten, bijvoorbeeld "Boodschappen" en "Huishouden".',
+    'På en Tilpasset skærm har hvert opgavekort disse indstillinger i editoren. Du kan sætte flere, for eksempel "Indkøb" og "Huset".',
+  ],
 ];
 
 export const ROWS_TODO: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

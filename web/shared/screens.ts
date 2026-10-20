@@ -9,7 +9,7 @@ export const SCREEN_SPLIT_KEYS = {
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
-  todo: ['enabled'],
+  todo: ['enabled', 'listIds', 'title', 'icon', 'filter'],
   countdowns: ['enabled', 'max'],
   family: ['memberIds', 'touch', 'showQr'],
 } as const;

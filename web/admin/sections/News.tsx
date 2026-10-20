@@ -8,6 +8,7 @@ import { Button, Callout, Card, EmojiPicker, Empty, Field, NumberInput, PageHead
 import { ScopeBadge } from '../components/ui';
 import { atLimit, has } from '../caps';
 import { LimitNote } from '../components/LimitNote';
+import { TodoViewFields } from '../components/TodoViewFields';
 import { t } from '../i18n';
 import { isHttpUrl, moveItem, uid } from '../util';
 import type { SectionProps } from './common';
@@ -319,6 +320,13 @@ export function TodoSection(props: SectionProps) {
         )}
       </Card>
       {has('microsoftCalendar') && !!me.microsoftConfigured && <MicrosoftTodoCard {...props} />}
+      <Card scope="screen" id="todo-screen" title={t('En esta pantalla')} icon="checklist" desc={t('Qué listas y qué tareas muestra la lista de tareas de esta pantalla, con su título.')}>
+        {cfg.layout.preset === 'canvas' ? (
+          <p class="muted small">{t('En una pantalla Personalizado, cada tarjeta de tareas tiene estos ajustes en el editor. Puedes poner varias, por ejemplo «Compra» y «Casa».')}</p>
+        ) : (
+          <TodoViewFields value={td} lists={td.lists ?? []} onChange={(k, v) => set((d) => void Object.assign(d.todo, { [k]: v }))} />
+        )}
+      </Card>
     </>
   );
 }

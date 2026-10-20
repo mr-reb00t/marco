@@ -5,7 +5,8 @@ import { SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS, LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_
 import { displayPrivacy } from './privacy.js';
 import { showsFamilyQr } from './familyCore.js';
 import { carouselBlock } from './carousels.js';
-import { canvasWidgetIds, projectCanvas } from './canvasCore.js';
+import { canvasCards, canvasWidgetIds, projectCanvas } from './canvasCore.js';
+import { LOCAL_TODO_LIST, todoListNames, todoViews } from './todoCore.js';
 
 /** Default screen profile (cfg.defaultScreen, falling back to the first one). */
 export function defaultScreen(cfg) {
@@ -192,8 +193,15 @@ export function displayConfig(cfg, screen, { privacy = null, carousel = null, fa
     weather,
     news: { enabled: f.news.enabled, rotateSec: f.news.rotateSec },
     // touch: Microsoft To Do tasks with `tick` may be marked done by touching this screen (its touch setting, the one
-    // routines use; never while private or on a display that may not tap)
-    todo: { enabled: f.todo.enabled, items: [...f.todo.items, ...todoTasks], touch: todoTouch(screen, priv.active, trusted) && todoTasks.some((x) => x.tick) },
+    // routines use; never while private or on a display that may not tap). Each item says its list (core/todoCore.js);
+    // listIds, title, icon and filter are the screen's own to-do settings, listNames the names its headings use.
+    todo: {
+      enabled: f.todo.enabled,
+      items: [...f.todo.items.map((i) => ({ ...i, list: LOCAL_TODO_LIST })), ...todoTasks],
+      touch: todoTouch(screen, priv.active, trusted) && todoTasks.some((x) => x.tick),
+      listIds: f.todo.listIds ?? null, title: f.todo.title ?? '', icon: f.todo.icon ?? '', filter: f.todo.filter ?? 'all',
+      listNames: todoListNames(cfg, todoViews(screen, screen.layout?.preset === 'canvas' ? canvasCards(screen.canvas?.items) : [])),
+    },
     message: f.message,
     countdowns: { enabled: f.countdowns.enabled, max: f.countdowns.max },
     alerts: f.alerts,

@@ -191,6 +191,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       screens: (full.screens ?? []).map((x) => ({ id: x.id, name: x.name })),
       screenId,
       members: cfg.family?.members ?? [],
+      todoLists: cfg.todo?.lists ?? [],
       widgets: (full.widgets ?? []).filter((w) => !(cloud && w.type === 'web')),
       go: (r: string) => goRef.current(r),
       ha: !cloud && !!full.homeassistant?.enabled,

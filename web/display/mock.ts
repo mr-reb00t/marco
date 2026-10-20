@@ -10,6 +10,7 @@ import { DEFAULT_ICON_RULES, resolveEventStyle } from '../shared/emoji';
 import { addDays, dateKeyInTz, keyToUTC, normLang, pad2, startOfWeek, zonedParts } from '../shared/i18n';
 import { DEMO_FAMILY_EN, DEMO_NEWS, DEMO_NL_DA } from './mock-text';
 import { DEFAULT_CONFIG, deepMerge } from './defaults';
+import { now } from './time';
 import { DEMO_WIDGET, mockCanvas } from './mockCanvas';
 import { SHOW_ACTIVE, SHOW_CAROUSEL, SHOW_CAROUSEL_STEPS, SHOWCASES, showCountdowns, showcaseOf, showPhoto } from './showcase';
 
@@ -57,6 +58,27 @@ export const MOCK_SOURCES: PublicCalendarSource[] = [
   { id: 'c_hol', name: L('Public holidays', 'Festivos', 'Feriados'), color: '#ffd23f', emoji: '🎉', kind: 'holidays' },
   { id: 'c_work', name: L('Work', 'Trabajo', 'Trabalho'), color: '#9b5de5', emoji: '', kind: 'generic' },
 ];
+
+/**
+ * Two made-up Microsoft To Do lists with their tasks, as the server sends them (each task says its list, core
+ * todoCore.js), for the to-do cards of &shot=todos (and ?todolists=1 on any layout). Due days around today.
+ */
+function addDemoTodoLists(cfg: DisplayConfig): void {
+  const today = dateKeyInTz(now(), TZ);
+  const day = (n: number) => addDays(today, n);
+  const shop = 'tl_demo_shop';
+  const home = 'tl_demo_home';
+  cfg.todo.items = [
+    ...cfg.todo.items.map((i) => ({ ...i, list: 'local' })),
+    { id: 'ms_demo_1', list: shop, text: L('Milk', 'Leche', 'Leite'), done: false, important: true },
+    { id: 'ms_demo_2', list: shop, text: L('Bread', 'Pan', 'Pão'), done: false, due: day(0) },
+    { id: 'ms_demo_3', list: shop, text: L('Coffee beans', 'Café en grano', 'Café em grão'), done: false, due: day(3) },
+    { id: 'ms_demo_4', list: home, text: L('Water the plants', 'Regar las plantas', 'Regar as plantas'), done: false, due: day(-1) },
+    { id: 'ms_demo_5', list: home, text: L('Take out the recycling', 'Bajar el reciclaje', 'Levar a reciclagem'), done: false, due: day(1) },
+    { id: 'ms_demo_6', list: home, text: L('Fix the bathroom shelf', 'Arreglar la balda del baño', 'Arranjar a prateleira da casa de banho'), done: false, important: true },
+  ];
+  cfg.todo.listNames = { [shop]: L('Shopping', 'Compra', 'Compras'), [home]: L('Chores', 'Casa', 'Casa') };
+}
 
 /** The demo screen; `show`: that showcase screen (a step of the showcase carousel) instead of &preset= and &shot=. */
 export function mockConfig(show?: string): DisplayConfig {
@@ -169,6 +191,7 @@ export function mockConfig(show?: string): DisplayConfig {
     // &touch=0 (or a private screen): no taps on the navigation cards, no swipe (as the server would send it)
     if (q.get('touch') === '0' || PRIVATE) cfg.canvas = { ...cfg.canvas, touch: false, taps: false, swipe: false };
     if (q.get('todo') !== '0') cfg.todo.enabled = true;
+    if (shot === 'todos') addDemoTodoLists(cfg);
     if (q.get('msg') !== '0') cfg.message.enabled = true;
     // a showcase screen: its own to-do list, note and theme (web/display/showcase/)
     const show = shot ? SHOWCASES[shot] : undefined;
@@ -194,6 +217,14 @@ export function mockConfig(show?: string): DisplayConfig {
     cfg.calendar.weeks = 'auto';
     cfg.calendar.eventStyle = 'cards';
   }
+  // ?todolists=1: the demo To Do lists on any layout; &todoids=a,b &todotitle= &todoicon= &todofilter=: the screen's
+  // own to-do settings (classic layouts)
+  if (q.get('todolists') === '1' && q.get('shot') !== 'todos') addDemoTodoLists(cfg);
+  if (q.get('todoids')) cfg.todo.listIds = q.get('todoids')!.split(',');
+  if (q.get('todotitle')) cfg.todo.title = q.get('todotitle')!;
+  if (q.get('todoicon')) cfg.todo.icon = q.get('todoicon')!;
+  const tf = q.get('todofilter');
+  if (tf === 'important' || tf === 'due') cfg.todo.filter = tf;
   return cfg;
 }
 

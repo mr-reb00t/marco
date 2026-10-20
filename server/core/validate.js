@@ -21,6 +21,7 @@ import {
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
 import { currencyProps, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
+import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
 } from './pricesCore.js';
@@ -383,7 +384,11 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     rotateSec: num(ctx, `${p}.news.rotateSec`, ne.rotateSec, D.news.rotateSec, 3, 600, true),
   };
   const td = obj(ctx, `${p}.todo`, x.todo);
-  const todo = { enabled: bool(ctx, `${p}.todo.enabled`, td.enabled, D.todo.enabled) };
+  // its lists, title, icon and which tasks (core/todoCore.js; a removed list is dropped, none left = every list)
+  const todo = {
+    enabled: bool(ctx, `${p}.todo.enabled`, td.enabled, D.todo.enabled),
+    ...sanitizeTodoView(td, (path, m) => ctx.err(path, m), `${p}.todo`, canvasRefs.todoListIds ?? null),
+  };
   const ms = obj(ctx, `${p}.message`, x.message);
   const message = {
     enabled: bool(ctx, `${p}.message.enabled`, ms.enabled, D.message.enabled),
@@ -416,6 +421,7 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
   const pool = calendar.sourceIds ? calendar.sourceIds.filter((s) => !known || known.has(s)) : known ? [...known] : null;
   const canvas = sanitizeCanvas(ctx, `${p}.canvas`, x.canvas, {
     sourceIds: pool ? new Set(pool) : null, widgets: canvasRefs.widgets ?? new Map(), memberIds: new Set(familyMemberIds),
+    todoListIds: canvasRefs.todoListIds ?? null,
   }, opts);
   // the Personalizado layout is a Modern design (there is no Classic one)
   if (layout.preset === 'canvas') screen.style = 'modern';
@@ -1002,6 +1008,8 @@ export function validateConfig(input, opts = {}) {
   const canvasRefs = {
     sourceIds: new Set([...RESERVED_SOURCE_IDS, ...calendar.sources.map((s) => s.id)]),
     widgets: new Map(widgets.map((w) => [w.id, w])),
+    // the lists a to-do card or a screen's to-do part may pick (the typed tasks and every todo.lists entry)
+    todoListIds: todoListIds({ todo }),
   };
 
   // ---- F1 screens

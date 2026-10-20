@@ -51,7 +51,13 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
   }
   if (item.kind === 'news') cfg.news = { ...screen.news, enabled: true, rotateSec: Math.min(60, Math.max(5, Number(p.rotateSec) || 15)) };
   if (item.kind === 'countdowns') cfg.countdowns = { ...(screen.countdowns ?? { enabled: true, max: 4 }), enabled: true, max: Math.min(6, Math.max(1, Number(p.max) || 4)) };
-  if (item.kind === 'todo') cfg.todo = { ...screen.todo, enabled: true };
+  // a to-do card's own lists, title, icon and filter (core todoCore.js), in place of the screen's
+  if (item.kind === 'todo') {
+    cfg.todo = {
+      ...screen.todo, enabled: true, listIds: Array.isArray(p.listIds) ? (p.listIds as string[]) : null, title: typeof p.title === 'string' ? p.title : '',
+      icon: typeof p.icon === 'string' ? p.icon : '', filter: p.filter === 'important' || p.filter === 'due' ? p.filter : 'all',
+    };
+  }
   if (item.kind === 'message') cfg.message = { ...screen.message, enabled: true };
   return cfg;
 }

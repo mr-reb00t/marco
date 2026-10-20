@@ -159,7 +159,7 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
   const overlap = (a, b) => a.x < b.x + b.w - 1 && b.x < a.x + a.w - 1 && a.y < b.y + b.h - 1 && b.y < a.y + a.h - 1;
 
   for (const [shot, n, size] of [
-    ['starter', 5], ['kinds', 8], ['sidebar', 8], ['dense', 24], ['home', 8], ['ha', 10], ['controls', 11], ['features', 11], ['binary', 20], ['data', 7], ['cameras', 6], ['html', 5], ['values', 9], ['clocks', 5], ['calendars', 2], ['media', 6],
+    ['starter', 5], ['todos', 5], ['kinds', 8], ['sidebar', 8], ['dense', 24], ['home', 8], ['ha', 10], ['controls', 11], ['features', 11], ['binary', 20], ['data', 7], ['cameras', 6], ['html', 5], ['values', 9], ['clocks', 5], ['calendars', 2], ['media', 6],
     ['portrait', 5, { width: 1080, height: 1920 }],
   ]) {
     test(`${shot}: ${n} cards on the grid, none overlapping, nothing outside its area, no page error`, async () => {

@@ -1,6 +1,7 @@
 import ICON_RULES from './iconRules.js';
 import { defaultFamily, defaultScreenFamily } from './familyCore.js';
 import { defaultCanvas } from './canvasCore.js';
+import { defaultTodoView } from './todoCore.js';
 
 // Default configuration (created on first run, and used to back-fill missing keys on load).
 // Icon rules are shared with the admin and display (server/core/iconRules.js).
@@ -29,7 +30,8 @@ export const SCREEN_SPLIT_KEYS = {
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
-  todo: ['enabled'],
+  // the to-do part of the screen (#15, core/todoCore.js): its lists, title, icon and which tasks
+  todo: ['enabled', 'listIds', 'title', 'icon', 'filter'],
   countdowns: ['enabled', 'max'],
   // who appears on this screen (null = everyone), checking routines off by touching it, the QR of the family page
   family: ['memberIds', 'touch', 'showQr'],
@@ -109,7 +111,7 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
     // (core/weatherPlaces.js): every layout of the screen and its carousel steps show the weather of that place
     weather: { enabled: true, forecastDays: 5, showHourly: true, showPrecipChance: true, place: null },
     news: { enabled: true, rotateSec: 15 },
-    todo: { enabled: false },
+    todo: { enabled: false, ...defaultTodoView() },
     message: { enabled: false, text: '', emoji: '💬' },
     countdowns: { enabled: true, max: 4 },
     alerts: { enabled: true, sound: true, volume: 0.6 },

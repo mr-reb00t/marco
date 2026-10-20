@@ -14,7 +14,7 @@ import { sourceCredit } from './weather';
 import type { Tick } from '../time';
 import { Clock } from './clock';
 import { upcomingCountdowns } from './countdowns';
-import { todoMetaHtml } from './extras';
+import { todoHeadOf, todoItemsOf, todoMetaHtml } from './extras';
 
 export const VIEW_PRESETS = ['today', 'people', 'photoFrame', 'board', 'bedside'];
 
@@ -494,13 +494,14 @@ export class Views {
     }
 
     // to-do
-    const items = (cfg.todo.items || []).filter((i) => i.text?.trim());
-    if (cfg.todo.enabled && items.length) {
-      const sorted = [...items.filter((i) => !i.done), ...items.filter((i) => i.done)];
+    // (the screen's lists, title, icon and filter: todoItemsOf)
+    const sorted = todoItemsOf(cfg);
+    if (cfg.todo.enabled && sorted.length) {
       const open = sorted.filter((i) => !i.done).length;
       const rows = sorted.map((i) => `<div class="bd-row bd-task${i.done ? ' done' : ''}"><span class="bd-check">${i.done ? '✓' : ''}</span><span class="bd-tt">${esc(i.text)}</span>${todoMetaHtml(i)}</div>`);
       if (!open) rows.unshift(`<div class="bd-none">${esc(t('allDone'))} 🎉</div>`);
-      card('todo', '✅', t('todo'), rowsHtml(rows), 1 + rows.length);
+      const head = todoHeadOf(cfg, t('todo'));
+      card('todo', esc(head.icon), head.title, rowsHtml(rows), 1 + rows.length);
     }
 
     // countdowns (birthdays get their own card)

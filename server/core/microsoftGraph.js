@@ -307,14 +307,16 @@ export function todoItems(tasks) {
 }
 
 /**
- * A cached task as the display sees it: { id, text, done, due?, important?, tick? }. `id` is the opaque id the server
- * made for it (ms_...), `tick` that a touch screen may mark it done (the account granted Tasks.ReadWrite).
+ * A cached task as the display sees it: { id, text, done, due?, important?, tick?, list? }. `id` is the opaque id the
+ * server made for it (ms_...), `tick` that a touch screen may mark it done (the account granted Tasks.ReadWrite),
+ * `list` the id of its todo.lists entry (tl_..., a Marco id: the to-do cards pick their lists by it, core/todoCore.js).
  */
-export function displayTodoItem(it, id, tick) {
+export function displayTodoItem(it, id, tick, list = '') {
   const out = { id, text: it.text, done: it.done === true };
   if (it.due) out.due = it.due;
   if (it.important) out.important = true;
   if (tick) out.tick = true;
+  if (list) out.list = list;
   return out;
 }
 
