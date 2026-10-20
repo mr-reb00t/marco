@@ -109,20 +109,35 @@ describe('every kind follows its text size on screen', { skip: !chrome && 'no Ch
     return max ? { px: max, cramped: card.classList.contains('is-cramped') } : null;
   })()`;
 
+  // A background tab is hidden and runs no animation frames, so a card fitted in a frame (canvas.ts relayoutSoon, the
+  // demo announcement that arrives late) would never grow there: each page is brought to the front while it settles
+  // and is measured, one page at a time (the pages still load side by side).
+  let front = Promise.resolve();
+  const inFront = (p, fn) => {
+    const run = front.then(async () => {
+      await p.send('Page.bringToFront');
+      return fn();
+    });
+    front = run.catch(() => {});
+    return run;
+  };
+
   const measure = async (kind, scale) => {
     const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=${shotOf(kind)}&cvscale=${scale}&now=2026-10-14T10:43`, { width: 1920, height: 1080 });
     try {
       await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1200)))');
-      // measured once the card has settled: on a slow machine its data (the demo's announcement) can arrive after the
-      // first second, and the card is fitted to its box again then; two equal readings half a second apart
-      let last = await p.eval(MEASURE(kind));
-      for (let i = 0; i < 30; i++) {
-        await new Promise((r) => setTimeout(r, 500));
-        const now = await p.eval(MEASURE(kind));
-        if (now && last && now.px === last.px && now.cramped === last.cramped) return now;
-        last = now;
-      }
-      return last;
+      return await inFront(p, async () => {
+        // measured once the card has settled: on a slow machine its data (the demo's announcement) can arrive after the
+        // first second, and the card is fitted to its box again then; two equal readings half a second apart
+        let last = await p.eval(MEASURE(kind));
+        for (let i = 0; i < 30; i++) {
+          await new Promise((r) => setTimeout(r, 500));
+          const now = await p.eval(MEASURE(kind));
+          if (now && last && now.px === last.px && now.cramped === last.cramped) return now;
+          last = now;
+        }
+        return last;
+      });
     } finally {
       await p.close();
     }

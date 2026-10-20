@@ -80,39 +80,9 @@ export async function launchChrome(bin = findChrome()) {
   });
   const http = wsUrl.replace(/^ws:/, 'http:').replace(/\/devtools\/browser\/.*$/, '');
 
-  // Each page in a window of its own: tabs of one window are hidden but for the front one, and a hidden page runs no
-  // animation frames, so a card fitted in a frame (canvas.ts relayoutSoon) would never be fitted again there. A
-  // screen is always visible; so is every page here.
-  let browserWs = null;
-  let browserReady = null;
-  let browserSeq = 0;
-  const browserWaiting = new Map();
-  const browserSend = async (method, params = {}) => {
-    // one connection to the browser, shared by the pages opened at the same time
-    browserReady ??= new Promise((res, rej) => {
-      browserWs = new WebSocket(wsUrl);
-      browserWs.onopen = res;
-      browserWs.onerror = rej;
-      browserWs.onmessage = (m) => {
-        const msg = JSON.parse(m.data);
-        const w = msg.id && browserWaiting.get(msg.id);
-        if (!w) return;
-        browserWaiting.delete(msg.id);
-        if (msg.error) w.rej(new Error(msg.error.message));
-        else w.res(msg.result);
-      };
-    });
-    await browserReady;
-    const id = ++browserSeq;
-    return new Promise((res, rej) => {
-      browserWaiting.set(id, { res, rej });
-      browserWs.send(JSON.stringify({ id, method, params }));
-    });
-  };
-
   async function page(url, { width = 1920, height = 1080 } = {}) {
-    const { targetId } = await browserSend('Target.createTarget', { url: 'about:blank', newWindow: true });
-    const target = { id: targetId, webSocketDebuggerUrl: `${wsUrl.replace(/\/devtools\/browser\/.*$/, '')}/devtools/page/${targetId}` };
+    const r = await fetch(`${http}/json/new?about:blank`, { method: 'PUT' });
+    const target = await r.json();
     const ws = new WebSocket(target.webSocketDebuggerUrl);
     await new Promise((res, rej) => {
       ws.onopen = res;
@@ -186,7 +156,6 @@ export async function launchChrome(bin = findChrome()) {
   return {
     page,
     close: async () => {
-      try { browserWs?.close(); } catch { /* already closed */ }
       // the process only: stopped by its own PID
       const exited = () => new Promise((r) => {
         if (proc.exitCode !== null || proc.signalCode !== null) return r(true);
