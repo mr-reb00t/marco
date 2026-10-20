@@ -77,7 +77,7 @@ describe('now playing in a browser', { skip: !chrome && 'no Chrome' }, () => {
     assert.equal(drawn.filter((c) => !c.art).length, 1, 'one card without its cover');
     const wide = drawn.find((c) => c.bar);
     assert.ok(wide, 'a card with the bar');
-    assert.equal(wide.times[0], '1:14');
+    assert.match(wide.times[0], /^1:1\d$/, 'where the demo track is (1:14 and on)');
     // nothing cut by its card's edge, nothing cramped
     const { out: fit } = await look('preset=canvas&shot=nowplaying', CHECK);
     const bad = fit.filter((c) => c.kind === 'nowplaying' && (c.cramped || c.cut.length));

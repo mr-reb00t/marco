@@ -289,11 +289,12 @@ export async function nowPlayingFor(ids) {
   return { items, next: nextPollSec(list, now) };
 }
 
-/** The admin's test: what an account plays now (a fresh read, unless one ran in the last 3 s). */
+/** The admin's test: what an account plays now (a fresh read, unless one ran in the last 3 s or a 429 asked to wait). */
 export async function testAccount(id) {
   if (!Object.hasOwn(accounts(), id)) return null;
+  // a fresh read, unless one ran in the last 3 s or Spotify asked for a pause (Retry-After)
   const e = entries.get(id);
-  if (e && clock() - e.at > 3000) entries.set(id, { ...e, until: 0 });
+  if (e && clock() - e.at > 3000 && !(e.error === 'rate_limited' && clock() < e.until)) entries.set(id, { ...e, until: 0 });
   const got = await entryOf(id);
   return { ok: !got?.error, item: displayItem(got, clock()), ...(got?.error ? { error: got.error } : {}) };
 }
