@@ -115,6 +115,10 @@ transparency, blur and a light edge:
 - **Family routines, stars and meals:** up to six people with an emoji or a photo and a colour, morning, afternoon and evening
   routines that earn stars, rewards to spend them on, and the meals of the week. Kids tick their routines on the TV
   (touch screens) or on a phone, from a QR code on the screen; see [Family: routines, stars and meals](#family-routines-stars-and-meals).
+- **A dashboard on each phone:** each person of the household can send a message to the screens, turn privacy mode
+  on or off, switch night or day mode, and add to-dos and events from their own phone, with only what you allow and
+  no admin password. They get in with a private link or a code shown on a screen; see
+  [Family access](#family-access-a-dashboard-on-each-phone).
 - **Glass options** for the Modern style, per screen: automatic (adapts to each photo), clear or tinted; transparency,
   blur, a dark, light or photo-coloured tint and a light edge, with a live preview in *Layout*.
 - **Automatic emoji:** 🎂 birthdays, ✈️ flights, 🩺 doctor, 🎒 school, ⚽ sports, 🍽️ dinners, 💼 meetings, 🏖️
@@ -570,6 +574,31 @@ Profile photos are stored in `data/avatars` and only reach the family page (with
 screens that show that person. A screen in privacy mode keeps the emoji. Exports include the photos. A photo you
 replace or remove, or the photo of someone you remove, is deleted a week later, so restoring a recent backup brings
 it back.
+
+### Family access: a dashboard on each phone
+
+*Family → Access → Family access* gives a person their own dashboard on the phone (`/my`), without the admin
+password. *Add person*, give a name (and pick the family member it is, for the avatar and colour) and tick what they
+may do:
+
+- send a message to the screens (all of them, or only the ones you choose); it shows as an announcement with their
+  name for 1 minute, 10 minutes or an hour
+- turn private mode on or off, on every screen at once
+- switch night, day or auto mode on every screen
+- add to-dos to the list typed in Marco
+- add events to the local calendar (a day, all day or at a time)
+
+Two ways in: the private link the admin shows once when the person is added (copy it or scan its QR code; *Create a
+new link* replaces it), or *Show a code*: pick a screen and it draws a 6 character code for two minutes, with a QR
+code. The person types the code at `/my` or scans the QR code. Either way the phone gets a token of its own, listed
+under the person, so one phone can be removed alone. *Remove person* stops their link, phones and codes at once.
+
+The phone only ever gets the person's name and the controls you allowed. Each action is checked again on the server,
+so a permission you take away counts from the next tap. Nobody with this access gets into the admin or sees
+calendars, photos or passwords. Messages, private mode changes, night mode, to-dos and events are in the activity log
+with the person's name. Tokens and links are stored as hashes in `secrets.json` (a code is only on its screen for its
+two minutes, and goes away once used); wrong links, tokens and codes are rate limited per address, and overall for
+clients outside your network. An export with private data keeps the people, their permissions and their phones.
 
 ## Custom screens
 
@@ -1235,6 +1264,7 @@ Back up the whole folder (or use *Export*) to keep everything.
 | `?compact=0\|1` `?weeks=1..8` | Turn off (or on) compact busy days: a day that cannot fit its events lists them as small one-line entries and the week rows share the height by how many events they have (*Calendars → Calendar view*); `?weeks=` shows that many weeks. With `?demo=1`, `&busy=2` fills the whole month |
 | `?style=modern&preset=kidsRoutines\|kidsFamily\|kidsMeals` | The kids layouts. With `?demo=1`: `&members=6`, `&touch=0`, `&qr=0`, `&stars=0`, `&meals=0`, `&snack=1` (four meals a day), `&todo=1`, `&famPrivacy=hide` (with `&private=1`) |
 | `/f/<key>` | The family page for phones (the key comes from *Family → Access*) |
+| `/my/<link>`, `/my` | A person's own dashboard on the phone (*Family → Access → Family access*) |
 | `?client=<name>` | Name of this device in *Connected displays* (the kiosk script sets it) |
 
 ## Security

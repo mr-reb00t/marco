@@ -49,6 +49,7 @@ import { connectStream, pollUrl } from './stream';
 import { current, freezeClock, onTick, setClockOffset, setTimezone, startTicker, type Tick } from './time';
 import { Agenda } from './widgets/agenda';
 import { Announcements, IdentifyOverlay, ScheduleBanners, serverNow, setServerNow } from './widgets/alerts';
+import { AccessCodeOverlay } from './widgets/accessCode';
 import { Countdowns } from './widgets/countdowns';
 import { DoorbellOverlay, type FrameSource } from './widgets/doorbell';
 import { mockDoorbellFrame, mockDoorbellRing } from './mockDoorbell';
@@ -119,6 +120,8 @@ const countdowns = new Countdowns($('#countdowns'), $('#cd-strip'));
 const schedules = new ScheduleBanners($('#sched'), $('#sched-strip'));
 const announcements = new Announcements($('#alerts'));
 const identify = new IdentifyOverlay($('#identify'));
+// family access: a code for a person's phone, for two minutes (widgets/accessCode.ts)
+const accessCode = new AccessCodeOverlay($('#access-code'));
 /** Doorbell frames: GET /api/display/doorbell/frame (a counter keeps every answer fresh), drawn ones in the demo.
  *  404 and lost access mean there is nothing more to show for this ring. */
 /** Screen that rings (a display on a carousel asks for that screen's frames, whichever screen is on display). */
@@ -2142,6 +2145,10 @@ function enterDemo(): void {
   if (params.get('identify') === '1') {
     setTimeout(() => identify.show({ durationSec: 600 }, { name: ctx.cfg.screen.name, slug: ctx.cfg.slug || 'living-room', clientId }), 900);
   }
+  // &accesscode=1 → a family access code for a made-up person, with its QR code
+  if (params.get('accesscode') === '1') {
+    setTimeout(() => accessCode.show({ id: 'demo', code: 'K7M2QX', name: 'Ana', expiresAt: new Date(serverNow() + 115_000).toISOString(), url: `${location.origin}/my` }), 900);
+  }
   // &doorbell=1 → doorbell ring with a drawn camera picture; &doorbell=nocam → a ring without a picture
   const db = params.get('doorbell');
   if (db) setTimeout(() => doorbell.show(mockDoorbellRing(db)), 900);
@@ -2386,6 +2393,8 @@ const liveHandlers: StreamHandlers = {
     setNightCommand(d.mode);
     heartbeat.soon();
   },
+  accessCode: (d) => accessCode.show(d),
+  accessCodeClear: (id) => accessCode.clear(id),
   // privacy mode turned on or off: new config (lock, photo source), filtered events and countdowns
   // (a carousel only refetches now when it is the screen on display; the others before they show)
   privacy: (d) => {

@@ -118,7 +118,8 @@ The admin and the display read these fields to decide which sections, actions an
   `status`, `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`,
   `carousels`, `immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings`,
   `screenBuilder`, `valueHooks` (`/api/hooks/values` and the Valor card), `tokenScopes` (scopes on API tokens),
-  `stockQuotes` (the Bolsa card can get quotes; Marco Cloud only when the service has a Finnhub key). A self-hosted server turns all of them on, except
+  `stockQuotes` (the Bolsa card can get quotes; Marco Cloud only when the service has a Finnhub key), `familyAccess`
+  (each person's own phone dashboard, see "Family access"). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -228,6 +229,7 @@ calendar's.
 | `doorbell-end` | `{ id }` | the ring was dismissed |
 | `todo` | `{}` | the tasks of the Microsoft To Do lists changed (read every 5 minutes, or a task ticked on a screen): the display refetches its config, where they are `todo.items` |
 | `family` | `{ rev }` | Familia changed: a routine ticked (phone, TV or admin), stars, a reward, an import, a new or removed family link. Displays with a kids layout ask for `GET /api/display/family` again |
+| `access-code` | `{ id, code, name, expiresAt, url }` or `{ clear: true, id, expiresAt }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` (`url` is `…/my?lang=<household language>`) until `expiresAt` (two minutes). `clear` takes the code with that `id` down early (used, replaced, person removed). Never a token |
 | `ha` | `HaSnapshot` | Home Assistant states of a Personalizado screen: the full snapshot when the stream opens and when the connection to Home Assistant changes (`full: true`), then only the aliases that changed (`full: false`), at most one event a second per screen, aimed at that screen (`screenId`). Not sent on the poll channel |
 | `values` | `ValuesSnapshot` | Pushed values of a Personalizado screen: the snapshot when the stream opens (`full: true`, only for a screen that shows a key), then the keys that changed (`full: false`, `null` for a key that was cleared), at most one event a second, only to the screens that show those keys and never while one is private. Not sent on the poll channel |
 | `ping` | `{ t }` | every 25 s |
@@ -256,7 +258,7 @@ Answer `{ revision, screenId, targetKind, now, serverVersion, cursor, reset, com
 
 - `commands`: in order and already filtered to this display. Each one is `{ type, ...payload }` with the SSE event
   names and payloads: `reload`, `night`, `identify` (filled in for this display), `announce`, `announce-clear`,
-  `photos`, `events`, `privacy`, `doorbell`, `doorbell-end` and `family`.
+  `photos`, `events`, `privacy`, `doorbell`, `doorbell-end`, `family` and `access-code`.
 - `reset: true` on the first poll, after a server restart, or for a cursor the server no longer knows. `commands` then
   only holds the announcements still active on this screen, like the replay on `/api/stream`, and old commands are
   never replayed.
@@ -269,8 +271,8 @@ Answer `{ revision, screenId, targetKind, now, serverVersion, cursor, reset, com
   *Connected screens* open or just sent a command. The display adds ±10 % and keeps it between 3 s and 15 min; on
   errors it waits 5 s, doubling up to 5 min.
 
-The self-hosted server keeps the last 500 events in memory. Commands expire: `identify` after 60 s, `announce` and
-`doorbell` at their `expiresAt`, the others after 10 min. Over the poll channel a ring reaches a display on its next
+The self-hosted server keeps the last 500 events in memory. Commands expire: `identify` after 60 s, `announce`,
+`doorbell` and `access-code` at their `expiresAt`, the others after 10 min. Over the poll channel a ring reaches a display on its next
 poll (5 s for 3 minutes after any command, else up to 30 s), so a doorbell is only immediate with SSE. A display that polled in the last 4 minutes is listed as connected and
 counts in `delivered` (at most 24 client ids per address, as for streams). A new private link, a revoked device or
 a switch to private access takes its pollers off the list at once; their next poll gets `401` / `403`.
@@ -849,6 +851,64 @@ Activity log types: `family.chore`, `family.redeemed`, `family.points`, `family.
 `family.key_rejected`. The family key and `/f/<key>` are redacted from logs. An export carries `familyState` (and
 `secrets.family` with secrets); an import that takes the `family` section restores it (the previous file is kept as
 `family.json.pre-import-<ms>`, newest 5).
+
+## Family access
+
+Each person of the household can get a dashboard of their own on the phone (`/my`), with only the controls the admin
+allows them and no admin password (#16). The rules are in `server/core/familyAccessCore.js` (shared with Marco Cloud);
+`server/familyAccess.js` keeps the people in `secrets.json` (`familyAccess`) and runs the actions,
+`server/routes/familyAccess.js` has the endpoints. Needs `features.familyAccess`. Every answer is
+`Cache-Control: private, no-store`; POST bodies must be `application/json` (`415` otherwise; at most 4 kB under
+`/api/member`), and both routers check the origin like the admin (`403 bad origin` from another site). Errors are
+`{ error, code }`.
+
+A person has `perms`: `{ message, messageScreens, privacy, night, todo, events }`. `messageScreens` `[]` means every
+screen; a list where every screen was deleted since turns messages off (it never widens to every screen). Anything
+that is not `true` is off.
+
+**Admin** (session required):
+
+| Method | Path | Body | Answer |
+|---|---|---|---|
+| GET | `/api/admin/family-access` | | `{ people: FamilyAccessPerson[], max, lanAddresses, publicUrl }`. A person: `{ id, name, memberId, perms, createdAt, lastUsedAt, link: { exists, createdAt }, devices: [{ id, name, via: "link" \| "code", createdAt, lastSeenAt }], code: { screenId, expiresAt } \| null }`. No token, hash or link address |
+| POST | `/api/admin/family-access` | `{ name, memberId?, perms? }` | `{ person, link: { path: "/my/fa_…?lang=es" } }` (`lang`: the household language, the default screen's). The link is in this answer only. `400 name_required`, `unknown_member`; `409 too_many_people` (20) |
+| PATCH | `/api/admin/family-access/:id` | `{ name?, memberId?, perms? }` | `{ person }`; counts from the person's next request |
+| POST | `/api/admin/family-access/:id/link` | | a new link: `{ person, link: { path } }`. The old link stops working; phones already in keep working |
+| POST | `/api/admin/family-access/:id/code` | `{ screenId }` | `{ code, expiresAt, screenId, delivered }`: the screen draws the code for two minutes (`access-code` live event). A new code replaces the person's previous one. `400 unknown_screen`; `429 rate_limited` (10 per person every 10 minutes) |
+| DELETE | `/api/admin/family-access/:id/devices/:deviceId` | | revoke one phone → `{ ok }` |
+| DELETE | `/api/admin/family-access/:id` | | remove the person, their link, phones and code → `{ ok }` |
+
+**Phone** (`/my/<link>` or `/my`; the page lives in `web/member`):
+
+| Method | Path | Body | Answer |
+|---|---|---|---|
+| POST | `/api/member/redeem` | `{ link, token? }` | trade the private link for a device token: `{ token: "fd_…", state }`. A phone that sends a valid `token` of the same person keeps it. `403 invalid_link`, `409 device_limit` (10 phones per person) |
+| POST | `/api/member/pair` | `{ code }` | a code shown on a screen (6 characters of the pairing alphabet, spaces and case ignored, single use, two minutes): `{ token, state }`. `404 invalid_code`; `409 device_limit` (the code is not used up then) |
+
+With `X-Member-Token: fd_…`:
+
+| Method | Path | Body | Answer |
+|---|---|---|---|
+| GET | `/api/member/state` | | `MemberState`: `{ name, lang, avatar, color, can: { message, privacy, night, todo, events }, screens: [{ id, name }], privacy: { on, total } \| null, calendarOn, durations }`. Never a token, an account or another person |
+| POST | `/api/member/message` | `{ text, screens?, durationSec? }` | an announcement titled with the person's name (`via: "family"`, `by: "family:<name>"`), text up to 200 characters, `durationSec` 60, 600 (default) or 3600, `screens` among the ones allowed (`[]` = all of them) → `{ ok, delivered }`. `400 bad_screens`, `text_required`, `text_too_long`, `bad_duration`; 10 messages per person every 10 minutes |
+| POST | `/api/member/privacy` | `{ mode: "on" \| "off" }` | every screen, until turned off → `{ ok, privacy: { on, total } }` |
+| POST | `/api/member/night` | `{ mode: "on" \| "off" \| "auto" }` | the `night` display command for every screen → `{ ok, delivered }` |
+| POST | `/api/member/todo` | `{ text }` | a typed to-do in `config.todo.items` → `{ ok, id }`. `409 todo_full` |
+| POST | `/api/member/event` | `{ title, date, allDay, startTime?, endTime? }` | a one day event in `config.localEvents.items` (no end time: an hour); the date within 31 days back and two years ahead → `{ ok, id }`. `400 bad_date`, `bad_time`; `409 calendar_off`, `events_full` |
+| POST | `/api/member/forget` | | this phone signs out (its token stops working) → `{ ok }` |
+
+A permission the person does not have now answers `403 not_allowed`, whatever the request. No token:
+`401 token_required`; a wrong or revoked one: `403 invalid_token`. Wrong links and tokens are limited to 20 per
+10 minutes per address and 200 overall, wrong codes to 10 per address and 50 overall (`429 rate_limited`,
+`Retry-After`; the overall limits leave out clients on the local network); a locked address gets `429` before anything is looked up. With a valid token: 120 requests a minute per
+phone and 20 actions a minute per person. A member token is never an admin credential: `/api/admin/*` answers `401`.
+To-dos and events are saved like any config change (the revision goes up, displays get `config`), with the reason
+`family`.
+
+Activity log types: `family.access` (`action`: `created`, `updated`, `link`, `device_revoked`, `deleted`),
+`family.device` (a phone got in, `via` link or code), `family.code`, `family.access_rejected` (throttled),
+`family.message`, `family.privacy`, `family.night`, `family.todo`, `family.event`. The phone's entries have the actor
+`family:<name>`. Tokens and links are never logged.
 
 ## Privacy mode
 

@@ -55,7 +55,7 @@ export function sanitizeAnnounce(body, resolveScreens) {
 /**
  * The stored announcement for a sanitised request.
  * @param {object} value  sanitizeAnnounce(...).value
- * @param {{ via: 'admin'|'hook', by: string, now?: Date, id?: string }} meta
+ * @param {{ via: 'admin'|'hook'|'family', by: string, now?: Date, id?: string }} meta
  */
 export function makeAnnouncement(value, { via, by, now = new Date(), id = randomId('a_', 6) }) {
   return {

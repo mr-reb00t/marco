@@ -1432,6 +1432,105 @@ export interface FamilyAdminState {
   publicUrl?: string | null;
 }
 
+/** What a person of the household may do from their own phone dashboard (/my). messageScreens [] = every screen. */
+export interface FamilyAccessPerms {
+  message: boolean;
+  messageScreens: string[];
+  privacy: boolean;
+  night: boolean;
+  todo: boolean;
+  events: boolean;
+}
+
+/** A phone authorised for a person (opened the private link, or typed a code shown on a screen). */
+export interface FamilyAccessDevice {
+  id: string;
+  name: string;
+  via: 'link' | 'code';
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
+/** One person with their own dashboard, as the admin sees it (no token, no hash). */
+export interface FamilyAccessPerson {
+  id: string;
+  name: string;
+  /** a Familia member this person is (avatar and colour on the phone), or null */
+  memberId: string | null;
+  perms: FamilyAccessPerms;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** the private link: only whether there is one; its address is shown once, when it is made */
+  link: { exists: boolean; createdAt: string | null };
+  devices: FamilyAccessDevice[];
+  /** a code on a screen right now */
+  code: { screenId: string; expiresAt: string } | null;
+}
+
+/** GET /api/admin/family-access */
+export interface FamilyAccessListResponse {
+  people: FamilyAccessPerson[];
+  max: number;
+  lanAddresses?: string[];
+  publicUrl?: string | null;
+}
+
+/** POST /api/admin/family-access, POST /api/admin/family-access/:id/link: the link path is in this answer only. */
+export interface FamilyAccessLinkResponse {
+  person: FamilyAccessPerson;
+  link: { path: string };
+}
+
+export interface FamilyAccessPersonRequest {
+  name?: string;
+  memberId?: string | null;
+  perms?: Partial<FamilyAccessPerms>;
+}
+
+/** POST /api/admin/family-access/:id/code { screenId } */
+export interface FamilyAccessCodeResponse {
+  code: string;
+  expiresAt: string;
+  screenId: string;
+  /** displays of that screen that got it now */
+  delivered: number;
+}
+
+/** Live event / poll command `access-code`: a code for the phone, drawn on the screen for two minutes. */
+export interface AccessCodePayload {
+  /** this showing of the code, so a later { clear: true, id } takes down only this one ('' from older servers) */
+  id: string;
+  /** '' once the code was used, replaced or withdrawn */
+  code: string;
+  name: string;
+  expiresAt: string;
+  /** where the phone opens its dashboard (the QR code adds the code in the fragment); '' = unknown */
+  url: string;
+}
+
+/** GET /api/member/state (header X-Member-Token): the person's dashboard. Nothing secret. */
+export interface MemberState {
+  name: string;
+  lang: Lang;
+  avatar: string;
+  color: string;
+  can: { message: boolean; privacy: boolean; night: boolean; todo: boolean; events: boolean };
+  /** the screens a message may go to (messages on) */
+  screens: { id: string; name: string }[];
+  /** screens private now, out of all of them (privacy allowed), else null */
+  privacy: { on: number; total: number } | null;
+  /** the local calendar is on (events are shown) */
+  calendarOn: boolean;
+  /** seconds a message may stay on the screens */
+  durations: number[];
+}
+
+/** POST /api/member/redeem { link, token? } and POST /api/member/pair { code } */
+export interface MemberAuthResponse {
+  token: string;
+  state: MemberState;
+}
+
 export interface FamilyMemberView {
   id: string;
   name: string;
@@ -1719,6 +1818,9 @@ export interface Features {
   /** The Bolsa card can get quotes (a self-hosted server: the owner's own Finnhub key; Marco Cloud: only when the
    *  service has a key). Absent = on self-hosted, off elsewhere. */
   stockQuotes: boolean;
+  /** Family access: each person's own phone dashboard (/my) with the controls the admin allows
+   *  (/api/admin/family-access, /api/member/*). Absent = off. */
+  familyAccess: boolean;
 }
 
 export type FeatureName = keyof Features;
@@ -1885,6 +1987,9 @@ export type StreamEvent =
   | { type: 'family'; rev: number }
   /** the tasks of the Microsoft To Do lists changed: refetch the config */
   | { type: 'todo' }
+  /** a code for a person's phone (family access), on this screen for two minutes */
+  | ({ type: 'access-code' } & AccessCodePayload)
+  | { type: 'access-code'; clear: true; id: string; expiresAt: string }
   | { type: 'ping'; t: number };
 
 // ---- Admin API ----
@@ -2577,7 +2682,10 @@ export type DisplayCommand =
   /** Familia changed (a routine ticked, stars, the family link): fetch the family state again */
   | { type: 'family'; rev?: number }
   /** the tasks of the Microsoft To Do lists changed: fetch the config again */
-  | { type: 'todo' };
+  | { type: 'todo' }
+  /** a code for a person's phone (family access), on this screen for two minutes */
+  | ({ type: 'access-code' } & AccessCodePayload)
+  | { type: 'access-code'; clear: true; id: string; expiresAt: string };
 
 /** GET /api/display/poll?client=&cursor=&rev=&hidden=&preview= (docs/API.md) */
 export interface PollResponse {
@@ -2676,8 +2784,8 @@ export interface Announcement {
   screenIds: string[];
   createdAt: string;
   expiresAt: string;
-  via: 'admin' | 'hook';
-  by: string; // admin email or "token:<name>"
+  via: 'admin' | 'hook' | 'family';
+  by: string; // admin email, "token:<name>" or "family:<name>" (a person's phone dashboard)
   /** set when removed before expiry */
   clearedAt?: string | null;
 }
@@ -2879,6 +2987,15 @@ export type ActivityType =
   | 'family.undone'
   | 'family.link'
   | 'family.key_rejected'
+  | 'family.access'
+  | 'family.device'
+  | 'family.code'
+  | 'family.access_rejected'
+  | 'family.message'
+  | 'family.privacy'
+  | 'family.night'
+  | 'family.todo'
+  | 'family.event'
   | 'todo.task'
   | 'ha.action'
   | 'activity.cleared'

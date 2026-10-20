@@ -84,8 +84,9 @@ export function capsFrom(health: Partial<HealthResponse> | null | undefined): Ca
  *  web pages) the owner places on screens (config.widgets); priceWidgets: the electricity price card (servers that
  *  answer GET /api/display/prices); familyPhotos: profile photos of the family members (servers that store them);
  *  accountSettings: the account settings on the admin's account page (Marco Cloud); screenBuilder: Personalizado, the
- *  screen builder (servers that validate layout 'canvas'). */
-const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder'];
+ *  screen builder (servers that validate layout 'canvas'); familyAccess: each person's own phone dashboard (servers
+ *  with /api/admin/family-access). */
+const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess'];
 
 export function hasFeature(caps: Caps, feature: FeatureName): boolean {
   if (!caps.features) return !OPT_IN.includes(feature);

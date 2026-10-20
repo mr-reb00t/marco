@@ -33,6 +33,7 @@ import { ROWS_TILE } from './i18n-dict-tile';
 import { ROWS_WXPLACES } from './i18n-dict-wxplaces';
 import { ROWS_BGRULES } from './i18n-dict-bgrules';
 import { ROWS_TODO } from './i18n-dict-todo';
+import { ROWS_ACCESS } from './i18n-dict-access';
 // Translations for the admin panel. Spanish is the source language (key); [es, en, pt].
 const ROWS: [string, string, string][] = [
   ['(ninguno)', '(none)', '(nenhum)'],
@@ -436,7 +437,7 @@ for (const [es, en, pt] of ROWS) {
   PT[es] = pt;
 }
 // v2 pages; existing rows win on duplicates.
-for (const [es, en, pt] of [...ROWS2, ...ROWS3, ...ROWS4, ...ROWS5, ...ROWS6, ...ROWS7, ...ROWS8, ...ROWS9, ...ROWS10, ...ROWS11, ...ROWS12, ...ROWS13, ...ROWS14, ...ROWS15, ...ROWS_ICLOUD, ...ROWS_MOTION, ...ROWS_COMPACT, ...ROWS_FEEDBACK, ...ROWS_PRIVACY, ...ROWS_DOORBELL, ...ROWS_CAROUSELS, ...ROWS_IMMICH, ...ROWS_PLANNER, ...ROWS_FAMILY, ...ROWS_WIDGETS, ...ROWS_PRICES, ...ROWS_BACKGROUND, ...ROWS_TWOFA, ...ROWS_ACCOUNT, ...ROWS_BUILDER, ...ROWS_TILE, ...ROWS_NAV, ...ROWS_WXPLACES, ...ROWS_BGRULES, ...ROWS_TODO]) {
+for (const [es, en, pt] of [...ROWS2, ...ROWS3, ...ROWS4, ...ROWS5, ...ROWS6, ...ROWS7, ...ROWS8, ...ROWS9, ...ROWS10, ...ROWS11, ...ROWS12, ...ROWS13, ...ROWS14, ...ROWS15, ...ROWS_ICLOUD, ...ROWS_MOTION, ...ROWS_COMPACT, ...ROWS_FEEDBACK, ...ROWS_PRIVACY, ...ROWS_DOORBELL, ...ROWS_CAROUSELS, ...ROWS_IMMICH, ...ROWS_PLANNER, ...ROWS_FAMILY, ...ROWS_WIDGETS, ...ROWS_PRICES, ...ROWS_BACKGROUND, ...ROWS_TWOFA, ...ROWS_ACCOUNT, ...ROWS_BUILDER, ...ROWS_TILE, ...ROWS_NAV, ...ROWS_WXPLACES, ...ROWS_BGRULES, ...ROWS_TODO, ...ROWS_ACCESS]) {
   if (!(es in EN)) EN[es] = en;
   if (!(es in PT)) PT[es] = pt;
 }

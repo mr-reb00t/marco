@@ -3,7 +3,7 @@
 // display then polls GET /api/display/poll, which returns the same events as commands. A server that answers 404
 // there gets the older config revision check every 90 s.
 // No runtime imports on purpose: the module is unit-tested directly by node --test (server/test/display-live.test.js).
-import type { Announcement, DoorbellRing, HaSnapshot, IdentifyPayload, NightCommand, PollResponse, StreamHello, ValuesSnapshot } from '../shared/types';
+import type { AccessCodePayload, Announcement, DoorbellRing, HaSnapshot, IdentifyPayload, NightCommand, PollResponse, StreamHello, ValuesSnapshot } from '../shared/types';
 
 export type LiveMode = 'sse' | 'poll';
 
@@ -104,6 +104,9 @@ export interface StreamHandlers {
   ha?: (d: HaSnapshot) => void;
   /** pushed values of a Personalizado screen changed (only the keys it shows; valuesFeed.ts) */
   values?: (d: ValuesSnapshot) => void;
+  /** a code for a person's phone (family access), shown on this screen until it expires */
+  accessCode?: (d: AccessCodePayload) => void;
+  accessCodeClear?: (id: string) => void;
   /** link regenerated / device revoked / display access switched to private */
   revoked?: (d: { code: string }) => void;
   open?: () => void;
@@ -136,6 +139,15 @@ export function dispatch(name: string, d: any, h: StreamHandlers): boolean {
       return true;
     case 'values':
       if (d && typeof d.rev === 'number' && d.values && typeof d.values === 'object' && !Array.isArray(d.values)) h.values?.(d);
+      return true;
+    case 'access-code':
+      // { clear: true, id }: the code was used, replaced or withdrawn before it ran out
+      if (d && d.clear === true) h.accessCodeClear?.(typeof d.id === 'string' ? d.id : '');
+      else if (d && typeof d.code === 'string' && typeof d.expiresAt === 'string') {
+        h.accessCode?.({
+          id: typeof d.id === 'string' ? d.id : '', code: d.code, expiresAt: d.expiresAt, name: typeof d.name === 'string' ? d.name : '', url: typeof d.url === 'string' ? d.url : '',
+        });
+      }
       return true;
     case 'doorbell-end': h.doorbellEnd?.({ id: typeof d?.id === 'string' ? d.id : null }); return true;
     case 'revoked': h.revoked?.({ code: typeof d?.code === 'string' ? d.code : 'invalid_key' }); return true;

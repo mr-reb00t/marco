@@ -177,7 +177,11 @@ export function familyQrUrl(req) {
   return origin ? `${origin}/f/${f.key}` : null;
 }
 
-function familyOrigin(req) {
+/**
+ * The origin a phone at home can open: PUBLIC_URL, else the address this request used (when it is not this machine),
+ * else this machine's LAN address. Null when none is known. Also used for the family access codes (familyAccess.js).
+ */
+export function familyOrigin(req) {
   const pub = publicOrigin();
   if (pub) return pub;
   const host = String(req?.get?.('host') || '');

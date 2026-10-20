@@ -1153,6 +1153,32 @@ body {
 .id-bar { width: 40rem; height: 0.5rem; border-radius: 9rem; background: rgb(255 255 255 / 0.14); overflow: hidden; }
 .id-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; }
 
+/* ================================ family access: a code for a phone ================================ */
+/* Above the announcements (70) and identify (80), below the doorbell (90): the person stands in front of it. */
+#access-code {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(60% 60% at 50% 50%, rgb(var(--accent-rgb) / 0.3), transparent 78%), rgb(4 4 7 / 0.97);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s var(--ease);
+}
+#access-code.show { opacity: 1; }
+.ac-card { display: flex; flex-direction: column; align-items: center; gap: 3rem; padding: 5rem 7rem; max-width: 94vw; color: #fff; text-align: center; }
+.ac-kicker { font-size: 3rem; font-weight: 700; letter-spacing: 0.08em; color: rgb(255 255 255 / 0.78); overflow-wrap: anywhere; }
+.ac-body { display: flex; align-items: center; justify-content: center; gap: 6rem; flex-wrap: wrap; }
+.ac-main { display: flex; flex-direction: column; align-items: center; gap: 2.4rem; min-width: 0; }
+.ac-code { font-family: var(--font-num); font-weight: 600; font-size: min(13rem, 9vw); line-height: 1; letter-spacing: 0.08em; white-space: nowrap; text-shadow: 0 1rem 5rem rgb(var(--accent-rgb) / 0.55); }
+#access-code.show .ac-code { animation: idIn 0.8s var(--ease) both; }
+.ac-hint { max-width: 62rem; font-size: 2.6rem; line-height: 1.35; color: rgb(255 255 255 / 0.8); overflow-wrap: anywhere; }
+.ac-qr { display: flex; flex-direction: column; align-items: center; gap: 1.2rem; font-size: 2rem; color: rgb(255 255 255 / 0.75); }
+.ac-qr svg { display: block; width: 26rem; height: 26rem; padding: 1.4rem; border-radius: 2rem; background: #fff; }
+.ac-bar { width: 44rem; max-width: 80vw; height: 0.5rem; border-radius: 9rem; background: rgb(255 255 255 / 0.14); overflow: hidden; }
+.ac-bar i { display: block; height: 100%; background: var(--accent); transform-origin: left; }
+
 /* ========================================= doorbell ========================================== */
 /* Above the night layer (z 50), the announcements (70) and identify (80): a ring wakes a dimmed screen. */
 #doorbell {
@@ -1881,6 +1907,7 @@ html.widget-only .main > :not(#uw-full),
 html.widget-only #night,
 html.widget-only #alerts,
 html.widget-only #identify,
+html.widget-only #access-code,
 html.widget-only #doorbell,
 html.widget-only #status,
 html.widget-only #privacy-lock { display: none !important; }

@@ -98,6 +98,23 @@ function arm(now = new Date()) {
 }
 
 /**
+ * Apply a validated change (`mode` on, off or toggle, `end` ISO or null, `screenIds` [] = every screen), store it and
+ * tell the displays. Shared by handlePrivacy and the family dashboards (familyAccess.js), which log it themselves.
+ * @returns {{ changed: string[], rows: object[], targets: object[] }}
+ */
+export function applyPrivacy({ mode, end = null, screenIds = [], by = 'admin' }, now = new Date()) {
+  load();
+  const cfg = getConfig();
+  const out = applyPrivacyRequest(cfg, states, { mode, end, screenIds, by }, now);
+  states = out.states;
+  save();
+  syncPrivacy(now);
+  const rows = privacyOverview(cfg, states, now);
+  const targets = screenIds.length ? rows.filter((x) => screenIds.includes(x.screenId)) : rows;
+  return { changed: out.changed, rows, targets };
+}
+
+/**
  * Handle POST /api/admin/privacy and POST /api/hooks/privacy. Returns [status, body].
  * @param {any} req Express request (body, activity actor)
  * @param {'admin' | 'hook'} via
@@ -109,12 +126,7 @@ export function handlePrivacy(req, via, now = new Date()) {
   if (r.error) return [400, { error: r.error }];
   const scr = resolveScreenList(cfg, r.value.screens);
   if (scr.error) return [400, { error: scr.error, ...(scr.unknown ? { unknown: scr.unknown } : {}) }];
-  const out = applyPrivacyRequest(cfg, states, { mode: r.value.mode, end: r.value.end, screenIds: scr.ids, by: via }, now);
-  states = out.states;
-  save();
-  syncPrivacy(now);
-  const rows = privacyOverview(cfg, states, now);
-  const targets = scr.ids.length ? rows.filter((x) => scr.ids.includes(x.screenId)) : rows;
+  const { changed, rows, targets } = applyPrivacy({ mode: r.value.mode, end: r.value.end, screenIds: scr.ids, by: via }, now);
   logActivity('privacy.changed', {
     req,
     data: {
@@ -124,7 +136,7 @@ export function handlePrivacy(req, via, now = new Date()) {
       ...(r.value.mode !== 'off' && r.value.end ? { until: r.value.end } : {}),
     },
   });
-  return [200, { ok: true, changed: out.changed, screens: rows }];
+  return [200, { ok: true, changed, screens: rows }];
 }
 
 /** Config saved: deleted screens lose their state, new rules or sources may change what displays show. */

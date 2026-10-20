@@ -3,9 +3,11 @@
 // is used for n = 1, PL_FEW for 2-4, 22-24, 32-34… (not 12-14) and the rows of PL for every other count ("5 ekranów").
 // Intl.PluralRules('pl') picks the form (i18n.ts). The Familia rows (admin and family page) are PL_FAMILY,
 // PL_SINGULAR_FAMILY and PL_FEW_FAMILY in i18n-dict-family.ts, so the family page does not load this file.
+import { PL_ACCESS } from './i18n-dict-access';
 
 /** Every admin row but the Familia ones. */
 export const PL: Record<string, string> = {
+  ...PL_ACCESS,
   '(ninguno)': '(brak)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Używasz hasła początkowego. Zmień je: do tego czasu działa tylko z sieci lokalnej.',
   'Sesiones': 'Sesje',
@@ -3042,7 +3044,7 @@ export const PL: Record<string, string> = {
   'Entre dos fechas': 'Między dwiema datami',
   'Un solo día': 'Jeden dzień',
   'Un cumpleaños': 'Urodziny',
-  'Palabra del título, p. ej. Navidad': 'Słowo w tytule, np. Święta',
+  'Palabras del título, separadas por comas, p. ej. Navidad, Reyes': 'Słowa w tytule, oddzielone przecinkami, np. Wigilia, Święta',
   'Calendarios de esta pantalla': 'Kalendarze tego ekranu',
   'al': 'do',
   'Cuando alguien de Cumpleaños cumple años hoy.': 'Gdy ktoś z sekcji Urodziny ma dziś urodziny.',

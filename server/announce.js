@@ -58,7 +58,7 @@ export const alertsFilter = (client, screenIds = []) => alertsFilterFor(getConfi
 /**
  * Create + broadcast an announcement. `value` = sanitised request. Returns { announcement, delivered }.
  * @param {object} value
- * @param {{ via: 'admin'|'hook', by: string, now?: Date }} meta
+ * @param {{ via: 'admin'|'hook'|'family', by: string, now?: Date }} meta
  */
 export function createAnnouncement(value, { via, by, now = new Date() }) {
   load();

@@ -24,19 +24,22 @@ function changelogSection(version: string): string {
   return lines.slice(start + 1, end).filter((l) => !/^\[[^\]]+\]: /.test(l)).join('\n').trim();
 }
 
-// Multi-page build: / -> display (Raspberry Pi screen), /admin/ -> management panel, /f/<key> -> family page (phone).
+// Multi-page build: / -> display (Raspberry Pi screen), /admin/ -> management panel, /f/<key> -> family page (phone),
+// /my/<link> -> a person's own dashboard (phone, family access).
 export default defineConfig({
   root: 'web',
   plugins: [
     preact(),
     // the display page preloads its WebGL chunks and first fonts (scripts/vite-preload.mjs)
     displayPreload(),
-    // Dev server only: /f and /f/<key> open the family page, as the Express server does in production (app.js).
+    // Dev server only: /f and /f/<key> open the family page, /my and /my/<link> the dashboard of a person, as the
+    // Express server does in production (app.js).
     {
       name: 'family-page-dev',
       configureServer(server) {
         server.middlewares.use((req, _res, next) => {
           if (req.url && /^\/f(\/[^/?#]*)?\/?(\?.*)?$/.test(req.url)) req.url = '/family/index.html';
+          else if (req.url && /^\/my(\/[^/?#]*)?\/?(\?.*)?$/.test(req.url)) req.url = '/member/index.html';
           next();
         });
       },
@@ -60,6 +63,7 @@ export default defineConfig({
         display: resolve(root, 'web/index.html'),
         admin: resolve(root, 'web/admin/index.html'),
         family: resolve(root, 'web/family/index.html'),
+        member: resolve(root, 'web/member/index.html'),
       },
     },
   },

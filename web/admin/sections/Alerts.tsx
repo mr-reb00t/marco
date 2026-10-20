@@ -15,6 +15,11 @@ import type { SectionProps } from './common';
 
 /* ---------------------------------------------------------------- schedule evaluation (docs/ARCHITECTURE.md) */
 
+
+/** Who sent an announcement: the admin's email, a webhook token or a person from their phone dashboard. */
+const announcementBy = (a: Announcement) =>
+  a.via === 'hook' ? `⚡ ${a.by.replace(/^token:/, '')}` : a.via === 'family' ? `📱 ${a.by.replace(/^family:/, '')}` : a.by;
+
 function nowParts(tz: string) {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const [h, m] = f.format(new Date()).split(':').map(Number);
@@ -294,7 +299,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                     <strong>{a.title || a.body}</strong>
                     {a.title && a.body && <p>{a.body}</p>}
                     <span class="muted small">
-                      {screenNames(a.screenIds, full.screens)} · {a.via === 'hook' ? `⚡ ${a.by.replace(/^token:/, '')}` : a.by} · {relTime(a.createdAt)}
+                      {screenNames(a.screenIds, full.screens)} · {announcementBy(a)} · {relTime(a.createdAt)}
                     </span>
                     <Remaining a={a} />
                   </div>
@@ -426,7 +431,7 @@ export function AlertsSection({ full, setFull, cfg, set, errors, saved }: Sectio
                         <td class="muted" title={a.createdAt}>
                           {fmtDateTime(a.createdAt)}
                         </td>
-                        <td class="muted">{a.via === 'hook' ? `⚡ ${a.by.replace(/^token:/, '')}` : a.by}</td>
+                        <td class="muted">{announcementBy(a)}</td>
                         <td class="num">
                           <Button size="sm" variant="ghost" icon="refresh" onClick={() => resend(a)}>
                             {t('Reenviar')}

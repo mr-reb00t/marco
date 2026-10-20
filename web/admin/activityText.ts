@@ -188,6 +188,38 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
         icon: 'link',
         text: d.action === 'revoked' ? t('Enlace familiar quitado') : d.action === 'regenerated' ? t('Enlace familiar cambiado por uno nuevo') : t('Enlace familiar creado'),
       };
+    case 'family.access': {
+      const vars = { person: str(d.person), device: str(d.device) };
+      if (d.action === 'created') return { icon: 'users', text: t('Acceso creado para {person}', vars) };
+      if (d.action === 'link') return { icon: 'link', text: t('Enlace nuevo para {person}', vars) };
+      if (d.action === 'deleted') return { icon: 'trash', text: t('Acceso de {person} quitado', vars) };
+      if (d.action === 'device_revoked') return { icon: 'x', text: d.self ? t('{person} salió en un móvil ({device})', vars) : t('Móvil de {person} quitado ({device})', vars) };
+      return { icon: 'edit', text: t('Acceso de {person} cambiado', vars) };
+    }
+    case 'family.device':
+      return {
+        icon: 'user',
+        text: t('{person} entró en un móvil nuevo ({device})', { person: str(d.person), device: str(d.device) }) + ` · ${d.via === 'code' ? t('con un código') : t('con el enlace')}`,
+      };
+    case 'family.code':
+      return { icon: 'monitor', text: t('Código para {person} en la pantalla {screen}', { person: str(d.person), screen: str(d.screen) }) };
+    case 'family.access_rejected':
+      return {
+        icon: 'alert',
+        text: d.reason === 'invalid_link' ? t('Enlace de acceso no válido') : d.reason === 'invalid_token' ? t('Un móvil sin acceso lo intentó') : t('Código de acceso no válido'),
+      };
+    case 'family.message':
+      return { icon: 'message', text: t('Mensaje de {person}: {text}', { person: str(d.person), text: q(d.text) }) + (d.delivered != null ? ` · ${nScreens(Number(d.delivered))}` : '') };
+    case 'family.privacy':
+      return { icon: 'lock', text: d.mode === 'on' ? t('Modo privado activado por {person}', { person: str(d.person) }) : t('Modo privado quitado por {person}', { person: str(d.person) }) };
+    case 'family.night': {
+      const vars = { person: str(d.person) };
+      return { icon: d.mode === 'off' ? 'sun' : 'moon', text: d.mode === 'on' ? t('Modo noche activado por {person}', vars) : d.mode === 'off' ? t('Modo día activado por {person}', vars) : t('Modo automático activado por {person}', vars) };
+    }
+    case 'family.todo':
+      return { icon: 'checklist', text: t('Tarea añadida por {person}: {text}', { person: str(d.person), text: q(d.text) }) };
+    case 'family.event':
+      return { icon: 'calendar', text: t('Evento añadido por {person}: {title}', { person: str(d.person), title: q(d.title) }) + (d.date ? ` · ${str(d.date)}${d.time ? ` ${str(d.time)}` : ''}` : '') };
     case 'family.key_rejected':
       return { icon: 'alert', text: d.reason === 'rate_limited' ? t('Demasiados intentos con un enlace familiar no válido') : t('Enlace familiar no válido') };
     case 'ha.action': {
@@ -212,6 +244,7 @@ export function actorLabel(a: string): string {
   if (a === 'password') return t('Contraseña');
   if (a.startsWith('token:')) return `${a.slice(6)} (API)`;
   if (a === 'family-link') return t('Enlace familiar');
+  if (a.startsWith('family:')) return t('{name} (su móvil)', { name: a.slice(7) });
   if (a.startsWith('display:')) return t('Pantalla {screen}', { screen: a.slice(8) });
   return a;
 }

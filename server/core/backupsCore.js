@@ -8,6 +8,7 @@ import { countNoun, countChanged, summaryWord } from './lib/i18n.js';
 import { carouselList, targetInfo } from './carousels.js';
 import { IMMICH_KEY_RE } from './immichCore.js';
 import { FAMILY_KEY_RE } from './familyCore.js';
+import { exportAccessPeople, importAccessPeople } from './familyAccessCore.js';
 
 /** Rotated backups kept per installation (or per household in the cloud). */
 export const KEEP_BACKUPS = 20;
@@ -40,6 +41,8 @@ export function exportSecrets(sec) {
     devices: sec.devices || [],
     // The family link, so the phones keep working after a rebuild.
     ...(typeof sec.family?.key === 'string' && FAMILY_KEY_RE.test(sec.family.key) ? { family: { key: sec.family.key, createdAt: sec.family.createdAt ?? null } } : {}),
+    // The people of family access (#16), their link and phones (digests only), so those phones keep working too.
+    ...(Array.isArray(sec.familyAccess) && sec.familyAccess.length ? { familyAccess: exportAccessPeople(sec.familyAccess) } : {}),
   });
 }
 
@@ -150,6 +153,7 @@ export function sanitizeImportedSecrets(s) {
   if (isObj(s.family) && typeof s.family.key === 'string' && FAMILY_KEY_RE.test(s.family.key)) {
     out.familyKey = { key: s.family.key, createdAt: typeof s.family.createdAt === 'string' ? s.family.createdAt.slice(0, 40) : new Date().toISOString() };
   }
+  if (Array.isArray(s.familyAccess)) out.familyAccess = importAccessPeople(s.familyAccess);
   if (Array.isArray(s.devices)) {
     out.devices = s.devices.filter((d) => isObj(d) && /^dv_[a-f0-9]{12}$/.test(d.id || '') && /^[a-f0-9]{64}$/.test(d.hash || '')
       && typeof d.screenId === 'string' && typeof d.name === 'string').slice(0, 50).map((d) => ({

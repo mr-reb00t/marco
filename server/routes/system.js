@@ -163,6 +163,7 @@ export function systemRouter({ version = getServerVersion() } = {}) {
         if (s.displayKeys) { x.displayKeys = { ...(x.displayKeys || {}), ...s.displayKeys }; applied.push('displayKeys'); }
         if (s.devices) { x.devices = s.devices; applied.push('devices'); }
         if (s.familyKey) { x.family = s.familyKey; applied.push('family'); }
+        if (s.familyAccess) { x.familyAccess = s.familyAccess; applied.push('familyAccess'); }
         if (s.passwordHash && s.passwordHash !== x.passwordHash) {
           x.passwordHash = s.passwordHash;
           x.passwordIsDefault = false;

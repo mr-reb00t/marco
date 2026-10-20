@@ -77,7 +77,9 @@ storeEvents.on('config', (cfg, prev, { reason, req } = {}) => {
   broadcast('config', { revision: cfg.revision });
   onPrivacyConfig();
   runRefresh().catch(() => {});
-  if (reason !== 'restore' && reason !== 'import') {
+  // restore and import log their own entry, and so does a phone dashboard that adds a to-do or an event (family.todo,
+  // family.event in familyAccess.js)
+  if (reason !== 'restore' && reason !== 'import' && reason !== 'family') {
     logActivity('config.saved', { req, ...(req ? {} : { actor: 'system' }), data: { revision: cfg.revision, sections: changedSections(prev, cfg), ...(reason && reason !== 'admin' ? { reason } : {}) } });
   }
 });
