@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.3] - 2026-10-21
+
 ### Fixed
 - Browsers and password managers no longer fill the account's email and password into key fields (the Spotify Client
   ID and Secret, the Home Assistant token, the Immich, weather and quotes keys): those fields are not a sign in
