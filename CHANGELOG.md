@@ -5,6 +5,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.5] - 2026-10-21
+
 ### Added
 - A *Rotating card* can swap a whole space, not only one card (#19). *Add group* in its list of cards puts 2 to 4
   cards in the space of one, in rows or in columns, each with its own options and an equal part of the box (in its
