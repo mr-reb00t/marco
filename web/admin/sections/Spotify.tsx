@@ -240,7 +240,7 @@ export function SpotifySection({ full, dirty, save }: SectionProps) {
       <Card id="spotify-app" scope="global" title={t('Tu app de Spotify')} icon="key" desc={t('Spotify pide que cada casa cree su propia app, gratis. Solo hace falta una vez.')}>
         <ol class="howto">
           <li>
-            {t('Abre el panel de desarrolladores de Spotify y crea una app (el nombre y la descripción que quieras).')}{' '}
+            {t('Abre el panel de desarrolladores de Spotify y crea una app (el nombre y la descripción que quieras). Spotify pide que la cuenta que crea la app tenga Premium para usar la Web API.')}{' '}
             <a class="ext-link" href={SPOTIFY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer">
               developer.spotify.com/dashboard <Icon name="external" size={13} />
             </a>

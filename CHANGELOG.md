@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+- Browsers and password managers no longer fill the account's email and password into key fields (the Spotify Client
+  ID and Secret, the Home Assistant token, the Immich, weather and quotes keys): those fields are not a sign in
+  anymore, and keys show as dots in a text field.
+- Marco Cloud: connecting a Spotify account failed with "Spotify is not answering" on every try (#18).
+
 ### Added
 - The Spotify page, on a server without an https address, has a guide to connect through an SSH tunnel from your
   computer, with the command ready to copy (this server's address and port): Spotify then comes back to the admin on

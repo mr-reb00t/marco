@@ -4,6 +4,7 @@
 // Spotify's own terms (Client ID, Client Secret, Redirect URIs, Web API, User Management, Settings) stay in English,
 // as Spotify's dashboard shows them in every language.
 const ROWS: [string, string, string, string, string, string][] = [
+  ['Abre el panel de desarrolladores de Spotify y crea una app (el nombre y la descripción que quieras). Spotify pide que la cuenta que crea la app tenga Premium para usar la Web API.', 'Open the Spotify developer dashboard and create an app (any name and description). Spotify requires the account that creates the app to have Premium to use the Web API.', 'Abre o painel de programadores do Spotify e cria uma app (o nome e a descrição que quiseres). O Spotify pede que a conta que cria a app tenha Premium para usar a Web API.', 'Open het ontwikkelaarsdashboard van Spotify en maak een app (naam en beschrijving naar keuze). Spotify vereist dat het account dat de app maakt Premium heeft om de Web API te gebruiken.', 'Åbn Spotifys udviklerpanel, og opret en app (valgfrit navn og beskrivelse). Spotify kræver, at kontoen, der opretter appen, har Premium for at bruge Web API.', 'Otwórz panel deweloperski Spotify i utwórz aplikację (z dowolną nazwą i opisem). Spotify wymaga, by konto tworzące aplikację miało Premium, aby korzystać z Web API.'],
   ['IP-del-servidor', 'server-IP', 'IP-do-servidor', 'IP-van-de-server', 'serverens-IP', 'IP-serwera'],
   ['usuario', 'user', 'utilizador', 'gebruiker', 'bruger', 'użytkownik'],
   ['Conectar sin pegar nada: un túnel SSH desde tu ordenador', 'Connect without pasting anything: an SSH tunnel from your computer', 'Ligar sem colar nada: um túnel SSH a partir do seu computador', 'Koppelen zonder iets te plakken: een SSH-tunnel vanaf je computer', 'Forbind uden at indsætte noget: en SSH-tunnel fra din computer', 'Połącz bez wklejania: tunel SSH z twojego komputera'],
@@ -76,14 +77,6 @@ const ROWS: [string, string, string, string, string, string][] = [
   ],
   ['Tu app de Spotify', 'Your Spotify app', 'A tua app do Spotify', 'Je Spotify-app', 'Din Spotify-app', 'Twoja aplikacja Spotify'],
   ['Spotify pide que cada casa cree su propia app, gratis. Solo hace falta una vez.', 'Spotify asks each household to create its own app, for free. You only do it once.', 'O Spotify pede que cada casa crie a sua própria app, grátis. Só é preciso uma vez.', 'Spotify vraagt elk huishouden om een eigen app te maken, gratis. Dat hoeft maar één keer.', 'Spotify beder hver husstand om at oprette sin egen app, gratis. Det skal kun gøres én gang.', 'Spotify wymaga, aby każdy dom utworzył własną, bezpłatną aplikację. Wystarczy zrobić to raz.'],
-  [
-    'Abre el panel de desarrolladores de Spotify y crea una app (el nombre y la descripción que quieras).',
-    'Open the Spotify developer dashboard and create an app (any name and description).',
-    'Abre o painel de programadores do Spotify e cria uma app (o nome e a descrição que quiseres).',
-    'Open het ontwikkelaarsdashboard van Spotify en maak een app (naam en beschrijving naar keuze).',
-    'Åbn Spotifys udviklerpanel, og opret en app (valgfrit navn og beskrivelse).',
-    'Otwórz panel deweloperski Spotify i utwórz aplikację (z dowolną nazwą i opisem).',
-  ],
   ['En «Redirect URIs» añade exactamente esta dirección:', 'Under "Redirect URIs" add exactly this address:', 'Em «Redirect URIs» adiciona exatamente este endereço:', 'Voeg bij "Redirect URIs" precies dit adres toe:', 'Tilføj præcis denne adresse under "Redirect URIs":', 'W „Redirect URIs” dodaj dokładnie ten adres:'],
   ['Copiar la Redirect URI', 'Copy the Redirect URI', 'Copiar a Redirect URI', 'Redirect URI kopiëren', 'Kopiér Redirect URI', 'Kopiuj Redirect URI'],
   ['En las APIs que vas a usar marca «Web API» y guarda.', 'In the APIs you plan to use, tick "Web API" and save.', 'Nas APIs que vais usar marca «Web API» e guarda.', 'Vink bij de API\'s die je gaat gebruiken "Web API" aan en sla op.', 'Sæt flueben ved "Web API" blandt de API\'er, du vil bruge, og gem.', 'W API, których chcesz używać, zaznacz „Web API” i zapisz.'],
