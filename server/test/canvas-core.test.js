@@ -642,3 +642,39 @@ test('Colores según el estado (issue #13): Entidad, binary sensors and switches
     assert.ok(run({ items: [bad] }).c.errors.some((e) => e.path.endsWith('.colorOn')), `${kind}: an unknown colour is an error`);
   }
 });
+
+test('Texto si está activo / Texto si no (issue #20): the own words of Entidad, Sensor, Interruptor and a room\'s rows, trimmed, 24 characters at most, plain strings only', () => {
+  for (const kind of ['ha.tile', 'ha.sensor', 'ha.switch']) {
+    const fresh = run({ items: [item(kind, M(0, 0, 'xs'))] });
+    assert.deepEqual([fresh.out.items[0].props.textOn, fresh.out.items[0].props.textOff], ['', ''], `${kind}: the automatic words by default`);
+    const raw = item(kind, M(0, 0, 'xs'));
+    raw.props = { ...raw.props, textOn: '  Enchufado\n ', textOff: 'Des  enchufado' };
+    const { c, out } = run({ items: [raw] });
+    assert.deepEqual(c.errors, []);
+    assert.deepEqual([out.items[0].props.textOn, out.items[0].props.textOff], ['Enchufado', 'Des enchufado'], `${kind}: trimmed, one line`);
+    // 24 characters fit; spaces around do not count
+    const fit = item(kind, M(0, 0, 'xs'));
+    fit.props = { ...fit.props, textOn: ` ${'a'.repeat(24)} ` };
+    assert.deepEqual(run({ items: [fit] }).c.errors, [], kind);
+    const long = item(kind, M(0, 0, 'xs'));
+    long.props = { ...long.props, textOn: 'b'.repeat(25) };
+    const l = run({ items: [long] });
+    assert.ok(l.c.errors.some((e) => e.path.endsWith('.textOn') && /too long/.test(e.msg ?? e.message ?? JSON.stringify(e))), `${kind}: too long is an error`);
+    assert.equal(l.out.items[0].props.textOn.length, 24, `${kind}: cut to 24`);
+    for (const v of [42, true, ['x'], { t: 'x' }]) {
+      const bad = item(kind, M(0, 0, 'xs'));
+      bad.props = { ...bad.props, textOff: v };
+      const b = run({ items: [bad] });
+      assert.ok(b.c.errors.some((e) => e.path.endsWith('.textOff')), `${kind}: ${JSON.stringify(v)} is refused`);
+      assert.equal(b.out.items[0].props.textOff, '', `${kind}: ${JSON.stringify(v)} leaves the automatic words`);
+    }
+    // markup stays text: the screen sets it with textContent
+    const html = item(kind, M(0, 0, 'xs'));
+    html.props = { ...html.props, textOn: '<b>Abierta</b>' };
+    assert.equal(run({ items: [html] }).out.items[0].props.textOn, '<b>Abierta</b>');
+  }
+  const room = item('ha.room', M(0, 0, 'm'));
+  room.props = { ...room.props, rows: [{ entity: { a: 'x', d: 'binary_sensor' }, name: '', textOn: ' Hay agua ', textOff: 7 }] };
+  const r = run({ items: [room] });
+  assert.ok(r.c.errors.some((e) => e.path.endsWith('.rows[0].textOff') || e.path.endsWith('.rows.0.textOff')), JSON.stringify(r.c.errors));
+});

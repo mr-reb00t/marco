@@ -222,7 +222,40 @@ describe('demo layouts in a browser', { skip: !chrome && 'no Chrome' }, () => {
     assert.ok(door, JSON.stringify(v));
     assert.equal(door[1], 'good');
     assert.match(door[2], /^rgb\(76, 217, 100\)/, 'the state line in the green of --ha-ok');
-    assert.ok(v.some(([text, t]) => text === 'Motion' && t === 'on'), 'a sensor on auto keeps its own colour');
+    assert.ok(v.some(([text, t]) => text === 'Detected' && t === 'on'), 'a sensor on auto keeps its own colour');
+  });
+
+  test('binary sensors in words (issue #20): a plug, a lock, a door and someone home as Home Assistant says them, in English and Spanish', async () => {
+    const words = (lang) => open(`preset=canvas&shot=binary&lang=${lang}`, `[...document.querySelectorAll('.cv-item[data-kind="ha.sensor"] .cv-ha-tile .cv-ha-state')].map((e) => e.textContent)`);
+    const en = await words('en');
+    assert.deepEqual(en.errors, []);
+    for (const w of ['Unplugged', 'Plugged in', 'Locked', 'Home', 'Closed', 'Open', 'Detected', 'Clear', 'Wet', 'Connected']) assert.ok(en.value.includes(w), `${w}: ${JSON.stringify(en.value)}`);
+    const es = await words('es');
+    assert.deepEqual(es.errors, []);
+    for (const w of ['Desenchufado', 'Enchufado', 'Cerrada con llave', 'En casa', 'Cerrada', 'Abierta']) assert.ok(es.value.includes(w), `${w}: ${JSON.stringify(es.value)}`);
+  });
+
+  test('Texto si está activo / Texto si no (issue #20): the own words on the Mini and the line, as text, with the state colours, and in a room\'s row', async () => {
+    const { value: v, errors } = await open('preset=canvas&shot=words&lang=en', `({
+      cards: [...document.querySelectorAll('.cv-item')].filter((e) => e.dataset.kind !== 'ha.room').map((e) => {
+        const t = e.querySelector('.cv-ha-tile');
+        const st = t?.querySelector('.cv-ha-state');
+        return [e.dataset.kind, e.querySelector('.cv-body')?.dataset.size ?? '', st?.textContent ?? '', st?.children.length ?? -1, (/tone-([a-z]+)/.exec(t?.className ?? '') ?? [])[1] ?? ''];
+      }),
+      room: [...document.querySelectorAll('.cv-item[data-kind="ha.room"] .cv-ha-row .cv-ha-state')].map((e) => e.textContent),
+    })`);
+    assert.deepEqual(errors, []);
+    const by = (text) => v.cards.find((c) => c[2] === text);
+    // the demo's states: the door closed, motion, the coffee machine on, the window closed, the garden door open
+    assert.deepEqual(by('Bien cerrada')?.slice(0, 1), ['ha.tile'], JSON.stringify(v));
+    assert.equal(by('Bien cerrada')[4], 'good', 'Color si no (green) with the own word');
+    assert.equal(by('Alguien pasa')?.[0], 'ha.sensor', JSON.stringify(v));
+    assert.equal(by('En marcha')?.[0], 'ha.switch', JSON.stringify(v));
+    assert.equal(by('Ventana cerrada')?.[0], 'ha.tile', 'the line look of an Entidad card');
+    assert.equal(by('Jardín abierto')?.[0], 'ha.sensor', 'the line look of a Sensor card');
+    assert.equal(by('Jardín abierto')[4], 'warn', 'Color si está activo (yellow) with the own word');
+    for (const c of v.cards) assert.equal(c[3], 0, `${c[2]}: plain text`);
+    assert.deepEqual(v.room, ['Sin nadie', 'Wet'], 'a row with its own words, the next one as Home Assistant says it');
   });
 
   // every Casa card (and the Sección) at every size it allows, with the defaults and normal names (every third one

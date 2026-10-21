@@ -38,7 +38,8 @@ const daMod = await load('../../web/admin/i18n-dict-da.ts');
 const plMod = await load('../../web/admin/i18n-dict-pl.ts');
 const shared = await load('../../web/shared/i18n.ts');
 const access = await load('../../web/admin/i18n-dict-access.ts');
-const ts = { skip: dict && plural && family && nlMod && daMod && plMod && shared && access ? false : 'TypeScript imports need Node >= 22.18' };
+const binary = await load('../../web/display/widgets/ha/binaryWords.ts');
+const ts = { skip: dict && plural && family && nlMod && daMod && plMod && shared && access && binary ? false : 'TypeScript imports need Node >= 22.18' };
 
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 const holes = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(',');
@@ -155,6 +156,35 @@ test('display: every key in Dutch, Danish and Polish with the same placeholders;
     shared.DICTS.da.today = saved;
   }
   assert.equal(shared.t('nl', 'inMinutes', { n: 5 }), 'Over 5 min');
+});
+
+// Home Assistant's binary sensor device classes (homeassistant/components/binary_sensor/__init__.py)
+const HA_BINARY_CLASSES = [
+  'battery', 'battery_charging', 'carbon_monoxide', 'cold', 'connectivity', 'door', 'garage_door', 'gas', 'heat', 'light', 'lock', 'moisture', 'motion',
+  'moving', 'occupancy', 'opening', 'plug', 'power', 'presence', 'problem', 'running', 'safety', 'smoke', 'sound', 'tamper', 'update', 'vibration', 'window',
+];
+test('display (#20): every binary sensor device class says its on and off state in every language, short and different, a lock on is unlocked', ts, () => {
+  assert.deepEqual(Object.keys(binary.BINARY_KEY).sort(), [...HA_BINARY_CLASSES].sort());
+  for (const lang of shared.LANGS) {
+    const d = shared.DICTS[lang];
+    for (const dc of HA_BINARY_CLASSES) {
+      const on = d[binary.binaryKey(true, dc)];
+      const off = d[binary.binaryKey(false, dc)];
+      assert.ok(typeof on === 'string' && on.trim() && typeof off === 'string' && off.trim(), `${lang} ${dc}: ${on} / ${off}`);
+      assert.notEqual(on, off, `${lang} ${dc}`);
+      assert.ok(on.length <= 24 && off.length <= 24, `${lang} ${dc}: short enough for a tile`);
+      assert.doesNotMatch(on + off, /\u2014/, `${lang} ${dc}: no em dash`);
+    }
+    // on is unlocked, off is locked, as Home Assistant has it
+    assert.equal(d[binary.binaryKey(true, 'lock')], d.haUnlocked, lang);
+    assert.equal(d[binary.binaryKey(false, 'lock')], d.haLocked, lang);
+  }
+  assert.deepEqual([binary.binaryKey(true, 'plug'), binary.binaryKey(false, 'plug')], ['haBinPlugged', 'haBinUnplugged']);
+  assert.deepEqual([binary.binaryKey(true, 'presence'), binary.binaryKey(false, 'presence')], ['haHome', 'haAway']);
+  // a class Home Assistant does not have (or none): on and off; nothing from the object's prototype
+  assert.deepEqual([binary.binaryKey(true, ''), binary.binaryKey(false, 'nonsense'), binary.binaryKey(true, 'constructor')], ['haOn', 'haOff', 'haOn']);
+  assert.equal(shared.DICTS.en[binary.binaryKey(false, 'plug')], 'Unplugged');
+  assert.equal(shared.DICTS.es[binary.binaryKey(true, 'lock')], 'Sin llave');
 });
 
 test('display: pairing screen texts in Dutch, Danish and Polish', () => {

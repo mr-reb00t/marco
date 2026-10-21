@@ -884,7 +884,7 @@ export const CANVAS_KINDS = {
       if (Array.isArray(x.features)) features = [...new Set(x.features.filter((f) => TILE_FEATURES.includes(f)))].slice(0, 3);
       else if (x.features !== undefined && x.features !== null) c.err(`${p}.features`, 'expected array');
       const [lo, hi] = rangeOf(c, p, x.gaugeMin, x.gaugeMax, 'gaugeMin', 'gaugeMax');
-      return { features, gaugeMin: lo, gaugeMax: hi, ...stateColorsOf(c, p, x) };
+      return { features, gaugeMin: lo, gaugeMax: hi, ...stateColorsOf(c, p, x), ...stateWordsOf(c, p, x) };
     },
   }),
   'ha.light': haKind(['row', 'xs', 's', 'sq', 'm', 't'], 's', [2, 1, 6, 4], 'light', {
@@ -896,7 +896,7 @@ export const CANVAS_KINDS = {
       brightness: P.bool(c, `${p}.brightness`, x.brightness, true), colorTemp: P.bool(c, `${p}.colorTemp`, x.colorTemp, true),
     }),
   }),
-  'ha.switch': haKind(['row', 'xs', 's'], 'xs', [2, 1, 6, 4], 'switch', { controls: true, one: true, state: true, extra: (c, p, x) => stateColorsOf(c, p, x) }),
+  'ha.switch': haKind(['row', 'xs', 's'], 'xs', [2, 1, 6, 4], 'switch', { controls: true, one: true, state: true, extra: (c, p, x) => ({ ...stateColorsOf(c, p, x), ...stateWordsOf(c, p, x) }) }),
   'ha.climate': haKind(['row', 'xs', 's', 'w', 'm', 't'], 'm', [2, 1, 6, 5], 'climate', {
     controls: true, one: true, bigType: true, state: true,
     // a new card shows a short set of modes (null: off and the two the entity has that people use most), no fan
@@ -918,8 +918,9 @@ export const CANVAS_KINDS = {
         chartStyle: P.oneOf(c, `${p}.chartStyle`, x.chartStyle, 'background', CHART_STYLES),
         thresholds: thresholdsOf(c, `${p}.thresholds`, x.thresholds),
         invert: P.bool(c, `${p}.invert`, x.invert, false),
-        // a binary sensor (a door, a window): its colour open and closed
+        // a binary sensor (a door, a window): its colour and its words open and closed
         ...stateColorsOf(c, p, x),
+        ...stateWordsOf(c, p, x),
       };
     },
   }),
@@ -949,7 +950,7 @@ export const CANVAS_KINDS = {
     defaults: () => ({ title: '', rows: [] }),
     props: (c, p, x) => ({
       title: P.str(c, `${p}.title`, x.title, '', 40),
-      rows: P.list(c, `${p}.rows`, x.rows, 6, (r, q) => ({ entity: P.entity(c, `${q}.entity`, r.entity, DOMAINS.tile), name: P.str(c, `${q}.name`, r.name, '', 40), interactive: P.bool(c, `${q}.interactive`, r.interactive, true) })),
+      rows: P.list(c, `${p}.rows`, x.rows, 6, (r, q) => ({ entity: P.entity(c, `${q}.entity`, r.entity, DOMAINS.tile), name: P.str(c, `${q}.name`, r.name, '', 40), interactive: P.bool(c, `${q}.interactive`, r.interactive, true), ...stateWordsOf(c, q, r) })),
     }),
   },
   'ha.chart': {
@@ -1277,6 +1278,20 @@ export const STATE_COLORS = ['auto', 'green', 'yellow', 'red'];
 const stateColorsOf = (c, p, x) => ({
   colorOn: P.oneOf(c, `${p}.colorOn`, x.colorOn, 'auto', STATE_COLORS),
   colorOff: P.oneOf(c, `${p}.colorOff`, x.colorOff, 'auto', STATE_COLORS),
+});
+
+/**
+ * The owner's own words for the state (Texto si está activo / Texto si no, #20): plain text shown as it is, '' for the
+ * automatic words (binaryWords.ts). Trimmed, one line, up to 24 characters.
+ */
+const STATE_WORD_MAX = 24;
+const stateWordOf = (c, path, v) => {
+  const s = P.str(c, path, typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : v, '', STATE_WORD_MAX);
+  return s.trim();
+};
+const stateWordsOf = (c, p, x) => ({
+  textOn: stateWordOf(c, `${p}.textOn`, x.textOn),
+  textOff: stateWordOf(c, `${p}.textOff`, x.textOff),
 });
 
 /** Two breakpoints of a value's colour (ok below the first, warn between, err above the second), or null. */

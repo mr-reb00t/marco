@@ -106,6 +106,10 @@ const DEMO: Record<string, HaSlim[]> = {
     { d: 'binary', on: false, dc: 'smoke', n: 'Humo de la cocina' },
     { d: 'binary', on: true, dc: 'connectivity', n: 'Router' },
     { d: 'binary', on: false, dc: 'occupancy', n: 'Despacho' },
+    { d: 'binary', on: false, dc: 'plug', n: 'Cargador del coche' },
+    { d: 'binary', on: false, dc: 'lock', n: 'Cerradura de la entrada' },
+    { d: 'binary', on: true, dc: 'presence', n: 'Ana' },
+    { d: 'binary', on: true, dc: 'plug', n: 'Lavadora' },
   ],
   media_player: [
     { d: 'media', state: 'playing', title: 'Blue in Green', artist: 'Miles Davis', vol: 0.35, art: false, n: 'Altavoz del salón' },

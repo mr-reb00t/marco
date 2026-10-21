@@ -26,7 +26,8 @@ export type Spec =
   | { k: 'place'; type: 'place'; label: string }
   /** the places of "Tiempo en varias ciudades" (2 to 8) */
   | { k: 'places'; type: 'places'; label: string }
-  | { k: string; type: 'text'; label: string; max: number; placeholder?: string; hint?: string }
+  /** `show`: only while it applies */
+  | { k: string; type: 'text'; label: string; max: number; placeholder?: string; hint?: string; show?: (p: Record<string, any>) => boolean }
   /** one Home Assistant entity of the kind's domains (canvasCore CANVAS_KINDS[kind].ha), or of `domains` */
   | { k: 'entity' | 'showWhen'; type: 'entity'; label: string; domains?: string[]; optional?: boolean; hint?: string }
   /** a room's rows: an entity and an optional name each, up to six */
@@ -66,6 +67,10 @@ const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
 const DATE_POS_FIELD: Spec = { k: 'datePos', type: 'seg', label: 'Posición de la fecha', opts: [{ v: 'above', l: 'Arriba' }, { v: 'below', l: 'Abajo' }] };
 const HA_NAME: Spec = { k: 'name', type: 'text', label: 'Nombre', max: 40, hint: 'Vacío: el nombre que tiene en Home Assistant.' };
 const SHOW_NAME: Spec = { k: 'showName', type: 'bool', label: 'Mostrar nombre' };
+/** The card's own words for the state (#20), beside its colours: empty for the words Home Assistant uses. */
+const isBinary = (p: Record<string, any>) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.');
+const TEXT_ON = (hint: string, show?: (p: Record<string, any>) => boolean): Spec => ({ k: 'textOn', type: 'text', label: 'Texto si está activo', max: 24, hint, ...(show ? { show } : {}) });
+const TEXT_OFF = (hint: string, show?: (p: Record<string, any>) => boolean): Spec => ({ k: 'textOff', type: 'text', label: 'Texto si no', max: 24, hint, ...(show ? { show } : {}) });
 const SHOW_STATE: Spec = { k: 'showState', type: 'bool', label: 'Mostrar estado', hint: 'La línea que dice cómo está (Encendido, Abierta, 21 °C).' };
 /** "Estilo de la gráfica" (canvasCore CHART_STYLES): the chart under the numbers or filling the card behind them. */
 const CHART_STYLE = (hint: string, show?: (p: Record<string, any>, widgets: { id: string; type: string }[]) => boolean): Spec => ({
@@ -238,6 +243,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'gaugeMax', type: 'number', label: 'La barra termina en', show: (p) => Array.isArray(p.features) && p.features.includes('gauge') },
     { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Abierto, encendido o detectado. Automático: el color de Home Assistant.' },
     { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Cerrado, apagado o sin nada detectado.' },
+    TEXT_ON('Por ejemplo Enchufado o Abierta. Vacío: lo que dice Home Assistant.'),
+    TEXT_OFF('Por ejemplo Desenchufado o Cerrada. Vacío: lo que dice Home Assistant.'),
   ],
   'ha.gauge': [
     { k: 'entity', type: 'entity', label: 'Sensor' },
@@ -281,8 +288,10 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     CHART_STYLE('De fondo: la curva llena la parte de abajo de la tarjeta, detrás del valor. Debajo: en una franja propia bajo el valor.', (p) => !!p.sparkline),
     { k: 'thresholds', type: 'thresholds', label: 'Colores según el valor', hint: 'Verde por debajo del primero, amarillo entre los dos y rojo por encima del segundo.' },
     { k: 'invert', type: 'bool', label: 'Al revés', hint: 'Rojo por debajo y verde por encima, por ejemplo para la batería.' },
-    { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Abierto o detectado. Automático: el color de Home Assistant.', show: (p) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.') },
-    { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Cerrado o sin nada detectado.', show: (p) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.') },
+    { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Abierto o detectado. Automático: el color de Home Assistant.', show: isBinary },
+    { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Cerrado o sin nada detectado.', show: isBinary },
+    TEXT_ON('Por ejemplo Enchufado o Abierta. Vacío: lo que dice Home Assistant.', isBinary),
+    TEXT_OFF('Por ejemplo Desenchufado o Cerrada. Vacío: lo que dice Home Assistant.', isBinary),
   ],
   'ha.room': [
     { k: 'title', type: 'text', label: 'Nombre de la habitación', max: 40, placeholder: 'Salón' },
@@ -319,6 +328,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     SHOW_STATE,
     { k: 'colorOn', type: 'seg', label: 'Color si está activo', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Encendido. Automático: el color de Home Assistant.' },
     { k: 'colorOff', type: 'seg', label: 'Color si no', opts: [{ v: 'auto', l: 'Automático' }, { v: 'green', l: 'Verde' }, { v: 'yellow', l: 'Amarillo' }, { v: 'red', l: 'Rojo' }], hint: 'Apagado.' },
+    TEXT_ON('Por ejemplo En marcha. Vacío: Encendido.'),
+    TEXT_OFF('Por ejemplo Parado. Vacío: Apagado.'),
     { type: 'note', text: 'Toca el icono para encender o apagar.' },
   ],
   'ha.climate': [

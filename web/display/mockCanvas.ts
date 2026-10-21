@@ -1,5 +1,5 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
-// the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
+// the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
 // household, look, values, ink, places, motion, motion-group, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
@@ -300,6 +300,18 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       ...[0, 3, 6, 9].map((x) => ({ kind: 'ha.sensor' as const, pos: M(x * 2, 4, 's'), props: { entity: `binary_sensor.b${x}` } })),
       ...[0, 6].map((x) => ({ kind: 'ha.sensor' as const, pos: M(x * 2, 8, 'w'), props: { entity: `binary_sensor.c${x}` } })),
       ...[0, 3, 6, 9].flatMap((x) => [6, 7].map((y) => ({ kind: 'ha.sensor' as const, pos: M(x * 2, y * 2, 'row'), props: { entity: `binary_sensor.d${x}_${y}` } }))),
+    ],
+  },
+  // the owner's own words for the state (#20): Entidad, Sensor and Interruptor at the Mini and the line, and a room's row
+  words: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'ha.tile', pos: M(0, 0, 'xs'), props: { entity: 'binary_sensor.w_door', textOn: 'Abierta, ojo', textOff: 'Bien cerrada', colorOff: 'green' } },
+      { kind: 'ha.sensor', pos: M(4, 0, 'xs'), props: { entity: 'binary_sensor.w_motion', textOn: 'Alguien pasa', textOff: 'Nadie' } },
+      { kind: 'ha.switch', pos: M(8, 0, 'xs'), props: { entity: 'switch.w_coffee', textOn: 'En marcha', textOff: 'Parada' } },
+      { kind: 'ha.tile', pos: M(0, 6, 'row'), props: { entity: 'binary_sensor.w_window', textOn: 'Ventana abierta', textOff: 'Ventana cerrada' } },
+      { kind: 'ha.sensor', pos: M(0, 8, 'row'), props: { entity: 'binary_sensor.w_garden', textOn: 'Jardín abierto', textOff: 'Jardín cerrado', colorOn: 'yellow' } },
+      { kind: 'ha.room', pos: M(12, 0, 'm'), props: { title: 'Cocina', rows: [{ entity: 'binary_sensor.w_terrace', name: '', interactive: false, textOn: 'Alguien fuera', textOff: 'Sin nadie' }, { entity: 'binary_sensor.w_leak', name: '', interactive: false }] } },
     ],
   },
   // every Casa card at its smallest size (Mini), the Entidad card with each kind of entity
