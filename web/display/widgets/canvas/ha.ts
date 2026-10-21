@@ -8,7 +8,7 @@
 import type { DisplayCanvasItem, HaHistory, HaState } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { isPreview } from '../../identity';
-import { HA_ICON, ago, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, stateIcon, stateText, stateTone, tone, type HaIconName } from '../ha/haui';
+import { HA_ICON, ago, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, ownStateText, stateIcon, stateText, stateTone, tone, type HaIconName } from '../ha/haui';
 import { now as clockNow, onTick } from '../../time';
 import { bigType, fitWidth, typeCap } from './clock';
 import { drawTile, fitTile } from './haTile';
@@ -434,7 +434,7 @@ function drawRoom(root: HTMLElement, env: AdapterEnv): void {
       const sw = el('span', `cv-ha-switch${s.on ? ' is-on' : ''}`);
       sw.appendChild(el('i', ''));
       row.append(sw);
-    } else row.append(el('span', 'cv-ha-state', stateText(s)));
+    } else row.append(el('span', 'cv-ha-state', ownStateText(s, r) || stateText(s)));
     tappable(row, env, a, s);
     list.appendChild(row);
   }

@@ -5,6 +5,19 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- Binary sensors say what they mean (#20). Every Home Assistant device class now has its own words, as Home Assistant
+  shows them, in every language: a plug *Plugged in* or *Unplugged*, a lock *Locked* or *Unlocked*, a door *Open* or
+  *Closed*, presence *Home* or *Away*, smoke, gas and motion *Detected* or *Clear*, a battery *Low* or *Normal*, and so
+  on for running, moving, tamper, update and the rest.
+- *Text when active* and *Text when not* on the *Entity*, *Sensor* (binary sensors) and *Switch* cards, next to their
+  colours: your own words for the two states, up to 24 characters, in every size and look. A *Room* card's binary
+  sensor rows take them too. Empty keeps the words Home Assistant uses.
+
+### Changed
+- A motion, occupancy, sound or vibration sensor says *Detected* or *Clear*, as Home Assistant does (they said
+  *Motion* / *No motion*, *Occupied* / *Clear* and the like before).
+
 ## [0.19.3] - 2026-10-21
 
 ### Fixed

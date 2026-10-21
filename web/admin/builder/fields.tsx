@@ -143,10 +143,13 @@ function Zones({ value, onChange }: { value: { tz: string; label: string }[]; on
   );
 }
 
-type Row = { entity: string; name: string; interactive: boolean };
+type Row = { entity: string; name: string; interactive: boolean; textOn?: string; textOff?: string };
 type Series = { entity: string; label: string; color: string | null };
 
-/** A room's rows: an entity and a name each (empty: Home Assistant's name), up to six. */
+/**
+ * A room's rows: an entity and a name each (empty: Home Assistant's name), up to six. A binary sensor also takes its
+ * own words for the state (#20; empty: what Home Assistant says).
+ */
 function Rows({ value, domains, env, onChange }: { value: Row[]; domains: readonly string[]; env: FieldEnv; onChange: (v: Row[]) => void }) {
   const rows = Array.isArray(value) ? value : [];
   const put = (i: number, r: Partial<Row>) => onChange(rows.map((x, j) => (j === i ? { ...x, ...r } : x)));
@@ -161,6 +164,12 @@ function Rows({ value, domains, env, onChange }: { value: Row[]; domains: readon
               ×
             </button>
           </div>
+          {typeof r.entity === 'string' && r.entity.startsWith('binary_sensor.') && (
+            <div class="bld-ha-line">
+              <TextInput value={r.textOn ?? ''} maxLength={24} placeholder={t('Texto si está activo')} onValue={(v) => put(i, { textOn: v })} aria-label={t('Texto si está activo')} />
+              <TextInput value={r.textOff ?? ''} maxLength={24} placeholder={t('Texto si no')} onValue={(v) => put(i, { textOff: v })} aria-label={t('Texto si no')} />
+            </div>
+          )}
         </div>
       ))}
       {rows.length < 6 && (
@@ -433,12 +442,14 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
               <PlaceList value={p.places} min={CITIES_MIN} max={CITIES_MAX} onChange={(v) => put('places', v, `${item.id}.places`)} />
             </Field>
           );
-        if (s.type === 'text')
+        if (s.type === 'text') {
+          if (s.show && !s.show(p)) return null;
           return (
             <Field label={t(s.label)} hint={s.hint ? t(s.hint) : undefined}>
               <TextInput value={String(p[s.k] ?? '')} maxLength={s.max} placeholder={s.placeholder ? t(s.placeholder) : undefined} onValue={(v) => put(s.k, v, `${item.id}.${s.k}`)} />
             </Field>
           );
+        }
         if (s.type === 'entity')
           return (
             <Field label={t(s.label)} hint={!env.ha ? t('Activa Home Assistant en su sección para elegir entidades.') : s.hint ? t(s.hint) : undefined}>

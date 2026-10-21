@@ -3,6 +3,7 @@
 // are static SVG strings.
 import type { HaState } from '../../../shared/types';
 import { ctx } from '../../ctx';
+import { binaryKey } from './binaryWords';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -167,21 +168,9 @@ export function stateText(s: HaState | null, decimals = 1): string {
   }
 }
 
-/** What a binary sensor says, by its device class: [on, off] keys (unknown classes: Encendido / Apagado). */
-const BINARY_KEY: Record<string, [string, string]> = {
-  door: ['haOpen', 'haClosed'], garage_door: ['haOpen', 'haClosed'], opening: ['haOpen', 'haClosed'], window: ['haOpen', 'haClosed'],
-  motion: ['haBinMotion', 'haBinNoMotion'], moving: ['haBinMotion', 'haBinNoMotion'], occupancy: ['haBinOccupied', 'haBinFree'],
-  presence: ['haHome', 'haAway'], moisture: ['haBinWet', 'haBinDry'],
-  smoke: ['haDetected', 'haBinNormal'], gas: ['haDetected', 'haBinNormal'], carbon_monoxide: ['haDetected', 'haBinNormal'],
-  connectivity: ['haBinConnected', 'haBinDisconnected'], battery: ['haBinBatteryLow', 'haBinNormal'], battery_charging: ['haBinCharging', 'haBinNotCharging'],
-  problem: ['haBinProblem', 'haBinOk'], safety: ['haBinUnsafe', 'haBinSafe'], tamper: ['haBinTampered', 'haBinOk'],
-  sound: ['haBinSound', 'haBinQuiet'], vibration: ['haBinVibration', 'haBinStill'], light: ['haBinLight', 'haBinNoLight'],
-  heat: ['haBinHot', 'haBinNormal'], cold: ['haBinCold', 'haBinNormal'], lock: ['haUnlocked', 'haLocked'],
-  plug: ['haOn', 'haOff'], power: ['haOn', 'haOff'], running: ['haOn', 'haOff'], update: ['haUpdateAvail', 'haUpToDate'],
-};
+/** What a binary sensor says, by its device class (binaryWords.ts; unknown classes: Encendido / Apagado). */
 export function binaryText(on: boolean, dc: string): string {
-  const k = BINARY_KEY[dc] ?? ['haOn', 'haOff'];
-  return ctx.t(on ? k[0] : k[1]);
+  return ctx.t(binaryKey(on, dc));
 }
 
 /** The common states of the other domains (a sun, a remote, a person's tracker) in the screen's language. */
@@ -247,6 +236,21 @@ export function stateTone(s: HaState | null, p: { colorOn?: unknown; colorOff?: 
   if (t === 'na') return t;
   const c = t === 'off' ? p.colorOff : p.colorOn;
   return typeof c === 'string' && c in PICKED ? PICKED[c as keyof typeof PICKED] : t;
+}
+
+/** The states that are either active or not, where the owner's own words fit (a number or a climate keeps its own). */
+const WORD_DOMAINS = ['binary', 'switch', 'light', 'lock', 'cover', 'valve', 'alarm'];
+
+/**
+ * The owner's own word for the state (Texto si está activo / Texto si no, textOn / textOff), or '' for the automatic
+ * one: active and not as the colours read them (stateTone), never for an entity that is unavailable.
+ */
+export function ownStateText(s: HaState | null, p: { textOn?: unknown; textOff?: unknown }): string {
+  if (!s || !WORD_DOMAINS.includes(s.d)) return '';
+  const t = tone(s);
+  if (t === 'na') return '';
+  const w = t === 'off' ? p.textOff : p.textOn;
+  return typeof w === 'string' ? w.trim() : '';
 }
 
 /** The domain an alias was bound to ({ a, d } in the item's props), or ''. */

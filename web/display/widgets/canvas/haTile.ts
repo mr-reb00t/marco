@@ -7,7 +7,7 @@
 import type { DisplayCanvasItem, HaState, HaStatistic, TileFeature } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { sizeCells } from '../../../../server/core/canvasCore.js';
-import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, stateIcon, stateText, stepDecimals, svgEl, stateTone, tone } from '../ha/haui';
+import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, ownStateText, stateIcon, stateText, stepDecimals, svgEl, stateTone, tone } from '../ha/haui';
 import { bigType, fitWidth, typeCap } from './clock';
 import { el, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
 import { climateState, colorRow, ctChips, fitSwatches, kelvinRgb } from './haControls';
@@ -279,7 +279,8 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   // a binary sensor that is active (motion, water, a door open) breathes softly (never in lite or low power)
   const wrap = el('div', `cv-ha-tile tone-${tn}${s?.d === 'binary' && t0 !== 'off' && t0 !== 'na' ? ' is-pulse' : ''}`);
   const txt = el('div', 'cv-ha-txt');
-  const stEl = el('span', 'cv-ha-state cv-sec3', tileStateText(s, drawn, size === 'row', p.decimals));
+  // the owner's own words (Texto si está activo / Texto si no) before the automatic ones, always as text
+  const stEl = el('span', 'cv-ha-state cv-sec3', ownStateText(s, p) || tileStateText(s, drawn, size === 'row', p.decimals));
   // a sensor's "Colores según el valor" in the small look too (the value is the state line there)
   const lvT = s?.d === 'sensor' && s.num !== null ? level(s.num, p.thresholds, !!p.invert) : '';
   if (lvT) stEl.classList.add(`lv-${lvT}`);
@@ -361,7 +362,9 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
     // the state line again, for the rows that are left
     const left = [...root.querySelectorAll('.cv-ha-feat')].map((r) => r.className.replace(/.*\bfeat-(\w+).*/, '$1') as TileFeature);
     const st = root.querySelector('.cv-ha-tile .cv-ha-state');
-    if (st) st.textContent = tileStateText(env.ha.state(aliasOf((env.item().props as Props).entity)), left);
+    const ip = env.item().props as Props;
+    const sNow = env.ha.state(aliasOf(ip.entity));
+    if (st) st.textContent = ownStateText(sNow, ip) || tileStateText(sNow, left);
     wk = wk0;
     root.style.setProperty('--wk', wk.toFixed(3));
     smaller(wk0 * 0.9);
