@@ -3,6 +3,7 @@
 // placeholder card of a widget this screen cannot show. Item text is written with textContent only.
 import type { DisplayCanvasItem, DisplayValue, Photo } from '../../../shared/types';
 import { ctx } from '../../ctx';
+import { mediaUrl } from '../../identity';
 import { reducedMotion } from '../../dom';
 import { state } from '../../store';
 import { renderMessage, renderTodo } from '../extras';
@@ -200,7 +201,9 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       cap.textContent = props.caption ? [p.title, p.place, p.author].filter(Boolean).join(' · ') : '';
     };
     img.onerror = () => undefined;
-    img.src = p.url;
+    // a gallery photo carries the display's credential (?k=): an <img> sends no header, and without it a screen on a
+    // private link or a paired device gets 401 and the card stays black (only an admin session's cookie got through)
+    img.src = mediaUrl(p.url);
     timer = setTimeout(show, Math.min(600, Math.max(10, Number(props.intervalSec) || 60)) * 1000);
   };
   return {

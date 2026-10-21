@@ -5,6 +5,13 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.19.4] - 2026-10-21
+
+### Fixed
+- A *Photos* card on a *Personalizado* screen stayed black with the gallery as the photo source on every screen but
+  the admin's own browser: on a private link or a paired device it asked for the photos without the screen's key, so
+  the server refused them. It shows your photos now, like the background does.
+
 ## [0.19.3] - 2026-10-21
 
 ### Fixed
