@@ -6,7 +6,7 @@
 // of them (Casa) stays folded with that badge.
 import { useMemo, useRef, useState } from 'preact/hooks';
 import type { CanvasConfig, CanvasKind, WidgetDef } from '../../shared/types';
-import { CANVAS_KINDS, canvasDefaults } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasDefaults, groupDefaults } from '../../../server/core/canvasCore.js';
 import { Icon } from '../components/icons';
 import { SearchInput } from '../components/ui';
 import { t } from '../i18n';
@@ -40,6 +40,21 @@ const haSwitch = (): Record<string, unknown> => ({
     { id: '', kind: 'ha.camera', props: canvasDefaults('ha.camera'), when: { src: 'ha', entity: '', op: 'eq', value: 'on' } },
   ],
 });
+
+/**
+ * "Cambiar un espacio según Casa" (#19): a Rotativa of a camera and a group of three Entidad cards in rows, the camera
+ * while the sensor the owner picks is on, the three cards while it is off.
+ */
+const haSpace = (): Record<string, unknown> => {
+  const g = groupDefaults(['ha.tile', 'ha.tile', 'ha.tile'], 'rows');
+  return {
+    ...canvasDefaults('rotator'),
+    cards: [
+      { id: '', kind: 'ha.camera', props: canvasDefaults('ha.camera'), when: { src: 'ha', entity: '', op: 'eq', value: 'on' } },
+      { ...g, when: { src: 'ha', entity: '', op: 'eq', value: 'off' } },
+    ],
+  };
+};
 
 /** The default size of a kind, drawn on a tiny 12×8 grid. */
 function MiniSize({ kind }: { kind: CanvasKind }) {
@@ -89,6 +104,11 @@ export function Palette(props: {
       const name = 'Cambiar según Casa';
       const help = 'Dos tarjetas en el mismo hueco: se ve una u otra según Home Assistant. En cada una eliges cuándo se ve.';
       out.push({ key: 'rot:ha', spec: { kind: 'rotator', props: haSwitch(), label: name }, name, help, icon: 'repeat', group: 'home', lock: lockOf('ha.camera', props) ?? lockOf('rotator', props), away: outOfEdition('ha.camera', props) });
+    }
+    {
+      const name = 'Cambiar un espacio según Casa';
+      const help = 'Una cámara y un grupo de tres tarjetas en el mismo hueco: la cámara cuando hay movimiento, las tres tarjetas cuando no.';
+      out.push({ key: 'rot:ha-space', spec: { kind: 'rotator', props: haSpace(), label: name }, name, help, icon: 'layout', group: 'home', lock: lockOf('ha.camera', props) ?? lockOf('rotator', props), away: outOfEdition('ha.camera', props) });
     }
     for (const w of props.widgets) {
       const name = w.name.trim() || t('Widget sin nombre');

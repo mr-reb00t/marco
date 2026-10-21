@@ -327,6 +327,13 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   card around the transparent frame. The document is rebuilt only when what it shows changes, at most every 2 s
   (30 s in lite or on a slow device; a value that arrives, a new look or a new minute shows at once), and the new
   frame replaces the old one once loaded. At most 3 per screen; Marco Cloud refuses the kind.
+- The *Rotativa* (Personalizado kind `rotator`; `web/display/widgets/canvas.ts` syncSubs and
+  `widgets/canvas/rotator.ts`): one slide per card in the card's body, each card with an adapter of its own, every
+  slide fitted to the box (the hidden ones too) and one on show. A group (#19, `{ kind: "group", props: { dir, cards
+  } }`) is one slide that holds a body per card, in rows or columns (`.cv-rot-grp`, `.cv-grp-cell`); each card is
+  fitted to its equal share of the box in whole cells (`sharePos`: the compact look when that share is small, the
+  share in `data-cells`), and the slide is skipped while all of its cards are empty or the group's condition does
+  not hold.
 - The display page (`/`, `/index.html`, `/pair`, `/d/<key>`) is sent with
   `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none';
   form-action 'none'; frame-ancestors 'self'` (`server/app.js displayCsp`). While some screen has a custom HTML card

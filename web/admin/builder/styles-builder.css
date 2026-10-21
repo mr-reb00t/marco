@@ -208,6 +208,11 @@
 .bld-rot__chev { transition: transform 0.15s ease; transform: rotate(-90deg); }
 .bld-rot__chev.is-open { transform: none; }
 .bld-rot__body { padding: 4px 10px 12px; border-top: 1px solid var(--border); }
+/* "Añadir una tarjeta" and "Añadir grupo" side by side; a group's own list of cards inside its row */
+.bld-rot__add { display: flex; gap: 8px; align-items: center; }
+.bld-rot__add > .select { flex: 1; min-width: 0; }
+.bld-rot__add > .btn { flex: none; display: inline-flex; align-items: center; gap: 6px; }
+.bld-rot__body .bld-rot__list { margin-top: 2px; }
 
 /* ---------------------------------------------------------------- inspector */
 .bld-inspector { padding: 14px 16px 24px; }

@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -354,6 +354,18 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       ] } },
     ],
   },
+  // a space that changes with Home Assistant (#19, "Grupo"): a Rotativa of 3×3 cells shows the hall camera while
+  // someone moves and a group of three entity cards in rows while all is clear (&motion=on|off, as 'motion'); a
+  // second one at its smallest with the group in columns (6×2), and a larger one in rows
+  'motion-group': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'rotator', pos: B(8, 0, 3, 3), props: { everySec: 5, cards: motionGroup('rows') } },
+      { kind: 'rotator', pos: B(12, 0, 6, 2), props: { everySec: 5, cards: motionGroup('cols') } },
+      { kind: 'rotator', pos: M(8, 6, 'l'), props: { everySec: 5, cards: motionGroup('rows') } },
+    ],
+  },
   // cameras with a chart: a snapshot card with its name, one set to live (the demo shows snapshots), one that waits
   // for a motion sensor, and a picture shown whole
   cameras: {
@@ -539,6 +551,16 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
     ],
   },
 };
+
+/** The cards of a Rotativa of the 'motion-group' demo: the hall camera, or a group of three entity cards (#19). */
+function motionGroup(dir: 'rows' | 'cols'): Record<string, unknown>[] {
+  const when = (value: string) => ({ src: 'ha', entity: 'binary_sensor.hall_motion', op: 'eq', value });
+  const tile = (entity: string, name: string) => ({ id: '', kind: 'ha.tile', props: { ...canvasDefaults('ha.tile'), entity, name } });
+  return [
+    { id: '', kind: 'ha.camera', props: { ...canvasDefaults('ha.camera'), entity: 'camera.hall' }, when: when('on') },
+    { id: '', kind: 'group', props: { dir, cards: [tile('light.hall', 'Pasillo'), tile('binary_sensor.front_door', 'Puerta'), tile('sensor.living_temperature', 'Salón')] }, when: when('off') },
+  ];
+}
 
 /** The demo's pushed values (?demo=1): made up, a few minutes old; the mailbox one is three hours old (stale). */
 export function demoValues(cfg: DisplayConfig | null): Record<string, DisplayValue> {

@@ -1003,9 +1003,23 @@ export interface RotatorCard {
   /** its own "Mostrar solo si": while it does not hold, the Rotativa skips the card */
   when?: CanvasCondition;
 }
-/** A Rotativa's props: its cards (2 to 6), "Cambiar cada" in seconds (5 to 120) and the dots. */
+/** A card of a Rotativa's group: a kind of its own with its own props (the group has the condition). */
+export type RotatorMember = Omit<RotatorCard, 'when'>;
+/**
+ * A group of a Rotativa ("Grupo", #19): 2 to 4 cards that share its box in equal parts, stacked in rows or side by
+ * side in columns, shown and skipped together by the group's own "Mostrar solo si".
+ */
+export interface RotatorGroup {
+  id: string;
+  kind: 'group';
+  props: { dir: 'rows' | 'cols'; cards: RotatorMember[] };
+  when?: CanvasCondition;
+}
+/** One card of a Rotativa's list: a card or a group of cards. */
+export type RotatorEntry = RotatorCard | RotatorGroup;
+/** A Rotativa's props: its cards (2 to 6, a group is one), "Cambiar cada" in seconds (5 to 120) and the dots. */
 export interface RotatorProps {
-  cards: RotatorCard[];
+  cards: RotatorEntry[];
   everySec: number;
   dots: boolean;
 }
@@ -1018,6 +1032,15 @@ export interface DisplayRotatorCard {
   when?: { src: 'ha' | 'value' };
   v: string;
   disabled?: 'feature' | 'privacy' | 'setup';
+}
+/** A Rotativa's group as the display gets it: its cards projected like the others (no condition of their own). */
+export interface DisplayRotatorGroup {
+  id: string;
+  kind: 'group';
+  props: { dir: 'rows' | 'cols'; cards: DisplayRotatorCard[] };
+  when?: { src: 'ha' | 'value' };
+  v: string;
+  disabled?: undefined;
 }
 
 /** One item as the display gets it (entity ids replaced by aliases, privacy and edition applied). */

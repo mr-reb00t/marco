@@ -402,7 +402,8 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
  * such boxes take the stacked line, so a line of its own size looks as it always did.
  */
 function belowRow(root: HTMLElement): boolean {
-  const w = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[0]);
+  // (the nearest box with cells: a card's, or its share of a Rotativa's group)
+  const w = Number(root.closest<HTMLElement>('[data-cells]')?.dataset.cells?.split('x')[0]);
   const grid = root.closest<HTMLElement>('#canvas');
   if (!w || !grid) return false;
   const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
