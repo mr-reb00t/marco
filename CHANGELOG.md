@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- A *Rotating card* can swap a whole space, not only one card (#19). *Add group* in its list of cards puts 2 to 4
+  cards in the space of one, in rows or in columns, each with its own options and an equal part of the box (in its
+  compact look when that part is small). The group has its own *Show* setting, so a 3×3 Rotating card can show a
+  camera while someone moves and three entity cards while all is clear. The cards of a group count towards the
+  cards and Home Assistant entities of the screen, and the Rotating card can only be made as small as its groups
+  allow. A new template in the palette, *Swap a space with Home Assistant*, starts with a camera and a group of
+  three entity cards.
+
 ## [0.19.4] - 2026-10-21
 
 ### Fixed

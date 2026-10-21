@@ -508,6 +508,58 @@ test('a Rotativa from a palette tile of its own (Cambiar según Casa, #19): its 
   assert.deepEqual(out.items[1].props.cards.map((x) => x.when.value), ['off', 'on']);
 });
 
+test('a Rotativa with a group (#19, Cambiar un espacio según Casa): new ids for the group and its cards, its cards count, the box holds it', ts, () => {
+  const tile = () => ({ id: '', kind: 'ha.tile', props: {} });
+  const spec = {
+    cards: [
+      { id: '', kind: 'ha.camera', props: {}, when: { src: 'ha', entity: '', op: 'eq', value: 'on' } },
+      { id: '', kind: 'group', props: { dir: 'rows', cards: [tile(), tile(), tile()] }, when: { src: 'ha', entity: '', op: 'eq', value: 'off' } },
+    ],
+  };
+  let cv = defaultCanvas();
+  const a = M.addItem(cv, 'landscape', 'rotator', null, spec);
+  cv = ok(a);
+  const ids = (it) => it.props.cards.flatMap((c) => (c.kind === 'group' ? [c.id, ...c.props.cards.map((m) => m.id)] : [c.id]));
+  const first = ids(M.itemOf(cv, a.id));
+  assert.equal(first.length, 5);
+  assert.ok(first.every((id) => /^cv_[a-z0-9]{8}$/.test(id)), first.join());
+  // a copy: every id new, the group's too
+  const d = M.duplicateItem(cv, 'landscape', a.id);
+  cv = ok(d);
+  const copy = ids(M.itemOf(cv, d.id));
+  assert.equal(new Set([...first, ...copy, a.id, d.id]).size, 12);
+  assert.deepEqual(spec.cards[1].props.cards.map((c) => c.id), ['', '', '']);
+  // the cards of a group count as cards of the screen (2 Rotativas: 2 + 2 × 4 = 10), the group does not
+  assert.equal(M.cardCount(cv), 10);
+  assert.deepEqual(M.cardKinds(spec.cards), ['ha.camera', 'ha.tile', 'ha.tile', 'ha.tile']);
+  // 35 spacers more: 45 cards, and a third Rotativa needs five (itself, the camera and the group's three): too many
+  const nearly = structuredClone(cv);
+  for (let i = 0; i < 35; i++) nearly.items.push({ id: `cv_x${String(i).padStart(7, '0')}`, kind: 'spacer', pos: { zone: 'main', x: i % 24, y: 15, size: 'xs', w: 1, h: 1 }, style: {}, props: {} });
+  assert.equal(M.cardCount(nearly), 45);
+  assert.equal(M.addItem(nearly, 'landscape', 'rotator', null, spec).why, 'tooMany');
+  // as small as its cards allow: 3×3 (the camera's width, three rows of entity cards); columns: 6×2
+  const it = M.itemOf(cv, a.id);
+  const r = M.rangeOf(M.sizingOf(it), 'landscape');
+  assert.deepEqual([r.minW, r.minH], [3, 3]);
+  const colsIt = structuredClone(it);
+  colsIt.props.cards[1].props.dir = 'cols';
+  const rc = M.rangeOf(M.sizingOf(colsIt), 'landscape');
+  assert.deepEqual([rc.minW, rc.minH], [6, 2]);
+  // a fourth card in the group needs a taller box: it grows in place
+  const one = ok(M.addItem(defaultCanvas(), 'landscape', 'rotator', null, spec));
+  const rid = one.items.at(-1).id;
+  const small = ok(M.setCells(one, 'landscape', rid, 3, 3));
+  M.itemOf(small, rid).props.cards[1].props.cards.push({ id: 'cv_fourth01', kind: 'ha.tile', props: {} });
+  const g = M.growToCards(small, rid);
+  assert.deepEqual(g.grown, ['landscape']);
+  assert.deepEqual(M.boxCells(M.placements(g.cv, 'landscape').get(rid), 'landscape'), [3, 4]);
+  // the server keeps all of it
+  const c = clean();
+  const out = sanitizeCanvas(c, 'canvas', structuredClone(cv), {}, {});
+  assert.deepEqual(c.errors, []);
+  assert.deepEqual(out.items[0].props.cards.map((x) => [x.kind, x.when.value]), [['ha.camera', 'on'], ['group', 'off']]);
+});
+
 test('a small Rotativa (#19): it starts at its first card\'s size, goes down to what its cards need, and grows when a card needs more', ts, () => {
   const spec = { cards: [{ id: '', kind: 'ha.tile', props: {} }, { id: '', kind: 'ha.camera', props: {} }] };
   let cv = defaultCanvas();

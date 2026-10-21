@@ -3089,6 +3089,21 @@ export const PL: Record<string, string> = {
   '«Para hoy»: las que vencen hoy o ya vencieron. Las tareas escritas en Marco no tienen estrella ni fecha, así que solo salen con «Todas».': '„Na dziś”: te z terminem na dziś lub po terminie. Zadania wpisane w Marco nie mają gwiazdki ani terminu, więc pojawiają się tylko przy „Wszystkie”.',
   'Qué listas y qué tareas muestra la lista de tareas de esta pantalla, con su título.': 'Które listy i które zadania pokazuje lista zadań tego ekranu, wraz z tytułem.',
   'En una pantalla Personalizado, cada tarjeta de tareas tiene estos ajustes en el editor. Puedes poner varias, por ejemplo «Compra» y «Casa».': 'Na ekranie Własnym każda karta zadań ma te ustawienia w edytorze. Możesz dodać kilka, na przykład „Zakupy” i „Dom”.',
+  // a Rotativa's groups (#19)
+  'Añadir grupo': 'Dodaj grupę',
+  'Grupo': 'Grupa',
+  'Columnas': 'Kolumny',
+  'Colocación': 'Układ',
+  'Cada tarjeta ocupa una parte igual del hueco.': 'Każda karta zajmuje równą część miejsca.',
+  'Tarjetas del grupo': 'Karty w grupie',
+  'De {min} a {max} tarjetas, cada una con sus opciones.': 'Od {min} do {max} kart, każda z własnymi opcjami.',
+  'Un grupo tiene al menos {min} tarjetas.': 'Grupa ma co najmniej {min} karty.',
+  'Añadir una tarjeta al grupo': 'Dodaj kartę do grupy',
+  'El grupo ya tiene {max} tarjetas, el máximo.': 'Grupa ma już {max} karty, to maksimum.',
+  'Ahora la Rotativa se salta este grupo: no se cumple la condición.': 'Karta rotująca pomija teraz tę grupę: warunek nie jest spełniony.',
+  'Un grupo pone de {min} a {max} tarjetas en el hueco de una, en filas o en columnas, y se ve o se salta entero según su «Mostrar».': 'Grupa umieszcza od {min} do {max} kart w miejscu jednej, w wierszach lub kolumnach, i jest widoczna lub pomijana w całości według swojego „Pokaż”.',
+  'Cambiar un espacio según Casa': 'Zamiana miejsca z Home Assistant',
+  'Una cámara y un grupo de tres tarjetas en el mismo hueco: la cámara cuando hay movimiento, las tres tarjetas cuando no.': 'Kamera i grupa trzech kart w tym samym miejscu: kamera, gdy jest ruch, trzy karty, gdy go nie ma.',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

@@ -2,10 +2,10 @@
 // mouse, touch and keyboard paths share one set of rules and the server tests can run them. Each operation takes a
 // canvas and returns a new one (or a refusal), and never leaves two items on the same cells. The grid rules, the
 // size table and validation live in server/core/canvasCore.js; this file only moves items around within them.
-import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, SideSpan } from '../../shared/types';
+import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, RotatorEntry, SideSpan } from '../../shared/types';
 import {
   CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
-  firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, sizeCells, type CanvasKindDef,
+  firstFree, gridDims, isRotatorGroup, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
 export type Orient = 'landscape' | 'portrait';
@@ -159,8 +159,8 @@ export function fitSpan(cv: CanvasConfig, o: Orient, want: SideSpan, except?: st
 }
 
 /** How many more items the screen takes, and whether a kind is at its own cap. */
-export function canAdd(cv: CanvasConfig, k: CanvasKind, cards: CanvasKind[] = k === 'rotator' ? ((canvasDefaults('rotator').cards as { kind: CanvasKind }[]) ?? []).map((c) => c.kind) : []): Refusal | null {
-  // the cards of a Rotativa count as cards of the screen (canvasCore sanitizeCanvas)
+export function canAdd(cv: CanvasConfig, k: CanvasKind, cards: CanvasKind[] = k === 'rotator' ? cardKinds(canvasDefaults('rotator').cards) : []): Refusal | null {
+  // the cards of a Rotativa count as cards of the screen (canvasCore sanitizeCanvas), each card of a group too
   const all = canvasCards(cv.items);
   if (all.length + 1 + cards.length > maxCards(cv)) return 'tooMany';
   for (const x of [k, ...cards]) {
@@ -170,14 +170,20 @@ export function canAdd(cv: CanvasConfig, k: CanvasKind, cards: CanvasKind[] = k 
   return null;
 }
 
-/** Fresh ids for the cards of a Rotativa (a new one, a copy), none taken on the screen. */
+/** The kinds of a Rotativa's cards, each card of a group in its place (what canAdd counts). */
+export const cardKinds = (cards: unknown): CanvasKind[] => rotatorLeaves(Array.isArray(cards) ? (cards as RotatorEntry[]) : []).map((c) => c.kind as CanvasKind);
+
+/** Fresh ids for the cards of a Rotativa (a new one, a copy), its groups and their cards, none taken on the screen. */
 export function freshCardIds(cv: CanvasConfig, it: CanvasItem): void {
   if (it.kind !== 'rotator' || !Array.isArray(it.props.cards)) return;
-  const taken = new Set(canvasCards(cv.items).map((i) => i.id));
+  // (the groups are no cards: their ids are taken too)
+  const taken = new Set(canvasCards(cv.items).flatMap((i) => (i.group ? [i.id, i.group] : [i.id])));
   taken.add(it.id);
-  for (const c of it.props.cards as { id: string }[]) {
-    c.id = newCanvasId(taken);
-    taken.add(c.id);
+  for (const c of it.props.cards as RotatorEntry[]) {
+    for (const x of isRotatorGroup(c) ? [c, ...c.props.cards] : [c]) {
+      x.id = newCanvasId(taken);
+      taken.add(x.id);
+    }
   }
 }
 
@@ -621,7 +627,7 @@ export function addItem(
 ): Result & { drop?: MainDrop } {
   if (readOnly(cv0, o)) return no('auto');
   // (a Rotativa from a palette tile of its own: its cards, else the default ones)
-  const cap = canAdd(cv0, k, ...(k === 'rotator' && Array.isArray(extra.cards) ? [(extra.cards as { kind: CanvasKind }[]).map((c) => c.kind)] : []));
+  const cap = canAdd(cv0, k, ...(k === 'rotator' && Array.isArray(extra.cards) ? [cardKinds(extra.cards)] : []));
   if (cap) return no(cap);
   const cv = clone(cv0);
   const it = newItem(cv, k, extra);
@@ -667,7 +673,7 @@ export function duplicateItem(cv0: CanvasConfig, o: Orient, id: string): Result 
   const src = itemOf(cv0, id);
   if (!src) return no('noRoom');
   if (readOnly(cv0, o)) return no('auto');
-  const cap = canAdd(cv0, src.kind, src.kind === 'rotator' ? ((src.props.cards as { kind: CanvasKind }[]) ?? []).map((c) => c.kind) : []);
+  const cap = canAdd(cv0, src.kind, src.kind === 'rotator' ? cardKinds(src.props.cards) : []);
   if (cap) return no(cap);
   const p = placements(cv0, o).get(id)!;
   let target: Parameters<typeof addItem>[3] = null;

@@ -98,6 +98,9 @@
    screen made on the legacy grid is one row high, so those look exactly as before */
 .style-modern #app#app.preset-canvas .cv-item[data-cells$='x1'] { --cv-pad: 0.3rem 1.4rem; --cv-pad-none: 0.2rem 0.6rem; }
 .style-modern #app#app.preset-canvas.cv-dense .cv-item[data-cells$='x1'] { --cv-pad: 0.2rem 1rem; }
+/* (and so does a card of a Rotativa's group whose share of the box is one row high) */
+.style-modern #app#app.preset-canvas .cv-grp-cell[data-cells$='x1'] { --cv-pad: 0.3rem 1.4rem; --cv-pad-none: 0.2rem 0.6rem; }
+.style-modern #app#app.preset-canvas.cv-dense .cv-grp-cell[data-cells$='x1'] { --cv-pad: 0.2rem 1rem; }
 
 /* ------------------------------------------------------------------------------- cards */
 #app.preset-canvas .cv-item { position: relative; display: flex; min-width: 0; min-height: 0; }
@@ -241,6 +244,15 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 @media (prefers-reduced-motion: reduce) {
   #app.preset-canvas .cv-rot > .cv-rot-slide, #app.preset-canvas .cv-rot-dots i { transition: none; }
 }
+/* a group of a Rotativa (#19): one slide with a body for each of its cards, in rows or side by side, each an equal
+   share of the box, a thin line between them; a card of it with nothing to show keeps its share, empty */
+#app.preset-canvas .cv-rot > .cv-rot-grp, #app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-grp { display: flex; flex-direction: column; padding: 0; }
+#app.preset-canvas .cv-rot > .cv-rot-grp.is-cols { flex-direction: row; }
+#app.preset-canvas .cv-rot-grp > .cv-grp-cell { flex: 1 1 0; }
+#app.preset-canvas .cv-rot-grp > .cv-grp-cell + .cv-grp-cell { border-top: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+#app.preset-canvas .cv-rot-grp.is-cols > .cv-grp-cell + .cv-grp-cell { border-top: 0; border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+#app.preset-canvas .cv-rot-grp > .cv-grp-cell.is-empty { visibility: hidden; }
+#app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-grp > .cv-grp-cell { padding: var(--cv-pad-none, 0.8rem); }
 /* the widgets inside a card are not cards of their own */
 #app.preset-canvas .cv-card .cd-card, #app.preset-canvas .cv-card .msg, #app.preset-canvas .cv-card .todo, #app.preset-canvas .cv-card .weather, #app.preset-canvas .cv-card .agenda.compact .ag-list {
   background: none !important;

@@ -10,8 +10,8 @@
 // - A card with nothing to show (no message, no countdowns) keeps its cell but is not drawn (.is-empty).
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
-import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, fullLookMin, gridDims, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, GlassConfig } from '../../shared/types';
+import { CANVAS_KINDS, fullLookMin, gridDims, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -255,6 +255,23 @@ interface Entry {
   subs?: Entry[];
   /** a Rotativa's card: the Rotativa */
   parent?: Entry;
+  /** a Rotativa's card: the slide it is drawn in (its body, or its group's slide for a card of a group) */
+  slide?: HTMLElement;
+  /** a Rotativa: the slides of its groups, by group id */
+  groups?: Map<string, HTMLElement>;
+}
+
+/**
+ * The box of the i-th of n cards of a Rotativa's group (#19): the Rotativa's box shared out in equal parts, in rows
+ * (the whole width, a part of the height) or in columns, in whole cells (at least one), drawn like the named size of
+ * its kind that box is closest to. A sidebar place stays as it is.
+ */
+function sharePos(pos: CanvasPos | null, kind: string, dir: 'rows' | 'cols', n: number, o: 'landscape' | 'portrait'): CanvasPos | null {
+  if (!pos || pos.zone !== 'main') return pos;
+  const [w, h] = posCells(pos, o);
+  const sw = dir === 'cols' ? Math.max(1, Math.floor(w / n)) : w;
+  const sh = dir === 'cols' ? h : Math.max(1, Math.floor(h / n));
+  return { zone: 'main', x: pos.x, y: pos.y, size: lookSize(kind, sw, sh, o), w: sw, h: sh } as CanvasPos;
 }
 
 export class Canvas {
@@ -436,6 +453,12 @@ export class Canvas {
     const pos = posFor(e.item, this.portrait);
     // a box past every named size of its kind: cards may lay out for the extra room (data-room, styles-canvas-room.css)
     const o = this.portrait ? 'portrait' : 'landscape';
+    // a card of a group: its share of the box, in cells, where the cards read the cells of their box (the padding of a
+    // one-row box, ha.ts, haTile.ts)
+    if (e.slide && e.slide !== e.body) {
+      if (pos?.zone === 'main') e.body.dataset.cells = posCells(pos, o).join('x');
+      else delete e.body.dataset.cells;
+    }
     const room = pos?.zone === 'main' ? roomFactor(e.kind, ...posCells(pos, o), o) : 1;
     if (room > 1) e.body.dataset.room = '';
     else delete e.body.dataset.room;
@@ -825,42 +848,81 @@ export class Canvas {
   /**
    * The cards of a Rotativa, kept in step with its props: one slide (a card body of its own, in the Rotativa's body)
    * and one adapter per card, reconciled by id and kind like the items; a card whose hash or Rotativa changed is
-   * drawn again in place. The Rotativa's adapter (widgets/canvas/rotator.ts) shows one slide at a time.
+   * drawn again in place. A group (#19) is one slide that holds a body for each of its cards, in rows or columns,
+   * each card with its share of the box (sharePos) and the group's condition. The Rotativa's adapter
+   * (widgets/canvas/rotator.ts) shows one slide at a time.
    */
   private syncSubs(e: Entry, changed: boolean, screenChanged: boolean): void {
-    const cards = e.item.disabled ? [] : ((e.item.props as { cards?: DisplayRotatorCard[] }).cards ?? []);
+    const cards = e.item.disabled ? [] : ((e.item.props as { cards?: (DisplayRotatorCard | DisplayRotatorGroup)[] }).cards ?? []);
     const old = new Map((e.subs ?? []).map((s) => [s.id, s]));
+    const oldGroups = e.groups ?? new Map<string, HTMLElement>();
+    const groups = new Map<string, HTMLElement>();
     const next: Entry[] = [];
-    for (const cd of cards) {
-      const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v: `${cd.v}|${e.item.v}`, pos: e.item.pos, portrait: e.item.portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}), ...(cd.when ? { when: cd.when } : {}) };
+    const slides: HTMLElement[] = [];
+    /** The entry of one card (in `slide` when it is a card of a group, with its share of the box). */
+    const sub = (cd: DisplayRotatorCard, g: DisplayRotatorGroup | null, slide: HTMLElement | null): Entry => {
+      const n = g ? g.props.cards.length : 1;
+      const dir = g?.props.dir === 'cols' ? 'cols' : 'rows';
+      const pos = g ? sharePos(e.item.pos, cd.kind, dir, n, 'landscape')! : e.item.pos;
+      const portrait = g ? sharePos(e.item.portrait, cd.kind, dir, n, 'portrait') : e.item.portrait;
+      const when = g ? g.when : cd.when;
+      const v = g ? `${cd.v}|${dir}${n}|${e.item.v}` : `${cd.v}|${e.item.v}`;
+      const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v, pos, portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}), ...(when ? { when } : {}) };
       let s = old.get(cd.id);
-      if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled)) {
+      if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled || (s.slide !== s.body) !== !!g)) {
         this.dropSub(s);
         s = undefined;
       }
       old.delete(cd.id);
       if (!s) {
         const body = document.createElement('div');
-        body.className = 'cv-body cv-rot-slide';
-        body.dataset.card = cd.id;
-        s = { id: cd.id, kind: cd.kind, item, el: e.el, card: e.card, title: e.title, body, adapter: adapterFor(item), zone: e.zone, cramped: false, need: null, noBlur: false, lookKey: '', surface: e.surface, cfg: itemCfg(this.screen!, item), parent: e };
+        body.className = g ? 'cv-body cv-grp-cell' : 'cv-body cv-rot-slide';
+        if (!g) body.dataset.card = cd.id;
+        s = { id: cd.id, kind: cd.kind, item, el: e.el, card: e.card, title: e.title, body, adapter: adapterFor(item), zone: e.zone, cramped: false, need: null, noBlur: false, lookKey: '', surface: e.surface, cfg: itemCfg(this.screen!, item), parent: e, slide: slide ?? body };
         s.adapter.mount(body, this.env(s));
       } else {
         const ch = s.item.v !== item.v;
         s.item = item;
+        s.slide = slide ?? s.body;
         if (ch || screenChanged) s.cfg = itemCfg(this.screen!, item);
         if (ch) s.adapter.update();
         else if (screenChanged) s.adapter.data?.('config');
       }
       next.push(s);
+      return s;
+    };
+    for (const cd of cards) {
+      if (cd.kind !== 'group') {
+        slides.push(sub(cd, null, null).body);
+        continue;
+      }
+      const g = cd as DisplayRotatorGroup;
+      let slide = oldGroups.get(g.id);
+      if (!slide) {
+        slide = document.createElement('div');
+        slide.className = 'cv-rot-slide cv-rot-grp';
+        slide.dataset.card = g.id;
+      }
+      slide.classList.toggle('is-cols', g.props.dir === 'cols');
+      groups.set(g.id, slide);
+      slides.push(slide);
+      // its cards in order, in its slide
+      let at: ChildNode | null = slide.firstChild;
+      for (const m of g.props.cards) {
+        const s = sub(m, g, slide);
+        if (at !== s.body) slide.insertBefore(s.body, at);
+        at = s.body.nextSibling;
+      }
     }
     for (const s of old.values()) this.dropSub(s);
+    for (const [id, slide] of oldGroups) if (!groups.has(id)) slide.remove();
     e.subs = next;
+    e.groups = groups;
     // the slides in the order of the cards, before what the Rotativa draws itself (its dots)
     let at: ChildNode | null = e.body.firstChild;
-    for (const s of next) {
-      if (at !== s.body) e.body.insertBefore(s.body, at);
-      at = s.body.nextSibling;
+    for (const sl of slides) {
+      if (at !== sl) e.body.insertBefore(sl, at);
+      at = sl.nextSibling;
     }
     e.adapter.slides?.();
     if (changed) this.relayoutSoon(e.id);
@@ -879,6 +941,8 @@ export class Canvas {
   private dropSubs(e: Entry): void {
     for (const s of e.subs ?? []) this.dropSub(s);
     e.subs = [];
+    for (const slide of e.groups?.values() ?? []) slide.remove();
+    e.groups = new Map();
   }
 
   private drop(e: Entry): void {
@@ -942,14 +1006,18 @@ export class Canvas {
       let cramped = over(e.body);
       e.need = cramped ? needOf(e.body) : null;
       // a Rotativa: empty when every card is empty or off by its own condition (it skips those), cramped when one of
-      // its cards is (the most it needs)
+      // its cards is (the most it needs); a group's slide is empty when all of its cards are, and off with its
+      // condition (each of its cards carries it)
       if (e.subs?.length) {
-        let all = true;
+        const slides = new Map<HTMLElement, { empty: boolean; off: boolean }>();
         for (const s of e.subs) {
           const em = !!s.adapter.empty?.();
+          const sl = s.slide ?? s.body;
           s.body.classList.toggle('is-empty', em);
-          s.body.classList.toggle('is-cond-off', this.condOff(s.item));
-          if (!em && !s.body.classList.contains('is-cond-off')) all = false;
+          const st = slides.get(sl) ?? { empty: true, off: false };
+          st.empty &&= em;
+          st.off ||= this.condOff(s.item);
+          slides.set(sl, st);
           s.cramped = !em && over(s.body);
           s.need = s.cramped ? needOf(s.body) : null;
           if (s.cramped) {
@@ -960,6 +1028,12 @@ export class Canvas {
             s.filled = false;
             this.relayoutSoon(e.id);
           }
+        }
+        let all = true;
+        for (const [sl, st] of slides) {
+          sl.classList.toggle('is-empty', st.empty);
+          sl.classList.toggle('is-cond-off', st.off);
+          if (!st.empty && !st.off) all = false;
         }
         e.el.classList.toggle('is-empty', all);
         e.adapter.slides?.();

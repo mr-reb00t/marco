@@ -343,7 +343,8 @@ function valueInside(root: HTMLElement): void {
  * now) it stays the line it always was.
  */
 function rowsOnFine(root: HTMLElement): boolean {
-  const h = Number(root.closest<HTMLElement>('.cv-item')?.dataset.cells?.split('x')[1]);
+  // (the nearest box with cells: a card's, or its share of a Rotativa's group)
+  const h = Number(root.closest<HTMLElement>('[data-cells]')?.dataset.cells?.split('x')[1]);
   return h >= 3;
 }
 

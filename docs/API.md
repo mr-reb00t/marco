@@ -1093,7 +1093,7 @@ Saving also stores a box that is
 exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell (an error; the
 named size is used). The portrait view drawn from the landscape one keeps a box of its own (at most 16 wide) before it
 tries the named sizes. The display config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or
-`fill`). A screen takes up to 48 cards (a Rotativa's cards count) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
+`fill`). A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
 kind's own cap comes on top).
 
 **Grid and density.** Every canvas is on the 24×16 grid, and a saved one carries `grid: "fine"`. `grid` is deprecated:
@@ -1127,6 +1127,27 @@ with one card left it stays on it with no dots, and with none it is hidden like 
 towards the screen's 80 and is followed like an item's (`conditionEntities`), `conditionHidden` lists the card's id,
 and in the display config the card carries `when: { src }` like an item. An export empties its entity, and an import
 where Home Assistant is not offered drops it (counted in `conditions`).
+
+**Groups inside a Rotativa.** A card of `cards` can also be a group (#19), so a Rotativa swaps a space for another (a
+camera while someone moves, three entity cards while all is clear): `{ id, kind: "group", props: { dir, cards: [{ id,
+kind, props }] }, when? }`. `dir` is `"rows"` (default: stacked, each card the whole width and an equal share of the
+height) or `"cols"` (side by side, each an equal share of the width). A group holds 2 to 4 cards (`GROUP_MIN`,
+`GROUP_MAX`; fewer or more is an error, the first 4 are kept), each a kind a Rotativa takes, validated by its kind;
+another group inside is refused, and so is a `when` on one of its cards: only the group has a condition, and the
+Rotativa shows or skips the group as a whole. A group counts as one of the Rotativa's 6 cards; it is no card of the
+screen itself, but each of its cards is (the 48 cards, each kind's own cap and the 80 entities count them; a group
+that does not fit goes whole). The group and each of its cards get ids unique on the screen. A group left with one
+card (a saved widget deleted since, a kind an import leaves out) becomes that card with the group's condition, and
+with none it goes. The Rotativa's box holds every group (`kindFor`): in rows the widest of its cards' smallest widths
+by the sum of their smallest heights, in columns the other way round (a camera and three entity cards in rows: 3×3 at
+least; in columns: 6×2). `canvasCards(items)` lists the cards of a group in its place, each with `group` (the group's
+id) and the group's condition as `own`, so the feeds treat them like any card of a Rotativa (aliases under their own
+ids, values, data, never touch controls, `conditionHidden` names each of them while the group's condition does not
+hold); `rotatorLeaves(cards)` lists the cards a Rotativa shows. In the display config a group comes as `{ id, kind:
+"group", props: { dir, cards }, when?: { src }, v }` with its cards projected like the others (`{ id, kind, props, v,
+disabled? }`, no entity ids). An export empties the entities of its cards and of its condition; an import gives new
+ids and leaves out the cards of kinds the server does not offer (and a Home Assistant condition where Home Assistant
+is not offered).
 
 **Navigation (touch screens).** Three kinds in the palette category *Navegación* (`cat: "nav"`, every edition):
 `nav.button` (*Ir a pantalla*: `{ target, label, icon, show, returnMin }`), `nav.pause` (*Pausar carrusel*: `{ label,

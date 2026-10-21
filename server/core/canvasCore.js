@@ -1071,10 +1071,40 @@ const ROTATOR_NEVER = /^(?:rotator|spacer|heading|card|nav\..*)$/;
 export const rotatorKindOk = (kind) => typeof kind === 'string' && !!CANVAS_KINDS[kind] && !CANVAS_KINDS[kind].reserved && !ROTATOR_NEVER.test(kind);
 
 /**
+ * "Grupo" (#19): one card of a Rotativa that is a block of GROUP_MIN to GROUP_MAX cards, stacked in rows ('rows', each
+ * the whole width and an equal share of the height) or side by side ('cols'), so a Rotativa can swap a space for
+ * another (a camera while someone moves, three entity cards while all is clear). Its cards are kinds a Rotativa takes
+ * (never another group), each with its own props and no condition of its own: the group has the condition.
+ */
+export const ROTATOR_GROUP = 'group';
+export const GROUP_MIN = 2;
+export const GROUP_MAX = 4;
+export const GROUP_DIRS = ['rows', 'cols'];
+/** True when a card of a Rotativa is a group. */
+export const isRotatorGroup = (cd) => isObj(cd) && cd.kind === ROTATOR_GROUP;
+/** The cards a Rotativa's cards show: each card, and the cards of a group in its place (in order). */
+export function rotatorLeaves(cards) {
+  const out = [];
+  for (const cd of Array.isArray(cards) ? cards : []) {
+    if (!isObj(cd)) continue;
+    if (cd.kind === ROTATOR_GROUP) {
+      for (const m of Array.isArray(cd.props?.cards) ? cd.props.cards : []) if (isObj(m) && typeof m.kind === 'string') out.push(m);
+    } else if (typeof cd.kind === 'string') out.push(cd);
+  }
+  return out;
+}
+/** A group of `kind` cards with their defaults (the editor's "Añadir grupo"; ids given by the editor). */
+export function groupDefaults(kinds = ['ha.tile', 'ha.tile', 'ha.tile'], dir = 'rows') {
+  return { id: '', kind: ROTATOR_GROUP, props: { dir, cards: kinds.map((k) => ({ id: '', kind: k, props: canvasDefaults(k) })) } };
+}
+
+/**
  * The cards of a Rotativa: [{ id, kind, props, when? }], each validated with its kind's own props, `when` its own
- * "Mostrar solo si" (readCondition). Kinds this server does not allow and the kinds that never go inside one are
- * refused (an error, the card is left out); a card of a saved widget that was deleted goes quietly, a camera shows
- * pictures (never a live stream). Ids and the entity cap are checked by sanitizeCanvas.
+ * "Mostrar solo si" (readCondition), or a group ({ id, kind: 'group', props: { dir, cards }, when? }, see
+ * ROTATOR_GROUP). Kinds this server does not allow and the kinds that never go inside one are refused (an error, the
+ * card is left out); a card of a saved widget that was deleted goes quietly (a group left with one card is that card,
+ * with the group's condition; with none it goes too), a camera shows pictures (never a live stream). Ids and the
+ * entity cap are checked by sanitizeCanvas.
  */
 function rotatorCards(c, p, v, refs, opts) {
   if (v === undefined || v === null) return [];
@@ -1085,18 +1115,51 @@ function rotatorCards(c, p, v, refs, opts) {
   if (v.length > ROTATOR_MAX) c.err(p, `too many cards (max ${ROTATOR_MAX})`);
   const allowed = new Set(opts?.canvasKinds ?? DEFAULT_CANVAS_KINDS);
   const haConds = [...allowed].some((k) => k.startsWith('ha.'));
+  /** One card ({ id, kind, props }), or null when it is left out. */
+  const one = (q, x) => {
+    if (!isObj(x)) {
+      c.err(q, 'expected object');
+      return null;
+    }
+    const k = CANVAS_KINDS[x.kind];
+    if (!k) return null; // a kind this version does not know (an import from a newer server)
+    if (!rotatorKindOk(x.kind)) {
+      c.err(`${q}.kind`, 'not allowed inside a rotating card');
+      return null;
+    }
+    if (!allowed.has(x.kind)) {
+      c.err(`${q}.kind`, 'not available on this server');
+      return null;
+    }
+    const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
+    if (x.kind === 'widget' && !(refs?.widgets instanceof Map ? refs.widgets.has(props.widgetId) : false)) return null;
+    if (x.kind === 'ha.camera') props.mode = 'snapshot';
+    return { id: typeof x.id === 'string' ? x.id : '', kind: x.kind, props };
+  };
   const out = [];
   v.slice(0, ROTATOR_MAX).forEach((x, i) => {
     const q = `${p}[${i}]`;
-    if (!isObj(x)) return c.err(q, 'expected object');
-    const k = CANVAS_KINDS[x.kind];
-    if (!k) return; // a kind this version does not know (an import from a newer server)
-    if (!rotatorKindOk(x.kind)) return c.err(`${q}.kind`, 'not allowed inside a rotating card');
-    if (!allowed.has(x.kind)) return c.err(`${q}.kind`, 'not available on this server');
-    const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
-    if (x.kind === 'widget' && !(refs?.widgets instanceof Map ? refs.widgets.has(props.widgetId) : false)) return;
-    if (x.kind === 'ha.camera') props.mode = 'snapshot';
-    const cd = { id: typeof x.id === 'string' ? x.id : '', kind: x.kind, props };
+    let cd;
+    if (isRotatorGroup(x)) {
+      const g = isObj(x.props) ? x.props : {};
+      const dir = P.oneOf(c, `${q}.props.dir`, g.dir, 'rows', GROUP_DIRS);
+      if (!Array.isArray(g.cards)) return c.err(`${q}.props.cards`, 'expected array');
+      if (g.cards.length < GROUP_MIN || g.cards.length > GROUP_MAX) c.err(`${q}.props.cards`, `a group holds ${GROUP_MIN} to ${GROUP_MAX} cards`);
+      const cards = [];
+      g.cards.slice(0, GROUP_MAX).forEach((m, j) => {
+        const r = `${q}.props.cards[${j}]`;
+        if (isRotatorGroup(m)) return c.err(`${r}.kind`, 'a group cannot hold another group');
+        // the group's condition decides for all of its cards
+        if (isObj(m) && m.when !== undefined && m.when !== null) c.err(`${r}.when`, 'a card of a group has no condition of its own (the group has it)');
+        const cm = one(r, m);
+        if (cm) cards.push(cm);
+      });
+      if (!cards.length) return;
+      cd = cards.length === 1 ? cards[0] : { id: typeof x.id === 'string' ? x.id : '', kind: ROTATOR_GROUP, props: { dir, cards } };
+    } else {
+      cd = one(q, x);
+      if (!cd) return;
+    }
     // its own "Mostrar solo si": a card whose condition is off is skipped, like an empty one
     const when = readCondition(c, `${q}.when`, x.when, { ha: haConds });
     if (when) cd.when = when;
@@ -1108,9 +1171,10 @@ function rotatorCards(c, p, v, refs, opts) {
 /**
  * Every card of a list of items: each item, and after a Rotativa its cards as items of their own ({ id, kind, props,
  * parent }) that share its hiding, its schedule, its condition and its place, and are never touch controls. A card
- * with a condition of its own has it as `own` (`when` stays the Rotativa's): both must hold for it to show. The
- * server's feeds (Home Assistant aliases, values, data cards, calendars, widgets) walk this list, so a card inside a
- * Rotativa gets its data like any other and is hidden whenever its Rotativa is.
+ * with a condition of its own has it as `own` (`when` stays the Rotativa's): both must hold for it to show. The cards
+ * of a group come in its place, each with `group` (the group's id) and the group's condition as `own`; the group
+ * itself is no card. The server's feeds (Home Assistant aliases, values, data cards, calendars, widgets) walk this
+ * list, so a card inside a Rotativa gets its data like any other and is hidden whenever its Rotativa is.
  */
 export function canvasCards(items) {
   const out = [];
@@ -1118,21 +1182,43 @@ export function canvasCards(items) {
     if (!it) continue;
     out.push(it);
     if (it.kind !== 'rotator' || !Array.isArray(it.props?.cards)) continue;
-    for (const cd of it.props.cards) {
-      if (!cd || typeof cd.kind !== 'string') continue;
+    const add = (cd, g) => {
+      if (!cd || typeof cd.kind !== 'string') return;
       const x = { id: cd.id, kind: cd.kind, props: cd.props ?? {}, parent: it.id, pos: it.pos, style: it.style, interactive: false };
       if (it.portrait !== undefined) x.portrait = it.portrait;
+      if (g) x.group = g.id;
       // as the display gets them: the card's hash and why it is a placeholder
       if (cd.v) x.v = cd.v;
       if (cd.disabled) x.disabled = cd.disabled;
       if (it.hidden) x.hidden = true;
       if (it.schedule) x.schedule = it.schedule;
       if (it.when) x.when = it.when;
-      if (cd.when) x.own = cd.when;
+      const own = g ? g.when : cd.when;
+      if (own) x.own = own;
       out.push(x);
+    };
+    for (const cd of it.props.cards) {
+      if (isRotatorGroup(cd)) for (const m of Array.isArray(cd.props?.cards) ? cd.props.cards : []) add(m, cd);
+      else add(cd, null);
     }
   }
   return out;
+}
+
+/**
+ * The smallest and largest box of one card of a Rotativa ({ minW, minH, maxW, maxH } as cellRange, landscape, on
+ * `grid`): its kind's, or a group's, whose cards share its box: in rows the widest of their smallest widths and the
+ * sum of their smallest heights (side by side the other way round), and the same with the largest.
+ */
+function rotatorCardRange(cd, grid) {
+  if (!isRotatorGroup(cd)) return cellRange(cd.kind, 'landscape', grid);
+  const rs = (cd.props?.cards ?? []).filter((m) => CANVAS_KINDS[m?.kind]).map((m) => cellRange(m.kind, 'landscape', grid));
+  if (!rs.length) return null;
+  const sum = (k) => rs.reduce((n, r) => n + r[k], 0);
+  const max = (k) => Math.max(...rs.map((r) => r[k]));
+  return cd.props.dir === 'cols'
+    ? { minW: sum('minW'), minH: max('minH'), maxW: sum('maxW'), maxH: max('maxH') }
+    : { minW: max('minW'), minH: sum('minH'), maxW: max('maxW'), maxH: sum('maxH') };
 }
 
 /**
@@ -1141,18 +1227,19 @@ export function canvasCards(items) {
  * compact look when the box is small (canvas.ts miniMark); its largest is the largest any of its cards takes (up to
  * the Rotativa's own), since the display fits every card to the box. Its named sizes are the Rotativa's that fall
  * inside that range, and its default size is its first card's (a light and a camera start as small as the light).
- * Takes the place of the kind wherever a box is worked out (cellRange, boxOf, lookSize accept it).
+ * A group counts as one card whose box its cards share (rotatorCardRange). Takes the place of the kind wherever a
+ * box is worked out (cellRange, boxOf, lookSize accept it).
  */
 export function kindFor(item) {
   const k = CANVAS_KINDS[item?.kind];
-  const cards = item?.kind === 'rotator' && Array.isArray(item.props?.cards) ? item.props.cards.filter((cd) => CANVAS_KINDS[cd?.kind]) : [];
+  const cards = item?.kind === 'rotator' && Array.isArray(item.props?.cards) ? item.props.cards.filter((cd) => CANVAS_KINDS[cd?.kind] || (isRotatorGroup(cd) && rotatorLeaves([cd]).some((m) => CANVAS_KINDS[m.kind]))) : [];
   if (!k || !cards.length) return k;
   let [a, b] = k.cells;
   let [c, d] = [0, 0];
   let [fa, fb] = k.fine ?? [a * 2, b * 2];
   for (const cd of cards) {
-    const r = cellRange(cd.kind, 'landscape', 'normal');
-    const f = cellRange(cd.kind, 'landscape', 'fine');
+    const r = rotatorCardRange(cd, 'normal');
+    const f = rotatorCardRange(cd, 'fine');
     a = Math.max(a, r.minW);
     b = Math.max(b, r.minH);
     c = Math.max(c, r.maxW);
@@ -1170,7 +1257,8 @@ export function kindFor(item) {
   if (!sizes.length) sizes = CANVAS_SIZE_IDS.filter((s) => s !== 'row' && inside(s)).slice(0, 1);
   if (!sizes.length) return k;
   const area = (s) => sizeCells(s, 'landscape', 'normal')[0] * sizeCells(s, 'landscape', 'normal')[1];
-  const want = CANVAS_KINDS[cards[0].kind].def;
+  // (a group first: the smallest of those sizes, every one of them holds its cards)
+  const want = isRotatorGroup(cards[0]) ? [...sizes].sort((x, y) => area(x) - area(y))[0] : CANVAS_KINDS[cards[0].kind].def;
   const def = sizes.includes(want) ? want : [...sizes].sort((x, y) => Math.abs(area(x) - area(want)) - Math.abs(area(y) - area(want)))[0];
   return { ...k, cells: [a, b, c, d], fine: [Math.min(fa, a * 2), Math.min(fb, b * 2)], sizes, def };
 }
@@ -1656,19 +1744,25 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     if (k.perScreen && (counts[x.kind] ?? 0) >= k.perScreen) return c.err(`${q}.kind`, `too many ${x.kind} (max ${k.perScreen})`);
     const props = k.props(c, `${q}.props`, isObj(x.props) ? x.props : {}, refs, opts);
     if (x.kind === 'rotator') {
-      // its cards: within the screen's cap of cards and each kind's own cap, with ids of their own
+      // its cards: within the screen's cap of cards and each kind's own cap, with ids of their own (the cards of a
+      // group each count, and a group goes whole or not at all)
       props.cards = props.cards.filter((cd, j) => {
-        const ck = CANVAS_KINDS[cd.kind];
-        if (cards + 1 >= LIM.items) {
+        const list = isRotatorGroup(cd) ? cd.props.cards : [cd];
+        if (cards + list.length >= LIM.items) {
           c.err(`${p}.items`, `too many items (max ${LIM.items})`);
           return false;
         }
-        if (ck.perScreen && (counts[cd.kind] ?? 0) >= ck.perScreen) {
-          c.err(`${q}.props.cards[${j}].kind`, `too many ${cd.kind} (max ${ck.perScreen})`);
-          return false;
+        const add = {};
+        for (const m of list) add[m.kind] = (add[m.kind] ?? 0) + 1;
+        for (const [kk, n] of Object.entries(add)) {
+          const cap = CANVAS_KINDS[kk].perScreen;
+          if (cap && (counts[kk] ?? 0) + n > cap) {
+            c.err(`${q}.props.cards[${j}].kind`, `too many ${kk} (max ${cap})`);
+            return false;
+          }
         }
-        counts[cd.kind] = (counts[cd.kind] ?? 0) + 1;
-        cards++;
+        for (const [kk, n] of Object.entries(add)) counts[kk] = (counts[kk] ?? 0) + n;
+        cards += list.length;
         return true;
       });
     }
@@ -1693,8 +1787,10 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     seen.add(id);
     if (x.kind === 'rotator') {
       for (const cd of props.cards) {
-        if (!CANVAS_ID_RE.test(cd.id) || seen.has(cd.id)) cd.id = newCanvasId(seen);
-        seen.add(cd.id);
+        for (const m of isRotatorGroup(cd) ? [cd, ...cd.props.cards] : [cd]) {
+          if (!CANVAS_ID_RE.test(m.id) || seen.has(m.id)) m.id = newCanvasId(seen);
+          seen.add(m.id);
+        }
       }
     }
     const item = { id, kind: x.kind, pos: null, style: sanitizeStyle(c, `${q}.style`, x.style), props };
@@ -1722,7 +1818,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
       }
       item.when = when;
     }
-    // the conditions of a Rotativa's cards: their entities count too
+    // the conditions of a Rotativa's cards (and of its groups): their entities count too
     if (x.kind === 'rotator') {
       props.cards.forEach((cd, j) => {
         const w = cd.when;
@@ -1984,8 +2080,8 @@ export function haEntitiesOf(item) {
   const add = (e) => {
     if (typeof e === 'string' && e) out.push(e);
   };
-  // a Rotativa: the entities of its cards
-  if (item.kind === 'rotator') return (Array.isArray(p.cards) ? p.cards : []).flatMap((cd) => (cd && cd.kind !== 'rotator' ? haEntitiesOf({ kind: cd.kind, props: cd.props }) : []));
+  // a Rotativa: the entities of its cards (a group's too)
+  if (item.kind === 'rotator') return rotatorLeaves(p.cards).flatMap((cd) => (cd.kind !== 'rotator' ? haEntitiesOf({ kind: cd.kind, props: cd.props }) : []));
   if (!item.kind?.startsWith('ha.') && item.kind !== 'html') return out;
   add(p.entity);
   add(p.showWhen);
@@ -2182,12 +2278,18 @@ export function projectCanvas(screen, opts = {}) {
   const items = cv.items.filter((it) => !it.hidden && !offNow.has(it.id)).map((it) => {
     const k = CANVAS_KINDS[it.kind];
     let props = propsOf(it);
-    // a Rotativa: each card as the display gets an item (its props, a placeholder where it may not show, a hash)
+    // a Rotativa: each card as the display gets an item (its props, a placeholder where it may not show, a hash); a
+    // group as { id, kind: 'group', props: { dir, cards }, when?, v } with its cards projected the same way
     if (it.kind === 'rotator') {
-      props.cards = (it.props?.cards ?? []).map((cd) => {
+      const card = (cd) => {
         const off = offOf(cd.kind);
         const x = { id: cd.id, kind: cd.kind, props: off ? {} : propsOf(cd) };
         if (off) x.disabled = off;
+        x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '']));
+        return x;
+      };
+      props.cards = (it.props?.cards ?? []).map((cd) => {
+        const x = isRotatorGroup(cd) ? { id: cd.id, kind: ROTATOR_GROUP, props: { dir: cd.props.dir, cards: cd.props.cards.map(card) } } : card(cd);
         // its own condition: which feed says whether it is skipped now (as an item's)
         if (cd.when && (cd.when.src === 'ha' ? cd.when.entity : cd.when.key)) x.when = { src: cd.when.src };
         x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '', ...(x.when ? [x.when.src] : [])]));
@@ -2212,7 +2314,7 @@ export function projectCanvas(screen, opts = {}) {
   const { items: _i, touch: _t, ...rest } = cv;
   const out = { ...structuredClone(rest), orientation: screen.screen?.orientation ?? 'auto', touch, taps, swipe: taps && !!cv.swipe, items };
   if (nextMs !== null) out.next = new Date(nextMs).toISOString();
-  if (opts.haOff && items.some((it) => !it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'rotator' && it.props.cards.some((cd) => cd.kind.startsWith('ha.') && !cd.disabled))))) out.haOff = true;
+  if (opts.haOff && items.some((it) => !it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'rotator' && rotatorLeaves(it.props.cards).some((cd) => cd.kind.startsWith('ha.') && !cd.disabled))))) out.haOff = true;
   return out;
 }
 
@@ -2678,11 +2780,17 @@ function stripItem(it) {
   const removed = new Set();
   // a Rotativa: each of its cards, and what any of them lost
   if (it.kind === 'rotator' && Array.isArray(p.cards)) {
-    p.cards = p.cards.map((cd) => {
+    const strip = (cd) => {
       if (!isObj(cd)) return cd;
       const r = stripItem({ kind: cd.kind, props: isObj(cd.props) ? cd.props : {}, ...(isObj(cd.when) ? { when: cd.when } : {}) });
       for (const k of r.removed) removed.add(k);
       return { ...cd, props: r.item.props, ...(r.item.when ? { when: r.item.when } : {}) };
+    };
+    // (a group: its condition, and each of its cards)
+    p.cards = p.cards.map((cd) => {
+      const x = strip(cd);
+      if (isRotatorGroup(x) && Array.isArray(x.props.cards)) x.props = { ...x.props, cards: x.props.cards.map(strip) };
+      return x;
     });
   }
   if (Array.isArray(p.sourceIds) && p.sourceIds.length) removed.add('calendars');
@@ -2764,9 +2872,24 @@ export function readCanvasFile(raw, refs = {}, opts = {}) {
     const x2 = { ...x, props: isObj(x.props) ? x.props : {} };
     // a Rotativa's cards of kinds this server does not offer are left out too
     if (x.kind === 'rotator' && Array.isArray(x2.props.cards)) {
-      const ok = x2.props.cards.filter((cd) => isObj(cd) && rotatorKindOk(cd.kind) && allowed.has(cd.kind));
-      dropped += x2.props.cards.length - ok.length;
-      x2.props = { ...x2.props, cards: ok.map((cd) => ({ ...cd, id: '' })) };
+      const fits = (cd) => isObj(cd) && rotatorKindOk(cd.kind) && allowed.has(cd.kind);
+      const ok = [];
+      for (const cd of x2.props.cards) {
+        if (!isRotatorGroup(cd)) {
+          if (fits(cd)) ok.push({ ...cd, id: '' });
+          else dropped++;
+          continue;
+        }
+        // a group: its cards this server offers (one left: that card, with the group's condition; none: no group)
+        const all = Array.isArray(cd.props?.cards) ? cd.props.cards : [];
+        // (the group has the condition: one of its cards' is left out)
+        const keep = all.filter(fits).map(({ when: _w, ...m }) => ({ ...m, id: '' }));
+        dropped += all.length - keep.length;
+        const { when, ...rest } = cd;
+        if (keep.length === 1) ok.push({ ...keep[0], ...(when ? { when } : {}) });
+        else if (keep.length) ok.push({ ...rest, ...(when ? { when } : {}), id: '', props: { ...cd.props, cards: keep } });
+      }
+      x2.props = { ...x2.props, cards: ok };
     }
     const r = stripItem(x2);
     // a Home Assistant condition where there is no Home Assistant (Marco Cloud): the card shows always

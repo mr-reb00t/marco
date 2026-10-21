@@ -1,6 +1,6 @@
 // Types for canvasCore.js (Personalizado screens), used by the admin and the display.
 import type {
-  CanvasCategory, CanvasCondition, CanvasConfig, CanvasGlass, CanvasGridId, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
+  CanvasCategory, CanvasCondition, CanvasConfig, RotatorGroup, CanvasGlass, CanvasGridId, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
 } from '../../web/shared/types';
 
 export type Orientation = 'landscape' | 'portrait';
@@ -29,8 +29,18 @@ export const ROTATOR_EVERY_DEFAULT: number;
 export const ROTATOR_EVERY_MIN: number;
 export const ROTATOR_EVERY_MAX: number;
 export function rotatorKindOk(kind: string): boolean;
-/** Every item and, after a Rotativa, its cards as items (sharing its hiding, schedule, condition and place). */
-export function canvasCards<T extends { id: string; kind: string; props?: Record<string, unknown> }>(items: T[] | null | undefined): (T & { parent?: string })[];
+/** A Rotativa's group of cards (#19): its kind, how many cards it holds, rows or columns. */
+export const ROTATOR_GROUP: 'group';
+export const GROUP_MIN: number;
+export const GROUP_MAX: number;
+export const GROUP_DIRS: ('rows' | 'cols')[];
+export function isRotatorGroup(cd: unknown): cd is RotatorGroup;
+/** The cards a Rotativa's cards show: each card, and a group's cards in its place. */
+export function rotatorLeaves<T extends { kind: string }>(cards: readonly (T | RotatorGroup)[] | null | undefined): T[];
+/** A new group (no ids yet) of cards of `kinds` with their defaults. */
+export function groupDefaults(kinds?: string[], dir?: 'rows' | 'cols'): RotatorGroup;
+/** Every item and, after a Rotativa, its cards as items (sharing its hiding, schedule, condition and place; a group's cards with `group`). */
+export function canvasCards<T extends { id: string; kind: string; props?: Record<string, unknown> }>(items: T[] | null | undefined): (T & { parent?: string; group?: string })[];
 export const CANVAS_SIZES: Record<CanvasSize, { landscape: [number, number]; portrait: [number, number] }>;
 export const CANVAS_SIZE_IDS: CanvasSize[];
 export const SIDE_SPANS: SideSpan[];

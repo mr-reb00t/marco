@@ -69,7 +69,12 @@ function cardsOf(items) {
   for (const it of Array.isArray(items) ? items : []) {
     if (!it || it.hidden) continue;
     out.push(it);
-    if (it.kind === 'rotator' && Array.isArray(it.props?.cards)) for (const cd of it.props.cards) if (cd && typeof cd.kind === 'string') out.push(cd);
+    if (it.kind !== 'rotator' || !Array.isArray(it.props?.cards)) continue;
+    for (const cd of it.props.cards) {
+      // (a group of cards: each of them)
+      const list = cd?.kind === 'group' && Array.isArray(cd.props?.cards) ? cd.props.cards : [cd];
+      for (const x of list) if (x && typeof x.kind === 'string') out.push(x);
+    }
   }
   return out;
 }

@@ -3,7 +3,8 @@
 // The controller (widgets/canvas.ts) makes one slide per card, each a card body with the card's own adapter, and
 // fits every slide to the box (the hidden ones too, so a card is ready when its turn comes); this adapter only picks
 // the slide on show. A card with nothing to show (.is-empty) or whose own condition is off (.is-cond-off) is skipped,
-// at once when that changes; with one card left it stays on it, with no dots. No touch is needed.
+// at once when that changes; with one card left it stays on it, with no dots. A group of cards (#19) is one slide
+// like a card (the controller lays its cards out in it). No touch is needed.
 import type { DisplayCanvasItem } from '../../../shared/types';
 import { ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MAX, ROTATOR_EVERY_MIN } from '../../../../server/core/canvasCore.js';
 import type { AdapterEnv, CanvasAdapter } from './types';
