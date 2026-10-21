@@ -507,3 +507,38 @@ test('a Rotativa from a palette tile of its own (Cambiar según Casa, #19): its 
   assert.deepEqual(c.errors, []);
   assert.deepEqual(out.items[1].props.cards.map((x) => x.when.value), ['off', 'on']);
 });
+
+test('a small Rotativa (#19): it starts at its first card\'s size, goes down to what its cards need, and grows when a card needs more', ts, () => {
+  const spec = { cards: [{ id: '', kind: 'ha.tile', props: {} }, { id: '', kind: 'ha.camera', props: {} }] };
+  let cv = defaultCanvas();
+  const a = M.addItem(cv, 'landscape', 'rotator', null, spec);
+  cv = ok(a);
+  // as small as the light (the Entidad's own size), not the wide box of the weather Rotativa
+  assert.deepEqual(M.boxCells(M.placements(cv, 'landscape').get(a.id), 'landscape'), [4, 4]);
+  // the steppers and the handle: down to the camera's 3×2, up to the whole screen
+  const it = M.itemOf(cv, a.id);
+  assert.deepEqual(M.rangeOf(M.sizingOf(it), 'landscape'), { minW: 3, minH: 2, maxW: 24, maxH: 16 });
+  cv = ok(M.setCells(cv, 'landscape', a.id, 4, 2));
+  assert.deepEqual(M.boxCells(M.placements(cv, 'landscape').get(a.id), 'landscape'), [4, 2]);
+  assert.equal(M.setCells(cv, 'landscape', a.id, 4, 1).why, 'limit');
+  // a sensor and a gauge go down to one row
+  const sgCv = ok(M.addItem(defaultCanvas(), 'landscape', 'rotator', null, { cards: [{ id: '', kind: 'ha.sensor', props: {} }, { id: '', kind: 'ha.gauge', props: {} }] }));
+  const sgId = sgCv.items.at(-1).id;
+  const sgRange = M.rangeOf(M.sizingOf(M.itemOf(sgCv, sgId)), 'landscape');
+  assert.deepEqual([sgRange.minW, sgRange.minH], [3, 1]);
+  // a weather card added inside: the box grows at its place to the 8×2 the hourly strip needs
+  const more = structuredClone(cv);
+  M.itemOf(more, a.id).props.cards.push({ id: 'cv_hourly01', kind: 'weather.hourly', props: {} });
+  const g = M.growToCards(more, a.id);
+  assert.deepEqual(g.grown, ['landscape']);
+  assert.deepEqual(g.stuck, []);
+  const p = M.placements(g.cv, 'landscape').get(a.id);
+  assert.deepEqual([p.x, p.y, ...M.boxCells(p, 'landscape')], [0, 0, 8, 2]);
+  // nothing to do when it already fits; no room at all: said, and the box stays
+  assert.deepEqual(M.growToCards(g.cv, a.id).grown, []);
+  const full = structuredClone(more);
+  for (let y = 0; y < 16; y += 2) for (let x = 0; x < 24; x += 4) if (y >= 2 || x >= 4) full.items.push({ id: `cv_sp${String(x).padStart(2, '0')}${String(y).padStart(2, '0')}00`, kind: 'spacer', pos: { zone: 'main', x, y, size: 'xs', w: 4, h: 2 }, style: {}, props: {} });
+  const s2 = M.growToCards(full, a.id);
+  assert.deepEqual(s2.stuck, ['landscape']);
+  assert.deepEqual(M.boxCells(M.placements(s2.cv, 'landscape').get(a.id), 'landscape'), [4, 2]);
+});

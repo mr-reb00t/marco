@@ -193,11 +193,23 @@ type InputProps = Omit<HTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 
   suffix?: ComponentChildren;
 };
 
+/**
+ * Fields that are not a sign in (autocomplete "off": API keys, Client ID and Secret, tokens) tell password managers
+ * to leave them alone, and a key field is a masked text field rather than a password field: browsers fill the email
+ * and password of the account into a text field followed by a password field (the Spotify app keys, #18).
+ */
+export const NOT_A_LOGIN = { 'data-1p-ignore': '', 'data-lpignore': 'true', 'data-bwignore': '', 'data-form-type': 'other' };
+
 export function TextInput({ value, onValue, error, mono, prefix, suffix, class: cls, ...rest }: InputProps) {
+  const r = rest as any;
+  const notLogin = r.autocomplete === 'off';
+  const masked = notLogin && r.type === 'password';
   const input = (
     <input
-      {...(rest as any)}
-      class={`input ${mono ? 'input--mono' : ''} ${error ? 'is-invalid' : ''} ${prefix || suffix ? '' : (cls as string) ?? ''}`}
+      {...r}
+      {...(notLogin ? NOT_A_LOGIN : {})}
+      type={masked ? 'text' : r.type}
+      class={`input ${mono ? 'input--mono' : ''} ${masked ? 'input--masked' : ''} ${error ? 'is-invalid' : ''} ${prefix || suffix ? '' : (cls as string) ?? ''}`}
       value={value}
       onInput={(e) => onValue(e.currentTarget.value)}
       spellcheck={false}

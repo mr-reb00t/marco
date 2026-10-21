@@ -14,13 +14,16 @@ import { CopyField, Qr } from './share';
 import { Button, Callout, Card, Empty, Field, Modal, Select, TextInput, ToggleRow } from './ui';
 import { relTime, t } from '../i18n';
 
-type PermKey = Exclude<keyof FamilyAccessPerms, 'messageScreens'>;
+type PermKey = Exclude<keyof FamilyAccessPerms, 'messageScreens' | 'nightScreens'>;
+/** The permissions that may be limited to some screens, and the field that lists them ([] = every screen). */
+const SCREEN_LISTS = { message: 'messageScreens', night: 'nightScreens' } as const;
+type ScreenList = (typeof SCREEN_LISTS)[keyof typeof SCREEN_LISTS];
 
 /** The permissions in the order the admin lists them, with their labels. */
 const PERMS: { key: PermKey; emoji: string; label: string; hint: string }[] = [
   { key: 'message', emoji: '💬', label: 'Enviar mensajes a las pantallas', hint: 'Salen como un aviso con su nombre, durante el tiempo que elija.' },
   { key: 'privacy', emoji: '🔒', label: 'Activar y quitar el modo privado', hint: 'En todas las pantallas a la vez.' },
-  { key: 'night', emoji: '🌙', label: 'Cambiar entre noche, día y automático', hint: 'En todas las pantallas a la vez.' },
+  { key: 'night', emoji: '🌙', label: 'Cambiar entre noche, día y automático', hint: 'En todas las pantallas o en una sola, desde su móvil.' },
   { key: 'todo', emoji: '✅', label: 'Añadir tareas', hint: 'A la lista de tareas de casa.' },
   { key: 'events', emoji: '📅', label: 'Añadir eventos al calendario local', hint: 'Con fecha, todo el día o con hora.' },
 ];
@@ -286,16 +289,38 @@ function PersonRow({ p, saved, origin, fresh, onFresh, onEdit, onChange, onGone 
   );
 }
 
+/** "All screens" or the chosen ones, under a permission that may be limited to some screens. */
+function ScreenChips({ list, screens, onAll, onToggle }: { list: string[]; screens: { id: string; name: string }[]; onAll: () => void; onToggle: (id: string) => void }) {
+  return (
+    <div class="fa-screens" role="group" aria-label={t('Pantallas')}>
+      <button type="button" class={`fa-chip ${list.length === 0 ? 'is-on' : ''}`} aria-pressed={list.length === 0} onClick={onAll}>
+        {t('Todas las pantallas')}
+      </button>
+      {screens.map((s) => (
+        <button type="button" class={`fa-chip ${list.includes(s.id) ? 'is-on' : ''}`} aria-pressed={list.includes(s.id)} onClick={() => onToggle(s.id)}>
+          {s.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function PersonDialog({ person, saved, onClose, onSaved }: {
   person: FamilyAccessPerson | null;
   saved: StoredConfig;
   onClose: () => void;
   onSaved: (p: FamilyAccessPerson, linkPath: string | null) => void;
 }) {
-  const start = person?.perms ?? { message: false, messageScreens: [], privacy: false, night: false, todo: false, events: false };
+  const given = person?.perms;
+  const start: FamilyAccessPerms = {
+    ...{ message: false, privacy: false, night: false, todo: false, events: false },
+    ...given,
+    messageScreens: [...(given?.messageScreens ?? [])],
+    nightScreens: [...(given?.nightScreens ?? [])],
+  };
   const [name, setName] = useState(person?.name ?? '');
   const [memberId, setMemberId] = useState(person?.memberId ?? '');
-  const [perms, setPerms] = useState<FamilyAccessPerms>({ ...start, messageScreens: [...start.messageScreens] });
+  const [perms, setPerms] = useState<FamilyAccessPerms>({ ...start, messageScreens: [...start.messageScreens], nightScreens: [...start.nightScreens] });
   const [busy, setBusy] = useState(false);
   const members = saved.family?.members ?? [];
   const screens = saved.screens;
@@ -306,8 +331,8 @@ function PersonDialog({ person, saved, onClose, onSaved }: {
     const m = members.find((x) => x.id === id);
     if (m && !name.trim()) setName(m.name.slice(0, NAME_MAX));
   };
-  const toggleScreen = (id: string) =>
-    setPerms((p) => ({ ...p, messageScreens: p.messageScreens.includes(id) ? p.messageScreens.filter((x) => x !== id) : [...p.messageScreens, id] }));
+  const toggleScreen = (list: ScreenList, id: string) =>
+    setPerms((p) => ({ ...p, [list]: p[list].includes(id) ? p[list].filter((x) => x !== id) : [...p[list], id] }));
 
   const save = async () => {
     if (!name.trim()) return toast(t('Escribe un nombre.'), 'error');
@@ -353,23 +378,17 @@ function PersonDialog({ person, saved, onClose, onSaved }: {
       )}
       <div class="fa-perms">
         <div class="field__label">{t('Qué puede hacer esta persona')}</div>
-        {PERMS.map((x) => (
-          <div>
-            <ToggleRow icon={x.emoji} label={t(x.label)} hint={t(x.hint)} checked={perms[x.key]} onChange={(v) => setPerms((p) => ({ ...p, [x.key]: v }))} />
-            {x.key === 'message' && perms.message && screens.length > 1 && (
-              <div class="fa-screens" role="group" aria-label={t('Pantallas')}>
-                <button type="button" class={`fa-chip ${perms.messageScreens.length === 0 ? 'is-on' : ''}`} aria-pressed={perms.messageScreens.length === 0} onClick={() => setPerms((p) => ({ ...p, messageScreens: [] }))}>
-                  {t('Todas las pantallas')}
-                </button>
-                {screens.map((s) => (
-                  <button type="button" class={`fa-chip ${perms.messageScreens.includes(s.id) ? 'is-on' : ''}`} aria-pressed={perms.messageScreens.includes(s.id)} onClick={() => toggleScreen(s.id)}>
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+        {PERMS.map((x) => {
+          const list = x.key === 'message' || x.key === 'night' ? SCREEN_LISTS[x.key] : null;
+          return (
+            <div>
+              <ToggleRow icon={x.emoji} label={t(x.label)} hint={t(x.hint)} checked={perms[x.key]} onChange={(v) => setPerms((p) => ({ ...p, [x.key]: v }))} />
+              {list && perms[x.key] && screens.length > 1 && (
+                <ScreenChips list={perms[list]} screens={screens} onAll={() => setPerms((p) => ({ ...p, [list]: [] }))} onToggle={(id) => toggleScreen(list, id)} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </Modal>
   );

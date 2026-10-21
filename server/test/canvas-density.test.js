@@ -190,6 +190,16 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   // so a box too small for its cards is grown on save
   const small = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, {}, { pos: B(0, 0, 3, 2) })] });
   assert.deepEqual(posCells(small.cv.items[0].pos, 'landscape'), [8, 2]);
+  // a light and a camera (#19): down to the camera's 3×2 and up to the whole screen, starting as small as the light
+  const lc = kindFor({ kind: 'rotator', props: { cards: [card('', 'ha.tile'), card('', 'ha.camera')] } });
+  assert.deepEqual(cellRange(lc), { minW: 3, minH: 2, maxW: 24, maxH: 16 });
+  assert.equal(lc.def, 'xs');
+  // a sensor and a gauge: one row high (the gauge's 3×1)
+  const sg = kindFor({ kind: 'rotator', props: { cards: [card('', 'ha.sensor'), card('', 'ha.gauge')] } });
+  assert.deepEqual([cellRange(sg).minW, cellRange(sg).minH], [3, 1]);
+  // such a small box is kept on save
+  const tiny = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', [card('', 'ha.tile'), card('', 'ha.camera')], {}, { pos: B(0, 0, 4, 2) })] });
+  assert.deepEqual(posCells(tiny.cv.items[0].pos, 'landscape'), [4, 2]);
 });
 
 test('rotativa: its cards count towards the cap of cards, the cap of each kind and the Home Assistant entities', () => {

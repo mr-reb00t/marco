@@ -1464,12 +1464,16 @@ export interface FamilyAdminState {
   publicUrl?: string | null;
 }
 
-/** What a person of the household may do from their own phone dashboard (/my). messageScreens [] = every screen. */
+/**
+ * What a person of the household may do from their own phone dashboard (/my). messageScreens and nightScreens [] =
+ * every screen.
+ */
 export interface FamilyAccessPerms {
   message: boolean;
   messageScreens: string[];
   privacy: boolean;
   night: boolean;
+  nightScreens: string[];
   todo: boolean;
   events: boolean;
 }
@@ -1549,6 +1553,8 @@ export interface MemberState {
   can: { message: boolean; privacy: boolean; night: boolean; todo: boolean; events: boolean };
   /** the screens a message may go to (messages on) */
   screens: { id: string; name: string }[];
+  /** the screens night, day or auto may switch (night mode on) */
+  nightScreens: { id: string; name: string }[];
   /** screens private now, out of all of them (privacy allowed), else null */
   privacy: { on: number; total: number } | null;
   /** the local calendar is on (events are shown) */

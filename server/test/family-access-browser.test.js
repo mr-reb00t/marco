@@ -34,6 +34,17 @@ async function until(p, expr, ms = 8000) {
   }
 }
 
+/** Screenshots of a page in the light and the dark theme into MARCO_SHOT_DIR (for a look by hand). */
+async function shotBoth(p, name) {
+  fs.mkdirSync(process.env.MARCO_SHOT_DIR, { recursive: true });
+  for (const scheme of ['light', 'dark']) {
+    await p.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] });
+    await wait(150);
+    fs.writeFileSync(path.join(process.env.MARCO_SHOT_DIR, `${name}-${scheme}.png`), await p.screenshot());
+  }
+  await p.send('Emulation.setEmulatedMedia', { features: [] });
+}
+
 const chrome = findChrome();
 describe('family access in a browser: a code on the screen, the dashboard on the phone', { skip: !chrome && 'no Chrome' }, () => {
   let dir, server, base, web, browser, cookie;
@@ -139,6 +150,19 @@ describe('family access in a browser: a code on the screen, the dashboard on the
       assert.deepEqual(page.cards, ['🌙 Night or day', '✅ New to-do']);
       assert.equal(page.overflow, false, 'no sideways scroll at 390 px');
       assert.deepEqual(page.small.filter((h) => !h.includes('type="checkbox"')), [], 'touch targets of 44 px and up');
+
+      // night, day or auto on one screen: the kitchen goes dark, the main screen does not
+      const chips = await phone.eval(`[...document.querySelectorAll('#m-night ~ .m-chips .m-chip')].map((b) => b.textContent.trim() + (b.getAttribute('aria-pressed') === 'true' ? '*' : ''))`);
+      assert.deepEqual(chips, ['All screens*', store.getConfig().screens[0].name, 'Kitchen']);
+      if (process.env.MARCO_SHOT_DIR) await shotBoth(phone, 'member-night');
+      await phone.eval(`[...document.querySelectorAll('#m-night ~ .m-chips .m-chip')].find((b) => b.textContent.trim() === 'Kitchen').click()`);
+      await wait(100);
+      await phone.eval(`document.querySelector('#m-night ~ .m-row-3 .m-btn').click()`);
+      assert.match(await until(phone, `document.querySelector('#m-night ~ .m-flash.is-ok')?.textContent`), /Kitchen: night mode/);
+      assert.equal(await until(tv, `document.documentElement.classList.contains('night')`), true);
+      if (process.env.MARCO_SHOT_DIR) await shotBoth(phone, 'member-night-kitchen');
+      await phone.eval(`[...document.querySelectorAll('#m-night ~ .m-row-3 .m-btn')][2].click()`);
+      assert.match(await until(phone, `document.querySelector('#m-night ~ .m-flash.is-ok')?.textContent.includes('auto') && document.querySelector('#m-night ~ .m-flash.is-ok').textContent`), /Kitchen: auto mode/);
 
       // the code is single use: the screen drops it at its time; a second phone cannot use it
       assert.equal((await realFetch(`${base}/api/member/pair`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code: code.json.code }) })).status, 404);

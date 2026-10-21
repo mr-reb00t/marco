@@ -22,7 +22,7 @@ import { _resetFamilyAccess, BAD_CODE_LIMIT, BAD_CODE_GLOBAL, BAD_LIMIT, BAD_GLO
 import { FEATURE_KEYS } from '../capabilities.js';
 import { addDays, localDate } from '../core/lib/tz.js';
 import {
-  effectivePerms, memberEventRequest, memberMessageRequest, memberState, memberTodoRequest, normalizeAccessCode, sanitizePersonInput,
+  effectivePerms, memberEventRequest, memberMessageRequest, memberNightRequest, memberState, nightTargets, memberTodoRequest, normalizeAccessCode, sanitizePersonInput,
   deviceLabel, LINK_TOKEN_RE, DEVICE_TOKEN_RE, MESSAGE_MAX, MAX_DEVICES_PER_PERSON,
 } from '../core/familyAccessCore.js';
 
@@ -161,10 +161,10 @@ test('core: permissions, requests and what the phone sees', () => {
   const main = cfg.screens[0].id;
   // anything but true is off; unknown screens are dropped
   const r = sanitizePersonInput({ name: '  Ana\n  ', memberId: 'm_a', perms: { message: 'yes', privacy: true, messageScreens: ['s_k', 's_gone', 's_k'] } }, cfg);
-  assert.deepEqual(r.value, { name: 'Ana', memberId: 'm_a', perms: { message: false, messageScreens: ['s_k'], privacy: true, night: false, todo: false, events: false } });
+  assert.deepEqual(r.value, { name: 'Ana', memberId: 'm_a', perms: { message: false, messageScreens: ['s_k'], privacy: true, night: false, nightScreens: [], todo: false, events: false } });
   assert.equal(sanitizePersonInput({ name: '' }, cfg).error, 'name_required');
   assert.equal(sanitizePersonInput({ name: 'x', memberId: 'm_nobody' }, cfg).error, 'unknown_member');
-  assert.deepEqual(sanitizePersonInput({ perms: { night: true } }, cfg, { partial: true }).value, { perms: { message: false, messageScreens: [], privacy: false, night: true, todo: false, events: false } });
+  assert.deepEqual(sanitizePersonInput({ perms: { night: true } }, cfg, { partial: true }).value, { perms: { message: false, messageScreens: [], privacy: false, night: true, nightScreens: [], todo: false, events: false } });
   // messages limited to screens that were all deleted are off, never every screen
   const p = { name: 'Ana', memberId: 'm_a', perms: { message: true, messageScreens: ['s_gone'] } };
   assert.equal(effectivePerms(p, cfg).message, false);
@@ -193,8 +193,28 @@ test('core: permissions, requests and what the phone sees', () => {
   const st = memberState(cfg, { name: 'Ana', memberId: 'm_a', perms: { message: true, messageScreens: ['s_k'], todo: true } }, { lang: 'es', privacy: { on: 1, total: 2 } });
   assert.deepEqual(st, {
     name: 'Ana', lang: 'es', avatar: '🦊', color: '#ff8fab', can: { message: true, privacy: false, night: false, todo: true, events: false },
-    screens: [{ id: 's_k', name: 'K' }], privacy: null, calendarOn: true, durations: [60, 600, 3600],
+    screens: [{ id: 's_k', name: 'K' }], nightScreens: [], privacy: null, calendarOn: true, durations: [60, 600, 3600],
   });
+  // night mode on every screen (a person saved before nightScreens existed has none), or on the chosen ones
+  const old = { name: 'Leo', perms: { night: true } };
+  assert.deepEqual(effectivePerms(old, cfg).nightScreens, []);
+  assert.deepEqual(nightTargets(old, cfg).map((s) => s.id), [main, 's_k']);
+  assert.deepEqual(memberNightRequest({ mode: 'on' }, old, cfg).value, { mode: 'on', screens: [], names: [] });
+  assert.deepEqual(memberNightRequest({ mode: 'off', screens: ['s_k'] }, old, cfg).value, { mode: 'off', screens: ['s_k'], names: ['K'] });
+  assert.deepEqual(memberNightRequest({ mode: 'auto', screens: [] }, old, cfg).value, { mode: 'auto', screens: [], names: [] });
+  assert.equal(memberNightRequest({ mode: 'dim' }, old, cfg).error, 'bad_mode');
+  assert.equal(memberNightRequest({ mode: 'on', screens: ['s_gone'] }, old, cfg).error, 'bad_screens');
+  assert.equal(memberNightRequest({ mode: 'on', screens: 's_k' }, old, cfg).error, 'bad_screens');
+  const some = { name: 'Leo', perms: { night: true, nightScreens: ['s_k', 's_gone'] } };
+  assert.deepEqual(sanitizePersonInput({ perms: some.perms }, cfg, { partial: true }).value.perms.nightScreens, ['s_k']);
+  // limited to some screens: "all" means the ones allowed, never the others
+  assert.deepEqual(memberNightRequest({ mode: 'on' }, some, cfg).value, { mode: 'on', screens: ['s_k'], names: ['K'] });
+  assert.equal(memberNightRequest({ mode: 'on', screens: [main] }, some, cfg).error, 'bad_screens');
+  assert.deepEqual(memberState(cfg, some, { lang: 'en' }).nightScreens, [{ id: 's_k', name: 'K' }]);
+  // limited to screens that were all deleted: off
+  const gone = { name: 'Leo', perms: { night: true, nightScreens: ['s_gone'] } };
+  assert.equal(effectivePerms(gone, cfg).night, false);
+  assert.equal(memberNightRequest({ mode: 'on' }, gone, cfg).error, 'not_allowed');
   assert.equal(normalizeAccessCode('abc-234'), 'ABC234');
   assert.equal(normalizeAccessCode('ABC10O'), null);
   assert.equal(deviceLabel('Mozilla/5.0 (Linux; Android 14) Chrome/120 Mobile Safari/537.36'), 'Android · Chrome');
@@ -213,7 +233,7 @@ test('admin: a session is needed; people are listed without any token; secrets k
     const { person, link } = await addPerson({ name: 'Ana', memberId: 'm_ana', perms: { todo: true } });
     assert.match(link, LINK_TOKEN_RE);
     assert.equal(person.link.exists, true);
-    assert.deepEqual(person.perms, { message: false, messageScreens: [], privacy: false, night: false, todo: true, events: false });
+    assert.deepEqual(person.perms, { message: false, messageScreens: [], privacy: false, night: false, nightScreens: [], todo: true, events: false });
     const list = await call('GET', '/api/admin/family-access', { cookie });
     assert.equal(list.headers.get('cache-control'), 'private, no-store');
     assert.equal(list.json.people.length, 1);
@@ -314,6 +334,23 @@ test('every action is checked against the permissions of now', async () => {
     await call('POST', '/api/member/night', { headers: h, body: { mode: 'on' } });
     assert.equal((await main.waitFor('night')).data.mode, 'on');
     assert.equal((await kitchen.waitFor('night')).data.mode, 'on');
+    // or on one screen only
+    const nightAll = main.events.filter((e) => e.event === 'night').length;
+    const one = await call('POST', '/api/member/night', { headers: h, body: { mode: 'off', screens: ['s_kitchen'] } });
+    assert.equal(one.status, 200, one.text);
+    assert.equal(one.json.delivered, 1);
+    assert.equal((await kitchen.waitFor('night', (d) => d.mode === 'off')).data.mode, 'off');
+    assert.equal(main.events.filter((e) => e.event === 'night').length, nightAll);
+    assert.equal((await call('POST', '/api/member/night', { headers: h, body: { mode: 'off', screens: ['s_nope'] } })).json.code, 'bad_screens');
+    const nightOne = listActivity({ type: 'family', limit: 50 }).items.find((e) => e.type === 'family.night');
+    assert.deepEqual(nightOne.data.screens, ['Kitchen']);
+    // limited by the admin to the kitchen: the main screen is refused, "all" is the kitchen only
+    await call('PATCH', `/api/admin/family-access/${person.id}`, { cookie, body: { perms: { ...ALL, messageScreens: ['s_kitchen'], nightScreens: ['s_kitchen'] } } });
+    assert.deepEqual((await call('GET', '/api/member/state', { headers: h })).json.nightScreens, [{ id: 's_kitchen', name: 'Kitchen' }]);
+    assert.equal((await call('POST', '/api/member/night', { headers: h, body: { mode: 'on', screens: [store.getConfig().screens[0].id] } })).status, 400);
+    assert.equal((await call('POST', '/api/member/night', { headers: h, body: { mode: 'auto' } })).json.delivered, 1);
+    assert.equal((await kitchen.waitFor('night', (d) => d.mode === 'auto')).data.mode, 'auto');
+    assert.equal(main.events.filter((e) => e.event === 'night').length, nightAll);
 
     // a to-do and an event go to the config
     const rev = store.getConfig().revision;
@@ -524,7 +561,7 @@ test('a person with every phone slot taken keeps the code; a new code or a remov
 
 test('an export with secrets keeps the people and their phones (digests only), and an import brings them back', async () => {
   await withServer(async ({ call, login, phone, addPerson, redeem }) => {
-    const { person, link } = await addPerson({ name: 'Ana', perms: { message: true, messageScreens: ['s_kitchen'] } });
+    const { person, link } = await addPerson({ name: 'Ana', perms: { message: true, messageScreens: ['s_kitchen'], night: true, nightScreens: ['s_kitchen'] } });
     const token = (await redeem(link)).json.token;
     assert.equal((await call('POST', '/api/member/message', { headers: phone(token), body: { text: 'Hola' } })).status, 200);
     const cookie = await login();
@@ -540,7 +577,9 @@ test('an export with secrets keeps the people and their phones (digests only), a
     assert.equal((await call('GET', '/api/member/state', { headers: phone(token) })).status, 403);
     const imp = await call('POST', '/api/admin/import/apply', { cookie, body: { bundle, includeSecrets: true, password: 'secret-pass-123' } });
     assert.equal(imp.status, 200, imp.text);
-    assert.equal((await call('GET', '/api/member/state', { headers: phone(token) })).status, 200);
+    const back = await call('GET', '/api/member/state', { headers: phone(token) });
+    assert.equal(back.status, 200);
+    assert.deepEqual(back.json.nightScreens, [{ id: 's_kitchen', name: 'Kitchen' }]);
     assert.equal((await redeem(link, token)).json.token, token);
   });
 });

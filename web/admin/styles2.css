@@ -6051,3 +6051,8 @@ button.immich-album:hover {
 .tunnel-guide > p {
   margin-top: 12px;
 }
+/* a key typed in a text field, shown as dots (ui.tsx TextInput: password managers skip it) */
+.input--masked {
+  -webkit-text-security: disc;
+  text-security: disc;
+}

@@ -14,7 +14,7 @@ export type PosKey = 'pos' | 'portrait';
 export type MainPos = Extract<CanvasPos, { zone: 'main' }>;
 export type SidePos = Extract<CanvasPos, { zone: 'side' }>;
 /** Why an operation changed nothing. */
-export type Refusal = 'noRoom' | 'noBigger' | 'sideFull' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
+export type Refusal = 'noRoom' | 'noBigger' | 'cardsNoRoom' | 'sideFull' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
 export type Result = { ok: true; cv: CanvasConfig; id?: string } | { ok: false; why: Refusal };
 
 const ok = (cv: CanvasConfig, id?: string): Result => ({ ok: true, cv, id });
@@ -743,6 +743,36 @@ export function placeInPortrait(cv0: CanvasConfig, id: string): Result {
   const cv = clone(cv0);
   setPos(cv, 'portrait', id, { zone: 'main', x: spot.x, y: spot.y, size: spot.size });
   return ok(cv, id);
+}
+
+/**
+ * After a Rotativa's cards changed (one added, removed or of another kind): its box on each orientation laid out by
+ * hand, grown to the smallest box its cards allow now when it became too small (kindFor), at its origin when there is
+ * room, else at the nearest free spot. `stuck`: the orientations with no room for that box (it stays as it was, the
+ * card shows "No cabe" and the server grows it on save when it can). A box never shrinks here: the range only gives
+ * the owner more choice when a card goes.
+ */
+export function growToCards(cv0: CanvasConfig, id: string): { cv: CanvasConfig; grown: Orient[]; stuck: Orient[] } {
+  let cv = cv0;
+  const grown: Orient[] = [];
+  const stuck: Orient[] = [];
+  for (const o of ['landscape', 'portrait'] as Orient[]) {
+    if (readOnly(cv, o)) continue;
+    const it = itemOf(cv, id);
+    const p = placements(cv, o).get(id);
+    if (!it || p?.zone !== 'main') continue;
+    const [w, h] = boxCells(p, o);
+    const box = boxFor(sizingOf(it), w, h, o);
+    const [bw, bh] = boxCells(box, o);
+    if (bw <= w && bh <= h) continue;
+    const drop = fitsAt(occupancy(cv, o, id), p.x, p.y, bw, bh) ? { x: p.x, y: p.y, ...box } : resolveMain(cv, o, box, p.x, p.y, { id });
+    const r = drop ? applyMain(cv, o, id, { ...drop, swap: undefined }) : no('noRoom');
+    if (r.ok) {
+      cv = r.cv;
+      grown.push(o);
+    } else stuck.push(o);
+  }
+  return { cv, grown, stuck };
 }
 
 /** Change an item's props or style (the inspector). */

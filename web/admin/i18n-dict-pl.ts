@@ -2937,6 +2937,7 @@ export const PL: Record<string, string> = {
   'Para cambiar una tarjeta por otra según Home Assistant: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.': 'Aby zamieniać jedną kartę na drugą zależnie od Home Assistant: dodaj obie i w każdej wybierz w „Pokaż”, kiedy ma być widoczna.',
   'Para cambiar una tarjeta por otra según un valor: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.': 'Aby zamieniać jedną kartę na drugą zależnie od wartości: dodaj obie i w każdej wybierz w „Pokaż”, kiedy ma być widoczna.',
   'Cambiar según Casa': 'Zamiana z Home Assistant',
+  'La Rotativa necesita un hueco mayor para esa tarjeta y no hay sitio alrededor. Haz sitio o quita la tarjeta.': 'Karta rotująca potrzebuje większego miejsca na tę kartę, a wokół nie ma miejsca. Zrób miejsce albo usuń kartę.',
   'Dos tarjetas en el mismo hueco: se ve una u otra según Home Assistant. En cada una eliges cuándo se ve.': 'Dwie karty w tym samym miejscu: widać jedną albo drugą zależnie od Home Assistant. W każdej wybierasz, kiedy jest widoczna.',
   'Unos puntos pequeños abajo dicen qué tarjeta se ve.': 'Małe kropki na dole pokazują, która karta jest widoczna.',
   'Divisas': 'Waluty',

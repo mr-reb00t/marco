@@ -222,7 +222,11 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
       return { icon: 'lock', text: d.mode === 'on' ? t('Modo privado activado por {person}', { person: str(d.person) }) : t('Modo privado quitado por {person}', { person: str(d.person) }) };
     case 'family.night': {
       const vars = { person: str(d.person) };
-      return { icon: d.mode === 'off' ? 'sun' : 'moon', text: d.mode === 'on' ? t('Modo noche activado por {person}', vars) : d.mode === 'off' ? t('Modo día activado por {person}', vars) : t('Modo automático activado por {person}', vars) };
+      const where = Array.isArray(d.screens) && d.screens.length ? ` · ${d.screens.map(str).join(', ')}` : '';
+      return {
+        icon: d.mode === 'off' ? 'sun' : 'moon',
+        text: (d.mode === 'on' ? t('Modo noche activado por {person}', vars) : d.mode === 'off' ? t('Modo día activado por {person}', vars) : t('Modo automático activado por {person}', vars)) + where,
+      };
     }
     case 'family.todo':
       return { icon: 'checklist', text: t('Tarea añadida por {person}: {text}', { person: str(d.person), text: q(d.text) }) };

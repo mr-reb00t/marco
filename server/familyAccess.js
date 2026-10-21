@@ -23,7 +23,7 @@ import { randomCode } from './core/pairCore.js';
 import { newId } from './core/familyCore.js';
 import {
   CODE_LENGTH, CODE_TTL_MS, DEVICE_TOKEN_RE, LINK_TOKEN_RE, MAX_DEVICES_PER_PERSON, MAX_PEOPLE,
-  deviceLabel, effectivePerms, emptyPerms, householdLang, memberEventRequest, memberMessageRequest, memberPath, memberNightMode, memberPrivacyMode,
+  deviceLabel, effectivePerms, emptyPerms, householdLang, memberEventRequest, memberMessageRequest, memberPath, memberNightRequest, memberPrivacyMode,
   memberState, memberTodoRequest, newLocalEvent, newTodoItem, normalizeAccessCode, sanitizePersonInput,
 } from './core/familyAccessCore.js';
 
@@ -465,15 +465,17 @@ export function memberPrivacy({ person }, body, { req } = {}) {
   return { ok: true, privacy: { on: active, total: targets.length } };
 }
 
-/** POST /api/member/night { mode: on | off | auto }: every screen. */
+/** POST /api/member/night { mode: on | off | auto, screens? }: the screens asked for, or every screen they may switch. */
 export function memberNight({ person }, body, { req } = {}) {
   if (!allowed(person, 'night')) return NOT_ALLOWED;
-  const mode = memberNightMode(body);
-  if (!mode) return fail('bad_mode', 400);
+  const r = memberNightRequest(body, person, getConfig());
+  if (r.error) return fail(r.error, r.error === 'not_allowed' ? 403 : 400);
   const g = gate(person, 'night');
   if (g) return g;
-  const out = runCommand({ action: 'night', mode });
-  logActivity('family.night', { req, actor: actorOf(person), data: { person: person.name, mode, delivered: out.delivered } });
+  const { mode, screens, names } = r.value;
+  const out = runCommand({ action: 'night', mode, ...(screens.length ? { screens } : {}) });
+  if (out.error) return fail('bad_screens', 400);
+  logActivity('family.night', { req, actor: actorOf(person), data: { person: person.name, mode, ...(names.length ? { screens: names } : {}), delivered: out.delivered } });
   return { ok: true, delivered: out.delivered };
 }
 

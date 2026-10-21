@@ -1,7 +1,7 @@
 // Types for the parts of familyAccessCore.js the browser uses (admin Accesos de la familia, the phone dashboard).
 import type { FamilyAccessPerms } from '../../web/shared/types';
 
-export const ACCESS_PERMS: readonly (keyof Omit<FamilyAccessPerms, 'messageScreens'>)[];
+export const ACCESS_PERMS: readonly (keyof Omit<FamilyAccessPerms, 'messageScreens' | 'nightScreens'>)[];
 export const MAX_PEOPLE: number;
 export const MAX_DEVICES_PER_PERSON: number;
 export const NAME_MAX: number;

@@ -57,6 +57,7 @@ const orientationOf = (v: unknown): ScreenOrientation => (v === 'portrait' || v 
 const REFUSALS: Record<Refusal, string> = {
   noRoom: 'No hay sitio para este tamaño',
   noBigger: 'No hay sitio para un tamaño mayor. Haz sitio a su alrededor o elige otro tamaño.',
+  cardsNoRoom: 'La Rotativa necesita un hueco mayor para esa tarjeta y no hay sitio alrededor. Haz sitio o quita la tarjeta.',
   sideFull: 'No cabe en la barra lateral',
   tooMany: 'Ya hay {n} widgets, el máximo en una pantalla',
   kindCap: 'No caben más widgets de este tipo en una pantalla',

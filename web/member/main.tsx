@@ -80,7 +80,7 @@ const api = {
   state: () => call<MemberState>('GET', '/api/member/state'),
   message: (text: string, screens: string[], durationSec: number) => call<{ ok: true; delivered: number }>('POST', '/api/member/message', { text, screens, durationSec }),
   privacy: (mode: 'on' | 'off') => call<{ ok: true; privacy: { on: number; total: number } }>('POST', '/api/member/privacy', { mode }),
-  night: (mode: 'on' | 'off' | 'auto') => call<{ ok: true; delivered: number }>('POST', '/api/member/night', { mode }),
+  night: (mode: 'on' | 'off' | 'auto', screens: string[]) => call<{ ok: true; delivered: number }>('POST', '/api/member/night', { mode, screens }),
   todo: (text: string) => call<{ ok: true }>('POST', '/api/member/todo', { text }),
   event: (b: { title: string; date: string; allDay: boolean; startTime?: string; endTime?: string }) => call<{ ok: true }>('POST', '/api/member/event', b),
   forget: () => call<{ ok: true }>('POST', '/api/member/forget', {}),
@@ -253,14 +253,25 @@ function PrivacyCard({ st, onLost, onChange }: { st: MemberState; onLost: (e: un
   );
 }
 
-function NightCard({ onLost }: { onLost: (e: unknown) => boolean }) {
+/** What the night card says once it worked. `screen`: the name of the one screen picked, '' = all of them. */
+function nightDone(mode: 'on' | 'off' | 'auto', screen: string): string {
+  if (!screen) return mode === 'on' ? t('Pantallas en modo noche') : mode === 'off' ? t('Pantallas en modo día') : t('Pantallas en modo automático');
+  const vars = { screen };
+  return mode === 'on' ? t('{screen}: modo noche', vars) : mode === 'off' ? t('{screen}: modo día', vars) : t('{screen}: modo automático', vars);
+}
+
+function NightCard({ st, onLost }: { st: MemberState; onLost: (e: unknown) => boolean }) {
   const [busy, setBusy] = useState('');
+  const [screen, setScreen] = useState('');
   const [flash, setFlash] = useFlash();
+  const list = st.nightScreens ?? [];
+  // a screen taken away since it was picked: back to all of them
+  const picked = list.some((s) => s.id === screen) ? screen : '';
   const run = async (mode: 'on' | 'off' | 'auto') => {
     setBusy(mode);
     try {
-      await api.night(mode);
-      setFlash({ kind: 'ok', text: mode === 'on' ? t('Pantallas en modo noche') : mode === 'off' ? t('Pantallas en modo día') : t('Pantallas en modo automático') });
+      await api.night(mode, picked ? [picked] : []);
+      setFlash({ kind: 'ok', text: nightDone(mode, list.find((s) => s.id === picked)?.name ?? '') });
     } catch (err) {
       if (!onLost(err)) setFlash({ kind: 'error', text: errorText(err) });
     } finally {
@@ -269,6 +280,19 @@ function NightCard({ onLost }: { onLost: (e: unknown) => boolean }) {
   };
   return (
     <Card id="m-night" emoji="🌙" title={t('Noche o día')}>
+      {list.length > 1 && (
+        <div class="m-chips" role="group" aria-label={t('Pantallas')}>
+          <button type="button" class={`m-chip${picked === '' ? ' is-on' : ''}`} aria-pressed={picked === ''} onClick={() => setScreen('')}>
+            {t('Todas las pantallas')}
+          </button>
+          {list.map((s) => (
+            <button type="button" class={`m-chip${picked === s.id ? ' is-on' : ''}`} aria-pressed={picked === s.id} onClick={() => setScreen(s.id)}>
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
+      {list.length === 1 && <p class="m-muted">{t('En la pantalla {screen}.', { screen: list[0].name })}</p>}
       <div class="m-row m-row-3">
         {(
           [
@@ -443,7 +467,7 @@ function Dashboard({ st, setSt, onLost, onForget }: { st: MemberState; setSt: (s
       {!any && <p class="m-card m-muted">{t('Todavía no tienes nada que controlar desde aquí. Pide que te den permisos en el panel.')}</p>}
       {st.can.message && st.screens.length > 0 && <MessageCard st={st} onLost={onLost} />}
       {st.can.privacy && <PrivacyCard st={st} onLost={onLost} onChange={(p) => setSt({ ...st, privacy: p })} />}
-      {st.can.night && <NightCard onLost={onLost} />}
+      {st.can.night && <NightCard st={st} onLost={onLost} />}
       {st.can.todo && <TodoCard onLost={onLost} />}
       {st.can.events && <EventCard st={st} onLost={onLost} />}
       <footer class="m-foot">

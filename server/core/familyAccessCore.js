@@ -1,7 +1,7 @@
 // Family access (#16): each person of the household gets their own small dashboard on the phone (/my), opened with a
 // private link or authorised with a code shown on one of the screens, without the admin password. The admin picks
 // what each person may do: send a message to the screens, turn privacy mode on or off, switch night, day or auto
-// mode, add to-dos and add events to the local calendar. Pure functions: no fs, no express, no store, so Marco Cloud
+// mode (on every screen or the ones the admin chose), add to-dos and add events to the local calendar. Pure functions: no fs, no express, no store, so Marco Cloud
 // runs the same rules. server/familyAccess.js keeps the people in secrets.json and runs the actions; Marco Cloud keeps
 // them in D1 (src/cloud/familyAccess.ts). See docs/API.md ("Family access") and docs/ARCHITECTURE.md.
 //
@@ -55,47 +55,61 @@ const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
 export const cleanLine = (v) => (typeof v === 'string' ? v.replace(CONTROL, ' ').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim() : '');
 
 /** No permission at all (a new person starts like this until the admin ticks something). */
-export const emptyPerms = () => ({ message: false, messageScreens: [], privacy: false, night: false, todo: false, events: false });
+export const emptyPerms = () => ({ message: false, messageScreens: [], privacy: false, night: false, nightScreens: [], todo: false, events: false });
 
 const screenIds = (cfg) => new Set((cfg?.screens ?? []).map((s) => s.id));
 
+/** The permissions that may be limited to some screens, and the field that lists them ([] = every screen). */
+const SCREEN_LISTS = Object.freeze({ message: 'messageScreens', night: 'nightScreens' });
+
 /**
- * The permissions of a request or a stored person, with only known screens. `messageScreens` [] = every screen.
+ * The permissions of a request or a stored person, with only known screens. `messageScreens` and `nightScreens`
+ * [] = every screen (a person saved before `nightScreens` existed has none, so night mode stays on every screen).
  * Anything that is not `true` is off.
  */
 export function sanitizePerms(raw, cfg) {
   const p = isObj(raw) ? raw : {};
   const ids = screenIds(cfg);
-  const chosen = Array.isArray(p.messageScreens) ? p.messageScreens.filter((x) => typeof x === 'string' && ids.has(x)) : [];
+  const chosen = (v) => [...new Set(Array.isArray(v) ? v.filter((x) => typeof x === 'string' && ids.has(x)) : [])].slice(0, 12);
   return {
     message: p.message === true,
-    messageScreens: [...new Set(chosen)].slice(0, 12),
+    messageScreens: chosen(p.messageScreens),
     privacy: p.privacy === true,
     night: p.night === true,
+    nightScreens: chosen(p.nightScreens),
     todo: p.todo === true,
     events: p.events === true,
   };
 }
 
 /**
- * What a stored person may do now. A message limited to screens that were all deleted since is off: it never widens
- * to every screen on its own.
+ * What a stored person may do now. A message or night mode limited to screens that were all deleted since is off: it
+ * never widens to every screen on its own.
  */
 export function effectivePerms(person, cfg) {
   const stored = isObj(person?.perms) ? person.perms : {};
   const p = sanitizePerms(stored, cfg);
-  const askedSome = Array.isArray(stored.messageScreens) && stored.messageScreens.length > 0;
-  if (p.message && askedSome && !p.messageScreens.length) p.message = false;
+  for (const [perm, list] of Object.entries(SCREEN_LISTS)) {
+    const askedSome = Array.isArray(stored[list]) && stored[list].length > 0;
+    if (p[perm] && askedSome && !p[list].length) p[perm] = false;
+  }
   return p;
 }
 
-/** The screens a person may send a message to ([] when messages are off). */
-export function messageTargets(person, cfg) {
+/** The screens a person may reach with `perm` (message or night), as { id, name } ([] when it is off). */
+function targetsOf(perm, person, cfg) {
   const p = effectivePerms(person, cfg);
-  if (!p.message) return [];
+  if (!p[perm]) return [];
+  const chosen = p[SCREEN_LISTS[perm]];
   const all = cfg.screens ?? [];
-  return (p.messageScreens.length ? all.filter((s) => p.messageScreens.includes(s.id)) : all).map((s) => ({ id: s.id, name: s.name }));
+  return (chosen.length ? all.filter((s) => chosen.includes(s.id)) : all).map((s) => ({ id: s.id, name: s.name }));
 }
+
+/** The screens a person may send a message to ([] when messages are off). */
+export const messageTargets = (person, cfg) => targetsOf('message', person, cfg);
+
+/** The screens a person may switch to night, day or auto ([] when night mode is off). */
+export const nightTargets = (person, cfg) => targetsOf('night', person, cfg);
 
 /**
  * The fields of an admin request to add (`partial` false) or change a person.
@@ -154,7 +168,7 @@ export function importAccessPeople(list) {
       memberId: typeof p.memberId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(p.memberId) ? p.memberId : null,
       perms: {
         ...Object.fromEntries(['message', 'privacy', 'night', 'todo', 'events'].map((k) => [k, perms[k] === true])),
-        messageScreens: Array.isArray(perms.messageScreens) ? perms.messageScreens.filter((x) => typeof x === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(x)).slice(0, 12) : [],
+        ...Object.fromEntries(Object.values(SCREEN_LISTS).map((k) => [k, Array.isArray(perms[k]) ? perms[k].filter((x) => typeof x === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(x)).slice(0, 12) : []])),
       },
       createdAt: ISO(p.createdAt) ?? now, lastUsedAt: ISO(p.lastUsedAt),
       link: isObj(p.link) && HASH.test(p.link.hash || '') ? { hash: p.link.hash, createdAt: ISO(p.link.createdAt) ?? now } : null,
@@ -208,6 +222,7 @@ export function memberState(cfg, person, { lang = 'en', privacy = { on: 0, total
     color: member?.color || '',
     can: { message: p.message, privacy: p.privacy, night: p.night, todo: p.todo, events: p.events },
     screens: p.message ? messageTargets(person, cfg) : [],
+    nightScreens: p.night ? nightTargets(person, cfg) : [],
     privacy: p.privacy ? { on: privacy.on, total: privacy.total } : null,
     calendarOn: cfg.localEvents?.enabled !== false,
     durations: [...MESSAGE_DURATIONS],
@@ -253,10 +268,33 @@ export function memberPrivacyMode(body) {
   return m === 'on' || m === 'off' ? m : null;
 }
 
-/** `{ mode }` of a night mode request: on (night), off (day) or auto, for every screen. */
+/** `{ mode }` of a night mode request: on (night), off (day) or auto. */
 export function memberNightMode(body) {
   const m = isObj(body) ? body.mode : undefined;
   return m === 'on' || m === 'off' || m === 'auto' ? m : null;
+}
+
+/**
+ * A night mode request from the phone: `{ mode, screens? }`. `screens` must be screens the person may switch ([] or
+ * missing = all of them). `screens` of the value is the display command's target ([] = every screen, as the admin's
+ * command without screens); `names` are the screens it names, for the activity log ([] = every screen).
+ * @returns {{ value: { mode: 'on' | 'off' | 'auto', screens: string[], names: string[] } } | { error: string }}
+ */
+export function memberNightRequest(body, person, cfg) {
+  const mode = memberNightMode(body);
+  if (!mode) return { error: 'bad_mode' };
+  const allowed = nightTargets(person, cfg);
+  if (!allowed.length) return { error: 'not_allowed' };
+  const raw = isObj(body) ? body.screens : undefined;
+  let picked = allowed;
+  if (raw !== undefined && raw !== null) {
+    if (!Array.isArray(raw)) return { error: 'bad_screens' };
+    const asked = [...new Set(raw.filter((x) => typeof x === 'string'))];
+    if (asked.length !== raw.length || asked.some((id) => !allowed.some((s) => s.id === id))) return { error: 'bad_screens' };
+    if (asked.length) picked = allowed.filter((s) => asked.includes(s.id));
+  }
+  const every = !effectivePerms(person, cfg).nightScreens.length && picked.length === (cfg.screens ?? []).length;
+  return { value: { mode, screens: every ? [] : picked.map((s) => s.id), names: every ? [] : picked.map((s) => s.name) } };
 }
 
 /** A to-do typed on the phone. @returns {{ value: { text } } | { error }} */

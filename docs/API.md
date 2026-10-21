@@ -903,9 +903,10 @@ allows them and no admin password (#16). The rules are in `server/core/familyAcc
 `/api/member`), and both routers check the origin like the admin (`403 bad origin` from another site). Errors are
 `{ error, code }`.
 
-A person has `perms`: `{ message, messageScreens, privacy, night, todo, events }`. `messageScreens` `[]` means every
-screen; a list where every screen was deleted since turns messages off (it never widens to every screen). Anything
-that is not `true` is off.
+A person has `perms`: `{ message, messageScreens, privacy, night, nightScreens, todo, events }`. `messageScreens` and
+`nightScreens` `[]` mean every screen (a person saved before `nightScreens` existed has none, so night mode stays on
+every screen); a list where every screen was deleted since turns that permission off (it never widens to every
+screen). Anything that is not `true` is off.
 
 **Admin** (session required):
 
@@ -930,10 +931,10 @@ With `X-Member-Token: fd_…`:
 
 | Method | Path | Body | Answer |
 |---|---|---|---|
-| GET | `/api/member/state` | | `MemberState`: `{ name, lang, avatar, color, can: { message, privacy, night, todo, events }, screens: [{ id, name }], privacy: { on, total } \| null, calendarOn, durations }`. Never a token, an account or another person |
+| GET | `/api/member/state` | | `MemberState`: `{ name, lang, avatar, color, can: { message, privacy, night, todo, events }, screens: [{ id, name }] (for a message), nightScreens: [{ id, name }] (for night, day or auto), privacy: { on, total } \| null, calendarOn, durations }`. Never a token, an account or another person |
 | POST | `/api/member/message` | `{ text, screens?, durationSec? }` | an announcement titled with the person's name (`via: "family"`, `by: "family:<name>"`), text up to 200 characters, `durationSec` 60, 600 (default) or 3600, `screens` among the ones allowed (`[]` = all of them) → `{ ok, delivered }`. `400 bad_screens`, `text_required`, `text_too_long`, `bad_duration`; 10 messages per person every 10 minutes. At most 3 of a person's messages are active at once (a new one retires their oldest); a message only ever retires the same person's messages, so `409 announcements_full` when the household has 50 active announcements and none is theirs |
 | POST | `/api/member/privacy` | `{ mode: "on" \| "off" }` | every screen, until turned off → `{ ok, privacy: { on, total } }` |
-| POST | `/api/member/night` | `{ mode: "on" \| "off" \| "auto" }` | the `night` display command for every screen → `{ ok, delivered }` |
+| POST | `/api/member/night` | `{ mode: "on" \| "off" \| "auto", screens? }` | the `night` display command for `screens` (ids from `nightScreens` of the state; `[]` or missing = every screen the person may switch) → `{ ok, delivered }`. `400 bad_mode`, `bad_screens` (a screen the person may not switch) |
 | POST | `/api/member/todo` | `{ text }` | a typed to-do in `config.todo.items` → `{ ok, id }`. `409 todo_full` |
 | POST | `/api/member/event` | `{ title, date, allDay, startTime?, endTime? }` | a one day event in `config.localEvents.items` (no end time: an hour); the date within 31 days back and two years ahead → `{ ok, id }`. `400 bad_date`, `bad_time`; `409 calendar_off`, `events_full` |
 | POST | `/api/member/forget` | | this phone signs out (its token stops working) → `{ ok }` |
@@ -948,7 +949,8 @@ To-dos and events are saved like any config change (the revision goes up, displa
 
 Activity log types: `family.access` (`action`: `created`, `updated`, `link`, `device_revoked`, `deleted`),
 `family.device` (a phone got in, `via` link or code), `family.code`, `family.access_rejected` (throttled),
-`family.message`, `family.privacy`, `family.night`, `family.todo`, `family.event`. The phone's entries have the actor
+`family.message`, `family.privacy`, `family.night` (`screens`: the names of the screens it went to, missing for every
+screen), `family.todo`, `family.event`. The phone's entries have the actor
 `family:<name>`. Tokens and links are never logged.
 
 ## Privacy mode
@@ -1112,8 +1114,9 @@ the editor keeps at least 2), each a kind of its own validated by that kind (`ro
 `spacer`, `heading` or a navigation card; a kind the server does not allow is refused, so on Marco Cloud no Home
 Assistant card); each card has an id like an item's, unique on the screen. `everySec` is 5 to 120 (default 10), `dots`
 a boolean (default true). The cards count towards the cards of a screen (48) and towards each kind's own
-cap, their entities towards the screen's (80), and the box of a Rotativa is kept within what all its cards allow
-(`kindFor(item)`). A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
+cap, their entities towards the screen's (80), and the box of a Rotativa is kept within what its cards allow
+(`kindFor(item)`): at least the largest of their smallest boxes (so each card fits, in its compact look when the box is
+small), at most the largest any of them takes; a new one starts at its first card's default size. A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
 (`canvasCards(items)`), so a card inside gets its Home Assistant states under aliases of its own id (`<cardId>:<n>`),
 its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch
 controls (a control on one answers `not_found`); a camera inside shows pictures. In the display config each card is

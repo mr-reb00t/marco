@@ -4,8 +4,8 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CANVAS_KINDS, boxOf, canvasDefaults, cellRange, fullLookMin, kindFor, posCells } from '../core/canvasCore.js';
-import { flexSamples } from './flexSizes.js';
+import { CANVAS_KINDS, boxAllowed, boxOf, cellRange, fullLookMin, posCells } from '../core/canvasCore.js';
+import { flexSamples, sizingKind } from './flexSizes.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
 // the same check as the normal grid's sweep (one source of truth for "fits")
@@ -17,7 +17,7 @@ const CHECK = eval(fs.readFileSync(new URL('./display-canvas-flex.test.js', impo
  */
 function fineSamples(kind, o) {
   const list = flexSamples(kind, o, 'fine');
-  const k = kind === 'rotator' ? kindFor({ kind, props: canvasDefaults(kind) }) : kind;
+  const k = sizingKind(kind);
   const f = cellRange(k, o);
   const [fw, fh] = fullLookMin(k, o);
   const w = Math.max(f.minW, Math.min(f.maxW, fw - 1));
@@ -32,6 +32,10 @@ function isMini(kind, o, cells) {
   const [fw, fh] = fullLookMin(kind, o);
   return w < fw || h < fh;
 }
+
+/** Rotativas of other cards than the default ones (#19), and the small boxes each is drawn at besides its samples. */
+const ROTATOR_MIXES = ['rotator,ha.tile,ha.camera', 'rotator,ha.sensor,ha.gauge'];
+const ROTATOR_SMALL = [[3, 1], [4, 1], [3, 2], [4, 2], [6, 2], [4, 4]];
 
 const LAND = { width: 1920, height: 1080 };
 const PORT = { width: 1080, height: 1920 };
@@ -79,10 +83,12 @@ export function densitySweep(only) {
     for (const pass of PASSES.filter((p) => only.includes(p.flags))) {
       test(`${pass.flags}: every card fits at the smallest, the largest and boxes in between`, { timeout: 1_800_000 }, async () => {
         const jobs = [];
-        for (const kind of kinds) {
+        for (const kind of [...kinds, ...ROTATOR_MIXES]) {
           for (const sc of pass.screens) {
             const list = pass.grid === 'fine' ? fineSamples(kind, sc.o) : flexSamples(kind, sc.o);
-            for (const sz of new Set(sc.pick(list))) jobs.push({ shot: `size:${kind}:${sz}:${sc.o}:${sc.side}:ambient:${pass.flags}`, size: sc.size, kind, o: sc.o, sz, grid: pass.grid });
+            // a small Rotativa of other cards: its smallest boxes on the fine grid too, every one in each pass
+            const extra = pass.grid === 'fine' && kind.includes(',') ? ROTATOR_SMALL.filter(([w, h]) => boxAllowed(sizingKind(kind), w, h, sc.o)).map(([w, h]) => `${w}x${h}`) : [];
+            for (const sz of new Set([...sc.pick(list), ...extra])) jobs.push({ shot: `size:${kind}:${sz}:${sc.o}:${sc.side}:ambient:${pass.flags}`, size: sc.size, kind, o: sc.o, sz, grid: pass.grid });
           }
         }
         const bad = [];
@@ -100,9 +106,20 @@ export function densitySweep(only) {
                 if (c.cut.length) bad.push(`${j.shot}: cuts ${c.cut.join(', ')}`);
               }
               // the compact look exactly on the boxes only the fine grid has (a Rotativa's cards: on their slides)
-              const mini = j.kind !== 'rotator' && isMini(j.kind, j.o, j.sz);
+              const rot = j.kind.startsWith('rotator');
+              const mini = !rot && isMini(j.kind, j.o, j.sz);
               const marks = await p.eval(`[...document.querySelectorAll('.cv-item:not([hidden]) > .cv-card > .cv-body')].map((b) => b.dataset.mini !== undefined)`);
-              if (j.kind !== 'rotator' && marks.some((m) => m !== mini)) bad.push(`${j.shot}: data-mini ${marks.join(',')}, expected ${mini}`);
+              if (!rot && marks.some((m) => m !== mini)) bad.push(`${j.shot}: data-mini ${marks.join(',')}, expected ${mini}`);
+              // a Rotativa's cards: each slide in its own card's compact look exactly when the box is smaller than its full look
+              if (rot && j.kind.includes(',')) {
+                const slides = await p.eval(`[...document.querySelectorAll('.cv-item:not([hidden]) .cv-rot-slide')].map((b) => [b.dataset.card, b.dataset.mini !== undefined])`);
+                const kindsIn = j.kind.split(',').slice(1);
+                if (slides.length < kindsIn.length) bad.push(`${j.shot}: ${slides.length} slides`);
+                slides.forEach(([, m], i) => {
+                  const want = isMini(kindsIn[i % kindsIn.length], j.o, j.sz);
+                  if (m !== want) bad.push(`${j.shot}: slide ${i} data-mini ${m}, expected ${want}`);
+                });
+              }
               // the density reached the page
               const ok = await p.eval(`document.getElementById('app').classList.contains('cv-dense') === ${pass.flags.includes('compact')}`);
               if (!ok) bad.push(`${j.shot}: density class missing`);

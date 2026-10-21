@@ -9,6 +9,18 @@ All notable changes to this project are documented here. The format is based on
 - The Spotify page, on a server without an https address, has a guide to connect through an SSH tunnel from your
   computer, with the command ready to copy (this server's address and port): Spotify then comes back to the admin on
   its own and nothing has to be pasted.
+- Night, day or auto on one screen from a family member's phone (#16). In *Family access*, the permission to switch
+  between night, day and auto now has the same choice messages have: every screen or only the ones you pick. The
+  phone lists those screens and switches all of them or just one, and the activity log names the screen. People
+  saved before keep every screen.
+
+### Changed
+- A *Rotating card* is easier to make small, and can grow larger (#19). Its preset sizes now include *Mini* (4×4) when
+  its cards allow it, the width and height go down to what its cards need (3×2 with an entity card and a camera, 3×1
+  with a sensor and a gauge), with its cards in their compact look in a small box, and up to what the largest of its
+  cards allows (it stopped at the smallest card's largest size). *Swap with Home Assistant* starts as small as the
+  entity card instead of a wide box, also when dragged from the palette, and adding a card that needs more room grows
+  the Rotating card in place, or says so when there is no room around it.
 
 ## [0.19.2] - 2026-10-20
 

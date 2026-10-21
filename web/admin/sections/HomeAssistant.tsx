@@ -8,7 +8,7 @@ import { toast } from '../components/feedback';
 import { HaEntityPicker, invalidateHaEntities } from '../components/HaEntityPicker';
 import { Icon } from '../components/icons';
 import { ScreenTargets } from '../components/AnnounceForm';
-import { Button, Callout, Card, Field, NumberInput, PageHeader, StatusDot, TextInput, ToggleRow } from '../components/ui';
+import { Button, Callout, Card, Field, NumberInput, PageHeader, StatusDot, TextInput, ToggleRow, NOT_A_LOGIN } from '../components/ui';
 import { has } from '../caps';
 import { t } from '../i18n';
 import { withPollNote } from '../liveNote';
@@ -90,8 +90,9 @@ function HomeAssistantMain({ cfg, set, errors, saved }: SectionProps) {
                   <Icon name="key" size={14} />
                 </span>
                 <input
-                  class="input input--mono"
-                  type={(show ? 'text' : 'password') as 'password'}
+                  class={`input input--mono ${show ? '' : 'input--masked'}`}
+                  type="text"
+                  {...NOT_A_LOGIN}
                   value={token}
                   autocomplete="off"
                   placeholder={tok?.saved && !tok.other ? t('•••••••• (guardado)') : t('Pega aquí el token')}

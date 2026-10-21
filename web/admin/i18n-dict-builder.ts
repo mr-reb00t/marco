@@ -1655,6 +1655,13 @@ const ROWS: [string, string, string, string, string][] = [
   ],
   // a Rotativa's cards by Home Assistant or a value (#19)
   [
+    'La Rotativa necesita un hueco mayor para esa tarjeta y no hay sitio alrededor. Haz sitio o quita la tarjeta.',
+    'The rotating card needs a larger box for that card and there is no room around it. Make room or remove the card.',
+    'O Rotativo precisa de um espaço maior para esse cartão e não há espaço à volta. Abre espaço ou tira o cartão.',
+    'De wisselkaart heeft een groter vak nodig voor die kaart en er is geen ruimte eromheen. Maak ruimte of haal de kaart weg.',
+    'Skiftekortet skal have en større plads til det kort, og der er ikke plads omkring det. Gør plads, eller fjern kortet.',
+  ],
+  [
     'Ahora la Rotativa se salta esta tarjeta: no se cumple la condición.',
     'The rotating card skips this card right now: its condition is not met.',
     'Agora o Rotativo salta este cartão: a condição não se cumpre.',

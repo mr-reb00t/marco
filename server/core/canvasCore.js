@@ -993,7 +993,7 @@ export const CANVAS_KINDS = {
   // "Rotativa": one slot that shows its cards one after another (a card carousel, no touch needed). Each card is a
   // kind of its own with its own props (ROTATOR_KINDS); sanitizeCanvas gives them ids and counts them like items.
   rotator: {
-    cat: 'content', sizes: ['s', 'm', 'w', 't', 'l', 'xl'], def: 'w', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 4,
+    cat: 'content', sizes: ['xs', 's', 'm', 'w', 't', 'l', 'xl'], def: 'w', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 4,
     defaults: () => ({
       cards: [
         // ids: given by the editor (and by sanitizeCanvas to a card with none)
@@ -1136,29 +1136,32 @@ export function canvasCards(items) {
 }
 
 /**
- * The kind an item is sized as: its kind, except a Rotativa with cards, whose range is the part every one of its
- * cards allows too (the largest of their smallest boxes, in legacy cells and in grid cells, and the smallest of their largest), with the
- * named sizes of a Rotativa that fall inside it, so each card always has room for itself. Takes the place of the
- * kind wherever a box is worked out (cellRange, boxOf, lookSize accept it).
+ * The kind an item is sized as: its kind, except a Rotativa with cards. Its smallest box is the largest of its cards'
+ * smallest boxes (in legacy cells and in grid cells), so every card still has room for itself and is drawn in its
+ * compact look when the box is small (canvas.ts miniMark); its largest is the largest any of its cards takes (up to
+ * the Rotativa's own), since the display fits every card to the box. Its named sizes are the Rotativa's that fall
+ * inside that range, and its default size is its first card's (a light and a camera start as small as the light).
+ * Takes the place of the kind wherever a box is worked out (cellRange, boxOf, lookSize accept it).
  */
 export function kindFor(item) {
   const k = CANVAS_KINDS[item?.kind];
   const cards = item?.kind === 'rotator' && Array.isArray(item.props?.cards) ? item.props.cards.filter((cd) => CANVAS_KINDS[cd?.kind]) : [];
   if (!k || !cards.length) return k;
-  let [a, b, c, d] = k.cells;
+  let [a, b] = k.cells;
+  let [c, d] = [0, 0];
   let [fa, fb] = k.fine ?? [a * 2, b * 2];
   for (const cd of cards) {
     const r = cellRange(cd.kind, 'landscape', 'normal');
     const f = cellRange(cd.kind, 'landscape', 'fine');
     a = Math.max(a, r.minW);
     b = Math.max(b, r.minH);
-    c = Math.min(c, r.maxW);
-    d = Math.min(d, r.maxH);
+    c = Math.max(c, r.maxW);
+    d = Math.max(d, r.maxH);
     fa = Math.max(fa, f.minW);
     fb = Math.max(fb, f.minH);
   }
-  c = Math.max(c, a);
-  d = Math.max(d, b);
+  c = Math.max(a, Math.min(c, k.cells[2]));
+  d = Math.max(b, Math.min(d, k.cells[3]));
   const inside = (s) => {
     const [w, h] = sizeCells(s, 'landscape', 'normal');
     return w >= a && h >= b && w <= c && h <= d;
@@ -1167,7 +1170,8 @@ export function kindFor(item) {
   if (!sizes.length) sizes = CANVAS_SIZE_IDS.filter((s) => s !== 'row' && inside(s)).slice(0, 1);
   if (!sizes.length) return k;
   const area = (s) => sizeCells(s, 'landscape', 'normal')[0] * sizeCells(s, 'landscape', 'normal')[1];
-  const def = sizes.includes(k.def) ? k.def : [...sizes].sort((x, y) => Math.abs(area(x) - area(k.def)) - Math.abs(area(y) - area(k.def)))[0];
+  const want = CANVAS_KINDS[cards[0].kind].def;
+  const def = sizes.includes(want) ? want : [...sizes].sort((x, y) => Math.abs(area(x) - area(want)) - Math.abs(area(y) - area(want)))[0];
   return { ...k, cells: [a, b, c, d], fine: [Math.min(fa, a * 2), Math.min(fb, b * 2)], sizes, def };
 }
 

@@ -5,9 +5,19 @@
 // takes them).
 import { boxOf, canvasDefaults, cellRange, kindFor, posCells } from '../core/canvasCore.js';
 
+/**
+ * What a kind of the sweeps is sized as: a Rotativa by the range its cards leave it (kindFor), its default ones or
+ * the ones named after it ("rotator,ha.tile,ha.camera", as mockCanvas.ts sizeFixture takes them).
+ */
+export function sizingKind(spec) {
+  const [kind, ...inside] = spec.split(',');
+  if (kind !== 'rotator') return kind;
+  const props = inside.length ? { cards: inside.map((k) => ({ id: '', kind: k, props: canvasDefaults(k) })) } : canvasDefaults(kind);
+  return kindFor({ kind, props });
+}
+
 export function flexSamples(kind, orientation = 'landscape', set = 'legacy') {
-  // a Rotativa: the range its default cards leave it (kindFor)
-  const k = kind === 'rotator' ? kindFor({ kind, props: canvasDefaults(kind) }) : kind;
+  const k = sizingKind(kind);
   const f = set === 'fine' ? 1 : 2;
   const r = cellRange(k, orientation, set === 'fine' ? 'fine' : 'normal');
   const mid = (a, b) => Math.round((a + b) / 2);

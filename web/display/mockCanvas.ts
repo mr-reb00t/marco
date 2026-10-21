@@ -622,18 +622,24 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
  * &shot=size:<kind>:<size or WxH>[:portrait|landscape[:top|left|right|none[:photo|ambient[:fine][:compact]]]]: as many
  * copies of one card at one size (a named one, or any box of w×h cells its kind allows, e.g. 5x2) as the grid holds
  * (at most six, on a touch screen), for the tests that every card fits at every size it allows (display-canvas.test.js);
+ * a Rotativa of other cards than its default ones names them after it, `rotator,ha.tile,ha.camera`;
  * :photo puts the demo photos behind, :compact draws it in Densidad compacta. Sizes and WxH are in cells of the
  * grid (24×16); a :fine flag left by older scripts changes nothing.
  */
 function sizeFixture(name: string): (typeof CANVAS_FIXTURES)[string] | null {
   const parts = name.split(':');
-  const [, kind, size, orient, side, bg] = parts;
+  const [, spec, size, orient, side, bg] = parts;
+  const [kind, ...inside] = (spec ?? '').split(',');
   const compact = parts.slice(4).includes('compact');
+  // a Rotativa's own cards (with the demo props each has on its own)
+  const kinds = CANVAS_KINDS as Record<string, unknown>;
+  if (inside.length && (kind !== 'rotator' || inside.some((k) => !kinds[k]))) return null;
+  const own = (n: number) => (inside.length ? { cards: inside.map((k, i) => ({ id: '', kind: k, props: { ...canvasDefaults(k), ...sizeProps(k, n + i) } })) } : {});
   const def = (CANVAS_KINDS as Record<string, { sizes: string[]; perScreen?: number }>)[kind];
   const o = orient === 'portrait' ? 'portrait' : 'landscape';
   const cells = /^(\d{1,2})x(\d{1,2})$/.exec(size ?? '');
   // (a Rotativa: within what its default cards allow, canvasCore kindFor)
-  const sized = kindFor({ kind, props: { ...canvasDefaults(kind), ...sizeProps(kind, 0) } }) ?? kind;
+  const sized = kindFor({ kind, props: { ...canvasDefaults(kind), ...sizeProps(kind, 0), ...own(0) } }) ?? kind;
   if (!def || (!def.sizes.includes(size) && !(cells && boxAllowed(sized, Number(cells[1]), Number(cells[2]), o)))) return null;
   const { cols, rows } = gridDims(o);
   const [w, h] = cells ? [Number(cells[1]), Number(cells[2])] : sizeCells(size, o);
@@ -641,7 +647,7 @@ function sizeFixture(name: string): (typeof CANVAS_FIXTURES)[string] | null {
   const items: Raw[] = [];
   const max = Math.min(6, def.perScreen ?? 6);
   for (let y = 0; y + h <= rows && items.length < max; y += h) {
-    for (let x = 0; x + w <= cols && items.length < max; x += w) items.push({ kind: kind as CanvasItem['kind'], pos: at(x, y), props: sizeProps(kind, items.length) });
+    for (let x = 0; x + w <= cols && items.length < max; x += w) items.push({ kind: kind as CanvasItem['kind'], pos: at(x, y), props: { ...sizeProps(kind, items.length), ...own(items.length) } });
   }
   // :top, :left, :right: a wide sidebar there (a third of the height or of the width), so every cell is smaller
   const where = side === 'top' || side === 'left' || side === 'right' ? (side as 'top' | 'left' | 'right') : null;

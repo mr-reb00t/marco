@@ -271,13 +271,14 @@ export function Stage(props: {
   };
 
   /** Where a dragged thing lands at a point: `id` an item being moved (`grab`: the cell of it under the pointer). */
-  const targetAt = (px: number, py: number, what: { id?: string; kind: CanvasKind; grab?: { x: number; y: number } }): Target => {
+  const targetAt = (px: number, py: number, what: { id?: string; kind: CanvasKind; props?: Record<string, unknown>; grab?: { x: number; y: number } }): Target => {
     const c = live.current.cv;
     const k = CANVAS_KINDS[what.kind];
     const from = what.id ? placements(c, orient).get(what.id) : undefined;
     // what it is sized as (a Rotativa: within what its cards allow)
     const moving = what.id ? itemOf(c, what.id) : undefined;
-    const sz = sizingOf(moving ?? { kind: what.kind, props: canvasDefaults(what.kind) });
+    // (a new one with the props of its palette tile: the Cambiar según Casa Rotativa is sized as its own cards)
+    const sz = sizingOf(moving ?? { kind: what.kind, props: { ...canvasDefaults(what.kind), ...what.props } });
     if (sideOf(c, orient) !== 'none' && inSide(geo, px, py) && !cellAt(geo, orient, px, py).inside) {
       const others = sideStack(c, orient).filter((x) => x.id !== what.id);
       const tr = sideTracks(sideStack(c, orient));
@@ -389,7 +390,7 @@ export function Stage(props: {
         return false;
       }
       setBusy(true);
-      const tg = targetAt(p.x, p.y, { kind: spec.kind });
+      const tg = targetAt(p.x, p.y, { kind: spec.kind, props: spec.props });
       setGhost(ghostFor(tg, { kind: spec.kind }));
       return !!tg;
     },
@@ -398,7 +399,7 @@ export function Stage(props: {
       setBusy(false);
       const p = toScreen(cx, cy);
       if (!p || !p.inside || ro) return false;
-      return dropAt(targetAt(p.x, p.y, { kind: spec.kind }), { kind: spec.kind, props: spec.props });
+      return dropAt(targetAt(p.x, p.y, { kind: spec.kind, props: spec.props }), { kind: spec.kind, props: spec.props });
     },
     leave() {
       setGhost(null);
@@ -421,7 +422,7 @@ export function Stage(props: {
         const pl2 = live.current.placing;
         if (pl2) {
           const p = toScreen(ev.clientX, ev.clientY);
-          if (p && !ro && dropAt(targetAt(p.x, p.y, { kind: pl2.kind }), { kind: pl2.kind, props: pl2.props })) live.current.onPlaced();
+          if (p && !ro && dropAt(targetAt(p.x, p.y, { kind: pl2.kind, props: pl2.props }), { kind: pl2.kind, props: pl2.props })) live.current.onPlaced();
           setGhost(null);
           return;
         }
@@ -530,7 +531,7 @@ export function Stage(props: {
         const pl2 = live.current.placing;
         if (pl2) {
           const p = toScreen(ev.clientX, ev.clientY);
-          if (p && !ro && dropAt(targetAt(p.x, p.y, { kind: pl2.kind }), { kind: pl2.kind, props: pl2.props })) live.current.onPlaced();
+          if (p && !ro && dropAt(targetAt(p.x, p.y, { kind: pl2.kind, props: pl2.props }), { kind: pl2.kind, props: pl2.props })) live.current.onPlaced();
           setGhost(null);
           return;
         }
@@ -548,7 +549,7 @@ export function Stage(props: {
     if (!pl2 || e.pointerType === 'touch' || ro) return;
     const p = toScreen(e.clientX, e.clientY);
     if (!p) return;
-    setGhost(ghostFor(targetAt(p.x, p.y, { kind: pl2.kind }), { kind: pl2.kind }));
+    setGhost(ghostFor(targetAt(p.x, p.y, { kind: pl2.kind, props: pl2.props }), { kind: pl2.kind }));
   };
 
   const order = tabOrder(cv, orient);
