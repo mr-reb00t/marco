@@ -253,6 +253,12 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-rot-grp.is-cols > .cv-grp-cell + .cv-grp-cell { border-top: 0; border-left: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
 #app.preset-canvas .cv-rot-grp > .cv-grp-cell.is-empty { visibility: hidden; }
 #app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-grp > .cv-grp-cell { padding: var(--cv-pad-none, 0.8rem); }
+/* a small Rotativa in a group (#19): its share of the box holds its own slides and dots */
+#app.preset-canvas .cv-rot-grp > .cv-grp-cell.cv-rot, #app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-grp > .cv-grp-cell.cv-rot { position: relative; padding: 0; }
+#app.preset-canvas .cv-card.is-none > .cv-rot > .cv-rot-grp > .cv-rot > .cv-rot-slide { padding: var(--cv-pad-none, 0.8rem); }
+#app.preset-canvas .cv-rot-grp > .cv-rot > .cv-rot-dots { bottom: 0.4rem; gap: 0.45rem; }
+#app.preset-canvas .cv-rot-grp > .cv-rot > .cv-rot-dots i { width: 0.5rem; height: 0.5rem; }
+#app.preset-canvas .cv-rot-grp > .cv-rot.has-dots > .cv-rot-slide { bottom: 1rem; }
 /* the widgets inside a card are not cards of their own */
 #app.preset-canvas .cv-card .cd-card, #app.preset-canvas .cv-card .msg, #app.preset-canvas .cv-card .todo, #app.preset-canvas .cv-card .weather, #app.preset-canvas .cv-card .agenda.compact .ag-list {
   background: none !important;

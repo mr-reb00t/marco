@@ -3111,6 +3111,9 @@ export const PL: Record<string, string> = {
   'Un grupo pone de {min} a {max} tarjetas en el hueco de una, en filas o en columnas, y se ve o se salta entero según su «Mostrar».': 'Grupa umieszcza od {min} do {max} kart w miejscu jednej, w wierszach lub kolumnach, i jest widoczna lub pomijana w całości według swojego „Pokaż”.',
   'Cambiar un espacio según Casa': 'Zamiana miejsca z Home Assistant',
   'Una cámara y un grupo de tres tarjetas en el mismo hueco: la cámara cuando hay movimiento, las tres tarjetas cuando no.': 'Kamera i grupa trzech kart w tym samym miejscu: kamera, gdy jest ruch, trzy karty, gdy go nie ma.',
+  // a small Rotativa inside a group (#19)
+  'Añadir una Rotativa al grupo': 'Dodaj kartę rotującą do grupy',
+  'Una Rotativa dentro de un grupo pasa sus tarjetas una tras otra en su parte del hueco. Dentro no puede haber grupos ni otra Rotativa.': 'Karta rotująca w grupie pokazuje swoje karty jedna po drugiej w swojej części miejsca. Nie może zawierać grup ani innej karty rotującej.',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

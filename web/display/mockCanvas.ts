@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -378,6 +378,16 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'rotator', pos: M(8, 6, 'l'), props: { everySec: 5, cards: motionGroup('rows') } },
     ],
   },
+  // a small Rotativa inside a group (#19): the 'motion-group' space of 6×6 cells, its group of three in rows, the last
+  // of them a Rotativa of its own that turns between two temperature cards every 5 s (a third one, shown only while
+  // someone moves, is skipped while all is clear)
+  'motion-nest': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'rotator', pos: B(8, 0, 6, 6), props: { everySec: 5, cards: motionNest() } },
+    ],
+  },
   // cameras with a chart: a snapshot card with its name, one set to live (the demo shows snapshots), one that waits
   // for a motion sensor, and a picture shown whole
   cameras: {
@@ -571,6 +581,21 @@ function motionGroup(dir: 'rows' | 'cols'): Record<string, unknown>[] {
   return [
     { id: '', kind: 'ha.camera', props: { ...canvasDefaults('ha.camera'), entity: 'camera.hall' }, when: when('on') },
     { id: '', kind: 'group', props: { dir, cards: [tile('light.hall', 'Pasillo'), tile('binary_sensor.front_door', 'Puerta'), tile('sensor.living_temperature', 'Salón')] }, when: when('off') },
+  ];
+}
+
+/** The cards of the 'motion-nest' demo: the hall camera, or a group of two entity cards and a small Rotativa (#19). */
+function motionNest(): Record<string, unknown>[] {
+  const when = (value: string) => ({ src: 'ha', entity: 'binary_sensor.hall_motion', op: 'eq', value });
+  const tile = (entity: string, name: string) => ({ id: '', kind: 'ha.tile', props: { ...canvasDefaults('ha.tile'), entity, name } });
+  const nest = { id: '', kind: 'rotator', props: { everySec: 5, dots: true, cards: [
+    tile('sensor.living_temperature', 'Salón'),
+    { ...tile('binary_sensor.hall_motion', 'Movimiento'), when: when('on') },
+    { id: '', kind: 'ha.sensor', props: { ...canvasDefaults('ha.sensor'), entity: 'sensor.hall_temperature', name: 'Pasillo' } },
+  ] } };
+  return [
+    { id: '', kind: 'ha.camera', props: { ...canvasDefaults('ha.camera'), entity: 'camera.hall' }, when: when('on') },
+    { id: '', kind: 'group', props: { dir: 'rows', cards: [tile('light.hall', 'Pasillo'), tile('binary_sensor.front_door', 'Puerta'), nest] }, when: when('off') },
   ];
 }
 

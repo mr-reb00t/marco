@@ -1149,6 +1149,22 @@ disabled? }`, no entity ids). An export empties the entities of its cards and of
 ids and leaves out the cards of kinds the server does not offer (and a Home Assistant condition where Home Assistant
 is not offered).
 
+**A Rotativa inside a group.** A card of a group can itself be a small Rotativa (#19): `{ id, kind: "rotator", props:
+{ cards: [{ id, kind, props, when? }], everySec, dots } }` (`isNestedRotator`). It shows its cards one after another
+in the group's share of the box, with its own `everySec` (5 to 120, default 10) and `dots` (default true), and skips a
+card that is empty or whose own `when` does not hold, like a Rotativa. The depth stops there: Rotativa > group >
+Rotativa > cards. Its cards are kinds a Rotativa takes; a group or another `rotator` inside it is an error (left out),
+and so is a `rotator` straight in a Rotativa's `cards` (outside a group) and a `when` on the small Rotativa itself
+(the group has the condition). It holds up to 6 cards (`ROTATOR_MAX`); one is fine (it shows that one), with none it
+goes. It is no card of the screen and does not count towards the Rotativas' cap of 4, but each of its cards does (the
+48 cards, each kind's own cap, the 80 entities, its cards' conditions too). It and each of its cards get ids unique
+on the screen. A group left with only a small Rotativa becomes its first card, with the group's condition. Its share
+of the group needs the largest of its cards' smallest boxes (`kindFor`). `canvasCards(items)` lists its cards in its
+place, each with `group`, `nest` (the small Rotativa's id), the group's condition as `own` and its own condition as
+`inner` (`conditionHidden` names a card while either does not hold); `rotatorLeaves(cards)` and `rotatorNodes(cards)`
+(everything with an id) walk it. In the display config it comes as `{ id, kind: "rotator", props: { cards, everySec,
+dots }, v }`, its cards projected like a Rotativa's (`when?: { src }`). Export and import keep it like a group's cards.
+
 **Navigation (touch screens).** Three kinds in the palette category *Navegación* (`cat: "nav"`, every edition):
 `nav.button` (*Ir a pantalla*: `{ target, label, icon, show, returnMin }`), `nav.pause` (*Pausar carrusel*: `{ label,
 icon, show, returnMin }`) and `nav.progress` (`{ style: "dots" | "bar", name, time }`). `target` is a screen id,

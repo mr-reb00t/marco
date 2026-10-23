@@ -35,7 +35,9 @@ function clean(v: unknown): DisplayValue | null {
 
 /** True when the screen of `cfg` draws a card that reads a pushed value. */
 export function showsValues(cfg: DisplayConfig | null | undefined): boolean {
-  return canvasCards(cfg?.canvas?.items).some((it) => it.when?.src === 'value' || (!it.disabled && (it.kind === 'value' || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && typeof b.value === 'string' && b.value)))));
+  // (the own conditions of a Rotativa's cards, groups and small Rotativas' cards too)
+  const val = (w: unknown) => isObj(w) && w.src === 'value';
+  return canvasCards(cfg?.canvas?.items).some((it) => val(it.when) || val((it as { own?: unknown }).own) || val((it as { inner?: unknown }).inner) || (!it.disabled && (it.kind === 'value' || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && typeof b.value === 'string' && b.value)))));
 }
 
 export class ValuesFeed implements ValueSource {

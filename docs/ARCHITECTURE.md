@@ -338,7 +338,10 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   } }`) is one slide that holds a body per card, in rows or columns (`.cv-rot-grp`, `.cv-grp-cell`); each card is
   fitted to its equal share of the box in whole cells (`sharePos`: the compact look when that share is small, the
   share in `data-cells`), and the slide is skipped while all of its cards are empty or the group's condition does
-  not hold.
+  not hold. A small Rotativa of a group (`{ kind: "rotator" }` among the group's cards) is a `.cv-grp-cell` with a
+  Rotativa adapter of its own (its own timer and dots) and one `.cv-rot-slide` per card inside it, each fitted to
+  that share; its cards that are empty or off by their own condition are skipped, and its share counts as empty for
+  the group while all of them are.
 - The display page (`/`, `/index.html`, `/pair`, `/d/<key>`) is sent with
   `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none';
   form-action 'none'; frame-ancestors 'self'` (`server/app.js displayCsp`). While some screen has a custom HTML card

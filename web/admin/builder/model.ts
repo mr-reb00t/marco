@@ -5,7 +5,7 @@
 import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, RotatorEntry, SideSpan } from '../../shared/types';
 import {
   CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
-  firstFree, gridDims, isRotatorGroup, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, sizeCells, type CanvasKindDef,
+  firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, rotatorNodes, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
 export type Orient = 'landscape' | 'portrait';
@@ -177,10 +177,11 @@ export const cardKinds = (cards: unknown): CanvasKind[] => rotatorLeaves(Array.i
 export function freshCardIds(cv: CanvasConfig, it: CanvasItem): void {
   if (it.kind !== 'rotator' || !Array.isArray(it.props.cards)) return;
   // (the groups are no cards: their ids are taken too)
-  const taken = new Set(canvasCards(cv.items).flatMap((i) => (i.group ? [i.id, i.group] : [i.id])));
+  const taken = new Set(canvasCards(cv.items).flatMap((i) => [i.id, ...(i.group ? [i.group] : []), ...(i.nest ? [i.nest] : [])]));
   taken.add(it.id);
   for (const c of it.props.cards as RotatorEntry[]) {
-    for (const x of isRotatorGroup(c) ? [c, ...c.props.cards] : [c]) {
+    // (a small Rotativa of a group and its cards too)
+    for (const x of rotatorNodes([c])) {
       x.id = newCanvasId(taken);
       taken.add(x.id);
     }

@@ -4,10 +4,12 @@
 // edited (FieldEnv.pinCard). Which kinds may go inside: canvasCore rotatorKindOk, the kinds this
 // server offers, and Home Assistant only where Home Assistant is on. A card of the list can be a group ("Añadir grupo",
 // #19): 2 to 4 cards in the box of one, in rows or columns, each with its own options; the group has the "Mostrar".
+// A card of a group can be a small Rotativa ("Añadir una Rotativa al grupo"): this same editor for its cards (env.nest),
+// without groups, its preview not held.
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import type { CanvasItem, CanvasKind, RotatorCard, RotatorEntry, RotatorGroup, RotatorMember } from '../../shared/types';
-import { CANVAS_CATEGORIES, CANVAS_KINDS, DEFAULT_CANVAS_KINDS, GROUP_MAX, GROUP_MIN, ROTATOR_MAX, ROTATOR_MIN, canvasDefaults, groupDefaults, isRotatorGroup, newCanvasId, rotatorKindOk, rotatorLeaves } from '../../../server/core/canvasCore.js';
+import type { CanvasItem, CanvasKind, RotatorCard, RotatorEntry, RotatorGroup, RotatorMember, RotatorNested } from '../../shared/types';
+import { CANVAS_CATEGORIES, CANVAS_KINDS, DEFAULT_CANVAS_KINDS, GROUP_MAX, GROUP_MIN, ROTATOR_MAX, ROTATOR_MIN, canvasDefaults, groupDefaults, isRotatorGroup, newCanvasId, rotatorKindOk, rotatorLeaves, rotatorNodes } from '../../../server/core/canvasCore.js';
 import { Icon } from '../components/icons';
 import { Field, Segmented, Select } from '../components/ui';
 import { t } from '../i18n';
@@ -28,6 +30,14 @@ function cardKinds(env: FieldEnv): CanvasKind[] {
 function groupKinds(kinds: CanvasKind[], n: number): CanvasKind[] {
   const k = (['ha.tile', 'value'] as CanvasKind[]).find((x) => kinds.includes(x)) ?? kinds[0];
   return k ? Array.from({ length: n }, () => k) : [];
+}
+
+/** A new small Rotativa for a group: the cards of a new Rotativa this server offers, else the first kinds (ids: none yet). */
+function nestedDefaults(kinds: CanvasKind[]): RotatorNested {
+  const d = canvasDefaults('rotator') as RotatorNested['props'];
+  let cards = d.cards.filter((c) => kinds.includes(c.kind));
+  if (cards.length < ROTATOR_MIN) cards = kinds.slice(0, ROTATOR_MIN).map((k) => ({ id: '', kind: k, props: canvasDefaults(k) }));
+  return { id: '', kind: 'rotator', props: { ...d, cards } };
 }
 
 /** One card's row of the list: its name, up, down, remove, and its options when open. */
@@ -82,16 +92,19 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
   const [inner, setInner] = useState<string | null>(null);
   // the card being edited stays on the preview (a group's card: its group); closing it (or leaving the Rotativa) lets
   // it turn again
+  // (a small Rotativa of a group: never held, its group is)
+  const nest = env.nest;
   useEffect(() => {
-    env.pinCard?.(item.id, open && cards.some((c) => c.id === open) ? open : null);
+    if (!nest) env.pinCard?.(item.id, open && cards.some((c) => c.id === open) ? open : null);
   }, [open, item.id]);
-  useEffect(() => () => env.pinCard?.(item.id, null), [item.id]);
+  useEffect(() => () => void (!nest && env.pinCard?.(item.id, null)), [item.id]);
   const set = (next: RotatorEntry[], merge?: string) => put('cards', next, merge);
   const kinds = cardKinds(env);
   const left = env.cardsLeft ?? 1;
   const room = cards.length < ROTATOR_MAX && left > 0;
   // every id of this Rotativa (the new ones are new on the screen too: the save gives a new id to a repeated one)
-  const taken = () => new Set([item.id, ...cards.flatMap((c) => (isRotatorGroup(c) ? [c.id, ...c.props.cards.map((m) => m.id)] : [c.id]))]);
+  // (a small Rotativa: the ids of the Rotativa it is in too)
+  const taken = () => new Set([item.id, ...rotatorNodes(cards).map((c) => c.id), ...(nest ? nest.taken() : [])]);
   const add = (k: string) => {
     if (!k || !room) return;
     const id = newCanvasId(taken());
@@ -142,6 +155,19 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
       setM([...members, { id, kind: k as CanvasKind, props: canvasDefaults(k) }]);
       setInner(id);
     };
+    // a small Rotativa: its cards count on the screen, so it needs room for two
+    const nestOk = members.length < GROUP_MAX && left >= ROTATOR_MIN && kinds.length > 0;
+    const addNest = () => {
+      if (!nestOk) return;
+      const ids = taken();
+      const n = nestedDefaults(kinds);
+      for (const x of [n, ...n.props.cards]) {
+        x.id = newCanvasId(ids);
+        ids.add(x.id);
+      }
+      setM([...members, n]);
+      setInner(n.id);
+    };
     return (
       <>
         <Field label={t('Colocación')} hint={t('Cada tarjeta ocupa una parte igual del hueco.')}>
@@ -169,18 +195,25 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
               >
                 <ContentFields
                   item={{ ...item, id: m.id, kind: m.kind, props: m.props }}
-                  env={env}
-                  put={(k, v, merge) => setM(members.map((x) => (x.id === m.id ? { ...x, props: { ...x.props, [k]: v } } : x)), merge)}
+                  env={m.kind === 'rotator' ? { ...env, pinCard: undefined, nest: { taken } } : env}
+                  put={(k, v, merge) => setM(members.map((x) => (x.id === m.id ? ({ ...x, props: { ...x.props, [k]: v } } as RotatorMember) : x)), merge)}
                 />
               </CardRow>
             ))}
           </ol>
         </Field>
         {members.length < GROUP_MAX && left > 0 ? (
-          <Select value="" options={[{ value: '', label: t('Añadir una tarjeta al grupo') }, ...kindOptions(kinds)]} onChange={addM} />
+          <div class="bld-rot__add">
+            <Select value="" options={[{ value: '', label: t('Añadir una tarjeta al grupo') }, ...kindOptions(kinds)]} onChange={addM} />
+            <button type="button" class="btn btn--sm btn--ghost" disabled={!nestOk} title={!nestOk ? t('La pantalla ya tiene todas las tarjetas que caben.') : undefined} onClick={addNest}>
+              <Icon name="repeat" size={15} />
+              {t('Añadir una Rotativa al grupo')}
+            </button>
+          </div>
         ) : (
           <p class="muted small">{members.length >= GROUP_MAX ? t('El grupo ya tiene {max} tarjetas, el máximo.', { max: GROUP_MAX }) : t('La pantalla ya tiene todas las tarjetas que caben.')}</p>
         )}
+        <p class="muted small">{t('Una Rotativa dentro de un grupo pasa sus tarjetas una tras otra en su parte del hueco. Dentro no puede haber grupos ni otra Rotativa.')}</p>
         {condition(g, 'Ahora la Rotativa se salta este grupo: no se cumple la condición.')}
       </>
     );
@@ -225,10 +258,12 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
       {room ? (
         <div class="bld-rot__add">
           <Select value="" options={[{ value: '', label: t('Añadir una tarjeta') }, ...kindOptions(kinds)]} onChange={add} />
-          <button type="button" class="btn btn--sm btn--ghost" disabled={groupN < GROUP_MIN} title={groupN < GROUP_MIN ? t('La pantalla ya tiene todas las tarjetas que caben.') : undefined} onClick={addGroup}>
-            <Icon name="layout" size={15} />
-            {t('Añadir grupo')}
-          </button>
+          {!nest && (
+            <button type="button" class="btn btn--sm btn--ghost" disabled={groupN < GROUP_MIN} title={groupN < GROUP_MIN ? t('La pantalla ya tiene todas las tarjetas que caben.') : undefined} onClick={addGroup}>
+              <Icon name="layout" size={15} />
+              {t('Añadir grupo')}
+            </button>
+          )}
         </div>
       ) : (
         <p class="muted small">{cards.length >= ROTATOR_MAX ? t('Ya tiene {n} tarjetas, el máximo.', { n: ROTATOR_MAX }) : t('La pantalla ya tiene todas las tarjetas que caben.')}</p>
@@ -240,7 +275,7 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
           ? t('Para cambiar una tarjeta por otra según Home Assistant: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.')
           : t('Para cambiar una tarjeta por otra según un valor: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.')}
       </p>
-      <p class="muted small">{t('Un grupo pone de {min} a {max} tarjetas en el hueco de una, en filas o en columnas, y se ve o se salta entero según su «Mostrar».', { min: GROUP_MIN, max: GROUP_MAX })}</p>
+      {!nest && <p class="muted small">{t('Un grupo pone de {min} a {max} tarjetas en el hueco de una, en filas o en columnas, y se ve o se salta entero según su «Mostrar».', { min: GROUP_MIN, max: GROUP_MAX })}</p>}
     </div>
   );
 }

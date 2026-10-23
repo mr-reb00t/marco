@@ -1003,8 +1003,19 @@ export interface RotatorCard {
   /** its own "Mostrar solo si": while it does not hold, the Rotativa skips the card */
   when?: CanvasCondition;
 }
-/** A card of a Rotativa's group: a kind of its own with its own props (the group has the condition). */
-export type RotatorMember = Omit<RotatorCard, 'when'>;
+/** A plain card of a Rotativa's group: a kind of its own with its own props (the group has the condition). */
+export type RotatorPlainMember = Omit<RotatorCard, 'when'>;
+/**
+ * A small Rotativa inside a group (#19): its cards (plain cards, each with its own condition, never a group or another
+ * Rotativa) one after another in the group's share of the box, with its own "Cambiar cada" and dots.
+ */
+export interface RotatorNested {
+  id: string;
+  kind: 'rotator';
+  props: { cards: RotatorCard[]; everySec: number; dots: boolean };
+}
+/** A card of a Rotativa's group: a plain card or a small Rotativa. */
+export type RotatorMember = RotatorPlainMember | RotatorNested;
 /**
  * A group of a Rotativa ("Grupo", #19): 2 to 4 cards that share its box in equal parts, stacked in rows or side by
  * side in columns, shown and skipped together by the group's own "Mostrar solo si".
@@ -1033,11 +1044,20 @@ export interface DisplayRotatorCard {
   v: string;
   disabled?: 'feature' | 'privacy' | 'setup';
 }
+/** A small Rotativa of a group as the display gets it: its cards projected like a Rotativa's. */
+export interface DisplayRotatorNested {
+  id: string;
+  kind: 'rotator';
+  props: { cards: DisplayRotatorCard[]; everySec: number; dots: boolean };
+  v: string;
+  when?: undefined;
+  disabled?: undefined;
+}
 /** A Rotativa's group as the display gets it: its cards projected like the others (no condition of their own). */
 export interface DisplayRotatorGroup {
   id: string;
   kind: 'group';
-  props: { dir: 'rows' | 'cols'; cards: DisplayRotatorCard[] };
+  props: { dir: 'rows' | 'cols'; cards: (DisplayRotatorCard | DisplayRotatorNested)[] };
   when?: { src: 'ha' | 'value' };
   v: string;
   disabled?: undefined;

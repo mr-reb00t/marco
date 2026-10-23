@@ -1801,6 +1801,21 @@ const ROWS: [string, string, string, string, string][] = [
     'Een camera en een groep van drie kaarten op dezelfde plek: de camera bij beweging, de drie kaarten als er geen beweging is.',
     'Et kamera og en gruppe på tre kort på samme plads: kameraet når der er bevægelse, de tre kort når der ikke er.',
   ],
+  // a small Rotativa inside a group (#19)
+  [
+    'Añadir una Rotativa al grupo',
+    'Add a rotating card to the group',
+    'Adicionar um rotativo ao grupo',
+    'Wisselkaart aan de groep toevoegen',
+    'Tilføj et skiftekort til gruppen',
+  ],
+  [
+    'Una Rotativa dentro de un grupo pasa sus tarjetas una tras otra en su parte del hueco. Dentro no puede haber grupos ni otra Rotativa.',
+    'A rotating card inside a group shows its cards one after another in its part of the space. It cannot hold groups or another rotating card.',
+    'Um rotativo dentro de um grupo mostra os seus cartões um após outro na sua parte do espaço. Não pode ter grupos nem outro rotativo.',
+    'Een wisselkaart in een groep toont zijn kaarten na elkaar in zijn deel van de ruimte. Er kunnen geen groepen of een andere wisselkaart in.',
+    'Et skiftekort i en gruppe viser sine kort efter hinanden i sin del af pladsen. Det kan ikke indeholde grupper eller et andet skiftekort.',
+  ],
 ];
 
 export const ROWS_BUILDER: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

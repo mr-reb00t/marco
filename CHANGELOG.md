@@ -16,6 +16,13 @@ All notable changes to this project are documented here. The format is based on
   number and the thin bar under it in the colours of its thresholds; the unit stays when there is room for it and is
   left out when it would make the number too small, and the name is shown beside the number only when it fits whole.
   A *Rotating card* of a sensor and a gauge can now be 2×1 as well.
+### Added
+- A group inside a *Rotating card* can hold a *Rotating card* of its own (#19). In a group's list of cards, *Add a
+  rotating card to the group* adds one that shows its own cards one after another in its part of the space, with its
+  own *Change every*, dots and a *Show* setting for each of its cards. So a 3×3 space can show a camera while someone
+  moves and, while all is clear, three cards in rows, one of them cycling the forecast and the next hours. It goes
+  one level deep: no groups and no other rotating card inside it. Each of its cards counts towards the screen's cards
+  and Home Assistant entities, and the space can only be made as small as its largest card needs.
 
 ## [0.19.5] - 2026-10-21
 

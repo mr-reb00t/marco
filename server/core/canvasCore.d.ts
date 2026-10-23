@@ -1,6 +1,6 @@
 // Types for canvasCore.js (Personalizado screens), used by the admin and the display.
 import type {
-  CanvasCategory, CanvasCondition, CanvasConfig, RotatorGroup, CanvasGlass, CanvasGridId, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
+  CanvasCategory, CanvasCondition, CanvasConfig, RotatorGroup, RotatorNested, CanvasGlass, CanvasGridId, CanvasItem, CanvasItemStyle, CanvasKind, CanvasPos, CanvasSize, DisplayCanvas, GlassConfig, SideSpan,
 } from '../../web/shared/types';
 
 export type Orientation = 'landscape' | 'portrait';
@@ -35,12 +35,16 @@ export const GROUP_MIN: number;
 export const GROUP_MAX: number;
 export const GROUP_DIRS: ('rows' | 'cols')[];
 export function isRotatorGroup(cd: unknown): cd is RotatorGroup;
-/** The cards a Rotativa's cards show: each card, and a group's cards in its place. */
+/** A small Rotativa inside a group (#19). */
+export function isNestedRotator(m: unknown): m is RotatorNested;
+/** The cards a Rotativa's cards show: each card, and a group's cards in its place (a small Rotativa's in its). */
 export function rotatorLeaves<T extends { kind: string }>(cards: readonly (T | RotatorGroup)[] | null | undefined): T[];
+/** Everything of a Rotativa's cards that has an id: cards, groups, their cards, a small Rotativa and its cards. */
+export function rotatorNodes(cards: readonly unknown[] | null | undefined): { id: string; kind: string; when?: CanvasCondition }[];
 /** A new group (no ids yet) of cards of `kinds` with their defaults. */
 export function groupDefaults(kinds?: string[], dir?: 'rows' | 'cols'): RotatorGroup;
 /** Every item and, after a Rotativa, its cards as items (sharing its hiding, schedule, condition and place; a group's cards with `group`). */
-export function canvasCards<T extends { id: string; kind: string; props?: Record<string, unknown> }>(items: T[] | null | undefined): (T & { parent?: string; group?: string })[];
+export function canvasCards<T extends { id: string; kind: string; props?: Record<string, unknown> }>(items: T[] | null | undefined): (T & { parent?: string; group?: string; nest?: string })[];
 export const CANVAS_SIZES: Record<CanvasSize, { landscape: [number, number]; portrait: [number, number] }>;
 export const CANVAS_SIZE_IDS: CanvasSize[];
 export const SIDE_SPANS: SideSpan[];

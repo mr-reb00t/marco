@@ -71,9 +71,13 @@ function cardsOf(items) {
     out.push(it);
     if (it.kind !== 'rotator' || !Array.isArray(it.props?.cards)) continue;
     for (const cd of it.props.cards) {
-      // (a group of cards: each of them)
+      // (a group of cards: each of them, and the cards of a small Rotativa among them)
       const list = cd?.kind === 'group' && Array.isArray(cd.props?.cards) ? cd.props.cards : [cd];
-      for (const x of list) if (x && typeof x.kind === 'string') out.push(x);
+      for (const x of list) {
+        if (x?.kind === 'rotator') {
+          for (const y of Array.isArray(x.props?.cards) ? x.props.cards : []) if (y && typeof y.kind === 'string') out.push(y);
+        } else if (x && typeof x.kind === 'string') out.push(x);
+      }
     }
   }
   return out;
