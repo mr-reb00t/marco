@@ -577,7 +577,7 @@ test('a small Rotativa (#19): it starts at its first card\'s size, goes down to 
   const sgCv = ok(M.addItem(defaultCanvas(), 'landscape', 'rotator', null, { cards: [{ id: '', kind: 'ha.sensor', props: {} }, { id: '', kind: 'ha.gauge', props: {} }] }));
   const sgId = sgCv.items.at(-1).id;
   const sgRange = M.rangeOf(M.sizingOf(M.itemOf(sgCv, sgId)), 'landscape');
-  assert.deepEqual([sgRange.minW, sgRange.minH], [3, 1]);
+  assert.deepEqual([sgRange.minW, sgRange.minH], [2, 1]);
   // a weather card added inside: the box grows at its place to the 8×2 the hourly strip needs
   const more = structuredClone(cv);
   M.itemOf(more, a.id).props.cards.push({ id: 'cv_hourly01', kind: 'weather.hourly', props: {} });

@@ -94,9 +94,9 @@ test('the grid: 24×16 cells (16×24 portrait), every named size and range twice
     assert.equal(boxAllowed(kind, 1, 1), false, `${kind} 1×1 is too narrow`);
     if (kind !== 'ha.cover') assert.ok(boxAllowed(kind, 4, 2), `${kind} 4×2 (the old 2×1) as before`);
   }
-  // the Indicador one row high from three cells wide (#9): its name and number on one line over the bar (browser test)
-  assert.ok(boxAllowed('ha.gauge', 3, 1) && boxAllowed('ha.gauge', 3, 2) && boxAllowed('ha.gauge', 4, 1));
-  assert.equal(boxAllowed('ha.gauge', 2, 1), false, 'ha.gauge 2×1 is too narrow');
+  // the Indicador one row high from two cells wide (#9): its number and the bar, the name beside it when it fits (browser test)
+  assert.ok(boxAllowed('ha.gauge', 2, 1) && boxAllowed('ha.gauge', 2, 2) && boxAllowed('ha.gauge', 3, 1) && boxAllowed('ha.gauge', 4, 1));
+  assert.equal(boxAllowed('ha.gauge', 1, 1), false, 'ha.gauge 1×1 is too narrow');
   assert.deepEqual(fullLookMin('ha.gauge'), [4, 4], 'its full look from 4×4, as before');
   // a box exactly a named size is stored as the name
   assert.deepEqual(boxOf('todo', 6, 8), { size: 't' });
@@ -194,9 +194,9 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   const lc = kindFor({ kind: 'rotator', props: { cards: [card('', 'ha.tile'), card('', 'ha.camera')] } });
   assert.deepEqual(cellRange(lc), { minW: 3, minH: 2, maxW: 24, maxH: 16 });
   assert.equal(lc.def, 'xs');
-  // a sensor and a gauge: one row high (the gauge's 3×1)
+  // a sensor and a gauge: one row high and two cells wide (the gauge's 2×1, as the sensor's)
   const sg = kindFor({ kind: 'rotator', props: { cards: [card('', 'ha.sensor'), card('', 'ha.gauge')] } });
-  assert.deepEqual([cellRange(sg).minW, cellRange(sg).minH], [3, 1]);
+  assert.deepEqual([cellRange(sg).minW, cellRange(sg).minH], [2, 1]);
   // such a small box is kept on save
   const tiny = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', [card('', 'ha.tile'), card('', 'ha.camera')], {}, { pos: B(0, 0, 4, 2) })] });
   assert.deepEqual(posCells(tiny.cv.items[0].pos, 'landscape'), [4, 2]);

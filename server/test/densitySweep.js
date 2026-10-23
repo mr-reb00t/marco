@@ -35,7 +35,7 @@ function isMini(kind, o, cells) {
 
 /** Rotativas of other cards than the default ones (#19), and the small boxes each is drawn at besides its samples. */
 const ROTATOR_MIXES = ['rotator,ha.tile,ha.camera', 'rotator,ha.sensor,ha.gauge'];
-const ROTATOR_SMALL = [[3, 1], [4, 1], [3, 2], [4, 2], [6, 2], [4, 4]];
+const ROTATOR_SMALL = [[2, 1], [3, 1], [4, 1], [3, 2], [4, 2], [6, 2], [4, 4]];
 
 const LAND = { width: 1920, height: 1080 };
 const PORT = { width: 1080, height: 1920 };
