@@ -39,6 +39,47 @@ test('rename: contains replaces every occurrence; exact; startsWith; tidy; empty
   assert.equal(renameTitle('Médico', rule({ action: 'rename', match: 'medico', replaceWith: '  ' })), 'Médico');
 });
 
+test('several alternatives separated by commas (#14)', () => {
+  const many = (over) => rule({ match: '14u, 15u,16u , ,', ...over });
+  // hide: any alternative, trimmed, empty ones dropped, accents and case folded
+  assert.equal(textMatches(many(), ev('Entreno 15U')), true);
+  assert.equal(textMatches(many(), ev('Entreno 17u')), false);
+  assert.equal(textMatches(rule({ match: 'reunion,' }), ev('Gran Reunión')), true);
+  assert.equal(textMatches(rule({ match: ' , ' }), ev('Gran reunión')), false);
+  assert.equal(textMatches(many({ field: 'any' }), ev('Entreno', { location: 'Campo 16u' })), true);
+  assert.equal(applyEventRules([many({ id: 'h' })], ev('Partido 14u')).hidden, true);
+  // exact does not split: the title must be the whole text
+  assert.equal(textMatches(many({ matchMode: 'exact' }), ev(' 16U ')), false);
+  assert.equal(textMatches(rule({ match: 'Lunch, then gym', matchMode: 'exact' }), ev('Lunch')), false);
+  assert.equal(textMatches(rule({ match: 'Lunch, then gym', matchMode: 'exact' }), ev('lunch,  then gym')), true);
+  // startsWith: any alternative
+  assert.equal(textMatches(rule({ match: '[trabajo], [cole]', matchMode: 'startsWith' }), ev('[Cole] Excursión')), true);
+  // rename contains: every occurrence of every alternative goes
+  const ren = (title, match, replaceWith = '', over = {}) => renameTitle(title, rule({ action: 'rename', match, replaceWith, ...over }));
+  assert.equal(ren('Entreno 14u', '14u, 15u, 16u'), 'Entreno');
+  assert.equal(ren('Partido 14u y 16U, luego 15u', '14u, 15u, 16u'), 'Partido y , luego');
+  assert.equal(ren('Fútbol 14u', '14u, futbol', 'X'), 'X X');
+  // the longer alternative wins where two start at the same spot
+  assert.equal(ren('Entreno sub14u', 'sub, sub14u', '-'), 'Entreno -');
+  assert.equal(ren('sub y sub14u', 'sub14u, sub', '-'), '- y -');
+  // startsWith rename: the alternative that matches, the longest if several
+  assert.equal(ren('[Cole] Excursión', '[trabajo], [cole]', '', { matchMode: 'startsWith' }), 'Excursión');
+  assert.equal(ren('Cole: Excursión', 'cole, cole:', '', { matchMode: 'startsWith' }), 'Excursión');
+  assert.equal(applyEventRules([rule({ id: 'x', action: 'rename', match: '14u, 15u', matchMode: 'exact', replaceWith: 'Sub 15' })], ev('15u')).title, '15u');
+  // chained through applyEventRules
+  assert.equal(applyEventRules([rule({ id: 'r', action: 'rename', match: '14u, 15u, 16u' })], ev('Entreno 16u')).title, 'Entreno');
+});
+
+test('a comma in the text still matches literally (back-compat)', () => {
+  assert.equal(textMatches(rule({ match: 'Smith, John', matchMode: 'exact' }), ev('smith, john')), true);
+  assert.equal(textMatches(rule({ match: 'Smith, John' }), ev('Cena con Smith, John')), true);
+  // the whole literal is the one needle when it is there: only it is replaced
+  assert.equal(renameTitle('Smith, John y John', rule({ action: 'rename', match: 'Smith, John', replaceWith: 'Juan' })), 'Juan y John');
+  assert.equal(renameTitle('Smith, John: cena', rule({ action: 'rename', match: 'smith, john', matchMode: 'startsWith', replaceWith: 'Juan' })), 'Juan: cena');
+  // without the literal, each part on its own
+  assert.equal(renameTitle('John y Smith', rule({ action: 'rename', match: 'Smith, John', replaceWith: 'X' })), 'X y X');
+});
+
 test('order: hide → rename (chained, in order) → style (first match, renamed or original title)', () => {
   const rules = [
     rule({ id: 'style-orig', action: 'style', match: 'cole', emoji: '🎒' }),

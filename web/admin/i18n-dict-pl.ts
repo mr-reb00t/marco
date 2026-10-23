@@ -860,6 +860,7 @@ export const PL: Record<string, string> = {
   'Termina al día siguiente': 'Kończy się następnego dnia',
   'Texto (opcional)': 'Tekst (opcjonalnie)',
   'Texto del título…': 'Tekst tytułu…',
+  'Texto del título… (varios separados por comas)': 'Tekst tytułu… (kilka oddzielonych przecinkami)',
   'Tiempo ahora': 'Pogoda teraz',
   'Todas': 'Wszystkie',
   'Todas las fuentes': 'Wszystkie źródła',

@@ -471,6 +471,7 @@ export const ROWS2: [string, string, string][] = [
   ['Termina al día siguiente', 'Ends the next day', 'Termina no dia seguinte'],
   ['Texto (opcional)', 'Text (optional)', 'Texto (opcional)'],
   ['Texto del título…', 'Title text…', 'Texto do título…'],
+  ['Texto del título… (varios separados por comas)', 'Title text… (separate several with commas)', 'Texto do título… (vários separados por vírgulas)'],
   ['Tiempo ahora', 'Weather now', 'Tempo agora'],
   ['Todas', 'All', 'Todos'],
   ['Todas las fuentes', 'All sources', 'Todas as fontes'],

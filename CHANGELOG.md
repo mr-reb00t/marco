@@ -5,6 +5,14 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- Filters take several words at once (#14). In *Filtros*, the text of a rule can list several alternatives separated
+  by commas, like `14u, 15u, 16u`: with *contiene* or *empieza por*, the rule hides, renames or styles an event when
+  its title has any of them or starts with one. *Es exactamente* still takes the whole text, commas included. A
+  rename with an empty *Replace with* removes each of them from the title. A rule whose whole text, comma included,
+  is in the title (like `Smith, John`) works as before. The placeholder of the text says that commas work
+  (not for *es exactamente*).
+
 ## [0.19.5] - 2026-10-21
 
 ### Added
