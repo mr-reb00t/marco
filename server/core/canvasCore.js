@@ -1089,7 +1089,7 @@ export const GROUP_DIRS = ['rows', 'cols'];
 export const isRotatorGroup = (cd) => isObj(cd) && cd.kind === ROTATOR_GROUP;
 /**
  * A small Rotativa inside a group (#19): one card of a group that shows its own cards one after another
- * ({ id, kind: 'rotator', props: { cards, everySec, dots } }). Its cards are plain cards (never a group or another
+ * ({ id, kind: 'rotator', props: { cards, everySec, dots, transition } }). Its cards are plain cards (never a group or another
  * Rotativa), each with its own condition; the group's condition decides for it as for any card of the group. The
  * depth stops there: Rotativa > group > Rotativa > cards.
  */
@@ -1195,6 +1195,7 @@ function rotatorCards(c, p, v, refs, opts) {
         cards,
         everySec: P.num(c, `${r}.props.everySec`, g.everySec, ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MIN, ROTATOR_EVERY_MAX),
         dots: P.bool(c, `${r}.props.dots`, g.dots, true),
+        transition: P.oneOf(c, `${r}.props.transition`, g.transition, 'fade', ROTATOR_TRANSITIONS),
       },
     };
   };
@@ -2399,10 +2400,10 @@ export function projectCanvas(screen, opts = {}) {
         x.v = fnv(JSON.stringify([x.kind, x.props, x.disabled ?? '', ...(x.when ? [x.when.src] : [])]));
         return x;
       };
-      // (a small Rotativa of a group: { id, kind: 'rotator', props: { cards, everySec, dots }, v }, its cards as above)
+      // (a small Rotativa of a group: { id, kind: 'rotator', props: { cards, everySec, dots, transition }, v }, its cards as above)
       const member = (m) => {
         if (!isNestedRotator(m)) return card(m);
-        const x = { id: m.id, kind: 'rotator', props: { everySec: m.props.everySec, dots: m.props.dots, cards: (m.props.cards ?? []).map((y) => cond(y, card(y))) } };
+        const x = { id: m.id, kind: 'rotator', props: { everySec: m.props.everySec, dots: m.props.dots, transition: m.props.transition ?? 'fade', cards: (m.props.cards ?? []).map((y) => cond(y, card(y))) } };
         x.v = fnv(JSON.stringify([x.kind, x.props]));
         return x;
       };
