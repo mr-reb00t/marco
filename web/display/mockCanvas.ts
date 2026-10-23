@@ -705,7 +705,8 @@ function sizeFixture(name: string): (typeof CANVAS_FIXTURES)[string] | null {
   const [w, h] = cells ? [Number(cells[1]), Number(cells[2])] : sizeCells(size, o);
   const at = (x: number, y: number) => (cells ? { ...B(x, y, w, h), size: lookSize(sized, w, h, o) as never } : M(x, y, size));
   const items: Raw[] = [];
-  const max = Math.min(6, def.perScreen ?? 6);
+  // (a Rotativa's cards count against their own kinds' caps too: no more Rotativas than those let keep all their cards)
+  const max = Math.min(6, def.perScreen ?? 6, ...inside.map((k) => (kinds[k] as { perScreen?: number }).perScreen ?? 6));
   for (let y = 0; y + h <= rows && items.length < max; y += h) {
     for (let x = 0; x + w <= cols && items.length < max; x += w) items.push({ kind: kind as CanvasItem['kind'], pos: at(x, y), props: { ...sizeProps(kind, items.length), ...own(items.length) } });
   }
