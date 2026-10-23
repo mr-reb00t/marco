@@ -2940,6 +2940,8 @@ export const PL: Record<string, string> = {
   'Las tarjetas de una Rotativa solo se ven: no se pueden tocar en la pantalla.': 'Karty w karcie rotującej są tylko pokazywane: nie można ich używać dotykiem.',
   'Cambiar cada': 'Zmieniaj co',
   'Mostrar puntos': 'Pokazuj kropki',
+  'Transición': 'Przejście',
+  'Con Ahorro, en modo ligero o si el aparato pide menos movimiento, cambia de golpe.': 'Przy trybie Oszczędny, w trybie lekkim lub gdy urządzenie prosi o mniej ruchu, zmienia się od razu.',
   'Ahora la Rotativa se salta esta tarjeta: no se cumple la condición.': 'Karta rotująca teraz pomija tę kartę: warunek nie jest spełniony.',
   'Para cambiar una tarjeta por otra según Home Assistant: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.': 'Aby zamieniać jedną kartę na drugą zależnie od Home Assistant: dodaj obie i w każdej wybierz w „Pokaż”, kiedy ma być widoczna.',
   'Para cambiar una tarjeta por otra según un valor: añade las dos y elige en cada una, en «Mostrar», cuándo se ve.': 'Aby zamieniać jedną kartę na drugą zależnie od wartości: dodaj obie i w każdej wybierz w „Pokaż”, kiedy ma być widoczna.',

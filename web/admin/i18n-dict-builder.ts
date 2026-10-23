@@ -1599,6 +1599,15 @@ const ROWS: [string, string, string, string, string][] = [
   ['Cambiar cada', 'Change every', 'Mudar a cada', 'Wisselen elke', 'Skift hver'],
   ['Mostrar puntos', 'Show dots', 'Mostrar pontos', 'Puntjes tonen', 'Vis prikker'],
   ['Unos puntos pequeños abajo dicen qué tarjeta se ve.', 'Small dots at the bottom say which card is on.', 'Uns pontos pequenos em baixo dizem que cartão se vê.', 'Kleine puntjes onderaan laten zien welke kaart er staat.', 'Små prikker forneden viser, hvilket kort der vises.'],
+  // "Transición" of a Rotativa (#21): Fundido, Deslizar and Ninguna are in the main dictionaries
+  ['Transición', 'Transition', 'Transição', 'Overgang', 'Overgang'],
+  [
+    'Con Ahorro, en modo ligero o si el aparato pide menos movimiento, cambia de golpe.',
+    'With Saver, in lite mode or when the device asks for less motion, it changes at once.',
+    'Com Poupança, no modo leve ou se o aparelho pede menos movimento, muda de repente.',
+    'Met Zuinig, in de lichte modus of als het apparaat om minder beweging vraagt, wisselt hij in één keer.',
+    'Med Spar, i let tilstand eller når enheden beder om mindre bevægelse, skifter det med det samme.',
+  ],
   // Divisas (exchange rates of the ECB: kinds.ts, fieldSpecs.ts, DataPickers.tsx) and the Currency widget (Widgets.tsx),
   // and Bolsa's symbols with no data
   ['Divisas', 'Currency', 'Câmbios', 'Valuta', 'Valuta'],

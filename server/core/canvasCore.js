@@ -1003,11 +1003,13 @@ export const CANVAS_KINDS = {
       ],
       everySec: ROTATOR_EVERY_DEFAULT,
       dots: true,
+      transition: 'fade',
     }),
     props: (c, p, x, refs, opts) => ({
       cards: rotatorCards(c, `${p}.cards`, x.cards, refs, opts),
       everySec: P.num(c, `${p}.everySec`, x.everySec, ROTATOR_EVERY_DEFAULT, ROTATOR_EVERY_MIN, ROTATOR_EVERY_MAX),
       dots: P.bool(c, `${p}.dots`, x.dots, true),
+      transition: P.oneOf(c, `${p}.transition`, x.transition, 'fade', ROTATOR_TRANSITIONS),
     }),
   },
   // ---- Avanzado
@@ -1066,6 +1068,8 @@ export const ROTATOR_MIN = 2;
 export const ROTATOR_EVERY_DEFAULT = 10;
 export const ROTATOR_EVERY_MIN = 5;
 export const ROTATOR_EVERY_MAX = 120;
+/** How a Rotativa goes from one card to the next (#21): a crossfade, the new card sliding in from the right, or a cut. */
+export const ROTATOR_TRANSITIONS = ['fade', 'slide', 'none'];
 /** Kinds that never go inside a Rotativa: another Rotativa, the layout helpers and the cards made to be touched. */
 const ROTATOR_NEVER = /^(?:rotator|spacer|heading|card|nav\..*)$/;
 /** True when a card of `kind` may be one of a Rotativa's cards (on a server that allows the kind). */

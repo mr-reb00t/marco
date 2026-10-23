@@ -40,6 +40,11 @@ export interface Spec {
   className: string;
   style?: string;
   html: string;
+  /**
+   * What `html` is compared by, when it holds a state the caller keeps up to date itself (a busy day's page on show):
+   * the same key keeps the element's content as it is, a new one writes `html`.
+   */
+  htmlKey?: string;
   /** data-* attributes (e.g. { day: '2026-10-14' } → data-day) */
   data?: Record<string, string>;
 }
@@ -75,7 +80,8 @@ export function reconcile(parent: HTMLElement, specs: Spec[], opts: { flip?: boo
   let prev: Keyed | null = null;
   for (const s of specs) {
     let node = existing.get(s.key);
-    const sig = `${s.className}|${s.style ?? ''}|${s.html}${s.data ? `|${JSON.stringify(s.data)}` : ''}`;
+    const htmlKey = s.htmlKey ?? s.html;
+    const sig = `${s.className}|${s.style ?? ''}|${htmlKey}${s.data ? `|${JSON.stringify(s.data)}` : ''}`;
     if (!node) {
       node = document.createElement(s.tag || 'div') as Keyed;
       node.__key = s.key;
@@ -84,9 +90,9 @@ export function reconcile(parent: HTMLElement, specs: Spec[], opts: { flip?: boo
     if (node.__sig !== sig) {
       if (node.className !== s.className) node.className = s.className;
       if ((node.getAttribute('style') ?? '') !== (s.style ?? '')) node.setAttribute('style', s.style ?? '');
-      if ((node as any).__html !== s.html) {
+      if ((node as any).__html !== htmlKey) {
         node.innerHTML = s.html;
-        (node as any).__html = s.html;
+        (node as any).__html = htmlKey;
       }
       const keys = s.data ? Object.keys(s.data) : [];
       for (const k of node.__data ?? []) if (!keys.includes(k)) node.removeAttribute(`data-${k}`);

@@ -188,6 +188,9 @@ export function mockConfig(show?: string): DisplayConfig {
     if (sc >= 0.5 && sc <= 2) for (const it of cfg.canvas.items) it.style = { ...it.style, scale: sc };
     // &perf=low: the screen's "Rendimiento: Ahorro"
     if (q.get('perf') === 'low') cfg.canvas.perf = 'low';
+    // &rottr=fade|slide|none: every Rotativa's "Transición" (#21, display-transitions.test.js)
+    const rottr = q.get('rottr');
+    if (rottr) for (const it of cfg.canvas.items) if (it.kind === 'rotator') it.props = { ...it.props, transition: rottr };
     // &touch=0 (or a private screen): no taps on the navigation cards, no swipe (as the server would send it)
     if (q.get('touch') === '0' || PRIVATE) cfg.canvas = { ...cfg.canvas, touch: false, taps: false, swipe: false };
     if (q.get('todo') !== '0') cfg.todo.enabled = true;

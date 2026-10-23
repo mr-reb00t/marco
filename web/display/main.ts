@@ -177,6 +177,7 @@ function syncHaTouch(): void {
 const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   events: () => eventsNormalized(),
   low: () => canvasLow(),
+  calm: () => lite || ctx.cfg?.canvas?.perf === 'low',
   photoArea: () => photoArea,
   media: (boxes) => custom.setCanvasBoxes(boxes),
   // the family cards get what the kids layouts get, with the same rules (familyShown, toggleChore)

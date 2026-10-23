@@ -34,6 +34,8 @@ export interface CanvasDeps {
   events(): NEvent[];
   /** lite mode, a low-power device or canvas.perf 'low' (no blur, no flip, no seconds hand; ?blur=1 lifts it) */
   low(): boolean;
+  /** lite mode or canvas.perf 'low' only, not a slow device (AdapterEnv.calm) */
+  calm(): boolean;
   /** the box the slideshow is drawn in (the cards read the part of the photo right behind them) */
   photoArea(): HTMLElement | null;
   /** the boxes saved widgets (config.widgets) are drawn in, by canvas item id (widgets/custom.ts) */
@@ -685,6 +687,7 @@ export class Canvas {
       events: () => this.eventsFor(e.item),
       now: () => current(),
       low: () => this.deps.low(),
+      calm: () => this.deps.calm(),
       // one box per widget item, so two items showing the same saved widget each get their own copy
       mediaBox: (id, box) => {
         if (id && box) this.media.set(e.id, { widgetId: id, box });

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as nodeModule from 'node:module';
 import {
-  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_LIMITS_FINE, canvasLimits, CANVAS_SIZE_IDS, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, LEGACY_GRID, ROTATOR_MAX, boxAllowed, boxOf, canvasCards,
+  CANVAS_GRID, CANVAS_KINDS, CANVAS_LIMITS, CANVAS_LIMITS_FINE, canvasLimits, CANVAS_SIZE_IDS, CLOUD_CANVAS_KINDS, DEFAULT_CANVAS_KINDS, LEGACY_GRID, ROTATOR_MAX, ROTATOR_TRANSITIONS, boxAllowed, boxOf, canvasCards,
   canvasDataItems, canvasDefaults, canvasEventsNeed, canvasFromTemplate, canvasWidgetIds, cellRange, conditionHidden, defaultCanvas, defaultItemStyle,
   exportCanvasFile, fitsAt, fullLookMin, gridDims, itemAliases, kindFor, makeOccupancy, occupy, posCells, projectCanvas, readCanvasFile, rotatorKindOk, sanitizeCanvas,
   scheduleHidden, sizeCells,
@@ -142,6 +142,24 @@ test('settings: every canvas is on the grid ("fine"), the density is kept only w
 
 const rot = (id, cards, props = {}, extra = {}) => item(id, 'rotator', B(0, 0, 12, 6), { cards, ...props }, extra);
 const card = (id, kind, props = {}) => ({ id, kind, props: { ...canvasDefaults(kind), ...props } });
+
+test('rotativa: "Transición" (#21) is fade by default, fade, slide or none; anything else is an error and fade', () => {
+  assert.deepEqual(ROTATOR_TRANSITIONS, ['fade', 'slide', 'none']);
+  const d = canvasDefaults('rotator');
+  assert.equal(d.transition, 'fade');
+  // a Rotativa saved before the option: fade
+  const { transition: _, ...old } = d;
+  const o = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, { ...old, transition: undefined })] });
+  assert.deepEqual(o.errors, []);
+  assert.equal(o.cv.items[0].props.transition, 'fade');
+  const at = (i) => ({ pos: B((i % 2) * 12, Math.floor(i / 2) * 6, 12, 6) });
+  const ok = clean({ ...defaultCanvas(), items: ['fade', 'slide', 'none'].map((tr, i) => rot(`cv_rrrrrrr${i}`, d.cards, { transition: tr }, at(i))) });
+  assert.deepEqual(ok.errors, []);
+  assert.deepEqual(ok.cv.items.map((x) => x.props.transition), ['fade', 'slide', 'none']);
+  const bad = clean({ ...defaultCanvas(), items: ['zoom', 3, null].map((tr, i) => rot(`cv_rrrrrrr${i}`, d.cards, { transition: tr }, at(i))) });
+  assert.equal(bad.errors.filter((e) => /transition/.test(e.p)).length, 2, JSON.stringify(bad.errors));
+  assert.deepEqual(bad.cv.items.map((x) => x.props.transition), ['fade', 'fade', 'fade']);
+});
 
 test('rotativa: its defaults validate, its cards get ids of their own, a range its cards allow, and what cannot go inside', () => {
   assert.ok(DEFAULT_CANVAS_KINDS.includes('rotator') && CLOUD_CANVAS_KINDS.includes('rotator'), 'every edition');

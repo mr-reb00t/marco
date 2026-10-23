@@ -342,6 +342,10 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   Rotativa adapter of its own (its own timer and dots) and one `.cv-rot-slide` per card inside it, each fitted to
   that share; its cards that are empty or off by their own condition are skipped, and its share counts as empty for
   the group while all of them are.
+  A Rotativa's `transition` (#21) is a crossfade (opacity), a slide (`.tr-slide`: CSS animations of transform on the
+  slide coming in, `.is-in`, and the one going out, `.is-out`, only while they move) or a cut (`.no-motion`). A slow
+  device keeps the fade and the slide (both run on the compositor); only lite mode, `canvas.perf: "low"` and reduced
+  motion make it a cut (`AdapterEnv.calm()`, not `low()`).
 - The display page (`/`, `/index.html`, `/pair`, `/d/<key>`) is sent with
   `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none';
   form-action 'none'; frame-ancestors 'self'` (`server/app.js displayCsp`). While some screen has a custom HTML card

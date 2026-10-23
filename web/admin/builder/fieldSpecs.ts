@@ -224,6 +224,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { type: 'rotatorCards' },
     { k: 'everySec', type: 'num', label: 'Cambiar cada', min: 5, max: 120, step: 5, unit: 'sec' },
     { k: 'dots', type: 'bool', label: 'Mostrar puntos', hint: 'Unos puntos pequeños abajo dicen qué tarjeta se ve.' },
+    // (#21) canvasCore ROTATOR_TRANSITIONS
+    { k: 'transition', type: 'seg', label: 'Transición', opts: [{ v: 'fade', l: 'Fundido' }, { v: 'slide', l: 'Deslizar' }, { v: 'none', l: 'Ninguna' }], hint: 'Con Ahorro, en modo ligero o si el aparato pide menos movimiento, cambia de golpe.' },
   ],
   'family.members': [{ k: 'memberIds', type: 'members', label: 'Personas' }, { k: 'showPoints', type: 'bool', label: 'Estrellas' }],
   'family.routines': [{ k: 'memberId', type: 'member', label: 'De quién' }, { k: 'showDone', type: 'bool', label: 'Mostrar las hechas' }],

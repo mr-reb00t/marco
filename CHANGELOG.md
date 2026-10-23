@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- A group inside a *Rotating card* can hold a *Rotating card* of its own (#19). In a group's list of cards, *Add a
+  rotating card to the group* adds one that shows its own cards one after another in its part of the space, with its
+  own *Change every*, dots and a *Show* setting for each of its cards. So a 3×3 space can show a camera while someone
+  moves and, while all is clear, three cards in rows, one of them cycling the forecast and the next hours. It goes
+  one level deep: no groups and no other rotating card inside it. Each of its cards counts towards the screen's cards
+  and Home Assistant entities, and the space can only be made as small as its largest card needs.
+- *Transition* on the *Rotating card* (#21): *Fade* (as before), *Slide* (the new card slides in from the right while
+  the old one slides out) or *None* (a cut).
+
 ### Changed
 - Filters take several words at once (#14). In *Filtros*, the text of a rule can list several alternatives separated
   by commas, like `14u, 15u, 16u`: with *contiene* or *empieza por*, the rule hides, renames or styles an event when
@@ -16,13 +26,12 @@ All notable changes to this project are documented here. The format is based on
   number and the thin bar under it in the colours of its thresholds; the unit stays when there is room for it and is
   left out when it would make the number too small, and the name is shown beside the number only when it fits whole.
   A *Rotating card* of a sensor and a gauge can now be 2×1 as well.
-### Added
-- A group inside a *Rotating card* can hold a *Rotating card* of its own (#19). In a group's list of cards, *Add a
-  rotating card to the group* adds one that shows its own cards one after another in its part of the space, with its
-  own *Change every*, dots and a *Show* setting for each of its cards. So a 3×3 space can show a camera while someone
-  moves and, while all is clear, three cards in rows, one of them cycling the forecast and the next hours. It goes
-  one level deep: no groups and no other rotating card inside it. Each of its cards counts towards the screen's cards
-  and Home Assistant entities, and the space can only be made as small as its largest card needs.
+
+### Fixed
+- A *Rotating card* fades again on a Raspberry Pi and other devices found to be slow (#21). The fade and the slide
+  are cheap for the device, so only *Saver*, lite mode and a device set to reduce motion make it a cut now.
+- A busy day of the calendar that pages through its events no longer flashes its other pages when the grid is drawn
+  again (a new minute, an event that ends, a change of size): the page on show stays and keeps fading as it should.
 
 ## [0.19.5] - 2026-10-21
 

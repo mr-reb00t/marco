@@ -28,6 +28,7 @@ export const ROTATOR_MIN: number;
 export const ROTATOR_EVERY_DEFAULT: number;
 export const ROTATOR_EVERY_MIN: number;
 export const ROTATOR_EVERY_MAX: number;
+export const ROTATOR_TRANSITIONS: readonly ('fade' | 'slide' | 'none')[];
 export function rotatorKindOk(kind: string): boolean;
 /** A Rotativa's group of cards (#19): its kind, how many cards it holds, rows or columns. */
 export const ROTATOR_GROUP: 'group';
