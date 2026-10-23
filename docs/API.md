@@ -1109,11 +1109,12 @@ kept for older code and answer the one grid. `density: "compact"` (written only 
 tighter gaps, less padding and smaller titles. The display config carries both.
 
 **Rotativa.** The kind `rotator` (category *Contenido*, every edition, at most 4 per screen) is one slot that shows its
-cards one after another: `{ cards: [{ id, kind, props }], everySec, dots }`. `cards` holds 2 to 6 cards (at most 6;
+cards one after another: `{ cards: [{ id, kind, props }], everySec, dots, transition }`. `cards` holds 2 to 6 cards (at most 6;
 the editor keeps at least 2), each a kind of its own validated by that kind (`rotatorKindOk`: never another `rotator`,
 `spacer`, `heading` or a navigation card; a kind the server does not allow is refused, so on Marco Cloud no Home
 Assistant card); each card has an id like an item's, unique on the screen. `everySec` is 5 to 120 (default 10), `dots`
-a boolean (default true). The cards count towards the cards of a screen (48) and towards each kind's own
+a boolean (default true), `transition` how it goes to the next card (#21): `"fade"` (the default), `"slide"` (the new
+card slides in from the right) or `"none"` (a cut). The cards count towards the cards of a screen (48) and towards each kind's own
 cap, their entities towards the screen's (80), and the box of a Rotativa is kept within what its cards allow
 (`kindFor(item)`): at least the largest of their smallest boxes (so each card fits, in its compact look when the box is
 small), at most the largest any of them takes; a new one starts at its first card's default size. A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items

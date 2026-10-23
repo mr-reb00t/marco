@@ -1017,11 +1017,13 @@ export interface RotatorGroup {
 }
 /** One card of a Rotativa's list: a card or a group of cards. */
 export type RotatorEntry = RotatorCard | RotatorGroup;
-/** A Rotativa's props: its cards (2 to 6, a group is one), "Cambiar cada" in seconds (5 to 120) and the dots. */
+/** A Rotativa's props: its cards (2 to 6, a group is one), "Cambiar cada" in seconds (5 to 120), the dots and "Transición". */
 export interface RotatorProps {
   cards: RotatorEntry[];
   everySec: number;
   dots: boolean;
+  /** (#21) a crossfade (the default), the new card sliding in from the right, or a cut */
+  transition?: 'fade' | 'slide' | 'none';
 }
 /** A Rotativa card as the display gets it (props projected like an item's; a placeholder where it may not show). */
 export interface DisplayRotatorCard {

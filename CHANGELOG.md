@@ -5,6 +5,16 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- *Transition* on the *Rotating card* (#21): *Fade* (as before), *Slide* (the new card slides in from the right while
+  the old one slides out) or *None* (a cut).
+
+### Fixed
+- A *Rotating card* fades again on a Raspberry Pi and other devices found to be slow (#21). The fade and the slide
+  are cheap for the device, so only *Saver*, lite mode and a device set to reduce motion make it a cut now.
+- A busy day of the calendar that pages through its events no longer flashes its other pages when the grid is drawn
+  again (a new minute, an event that ends, a change of size): the page on show stays and keeps fading as it should.
+
 ## [0.19.5] - 2026-10-21
 
 ### Added

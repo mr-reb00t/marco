@@ -214,6 +214,19 @@ export class MonthCalendar {
   private pageStep = 0;
   private pageTimer: ReturnType<typeof setInterval> | null = null;
 
+  /**
+   * A day's stack of pages (one page: just its html), drawn on the page on show now (so a new stack never shows every
+   * page for a moment, then fades the others out), and compared without it: a redraw of the same events keeps the
+   * stack as it is, mid-fade too, and applyPages() keeps turning it.
+   */
+  private pagedHtml(day: string, pages: string[]): { html: string; htmlKey?: string } {
+    const n = pages.length;
+    if (n < 2) return { html: pages[0] ?? '' };
+    const cur = pageAt(this.pageStep, n);
+    const page = (body: string, p: number, off: boolean) => `<div class="cpg${off ? ' pg-off' : ''}" data-day="${day}" data-pg="${p}" data-pgs="${n}">${body}</div>`;
+    return { html: pages.map((b, p) => page(b, p, p !== cur)).join(''), htmlKey: pages.map((b, p) => page(b, p, false)).join('') };
+  }
+
   /** Show the current page of every busy day (and its "1/2" label); runs the page timer only while one exists. */
   private applyPages(): void {
     let any = false;
@@ -785,8 +798,7 @@ export class MonthCalendar {
         key: `k${key}`,
         className: `cstack cards${n > 1 ? ' paged' : ''}`,
         style: `grid-column:${2 * d + 1} / span 2;grid-row:${top + 2} / -1`,
-        // pages are stacked in the same place; applyPages() shows one at a time
-        html: n > 1 ? pages.map((idx, p) => `<div class="cpg" data-day="${key}" data-pg="${p}" data-pgs="${n}">${html(idx)}</div>`).join('') : html(pages[0]),
+        ...this.pagedHtml(key, pages.map(html)),
       });
       if (n > 1) this.busyPages.set(key, n);
       if (n > 1 || more) {
@@ -794,7 +806,7 @@ export class MonthCalendar {
           key: `m${key}`,
           className: `more${key < today ? ' past' : ''}${n > 1 ? ' pgi' : ''}`,
           style: `grid-column:${2 * d + 1} / span 2`,
-          html: n > 1 ? esc(pageLabel(0, n)) : esc(t('more', { n: more })),
+          html: n > 1 ? esc(pageLabel(pageAt(this.pageStep, n), n)) : esc(t('more', { n: more })),
           data: n > 1 ? { day: key, pgs: String(n) } : undefined,
         });
       }
@@ -853,7 +865,7 @@ export class MonthCalendar {
         e.halfStart && !sg.contL ? 'half-l' : '', e.halfEnd && !sg.contR ? 'half-r' : '',
         pastEv ? 'past' : '', ongoing ? 'ongoing' : '', (e.airbnb && !e.checkoutMarker) ? 'airbnb' : '',
         (sg.span ?? 1) > 1 ? 'wrap' : '', (sg.span ?? 1) > 1 && sg.long ? 'long' : '',
-        sg.pages ? 'pg' : '',
+        sg.pages ? 'pg' : '', sg.pages && sg.page !== pageAt(this.pageStep, sg.pages) ? 'pg-off' : '',
       ].filter(Boolean).join(' ');
       let html = e.emoji ? `<span class="em">${esc(e.emoji)}</span>` : '';
       if (e.timed) {
@@ -893,14 +905,11 @@ export class MonthCalendar {
       const n = st.pages.length;
       const lines = (items: Placed[]) => items.map((sg) => this.lineHtml(sg, today, nowMs, tz)).join('');
       // pages are stacked in the same place; applyPages() shows one at a time, like the busy days' chips
-      const html = n > 1
-        ? st.pages.map((items, p) => `<div class="cpg" data-day="${key}" data-pg="${p}" data-pgs="${n}">${lines(items)}</div>`).join('')
-        : lines(st.pages[0]);
       specs.push({
         key: `c${key}`,
         className: `cstack${n > 1 ? ' paged' : ''}`,
         style: `grid-column:${2 * st.d + 1} / span 2;grid-row:${st.top + 2} / -1`,
-        html,
+        ...this.pagedHtml(key, st.pages.map(lines)),
       });
     }
     for (let d = 0; d < 7; d++) {
@@ -912,7 +921,7 @@ export class MonthCalendar {
         className: `more${key < today ? ' past' : ''}${pages ? ' pgi' : ''}`,
         style: `grid-column:${2 * d + 1} / span 2`,
         // the page indicator's text is kept up to date by applyPages()
-        html: pages ? esc(pageLabel(0, pages)) : esc(t('more', { n: moreCount[d] })),
+        html: pages ? esc(pageLabel(pageAt(this.pageStep, pages), pages)) : esc(t('more', { n: moreCount[d] })),
         data: pages ? { day: key, pgs: String(pages) } : undefined,
       });
     }

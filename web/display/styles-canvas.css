@@ -237,12 +237,20 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-rot.has-dots > .cv-rot-slide { bottom: 1.4rem; }
 #app.preset-canvas .cv-rot > .cv-rot-slide.is-on { opacity: 1; pointer-events: auto; }
 #app.preset-canvas .cv-rot.no-motion > .cv-rot-slide { transition: none; }
+/* "Transición" Deslizar (#21): the new card slides in from the right while the old one slides out to the left, only
+   while it moves (at rest every slide sits in its place, so the cards measure as ever); the body clips them */
+#app.preset-canvas .cv-rot.tr-slide > .cv-rot-slide { transition: none; }
+#app.preset-canvas .cv-rot.tr-slide > .cv-rot-slide.is-in { animation: cv-rot-in 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+#app.preset-canvas .cv-rot.tr-slide > .cv-rot-slide.is-out { animation: cv-rot-out 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
+@keyframes cv-rot-in { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes cv-rot-out { from { transform: none; opacity: 1; } to { transform: translateX(-100%); opacity: 1; } }
 #app.preset-canvas .cv-rot-dots { position: absolute; left: 0; right: 0; bottom: 0.7rem; display: flex; justify-content: center; gap: 0.6rem; pointer-events: none; }
 #app.preset-canvas .cv-rot-dots[hidden] { display: none; }
 #app.preset-canvas .cv-rot-dots i { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: currentColor; opacity: 0.28; transition: opacity 0.6s ease; }
 #app.preset-canvas .cv-rot-dots i.is-on { opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
   #app.preset-canvas .cv-rot > .cv-rot-slide, #app.preset-canvas .cv-rot-dots i { transition: none; }
+  #app.preset-canvas .cv-rot > .cv-rot-slide { animation: none !important; }
 }
 /* a group of a Rotativa (#19): one slide with a body for each of its cards, in rows or side by side, each an equal
    share of the box, a thin line between them; a card of it with nothing to show keeps its share, empty */

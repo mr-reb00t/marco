@@ -560,6 +560,25 @@ test('a Rotativa with a group (#19, Cambiar un espacio según Casa): new ids for
   assert.deepEqual(out.items[0].props.cards.map((x) => [x.kind, x.when.value]), [['ha.camera', 'on'], ['group', 'off']]);
 });
 
+test('more than one Rotativa on a screen (#21): up to four from the palette, then the kind is at its cap; the server keeps them', ts, () => {
+  let cv = defaultCanvas();
+  const ids = [];
+  for (let i = 0; i < 4; i++) {
+    const r = M.addItem(cv, 'landscape', 'rotator', null);
+    cv = ok(r);
+    ids.push(r.id);
+  }
+  assert.equal(new Set(ids).size, 4);
+  assert.equal(cv.items.filter((i) => i.kind === 'rotator').length, 4);
+  assert.equal(M.addItem(cv, 'landscape', 'rotator', null).why, 'kindCap');
+  assert.equal(M.duplicateItem(cv, 'landscape', ids[0]).why, 'kindCap');
+  // a copy of the second while there are only two
+  const two = structuredClone(cv);
+  two.items = two.items.filter((i) => i.id !== ids[2] && i.id !== ids[3]);
+  assert.equal(ok(M.duplicateItem(two, 'landscape', ids[1])).items.filter((i) => i.kind === 'rotator').length, 3);
+  valid(cv);
+});
+
 test('a small Rotativa (#19): it starts at its first card\'s size, goes down to what its cards need, and grows when a card needs more', ts, () => {
   const spec = { cards: [{ id: '', kind: 'ha.tile', props: {} }, { id: '', kind: 'ha.camera', props: {} }] };
   let cv = defaultCanvas();

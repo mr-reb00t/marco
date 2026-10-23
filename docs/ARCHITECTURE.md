@@ -333,7 +333,10 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   } }`) is one slide that holds a body per card, in rows or columns (`.cv-rot-grp`, `.cv-grp-cell`); each card is
   fitted to its equal share of the box in whole cells (`sharePos`: the compact look when that share is small, the
   share in `data-cells`), and the slide is skipped while all of its cards are empty or the group's condition does
-  not hold.
+  not hold. Its `transition` (#21) is a crossfade (opacity), a slide (`.tr-slide`: CSS animations of transform on the
+  slide coming in, `.is-in`, and the one going out, `.is-out`, only while they move) or a cut (`.no-motion`). A slow
+  device keeps the fade and the slide (both run on the compositor); only lite mode, `canvas.perf: "low"` and reduced
+  motion make it a cut (`AdapterEnv.calm()`, not `low()`).
 - The display page (`/`, `/index.html`, `/pair`, `/d/<key>`) is sent with
   `Content-Security-Policy: script-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none';
   form-action 'none'; frame-ancestors 'self'` (`server/app.js displayCsp`). While some screen has a custom HTML card

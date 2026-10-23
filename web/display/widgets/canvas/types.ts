@@ -62,6 +62,11 @@ export interface AdapterEnv {
   now(): Tick;
   /** lite mode or a low-power device: no animation, no seconds hands */
   low(): boolean;
+  /**
+   * lite mode or the screen's canvas.perf 'low' only (not a device found to be slow): no moving transitions.
+   * Opacity and transform run on the compositor, so a slow device keeps them (the Rotativa's fade and slide, #21).
+   */
+  calm(): boolean;
   /** a box a saved widget (config.widgets) is drawn in by widgets/custom.ts */
   mediaBox(widgetId: string, box: HTMLElement | null): void;
   /** the family data (the kids layouts' path: GET /api/display/family) */
