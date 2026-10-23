@@ -88,11 +88,16 @@ test('depth guard: no group and no Rotativa inside a small Rotativa, none outsid
   assert.ok(bad.c.errors.some((e) => e.p === 'canvas.items[0].props.cards[1].props.cards[1].props.cards'), errs(bad));
   const nav = run([rotator([camera(), group([tile('cv_mem00001', 'light.a'), nest([card('cv_wx000001', 'weather.now'), { id: 'cv_x0000001', kind: 'nav.button', props: {} }])])])]);
   assert.ok(nav.c.errors.some((e) => /not allowed inside a rotating card/.test(e.m)), errs(nav));
-  // a group left with only a small Rotativa (a widget deleted since) is its first card, with the group's condition
+  // a group left with only a small Rotativa (a widget deleted since) stays a group: the small Rotativa keeps all of
+  // its cards and the group its condition
   const lone = run([rotator([camera(), group([{ id: 'cv_mem00001', kind: 'widget', props: { widgetId: 'gone' } }, nest()])])]);
   assert.deepEqual(lone.c.errors, []);
   const cd = lone.out.items[0].props.cards[1];
-  assert.deepEqual([cd.kind, cd.when], ['weather.forecast', on('off')]);
+  assert.deepEqual([cd.kind, cd.when, cd.props.cards.map((x) => x.kind)], ['group', on('off'), ['rotator']]);
+  assert.ok(cd.props.cards[0].props.cards.length >= 2);
+  // and it is saved again as it is
+  const again = run(structuredClone(lone.out.items));
+  assert.deepEqual(again.c.errors, []);
 });
 
 test('ids: the small Rotativa and each of its cards get one, unique on the screen', () => {

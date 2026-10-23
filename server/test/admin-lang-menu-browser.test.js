@@ -26,7 +26,11 @@ const NAMES = ['Español', 'English', 'Português', 'Nederlands', 'Dansk', 'Pols
 async function until(p, expr, ms = 15000) {
   const end = Date.now() + ms;
   for (;;) {
-    const v = await p.eval(expr);
+    // (right after a reload the page may still be navigating: that is asked again)
+    const v = await p.eval(expr).catch((e) => {
+      if (/navigated|closed|context|destroyed/i.test(String(e?.message))) return null;
+      throw e;
+    });
     if (v) return v;
     if (Date.now() > end) throw new Error(`timed out waiting for ${expr}`);
     await wait(100);
@@ -74,15 +78,20 @@ describe('admin language menu in a browser', { skip: !chrome && 'no Chrome' }, (
 
   test('the setup wizard: a language menu on the first step instead of six cards', async () => {
     const p = await browser.page(`${web.url}/admin/?lang=en`, { width: 390, height: 844 });
+    // (a tab in the background has no focus: the keyboard checks need it as if it were in front)
+    await p.send('Emulation.setFocusEmulationEnabled', { enabled: true });
     try {
-      await p.eval(`localStorage.setItem('calendar-admin.lang', 'en'); location.reload()`).catch(() => {});
-      await until(p, `document.querySelector('.wizard .lang-menu--field')`);
+      // (the page before the reload is marked: only the reloaded one counts)
+      await p.eval(`window.__before = 1; localStorage.setItem('calendar-admin.lang', 'en'); location.reload()`).catch(() => {});
+      await until(p, `!window.__before && document.querySelector('.wizard .lang-menu--field')`);
       // no row of language cards any more
       assert.equal(await p.eval(`document.querySelectorAll('.wz-lang, .wz-langs').length`), 0);
       const btn = `.wizard .lang-menu--field .lang-menu__btn`;
       assert.equal(await p.eval(`document.querySelector('${btn}').getAttribute('aria-haspopup')`), 'menu');
       assert.equal(await p.eval(`document.querySelector('${btn}').getAttribute('aria-expanded')`), 'false');
       assert.match(await p.eval(`document.querySelector('${btn}').textContent`), /English/);
+      // the step gives the button the focus once it is drawn: opened before that, the step would take it back
+      await until(p, `document.activeElement === document.querySelector('${btn}')`);
       await p.eval(`document.querySelector('${btn}').click()`);
       await until(p, `document.querySelector('.wizard .lang-menu--field [role="menu"]')`);
       assert.equal(await p.eval(`document.querySelector('${btn}').getAttribute('aria-expanded')`), 'true');
@@ -112,6 +121,8 @@ describe('admin language menu in a browser', { skip: !chrome && 'no Chrome' }, (
     const hash = await hashPassword('secret-pass-123');
     store.updateSecrets((s) => { s.passwordHash = hash; s.passwordIsDefault = false; });
     const p = await browser.page(`${web.url}/admin/`, { width: 1280, height: 860 });
+    // (a tab in the background has no focus: the keyboard checks need it as if it were in front)
+    await p.send('Emulation.setFocusEmulationEnabled', { enabled: true });
     try {
       await p.eval(`(async () => {
         localStorage.setItem('calendar-admin.lang', 'en');

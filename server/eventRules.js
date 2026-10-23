@@ -44,12 +44,25 @@ export function foldMap(input) {
 /** Normalised comparison key: folded, whitespace collapsed, trimmed. */
 export const normKey = (s) => foldMap(String(s ?? '').trim()).text;
 
+const needleCache = new Map();
+
 /**
- * The needles of a rule (contains / startsWith; exact always uses `full`): `match` may list several alternatives separated by commas ("14u, 15u, 16u"), each one
- * trimmed, empty ones dropped. `full` is the whole string (comma included), still matched literally so a rule like
- * "Smith, John" keeps working.
+ * The needles of a rule (contains / startsWith; exact always uses `full`): `match` may list several alternatives
+ * separated by commas ("14u, 15u, 16u"), each one trimmed, empty ones dropped. `full` is the whole string (comma
+ * included), still matched literally so a rule like "Smith, John" keeps working.
  */
 export function ruleNeedles(match) {
+  // (the same few rules run over every event: their needles are worked out once)
+  const key = String(match ?? '');
+  const hit = needleCache.get(key);
+  if (hit) return hit;
+  const out = needlesOf(key);
+  if (needleCache.size >= 500) needleCache.clear();
+  needleCache.set(key, out);
+  return out;
+}
+
+function needlesOf(match) {
   const full = normKey(match);
   const alts = [];
   for (const part of String(match ?? '').split(',')) {

@@ -1207,7 +1207,9 @@ function rotatorCards(c, p, v, refs, opts) {
       const g = isObj(x.props) ? x.props : {};
       const dir = P.oneOf(c, `${q}.props.dir`, g.dir, 'rows', GROUP_DIRS);
       if (!Array.isArray(g.cards)) return c.err(`${q}.props.cards`, 'expected array');
-      if (g.cards.length < GROUP_MIN || g.cards.length > GROUP_MAX) c.err(`${q}.props.cards`, `a group holds ${GROUP_MIN} to ${GROUP_MAX} cards`);
+      // (a group of one small Rotativa is fine: what is left when its other cards went, it keeps its conditions)
+      const lone = g.cards.length === 1 && isNestedRotator(g.cards[0]);
+      if ((g.cards.length < GROUP_MIN && !lone) || g.cards.length > GROUP_MAX) c.err(`${q}.props.cards`, `a group holds ${GROUP_MIN} to ${GROUP_MAX} cards`);
       const cards = [];
       g.cards.slice(0, GROUP_MAX).forEach((m, j) => {
         const r = `${q}.props.cards[${j}]`;
@@ -1218,9 +1220,9 @@ function rotatorCards(c, p, v, refs, opts) {
         if (cm) cards.push(cm);
       });
       if (!cards.length) return;
-      // (a group left with one card is that card, unless it is a small Rotativa: that one needs its group)
-      if (cards.length === 1 && isNestedRotator(cards[0])) cards[0] = { ...cards[0].props.cards[0] };
-      cd = cards.length === 1 ? cards[0] : { id: typeof x.id === 'string' ? x.id : '', kind: ROTATOR_GROUP, props: { dir, cards } };
+      // (a group left with one card is that card, unless it is a small Rotativa: that one keeps its group, so its
+      // cards keep their own conditions under the group's)
+      cd = cards.length === 1 && !isNestedRotator(cards[0]) ? cards[0] : { id: typeof x.id === 'string' ? x.id : '', kind: ROTATOR_GROUP, props: { dir, cards } };
     } else {
       cd = one(q, x);
       if (!cd) return;
@@ -3011,8 +3013,8 @@ export function readCanvasFile(raw, refs = {}, opts = {}) {
           if (ok2.length) keep.push({ ...m, id: '', props: { ...m.props, cards: ok2 } });
         }
         const { when, ...rest } = cd;
-        // (a small Rotativa left alone: its first card, as the validation does)
-        if (keep.length === 1) ok.push({ ...(isNestedRotator(keep[0]) ? keep[0].props.cards[0] : keep[0]), ...(when ? { when } : {}) });
+        // (one card left: that card, unless it is a small Rotativa, which keeps its group, as the validation does)
+        if (keep.length === 1 && !isNestedRotator(keep[0])) ok.push({ ...keep[0], ...(when ? { when } : {}) });
         else if (keep.length) ok.push({ ...rest, ...(when ? { when } : {}), id: '', props: { ...cd.props, cards: keep } });
       }
       x2.props = { ...x2.props, cards: ok };

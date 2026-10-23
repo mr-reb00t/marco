@@ -21,13 +21,16 @@ All notable changes to this project are documented here. The format is based on
   its title has any of them or starts with one. *Es exactamente* still takes the whole text, commas included. A
   rename with an empty *Replace with* removes each of them from the title. A rule whose whole text, comma included,
   is in the title (like `Smith, John`) works as before. The placeholder of the text says that commas work
-  (not for *es exactamente*).
+  (not for *es exactamente*). A *contiene* or *empieza por* rule saved before with a comma in its text now also
+  matches each of its parts.
 - The *Gauge* card goes down to 2×1 on the fine grid (#9), as small as the *Sensor* card. At that size it shows the
   number and the thin bar under it in the colours of its thresholds; the unit stays when there is room for it and is
   left out when it would make the number too small, and the name is shown beside the number only when it fits whole.
   A *Rotating card* of a sensor and a gauge can now be 2×1 as well.
 
 ### Fixed
+- A group of a *Rotating card* left with only its small *Rotating card* (its other card was a saved widget that
+  was deleted) keeps it whole, with the *Show* setting of each of its cards, instead of keeping only its first card.
 - A *Rotating card* fades again on a Raspberry Pi and other devices found to be slow (#21). The fade and the slide
   are cheap for the device, so only *Saver*, lite mode and a device set to reduce motion make it a cut now.
 - A busy day of the calendar that pages through its events no longer flashes its other pages when the grid is drawn
