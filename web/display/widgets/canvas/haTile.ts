@@ -522,24 +522,31 @@ function fitNumberLine(root: HTMLElement, box: AdapterBox, env: AdapterEnv): voi
 }
 
 /**
- * The Indicador three cells wide and one high (styles-canvas-mini.css): the name and the number on one line with the
- * thin bar under both, the number as high as the line allows. A name that does not fit whole is left out, so the line
- * is the number and the bar alone (is-noname), never a name cut to a few letters.
+ * The Indicador two or three cells wide and one high (styles-canvas-mini.css): the name and the number on one line
+ * with the thin bar under both, the number as high as the line allows. A name that does not fit whole is left out, so
+ * the line is the number and the bar alone (is-noname), never a name cut to a few letters. Two cells wide, a unit that
+ * would take the number below about three quarters of the line's height is left out too (is-nounit).
  */
 function fitGaugeNarrow(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
-  root.classList.remove('is-noname');
+  root.classList.remove('is-noname', 'is-nounit');
   const cs = getComputedStyle(root);
   const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
   const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
   // the number's line box is 5.6rem × --wk high; the bar and the gap over it take about 1rem
-  let wk = Math.min(1.2, ((h - (root.querySelector('.cv-ha-gaugebar') ? box.rem : 0)) * 0.82) / (5.6 * box.rem)) * Math.min(1, scaleOf(env));
-  wk = Math.max(0.25, wk);
-  root.style.setProperty('--wk', wk.toFixed(3));
+  const wk0 = Math.max(0.25, Math.min(1.2, ((h - (root.querySelector('.cv-ha-gaugebar') ? box.rem : 0)) * 0.82) / (5.6 * box.rem)) * Math.min(1, scaleOf(env)));
   const big = root.querySelector<HTMLElement>('.cv-ha-big');
-  const bw = big?.getBoundingClientRect().width ?? 0;
-  if (bw > w) {
-    wk = Math.max(0.25, (wk * w) / bw);
+  /** --wk for the number as high as the line, narrower than the card */
+  const fitBig = (): number => {
+    root.style.setProperty('--wk', wk0.toFixed(3));
+    const bw = big?.getBoundingClientRect().width ?? 0;
+    const wk = bw > w ? Math.max(0.25, (wk0 * w) / bw) : wk0;
     root.style.setProperty('--wk', wk.toFixed(3));
+    return wk;
+  };
+  const wk = fitBig();
+  if (root.dataset.mw === '2' && big?.querySelector('.u') && wk < wk0 * 0.75) {
+    root.classList.add('is-nounit');
+    fitBig();
   }
   const name = root.querySelector<HTMLElement>('.cv-ha-head .cv-ha-name');
   if (!name?.textContent || name.scrollWidth > name.clientWidth + 1) root.classList.add('is-noname');
@@ -665,8 +672,8 @@ export const HA_TILE_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Canva
     fitSwatches(root);
   }),
   'ha.gauge': () => haAdapter('cv-ha-sensor cv-ha-gauge', (p) => [aliasOf(p.entity)].filter(Boolean), drawGauge, (root, box, env) => {
-    root.classList.remove('is-noname');
-    if (miniLine(root) && root.dataset.mw === '3') return fitGaugeNarrow(root, box, env);
+    root.classList.remove('is-noname', 'is-nounit');
+    if (miniLine(root) && (root.dataset.mw === '2' || root.dataset.mw === '3')) return fitGaugeNarrow(root, box, env);
     if (miniLine(root)) return fitNumberLine(root, box, env);
     const wk = bigType(root, box, box.size === 'xs' ? 11.5 : 13, scaleOf(env), 14, typeCap(root));
     fitWidth(root, root.querySelector('.cv-ha-big'), wk);

@@ -4,7 +4,8 @@
 // of the old 12×8 grid had. Every kind's minimum (its compact look, data-mini) and the largest box still below its full
 // look (fullLookMin) are drawn in both densities, landscape, portrait and next to a wide sidebar. And the Rotativa on
 // the screen: one card on show at a time, its dots, the next card after its seconds, no fade in lite mode. The
-// Indicador at its 3×1 (#9): its name and number on one line over the bar. Skipped without Chrome.
+// Indicador at its 3×1 and 2×1 (#9): its name and number on one line over the bar, or the number and the bar alone.
+// Skipped without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -58,20 +59,22 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
     assert.ok(dense.gap < normal.gap * 0.6 && dense.w > normal.w, JSON.stringify({ normal, dense }));
   });
 
-  test('Indicador at 3×1 (#9): the name and the number on one line over the bar, or the number and the bar alone, never cut', { timeout: 300_000 }, async () => {
+  test('Indicador at 3×1 and 2×1 (#9): the name and the number on one line over the bar, or the number and the bar alone, never cut', { timeout: 400_000 }, async () => {
     // each gauge: its name shown whole (or left out), on the number's line, the bar under both
     const LOOK = `[...document.querySelectorAll('.cv-item[data-kind="ha.gauge"] .cv-ha-gauge')].map((g) => {
       const r = (q) => g.querySelector(q)?.getBoundingClientRect() ?? null;
       const name = g.querySelector('.cv-ha-head .cv-ha-name');
       const head = r('.cv-ha-head');
       const shown = !!head && head.width > 0 && getComputedStyle(g.querySelector('.cv-ha-head')).display !== 'none';
-      return { noname: g.classList.contains('is-noname'), shown, whole: !shown || name.scrollWidth <= name.clientWidth + 1, head, big: r('.cv-ha-big'), bar: r('.cv-ha-gaugebar'), body: g.getBoundingClientRect() };
+      const u = g.querySelector('.cv-ha-big .u');
+      const v = g.querySelector('.cv-ha-big .v');
+      return { noname: g.classList.contains('is-noname'), nounit: g.classList.contains('is-nounit'), unit: !!u && getComputedStyle(u).display !== 'none', hasUnit: !!u, num: v?.textContent ?? '', vr: v?.getBoundingClientRect() ?? null, shown, whole: !shown || name.scrollWidth <= name.clientWidth + 1, head, big: r('.cv-ha-big'), bar: r('.cv-ha-gaugebar'), body: g.getBoundingClientRect() };
     })`;
     const bad = [];
     let names = 0;
     for (const flags of ['', ':compact']) {
       for (const [o, side, size] of [['landscape', 'none', LAND], ['portrait', 'none', PORT], ['landscape', 'left', LAND]]) {
-        for (const sz of ['3x1', '3x2', '4x1']) {
+        for (const sz of ['2x1', '3x1', '3x2', '4x1']) {
           const shot = `size:ha.gauge:${sz}:${o}:${side}:ambient${flags}`;
           const p = await browser.page(`${web.url}/?demo=1&lite=1&preset=canvas&shot=${shot}`, size);
           try {
@@ -80,7 +83,7 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
               if (c.cramped) bad.push(`${shot}: does not fit`);
               if (c.cut.length) bad.push(`${shot}: cuts ${c.cut.join(', ')}`);
             }
-            if (sz !== '3x1') continue;
+            if (sz !== '3x1' && sz !== '2x1') continue;
             const looks = await p.eval(LOOK);
             if (!looks.length) bad.push(`${shot}: no gauges`);
             for (const g of looks) {
@@ -94,6 +97,13 @@ describe('fine grid, compact density and the Rotativa, in a browser', { skip: !c
               // the bar under the number and the name, across the card
               if (!g.bar || g.bar.top < g.big.bottom - 1 || (g.shown && g.bar.top < g.head.bottom - 1)) bad.push(`${shot}: bar not under the line`);
               if (g.bar && g.bar.width < g.body.width * 0.6) bad.push(`${shot}: bar too short`);
+              // the number always there, inside the card and readable; its unit shown or left out whole
+              if (!g.num || !g.vr || g.vr.width < 1) bad.push(`${shot}: no number`);
+              else if (g.vr.left < g.body.left - 1 || g.vr.right > g.body.right + 1) bad.push(`${shot}: number out of the card`);
+              else if (g.vr.height < g.body.height * 0.25) bad.push(`${shot}: number too small (${Math.round(g.vr.height)} of ${Math.round(g.body.height)})`);
+              if (g.big && (g.big.right > g.body.right + 1 || g.big.left < g.body.left - 1)) bad.push(`${shot}: number and unit out of the card`);
+              if (g.hasUnit && g.unit === g.nounit) bad.push(`${shot}: unit ${g.unit ? 'shown' : 'hidden'} but is-nounit ${g.nounit}`);
+              if (sz === '3x1' && g.nounit) bad.push(`${shot}: unit left out at 3×1`);
             }
           } finally {
             await p.close();

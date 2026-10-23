@@ -1380,9 +1380,9 @@ const FINE_MIN = {
   'ha.climate': [2, 1],
   'ha.cover': [2, 1],
   'ha.sensor': [2, 1],
-  // three cells: the name and the value on one line with the thin bar under them (the value and the bar alone when
-  // the name does not fit)
-  'ha.gauge': [3, 1],
+  // two or three cells: the name and the value on one line with the thin bar under them (the value and the bar alone
+  // when the name does not fit; two cells wide, the value without its unit when the unit does not fit)
+  'ha.gauge': [2, 1],
   'ha.statistic': [4, 1],
   'ha.room': [4, 3],
   'ha.chart': [4, 2],

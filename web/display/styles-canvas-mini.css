@@ -302,15 +302,17 @@
 #app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head .cv-ha-txt > * { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugebar { grid-column: 2; grid-row: 3; height: 0.7rem; margin: 0; }
 #app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugeends { display: none; }
-/* the Indicador three cells wide: the name and the number on one line, the bar under both; the number and the bar
-   alone when the name does not fit whole (is-noname, haTile.ts fitGaugeNarrow) */
-#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'][data-mw='3'] { grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.6rem; row-gap: 0.3rem; align-items: baseline; }
-#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-big { grid-column: 2; grid-row: 2; align-self: baseline; justify-self: end; }
-#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-head { grid-column: 1; grid-row: 2; align-self: baseline; font-size: calc(2.8rem * var(--wk, 1)); font-weight: 600; color: var(--fg); }
-#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-head .cv-ha-txt > * { text-overflow: clip; }
-#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-gaugebar { grid-column: 1 / -1; grid-row: 3; height: 0.6rem; }
-#app.preset-canvas .cv-ha-gauge.is-noname[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-head { display: none; }
-#app.preset-canvas .cv-ha-gauge.is-noname[data-mini][data-mh='1'][data-mw='3'] > .cv-ha-big { grid-column: 1 / -1; justify-self: start; }
+/* the Indicador two or three cells wide: the name and the number on one line, the bar under both; the number and the
+   bar alone when the name does not fit whole (is-noname, haTile.ts fitGaugeNarrow), and two cells wide the number
+   without its unit when the unit does not fit (is-nounit) */
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) { grid-template-columns: minmax(0, 1fr) auto; column-gap: 0.6rem; row-gap: 0.3rem; align-items: baseline; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-big { grid-column: 2; grid-row: 2; align-self: baseline; justify-self: end; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-head { grid-column: 1; grid-row: 2; align-self: baseline; font-size: calc(2.8rem * var(--wk, 1)); font-weight: 600; color: var(--fg); }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-head .cv-ha-txt > * { text-overflow: clip; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-gaugebar { grid-column: 1 / -1; grid-row: 3; height: 0.6rem; }
+#app.preset-canvas .cv-ha-gauge.is-noname[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-head { display: none; }
+#app.preset-canvas .cv-ha-gauge.is-noname[data-mini][data-mh='1']:is([data-mw='2'], [data-mw='3']) > .cv-ha-big { grid-column: 1 / -1; justify-self: start; }
+#app.preset-canvas .cv-ha-gauge.is-nounit[data-mini][data-mh='1'][data-mw='2'] > .cv-ha-big > .u { display: none; }
 /* the room in a small box: tighter rows, the icon and the switch sized with the text */
 #app.preset-canvas .cv-ha-room[data-mini] { gap: 0.2rem; }
 #app.preset-canvas .cv-ha-room[data-mini] .cv-ha-room-title { margin-bottom: 0; }

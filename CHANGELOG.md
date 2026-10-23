@@ -5,6 +5,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- The *Gauge* card goes down to 2×1 on the fine grid (#9), as small as the *Sensor* card. At that size it shows the
+  number and the thin bar under it in the colours of its thresholds; the unit stays when there is room for it and is
+  left out when it would make the number too small, and the name is shown beside the number only when it fits whole.
+  A *Rotating card* of a sensor and a gauge can now be 2×1 as well.
+
 ## [0.19.5] - 2026-10-21
 
 ### Added

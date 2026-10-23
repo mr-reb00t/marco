@@ -558,13 +558,13 @@ test('flexible sizes: validation keeps boxes of their own, clamps them to the ki
 });
 
 test('raised smallest boxes: a statistic or scenes saved smaller grow on read where there is room, never over another card, else stay as they were', () => {
-  // the gauge went the other way (#9): down to 3×1, its name and number on one line over its bar
-  assert.deepEqual([cellRange('ha.gauge').minW, cellRange('ha.gauge').minH], [3, 1]);
+  // the gauge went the other way (#9): down to 2×1, its number over its bar (and its name beside it when it fits)
+  assert.deepEqual([cellRange('ha.gauge').minW, cellRange('ha.gauge').minH], [2, 1]);
   assert.deepEqual([cellRange('ha.statistic').minW, cellRange('ha.statistic').minH], [4, 1]);
   // the scenes: at least 6 wide, narrower only around their 4×4 named size
   assert.ok(boxAllowed('ha.scene', 6, 1) && boxAllowed('ha.scene', 4, 4) && boxAllowed('ha.scene', 5, 4));
-  assert.ok(boxAllowed('ha.gauge', 3, 1) && boxAllowed('ha.gauge', 3, 2));
-  assert.equal(boxAllowed('ha.gauge', 2, 1), false);
+  assert.ok(boxAllowed('ha.gauge', 2, 1) && boxAllowed('ha.gauge', 3, 1) && boxAllowed('ha.gauge', 3, 2));
+  assert.equal(boxAllowed('ha.gauge', 1, 1), false);
   assert.equal(boxAllowed('ha.statistic', 3, 1), false);
   assert.equal(boxAllowed('ha.scene', 5, 1), false);
   assert.equal(boxAllowed('ha.scene', 4, 3), false);
@@ -599,11 +599,13 @@ test('raised smallest boxes: a statistic or scenes saved smaller grow on read wh
   assert.deepEqual(by(g3), { zone: 'main', x: 0, y: 0, size: lookSize('ha.statistic', 3, 1), w: 3, h: 1 });
   assert.ok(col.warnings.some((w) => /no room to grow it, kept/.test(w.message)));
   assertNoOverlap(out.items);
-  // a gauge of 3×1 is kept as it is, with no warning
+  // a gauge of 3×1 or 2×1 is kept as it is, with no warning
   const g4 = item('ha.gauge', { zone: 'main', x: 0, y: 0, size: 'xs', w: 3, h: 1 });
-  ({ c: col, out } = run({ items: [g4] }));
+  const g5 = item('ha.gauge', { zone: 'main', x: 4, y: 0, size: 'xs', w: 2, h: 1 });
+  ({ c: col, out } = run({ items: [g4, g5] }));
   assert.deepEqual([col.errors, col.warnings], [[], []]);
   assert.deepEqual(posCells(by(g4)), [3, 1]);
+  assert.deepEqual(posCells(by(g5)), [2, 1]);
 });
 
 test('flexible sizes: portrait keeps a box of its own (at most 16 wide), a hand-made portrait one is checked like landscape, the display gets w and h', () => {
