@@ -737,10 +737,11 @@ with Marco Cloud); `server/dataFeeds.js` does the network part.
   The 24 h and 7 day curves come from CoinGecko's 7 day sparkline, which is in US dollars: its shape is scaled to the
   price in the card's currency (the price and the change are exact).
 - `sports` props: `{ follow: [{ type: 'team' | 'league', league, team?, name }] (1 to 4, league one of
-  SPORTS_LEAGUES), show: 'auto' | 'next' | 'last', max: 1 to 8, crests }`. Answer: `{ kind: 'sports', groups: [{ label,
-  lg, sport, games: [{ id, t, st: 'pre' | 'in' | 'post', clk, half?, note?, home, away }] }], age, stale, error? }`,
-  each side `{ n, ab, sc, w, c, cr }` (`cr` a crest token). ESPN's site API is public but not documented or promised: it
-  may change without notice. A team is followed in one competition (its league, or a cup added as another entry).
+  SPORTS_LEAGUES), show: 'auto' | 'next' | 'last', max: 1 to 8, crests, updated }` (`updated: false` hides the
+  "Updated … ago" line). Answer: `{ kind: 'sports', groups: [{ label, lg, sport, games: [{ id, t, st: 'pre' | 'in' |
+  'post', clk, half?, note?, home, away }] }], age, stale, error? }` (`stale` when a call failed or an answer is past
+  its own refresh plus 20 minutes), each side `{ n, ab, sc, w, c, cr }` (`cr` a crest token). ESPN's site API is public
+  but not documented or promised: it may change without notice. A team is followed in one competition (its league, or a cup added as another entry).
 - `stocks` props: `{ symbols: [{ sym, name }] (1 to 12, Finnhub symbols), layout: 'ticker' | 'list', sparkline, chartStyle:
   'below' | 'background' }` (the chart style of the list; the ticker keeps its small curves).
   Answer: `{ kind: 'stocks', quotes: [{ sym, name, price, ch, pts, noData? }], age, stale, error?, needsKey? }`. No
@@ -1157,7 +1158,7 @@ card that is empty or whose own `when` does not hold, like a Rotativa. The depth
 Rotativa > cards. Its cards are kinds a Rotativa takes; a group or another `rotator` inside it is an error (left out),
 and so is a `rotator` straight in a Rotativa's `cards` (outside a group) and a `when` on the small Rotativa itself
 (the group has the condition). It holds up to 6 cards (`ROTATOR_MAX`); one is fine (it shows that one), with none it
-goes. It is no card of the screen and does not count towards the Rotativas' cap of 4, but each of its cards does (the
+goes. It is no card of the screen and does not count towards the Rotativas' cap of 8, but each of its cards does (the
 48 cards, each kind's own cap, the 80 entities, its cards' conditions too). It and each of its cards get ids unique
 on the screen. A group left with only a small Rotativa becomes its first card, with the group's condition. Its share
 of the group needs the largest of its cards' smallest boxes (`kindFor`). `canvasCards(items)` lists its cards in its

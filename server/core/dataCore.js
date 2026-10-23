@@ -826,12 +826,18 @@ async function sportsData(hub, p, now) {
   const max = Math.min(DATA_LIMITS.games, Math.max(1, Number(p.max) || 4));
   let oldest = Infinity;
   let error = null;
+  // old = an answer past its own refresh (results are asked hourly and fixtures every few hours, the scoreboard far
+  // more often: one limit for all made a followed team look out of date all the time, #22)
+  let late = false;
   const groups = [];
   const seen = new Set();
-  const use = (r) => {
+  const use = (r, every) => {
     if (!r) return [];
     if (r.error) error = error ?? r.error;
-    if (r.at) oldest = Math.min(oldest, r.at);
+    if (r.at) {
+      oldest = Math.min(oldest, r.at);
+      if (now - r.at > every + staleAfter('sports')) late = true;
+    }
     return r.value ?? [];
   };
   for (const f of follow) {
@@ -839,8 +845,8 @@ async function sportsData(hub, p, now) {
     if (!l || (f.type === 'team' && !TEAM_ID_RE.test(f.team ?? ''))) continue;
     // the scoreboard (the round now, live) first: its scores are the freshest; a team adds its results and fixtures
     const byId = new Map();
-    const lists = [use(await hub.scoreboard(l))];
-    if (f.type === 'team') lists.unshift(use(await hub.results(l, f.team)), use(await hub.fixtures(l, f.team)));
+    const lists = [use(await hub.scoreboard(l), 0)];
+    if (f.type === 'team') lists.unshift(use(await hub.results(l, f.team), DATA_TTL.results), use(await hub.fixtures(l, f.team), DATA_TTL.fixtures));
     for (const list of lists) for (const e of list) byId.set(e.id, e);
     const games = pickGames(f, [...byId.values()], show, max, now).filter((g) => !seen.has(g.id));
     for (const g of games) seen.add(g.id);
@@ -854,7 +860,7 @@ async function sportsData(hub, p, now) {
     room -= g.games.length;
   }
   const age = ageOf(Number.isFinite(oldest) ? oldest : 0, now);
-  return { kind: 'sports', groups, age, stale: !!error || age === null || age * 1000 > staleAfter('sports'), ...(error ? { error } : {}) };
+  return { kind: 'sports', groups, age, stale: !!error || age === null || late, ...(error ? { error } : {}) };
 }
 
 function projectGame(g) {

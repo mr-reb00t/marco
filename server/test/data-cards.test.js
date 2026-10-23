@@ -516,3 +516,23 @@ test('the Finnhub key: tried once, kept in secrets, never sent back, never to a 
     assert.deepEqual(del.json, { set: false, last4: '', checked: false });
   });
 });
+
+test('sports: a followed team is late only when an answer is past its own refresh (#22)', async () => {
+  const MIN = 60_000;
+  const now = Date.parse('2026-10-23T12:00:00Z');
+  const hubAt = ({ sb, res, fix, error = null }) => ({
+    now: () => now,
+    scoreboard: async () => ({ value: [], at: now - sb, error }),
+    results: async () => ({ value: [], at: now - res, error: null }),
+    fixtures: async () => ({ value: [], at: now - fix, error: null }),
+  });
+  const item = { kind: 'sports', props: { follow: [{ type: 'team', league: 'eng.1', team: '359' }], show: 'auto', max: 4 } };
+  // results asked hourly and fixtures every few hours: not late, though hours old
+  const fresh = await dataForItem(hubAt({ sb: 5 * MIN, res: 50 * MIN, fix: 5 * 60 * MIN }), item, now);
+  assert.equal(fresh.stale, false);
+  assert.ok(fresh.age >= 5 * 60 * 60);
+  // the scoreboard past its refresh, results past theirs, a failed call: late
+  assert.equal((await dataForItem(hubAt({ sb: 40 * MIN, res: 5 * MIN, fix: 5 * MIN }), item, now)).stale, true);
+  assert.equal((await dataForItem(hubAt({ sb: 5 * MIN, res: 2 * 60 * MIN, fix: 5 * MIN }), item, now)).stale, true);
+  assert.equal((await dataForItem(hubAt({ sb: 1 * MIN, res: 1 * MIN, fix: 1 * MIN, error: 'fetch_failed' }), item, now)).stale, true);
+});

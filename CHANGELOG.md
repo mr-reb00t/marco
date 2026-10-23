@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.20.1] - 2026-10-23
+
+### Added
+- *Late results notice* on the *Sports* card (#22): turn it off to hide the "Updated … ago" line.
+
+### Changed
+- Up to 8 *Rotating cards* on a screen, not 4 (#21). Their cards still count towards the screen's 48.
+
+### Fixed
+- A *Sports* card that follows a team no longer says "Updated … ago" most of the time (#22). Its results are asked
+  hourly and its fixtures every few hours, but the card took them for late after 20 minutes; now each answer is late
+  only when it is past its own refresh.
+
 ## [0.20.0] - 2026-10-23
 
 ### Added

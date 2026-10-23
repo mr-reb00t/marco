@@ -808,7 +808,7 @@ export const CANVAS_KINDS = {
   },
   sports: {
     cat: 'data', sizes: ['s', 'w', 'm', 't', 'l', 'xl'], def: 'm', cells: [3, 2, 12, 8], side: true, edition: 'all', private: true, perScreen: 4,
-    defaults: () => ({ follow: [{ type: 'league', league: 'uefa.champions', name: '' }], show: 'auto', max: 4, crests: true }),
+    defaults: () => ({ follow: [{ type: 'league', league: 'uefa.champions', name: '' }], show: 'auto', max: 4, crests: true, updated: true }),
     props: (c, p, x) => {
       const seen = new Set();
       const follow = P.list(c, `${p}.follow`, x.follow, DATA_LIMITS.follow, (o, q) => {
@@ -833,6 +833,8 @@ export const CANVAS_KINDS = {
         show: P.oneOf(c, `${p}.show`, x.show, 'auto', ['auto', 'next', 'last']),
         max: P.num(c, `${p}.max`, x.max, 4, 1, DATA_LIMITS.games),
         crests: P.bool(c, `${p}.crests`, x.crests, true),
+        // the "Actualizado hace…" line when the results are late (#22): off for a cleaner card
+        updated: P.bool(c, `${p}.updated`, x.updated, true),
       };
     },
   },
@@ -994,7 +996,7 @@ export const CANVAS_KINDS = {
   // "Rotativa": one slot that shows its cards one after another (a card carousel, no touch needed). Each card is a
   // kind of its own with its own props (ROTATOR_KINDS); sanitizeCanvas gives them ids and counts them like items.
   rotator: {
-    cat: 'content', sizes: ['xs', 's', 'm', 'w', 't', 'l', 'xl'], def: 'w', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 4,
+    cat: 'content', sizes: ['xs', 's', 'm', 'w', 't', 'l', 'xl'], def: 'w', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 8,
     defaults: () => ({
       cards: [
         // ids: given by the editor (and by sanitizeCanvas to a card with none)

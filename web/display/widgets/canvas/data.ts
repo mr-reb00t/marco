@@ -165,6 +165,8 @@ function bleedRows(root: HTMLElement): void {
 /** "Actualizado hace 12 min" when the numbers are old or the last call failed; '' otherwise. */
 function staleText(env: AdapterEnv, id: string, d: DataItemData | null | undefined): string {
   if (!d?.stale) return '';
+  // (a sports card can do without it, #22)
+  if ((env.item().props as { updated?: unknown }).updated === false) return '';
   const age = env.data.age(id);
   if (age === null) return ctx.t('dtNoData');
   return ctx.t('dtUpdated', { when: ago(Date.now() - age * 1000) });

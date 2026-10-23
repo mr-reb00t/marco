@@ -2821,6 +2821,8 @@ export const PL: Record<string, string> = {
   'Automático: el partido en directo o, si no hay, el último resultado y el siguiente partido de cada equipo.': 'Automatycznie: mecz na żywo, a gdy go nie ma, ostatni wynik i następny mecz każdej drużyny.',
   'Partidos como mucho': 'Maks. meczów',
   'Escudos': 'Herby',
+  'Aviso de resultados atrasados': 'Informacja o opóźnionych wynikach',
+  'La línea «Actualizado hace…» que sale cuando los resultados no llegan a tiempo.': 'Wiersz „Zaktualizowano … temu”, który pojawia się, gdy wyniki nie docierają na czas.',
   'Resultados de ESPN, cada minuto mientras se juega. Un equipo se sigue en una competición: para verlo también en la Champions, añádelo otra vez con esa competición.': 'Wyniki z ESPN, co minutę w trakcie meczu. Drużynę śledzi się w jednych rozgrywkach: aby widzieć ją też w Lidze Mistrzów, dodaj ją ponownie z tymi rozgrywkami.',
   'Acciones y fondos': 'Akcje i fundusze',
   'Línea que se mueve': 'Przewijany wiersz',

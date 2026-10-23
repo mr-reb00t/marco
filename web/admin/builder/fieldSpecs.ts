@@ -380,6 +380,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'show', type: 'seg', label: 'Qué partidos', opts: [{ v: 'auto', l: 'Automático' }, { v: 'next', l: 'Próximos' }, { v: 'last', l: 'Últimos' }], hint: 'Automático: el partido en directo o, si no hay, el último resultado y el siguiente partido de cada equipo.' },
     { k: 'max', type: 'num', label: 'Partidos como mucho', min: 1, max: 8, unit: 'n' },
     { k: 'crests', type: 'bool', label: 'Escudos' },
+    { k: 'updated', type: 'bool', label: 'Aviso de resultados atrasados', hint: 'La línea «Actualizado hace…» que sale cuando los resultados no llegan a tiempo.' },
     { type: 'note', text: 'Resultados de ESPN, cada minuto mientras se juega. Un equipo se sigue en una competición: para verlo también en la Champions, añádelo otra vez con esa competición.' },
   ],
   stocks: [

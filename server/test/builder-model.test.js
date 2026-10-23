@@ -594,22 +594,24 @@ test('a Rotativa inside a group (#19): new ids for it and its cards on add and c
   assert.equal(out.items[0].props.cards[1].props.cards[2].kind, 'rotator');
 });
 
-test('more than one Rotativa on a screen (#21): up to four from the palette, then the kind is at its cap; the server keeps them', ts, () => {
-  let cv = defaultCanvas();
+test('more than one Rotativa on a screen (#21): up to eight from the palette, then the kind is at its cap; the server keeps them', ts, () => {
+  const CAP = 8;
+  // (an empty screen: room for all of them)
+  let cv = { ...defaultCanvas(), items: [] };
   const ids = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < CAP; i++) {
     const r = M.addItem(cv, 'landscape', 'rotator', null);
     cv = ok(r);
     ids.push(r.id);
   }
-  assert.equal(new Set(ids).size, 4);
-  assert.equal(cv.items.filter((i) => i.kind === 'rotator').length, 4);
+  assert.equal(new Set(ids).size, CAP);
+  assert.equal(cv.items.filter((i) => i.kind === 'rotator').length, CAP);
   assert.equal(M.addItem(cv, 'landscape', 'rotator', null).why, 'kindCap');
   assert.equal(M.duplicateItem(cv, 'landscape', ids[0]).why, 'kindCap');
-  // a copy of the second while there are only two
-  const two = structuredClone(cv);
-  two.items = two.items.filter((i) => i.id !== ids[2] && i.id !== ids[3]);
-  assert.equal(ok(M.duplicateItem(two, 'landscape', ids[1])).items.filter((i) => i.kind === 'rotator').length, 3);
+  // a copy of one while there is room under the cap
+  const less = structuredClone(cv);
+  less.items = less.items.filter((i) => i.id !== ids[CAP - 1]);
+  assert.equal(ok(M.duplicateItem(less, 'landscape', ids[1])).items.filter((i) => i.kind === 'rotator').length, CAP);
   valid(cv);
 });
 
