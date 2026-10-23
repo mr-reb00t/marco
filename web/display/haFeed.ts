@@ -135,9 +135,13 @@ const HISTORY_LONG_MS = 15 * 60_000;
 
 const isObj = (x: unknown): x is Record<string, any> => !!x && typeof x === 'object' && !Array.isArray(x);
 
-/** True when the screen of `cfg` has a Home Assistant card that is drawn (not a placeholder), or a custom card bound to one. */
+/**
+ * True when the screen of `cfg` has a Home Assistant card that is drawn (not a placeholder), a custom card bound to
+ * one, or a Home Assistant condition (an item's, or a Rotativa card's, group's or small Rotativa card's own).
+ */
 export function showsHa(cfg: DisplayConfig | null | undefined): boolean {
-  return canvasCards(cfg?.canvas?.items).some((it) => it.when?.src === 'ha' || (!it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && isObj(b.entity))))));
+  const ha = (w: unknown) => isObj(w) && w.src === 'ha';
+  return canvasCards(cfg?.canvas?.items).some((it) => ha(it.when) || ha((it as { own?: unknown }).own) || ha((it as { inner?: unknown }).inner) || (!it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'html' && Array.isArray(it.props.bind) && it.props.bind.some((b) => isObj(b) && isObj(b.entity))))));
 }
 
 export class HaFeed implements HaSource {

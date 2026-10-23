@@ -24,6 +24,8 @@ export interface FieldEnv {
   cardsLeft?: number;
   /** a card of a Rotativa is being edited: the preview shows it and holds it (null: it turns again) */
   pinCard?: (item: string, card: string | null) => void;
+  /** the cards of a small Rotativa inside a group (#19): no groups in it, and the ids its Rotativa already takes */
+  nest?: { taken: () => Set<string> };
   sources: { id: string; name: string; color: string; emoji: string }[];
   /** the household's screens ("Ir a pantalla"), and the one being edited */
   screens?: { id: string; name: string }[];

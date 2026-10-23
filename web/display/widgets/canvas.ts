@@ -10,7 +10,7 @@
 // - A card with nothing to show (no message, no countdowns) keeps its cell but is not drawn (.is-empty).
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
-import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, GlassConfig } from '../../shared/types';
+import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig } from '../../shared/types';
 import { CANVAS_KINDS, fullLookMin, gridDims, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
@@ -259,7 +259,12 @@ interface Entry {
   slide?: HTMLElement;
   /** a Rotativa: the slides of its groups, by group id */
   groups?: Map<string, HTMLElement>;
+  /** a card of a small Rotativa of a group (#19): that small Rotativa (an entry of the same subs, kind 'rotator') */
+  nest?: Entry;
 }
+
+/** Where a card of a Rotativa is drawn: a slide of it (''), a share of a group ('g'), a slide of a small Rotativa. */
+const placeOf = (s: Entry): string => (s.nest ? `n:${s.nest.id}` : s.slide !== s.body ? 'g' : '');
 
 /**
  * The box of the i-th of n cards of a Rotativa's group (#19): the Rotativa's box shared out in equal parts, in rows
@@ -455,7 +460,7 @@ export class Canvas {
     const o = this.portrait ? 'portrait' : 'landscape';
     // a card of a group: its share of the box, in cells, where the cards read the cells of their box (the padding of a
     // one-row box, ha.ts, haTile.ts)
-    if (e.slide && e.slide !== e.body) {
+    if ((e.slide && e.slide !== e.body) || e.nest) {
       if (pos?.zone === 'main') e.body.dataset.cells = posCells(pos, o).join('x');
       else delete e.body.dataset.cells;
     }
@@ -850,7 +855,9 @@ export class Canvas {
    * and one adapter per card, reconciled by id and kind like the items; a card whose hash or Rotativa changed is
    * drawn again in place. A group (#19) is one slide that holds a body for each of its cards, in rows or columns,
    * each card with its share of the box (sharePos) and the group's condition. The Rotativa's adapter
-   * (widgets/canvas/rotator.ts) shows one slide at a time.
+   * (widgets/canvas/rotator.ts) shows one slide at a time. A small Rotativa of a group is a body of the group's slide
+   * with a Rotativa adapter of its own (its own turns and dots) and a slide for each of its cards, each card in the
+   * small Rotativa's share of the box, with its own condition (or the group's).
    */
   private syncSubs(e: Entry, changed: boolean, screenChanged: boolean): void {
     const cards = e.item.disabled ? [] : ((e.item.props as { cards?: (DisplayRotatorCard | DisplayRotatorGroup)[] }).cards ?? []);
@@ -859,31 +866,38 @@ export class Canvas {
     const groups = new Map<string, HTMLElement>();
     const next: Entry[] = [];
     const slides: HTMLElement[] = [];
-    /** The entry of one card (in `slide` when it is a card of a group, with its share of the box). */
-    const sub = (cd: DisplayRotatorCard, g: DisplayRotatorGroup | null, slide: HTMLElement | null): Entry => {
+    /**
+     * The entry of one card (in `slide` when it is a card of a group, with its share of the box; in `nest` when it is
+     * a card of a small Rotativa of that group, in its share, a slide of its own).
+     */
+    const sub = (cd: DisplayRotatorCard | DisplayRotatorNested, g: DisplayRotatorGroup | null, slide: HTMLElement | null, nest: Entry | null = null): Entry => {
       const n = g ? g.props.cards.length : 1;
       const dir = g?.props.dir === 'cols' ? 'cols' : 'rows';
       const pos = g ? sharePos(e.item.pos, cd.kind, dir, n, 'landscape')! : e.item.pos;
       const portrait = g ? sharePos(e.item.portrait, cd.kind, dir, n, 'portrait') : e.item.portrait;
-      const when = g ? g.when : cd.when;
+      // (a card of a small Rotativa: its own condition, else the group's; the server's feed weighs both)
+      const when = nest ? cd.when ?? g?.when : g ? g.when : cd.when;
       const v = g ? `${cd.v}|${dir}${n}|${e.item.v}` : `${cd.v}|${e.item.v}`;
       const item: DisplayCanvasItem = { id: cd.id, kind: cd.kind, props: cd.props, v, pos, portrait, style: e.item.style, interactive: false, ...(cd.disabled ? { disabled: cd.disabled } : {}), ...(when ? { when } : {}) };
+      /** where its body goes: a slide of the Rotativa, a share of a group, a slide of a small Rotativa */
+      const place = nest ? `n:${nest.id}` : g ? 'g' : '';
       let s = old.get(cd.id);
-      if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled || (s.slide !== s.body) !== !!g)) {
+      if (s && (s.kind !== cd.kind || !!s.item.disabled !== !!cd.disabled || placeOf(s) !== place)) {
         this.dropSub(s);
         s = undefined;
       }
       old.delete(cd.id);
       if (!s) {
         const body = document.createElement('div');
-        body.className = g ? 'cv-body cv-grp-cell' : 'cv-body cv-rot-slide';
-        if (!g) body.dataset.card = cd.id;
-        s = { id: cd.id, kind: cd.kind, item, el: e.el, card: e.card, title: e.title, body, adapter: adapterFor(item), zone: e.zone, cramped: false, need: null, noBlur: false, lookKey: '', surface: e.surface, cfg: itemCfg(this.screen!, item), parent: e, slide: slide ?? body };
+        body.className = nest ? 'cv-body cv-grp-cell cv-rot-slide' : g ? 'cv-body cv-grp-cell' : 'cv-body cv-rot-slide';
+        if (!g || nest) body.dataset.card = cd.id;
+        s = { id: cd.id, kind: cd.kind, item, el: e.el, card: e.card, title: e.title, body, adapter: adapterFor(item), zone: e.zone, cramped: false, need: null, noBlur: false, lookKey: '', surface: e.surface, cfg: itemCfg(this.screen!, item), parent: e, slide: nest ? body : slide ?? body, ...(nest ? { nest } : {}) };
         s.adapter.mount(body, this.env(s));
       } else {
         const ch = s.item.v !== item.v;
         s.item = item;
-        s.slide = slide ?? s.body;
+        s.slide = nest ? s.body : slide ?? s.body;
+        if (nest) s.nest = nest;
         if (ch || screenChanged) s.cfg = itemCfg(this.screen!, item);
         if (ch) s.adapter.update();
         else if (screenChanged) s.adapter.data?.('config');
@@ -912,6 +926,16 @@ export class Canvas {
         const s = sub(m, g, slide);
         if (at !== s.body) slide.insertBefore(s.body, at);
         at = s.body.nextSibling;
+        if (m.kind !== 'rotator') continue;
+        // a small Rotativa: its cards in slides of its body, before its dots, then it picks the one on show
+        const nm = m as DisplayRotatorNested;
+        let at2: ChildNode | null = s.body.firstChild;
+        for (const y of nm.props.cards ?? []) {
+          const c = sub({ ...y, v: `${y.v}|${nm.v}` }, g, slide, s);
+          if (at2 !== c.body) s.body.insertBefore(c.body, at2);
+          at2 = c.body.nextSibling;
+        }
+        s.adapter.slides?.();
       }
     }
     for (const s of old.values()) this.dropSub(s);
@@ -1008,16 +1032,29 @@ export class Canvas {
       // a Rotativa: empty when every card is empty or off by its own condition (it skips those), cramped when one of
       // its cards is (the most it needs); a group's slide is empty when all of its cards are, and off with its
       // condition (each of its cards carries it)
+      // (a small Rotativa of a group: empty when each of its cards is empty or off, which it skips as the Rotativa
+      // does; then its share of the group is empty)
       if (e.subs?.length) {
         const slides = new Map<HTMLElement, { empty: boolean; off: boolean }>();
+        const nests = new Map<Entry, boolean>();
         for (const s of e.subs) {
+          if (s.kind === 'rotator') {
+            if (!nests.has(s)) nests.set(s, true);
+            continue;
+          }
           const em = !!s.adapter.empty?.();
           const sl = s.slide ?? s.body;
           s.body.classList.toggle('is-empty', em);
-          const st = slides.get(sl) ?? { empty: true, off: false };
-          st.empty &&= em;
-          st.off ||= this.condOff(s.item);
-          slides.set(sl, st);
+          if (s.nest) {
+            const off = this.condOff(s.item);
+            s.body.classList.toggle('is-cond-off', off);
+            nests.set(s.nest, (nests.get(s.nest) ?? true) && (em || off));
+          } else {
+            const st = slides.get(sl) ?? { empty: true, off: false };
+            st.empty &&= em;
+            st.off ||= this.condOff(s.item);
+            slides.set(sl, st);
+          }
           s.cramped = !em && over(s.body);
           s.need = s.cramped ? needOf(s.body) : null;
           if (s.cramped) {
@@ -1028,6 +1065,14 @@ export class Canvas {
             s.filled = false;
             this.relayoutSoon(e.id);
           }
+        }
+        for (const [n, em] of nests) {
+          n.body.classList.toggle('is-empty', em);
+          const sl = n.slide ?? n.body;
+          const st = slides.get(sl) ?? { empty: true, off: false };
+          st.empty &&= em;
+          slides.set(sl, st);
+          n.adapter.slides?.();
         }
         let all = true;
         for (const [sl, st] of slides) {

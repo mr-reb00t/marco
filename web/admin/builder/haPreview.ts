@@ -6,7 +6,7 @@
 // (GET /api/admin/homeassistant/camera, 'marco:preview-camera'): the preview never opens a live picture.
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { CanvasConfig, HaControl, HaHistory, HaSlim, HaState, HaStatistic, RotatorEntry, TileFeature } from '../../shared/types';
-import { CANVAS_LIMITS, itemAliases, itemNames, needsConfirm, canvasCards } from '../../../server/core/canvasCore.js';
+import { CANVAS_LIMITS, itemAliases, itemNames, needsConfirm, canvasCards, rotatorNodes } from '../../../server/core/canvasCore.js';
 import { controlsFor, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
 
@@ -80,7 +80,8 @@ export function useHaPreview(cv: CanvasConfig, enabled: boolean): HaPreview | nu
   const condEntities = useMemo(() => cv.items.flatMap((it) => {
     if (it.hidden) return [];
     const cards = it.kind === 'rotator' && Array.isArray(it.props.cards) ? (it.props.cards as RotatorEntry[]) : [];
-    return [it.when, ...cards.map((c) => c.when)].flatMap((w) => (w?.src === 'ha' && w.entity ? [w.entity] : []));
+    // (a small Rotativa of a group: its cards' conditions)
+    return [it.when, ...rotatorNodes(cards).map((c) => c.when)].flatMap((w) => (w?.src === 'ha' && w.entity ? [w.entity] : []));
   }), [cv]);
   const entities = useMemo(() => [...new Set([...aliases.map((a) => a.entity), ...condEntities])].sort().slice(0, CANVAS_LIMITS.haEntities), [aliases, condEntities]);
   const statItems = useMemo(

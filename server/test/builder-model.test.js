@@ -560,6 +560,40 @@ test('a Rotativa with a group (#19, Cambiar un espacio según Casa): new ids for
   assert.deepEqual(out.items[0].props.cards.map((x) => [x.kind, x.when.value]), [['ha.camera', 'on'], ['group', 'off']]);
 });
 
+test('a Rotativa inside a group (#19): new ids for it and its cards on add and copy, its cards count, the box holds it', ts, () => {
+  const tile = () => ({ id: '', kind: 'ha.tile', props: {} });
+  const spec = {
+    cards: [
+      { id: '', kind: 'ha.camera', props: {} },
+      { id: '', kind: 'group', props: { dir: 'rows', cards: [tile(), tile(), { id: '', kind: 'rotator', props: { everySec: 10, dots: true, cards: [{ id: '', kind: 'weather.forecast', props: {} }, { id: '', kind: 'weather.hourly', props: {} }] } }] } },
+    ],
+  };
+  let cv = defaultCanvas();
+  const a = M.addItem(cv, 'landscape', 'rotator', null, spec);
+  cv = ok(a);
+  const ids = (it) => it.props.cards.flatMap((c) => (c.kind === 'group' ? [c.id, ...c.props.cards.flatMap((m) => (m.kind === 'rotator' ? [m.id, ...m.props.cards.map((x) => x.id)] : [m.id]))] : [c.id]));
+  const first = ids(M.itemOf(cv, a.id));
+  assert.equal(first.length, 7);
+  assert.ok(first.every((id) => /^cv_[a-z0-9]{8}$/.test(id)), first.join());
+  const d = M.duplicateItem(cv, 'landscape', a.id);
+  cv = ok(d);
+  assert.equal(new Set([...first, ...ids(M.itemOf(cv, d.id)), a.id, d.id]).size, 16);
+  // its cards count, it does not (2 Rotativas: 2 + 2 × (camera, two tiles, two weather cards) = 12)
+  assert.equal(M.cardCount(cv), 12);
+  assert.deepEqual(M.cardKinds(spec.cards), ['ha.camera', 'ha.tile', 'ha.tile', 'weather.forecast', 'weather.hourly']);
+  // the box: the forecast's width at least, and room for its height in the rows
+  const r = M.rangeOf(M.sizingOf(M.itemOf(cv, a.id)), 'landscape');
+  const plain = structuredClone(M.itemOf(cv, a.id));
+  plain.props.cards[1].props.cards[2] = { id: 'cv_plain001', kind: 'ha.tile', props: {} };
+  const p = M.rangeOf(M.sizingOf(plain), 'landscape');
+  assert.ok(r.minW >= p.minW && r.minH > p.minH, JSON.stringify({ r, p }));
+  // the server keeps it
+  const c = clean();
+  const out = sanitizeCanvas(c, 'canvas', structuredClone(cv), {}, {});
+  assert.deepEqual(c.errors, []);
+  assert.equal(out.items[0].props.cards[1].props.cards[2].kind, 'rotator');
+});
+
 test('a small Rotativa (#19): it starts at its first card\'s size, goes down to what its cards need, and grows when a card needs more', ts, () => {
   const spec = { cards: [{ id: '', kind: 'ha.tile', props: {} }, { id: '', kind: 'ha.camera', props: {} }] };
   let cv = defaultCanvas();
