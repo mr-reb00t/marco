@@ -57,7 +57,7 @@ function RuleRow({ r, i, n, hits, errors, sources, upd, remove, move, reorder, h
             onChange={(v) => upd((x) => void (x.matchMode = v))}
           />
         </div>
-        <TextInput class="frule__match" value={r.match} error={!!errors[`${p}.match`]} maxLength={120} placeholder={t('Texto del título…')} onValue={(v) => upd((x) => void (x.match = v))} />
+        <TextInput class="frule__match" value={r.match} error={!!errors[`${p}.match`]} maxLength={120} placeholder={r.matchMode === 'exact' ? t('Texto del título…') : t('Texto del título… (varios separados por comas)')} onValue={(v) => upd((x) => void (x.match = v))} />
         <span class={`frule__hits ${hits ? 'is-on' : ''}`} title={t('Eventos afectados en los próximos 14 días')}>
           {hits ?? 0}
         </span>

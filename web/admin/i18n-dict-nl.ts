@@ -877,6 +877,7 @@ export const NL: Record<string, string> = {
   'Termina al día siguiente': 'Eindigt de volgende dag',
   'Texto (opcional)': 'Tekst (optioneel)',
   'Texto del título…': 'Titeltekst…',
+  'Texto del título… (varios separados por comas)': 'Titeltekst… (meerdere gescheiden door komma\'s)',
   'Tiempo ahora': 'Weer nu',
   'Todas': 'Alle',
   'Todas las fuentes': 'Alle bronnen',

@@ -877,6 +877,7 @@ export const DA: Record<string, string> = {
   'Termina al día siguiente': 'Slutter dagen efter',
   'Texto (opcional)': 'Tekst (valgfrit)',
   'Texto del título…': 'Titeltekst…',
+  'Texto del título… (varios separados por comas)': 'Titeltekst… (flere adskilt med kommaer)',
   'Tiempo ahora': 'Vejret nu',
   'Todas': 'Alle',
   'Todas las fuentes': 'Alle kilder',

@@ -1,4 +1,5 @@
 // event filters & overrides (hide / rename / style). Pure functions; unit-tested in events-rules.test.js.
+// A rule's `match` may list several alternatives separated by commas (ruleNeedles).
 // See docs/API.md and docs/ARCHITECTURE.md. Order: hide (any match) → rename (every match, chained, in list order) →
 // style (first match on the renamed or the original title).
 import { fold } from './lib/text.js';
@@ -43,16 +44,38 @@ export function foldMap(input) {
 /** Normalised comparison key: folded, whitespace collapsed, trimmed. */
 export const normKey = (s) => foldMap(String(s ?? '').trim()).text;
 
+/**
+ * The needles of a rule (contains / startsWith; exact always uses `full`): `match` may list several alternatives separated by commas ("14u, 15u, 16u"), each one
+ * trimmed, empty ones dropped. `full` is the whole string (comma included), still matched literally so a rule like
+ * "Smith, John" keeps working.
+ */
+export function ruleNeedles(match) {
+  const full = normKey(match);
+  const alts = [];
+  for (const part of String(match ?? '').split(',')) {
+    const k = normKey(part);
+    if (k && !alts.includes(k)) alts.push(k);
+  }
+  return { full, alts };
+}
+
+/** Needles that hit the folded text `text` in `mode`: [full] when the whole literal hits, else the matching alternatives. */
+function hits(text, { full, alts }, mode) {
+  // exact never splits: the title must be the whole text (quick hide/style rules are made from titles with commas)
+  if (mode === 'exact') return full && text === full ? [full] : [];
+  const test = mode === 'startsWith' ? (n) => text.startsWith(n) : (n) => text.includes(n);
+  if (full && test(full)) return [full];
+  return alts.filter(test);
+}
+
 /** Does `rule` match the event? `ev` = { title, description?, location?, sourceId? }. Ignores enabled/sourceIds. */
 export function textMatches(rule, ev) {
-  const needle = normKey(rule.match);
-  if (!needle) return false;
-  const title = normKey(ev.title);
-  if (rule.matchMode === 'exact') return title === needle;
-  if (rule.matchMode === 'startsWith') return title.startsWith(needle);
-  if (title.includes(needle)) return true;
-  if (rule.field === 'any') {
-    return normKey(ev.description).includes(needle) || normKey(ev.location).includes(needle);
+  const needles = ruleNeedles(rule.match);
+  if (!needles.full) return false;
+  const mode = rule.matchMode === 'exact' || rule.matchMode === 'startsWith' ? rule.matchMode : 'contains';
+  if (hits(normKey(ev.title), needles, mode).length) return true;
+  if (mode === 'contains' && rule.field === 'any') {
+    return hits(normKey(ev.description), needles, mode).length > 0 || hits(normKey(ev.location), needles, mode).length > 0;
   }
   return false;
 }
@@ -72,16 +95,21 @@ export function renameTitle(title, rule) {
   } else {
     const trimmed = String(title).trim();
     const m = foldMap(trimmed);
-    const needle = normKey(rule.match);
-    if (!needle) return title;
+    const found = hits(m.text, ruleNeedles(rule.match), rule.matchMode === 'startsWith' ? 'startsWith' : 'contains');
+    if (!found.length) return title;
     if (rule.matchMode === 'startsWith') {
-      if (!m.text.startsWith(needle)) return title;
+      const needle = found.reduce((a, b) => (b.length > a.length ? b : a));
       out = replaceWith + m.source.slice(m.ends[needle.length - 1]);
     } else {
-      // contains: replace every (non-overlapping) occurrence, case/accent-insensitive
+      // contains: replace every (non-overlapping) occurrence of every needle, case/accent-insensitive, left to
+      // right; where two needles start at the same spot the longer one wins
+      const byLength = [...found].sort((a, b) => b.length - a.length);
       const ranges = [];
-      for (let at = m.text.indexOf(needle); at !== -1; at = m.text.indexOf(needle, at + needle.length)) {
+      for (let at = 0; at < m.text.length; ) {
+        const needle = byLength.find((x) => m.text.startsWith(x, at));
+        if (!needle) { at++; continue; }
         ranges.push([m.starts[at], m.ends[at + needle.length - 1]]);
+        at += needle.length;
       }
       if (!ranges.length) return title;
       out = '';
