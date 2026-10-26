@@ -467,6 +467,36 @@
     },
     {
       "method": "GET",
+      "path": "/api/admin/commute/key",
+      "query": [],
+      "feature": "widgets",
+      "callers": [
+        "commuteKey"
+      ],
+      "request": null,
+      "response": "WeatherKeyStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "set",
+        "hint",
+        "checked?"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/commute/key",
+      "query": [],
+      "feature": "widgets",
+      "callers": [
+        "setCommuteKey"
+      ],
+      "request": "{key}",
+      "response": "WeatherKeyStatus & { checked?: boolean }",
+      "responseArray": false,
+      "responseKeys": null
+    },
+    {
+      "method": "GET",
       "path": "/api/admin/config",
       "query": [],
       "feature": null,
@@ -2021,6 +2051,19 @@
         "refreshAllAfter",
         "refreshAllAfterSecs?"
       ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/test/commute",
+      "query": [],
+      "feature": "widgets",
+      "callers": [
+        "testCommute"
+      ],
+      "request": "{origin, destination, mode}",
+      "response": "TestCommuteResponse",
+      "responseArray": false,
+      "responseKeys": null
     },
     {
       "method": "POST",

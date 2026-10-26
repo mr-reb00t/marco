@@ -5,6 +5,8 @@ import type {
   TestWidgetResponse,
   WidgetType,
   TestPricesResponse,
+  TestCommuteResponse,
+  CommuteMode,
   PrivacyChangeResponse,
   PrivacyRequest,
   PrivacyResponse,
@@ -245,6 +247,10 @@ export const api = {
   testPrices: (zone: string, grid = '') => request<TestPricesResponse>('POST', '/api/admin/test/prices', grid ? { zone, grid } : { zone }),
   pricesToken: () => request<WeatherKeyStatus>('GET', '/api/admin/prices/token'),
   setPricesToken: (token: string) => request<WeatherKeyStatus & { checked?: boolean }>('PUT', '/api/admin/prices/token', { token }),
+  testCommute: (origin: string, destination: string, mode: CommuteMode = 'driving') =>
+    request<TestCommuteResponse>('POST', '/api/admin/test/commute', { origin, destination, mode }),
+  commuteKey: () => request<WeatherKeyStatus>('GET', '/api/admin/commute/key'),
+  setCommuteKey: (key: string) => request<WeatherKeyStatus & { checked?: boolean }>('PUT', '/api/admin/commute/key', { key }),
   testHomeAssistant: (url: string, token?: string) =>
     request<TestHomeAssistantResponse>('POST', '/api/admin/test/homeassistant', token ? { url, token } : { url }),
   /** Entities of one domain or several (the builder: grouped by area, with the builder attributes). */

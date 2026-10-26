@@ -7,6 +7,8 @@ import { getWeather } from '../weather.js';
 import { getNews } from '../news.js';
 import { getPrices, PricesError } from '../prices.js';
 import { priceZone } from '../core/pricesCore.js';
+import { getCommute, CommuteError } from '../commute.js';
+import { MAX_COMMUTE_ROUTES } from '../core/commuteCore.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
 import { getPhotos } from '../photos.js';
@@ -174,6 +176,36 @@ export function publicRouter({ version }) {
       res.json(out);
     } catch (err) {
       if (err instanceof PricesError) return res.status(502).json({ error: err.code });
+      next(err);
+    }
+  });
+
+  // Live travel times for a commute widget (saved widget id or JSON routes from the admin live preview).
+  r.get('/display/commute', async (req, res, next) => {
+    try {
+      const cfg = getConfig();
+      const tz = cfg.datetime.timezone;
+      const id = typeof req.query.id === 'string' ? req.query.id : '';
+      let routes = null;
+      let refreshMin = 10;
+      if (typeof req.query.routes === 'string' && req.query.routes) {
+        try {
+          const parsed = JSON.parse(req.query.routes);
+          if (Array.isArray(parsed)) routes = parsed.slice(0, MAX_COMMUTE_ROUTES);
+        } catch {
+          return res.status(400).json({ error: 'invalid_routes' });
+        }
+      } else if (id) {
+        const w = (cfg.widgets || []).find((x) => x.id === id && x.type === 'commute');
+        if (!w || !w.options?.commute) return res.status(404).json({ error: 'not_found' });
+        routes = w.options.commute.routes || [];
+        refreshMin = w.options.commute.refreshMin || 10;
+      }
+      if (!Array.isArray(routes)) return res.status(400).json({ error: 'invalid_routes' });
+      if (req.query.refreshMin) refreshMin = Math.max(5, Math.min(60, Number(req.query.refreshMin) || 10));
+      res.json(await getCommute(routes, { tz, refreshMin }));
+    } catch (err) {
+      if (err instanceof CommuteError) return res.status(502).json({ error: err.code });
       next(err);
     }
   });

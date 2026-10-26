@@ -10,6 +10,7 @@ import { IMMICH_KEY_RE } from './immichCore.js';
 import { NOW_PLAYING_ACCOUNT_RE, NOW_PLAYING_MAX_ACCOUNTS, SPOTIFY_CLIENT_ID_RE, SPOTIFY_SECRET_RE } from './nowPlayingCore.js';
 import { FAMILY_KEY_RE } from './familyCore.js';
 import { exportAccessPeople, importAccessPeople } from './familyAccessCore.js';
+import { COMMUTE_KEY_RE } from './commuteCore.js';
 
 /** Rotated backups kept per installation (or per household in the cloud). */
 export const KEEP_BACKUPS = 20;
@@ -33,6 +34,8 @@ export function exportSecrets(sec) {
     ...(sec.prices?.entsoeToken ? { prices: { entsoeToken: sec.prices.entsoeToken } } : {}),
     // The Finnhub key of the stocks card, only when one is stored.
     ...(sec.data?.stocksKey ? { data: { stocksKey: sec.data.stocksKey } } : {}),
+    // The Google Maps / Routes API key of the commute widget, only when one is stored.
+    ...(sec.commute?.apiKey ? { commute: { apiKey: sec.commute.apiKey } } : {}),
     google: { accounts: sec.google?.accounts || {} },
     ...(sec.microsoft?.accounts && Object.keys(sec.microsoft.accounts).length ? { microsoft: { accounts: sec.microsoft.accounts } } : {}),
     // The household's own Spotify app and its linked accounts ("now playing"), only when an app is stored.
@@ -119,6 +122,9 @@ export function sanitizeImportedSecrets(s) {
   }
   if (isObj(s.data) && typeof s.data.stocksKey === 'string' && /^(?:[A-Za-z0-9_-]{10,64})?$/.test(s.data.stocksKey)) {
     out.stocksKey = s.data.stocksKey;
+  }
+  if (isObj(s.commute) && typeof s.commute.apiKey === 'string' && (s.commute.apiKey === '' || COMMUTE_KEY_RE.test(s.commute.apiKey))) {
+    out.commuteKey = s.commute.apiKey;
   }
   if (isObj(s.google) && isObj(s.google.accounts)) {
     const acc = {};

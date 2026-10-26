@@ -10,6 +10,7 @@ import { setWidgetPreview } from '../livePreview';
 import { moveItem, uid, WEB_WIDGET_REFRESH_SEC, WIDGET_REFRESH_SEC, widgetUrlProblem } from '../util';
 import type { SectionProps } from './common';
 import { previewTested, setPreviewWidget, useWidgetPreview } from '../widgetPreview';
+import { newCommuteOptions, CommuteWidgetFields } from './CommuteWidget';
 import { newPriceOptions, PriceWidgetFields } from './PriceWidget';
 import { PairsField } from '../builder/DataPickers';
 import { newValueOptions, ValueWidgetFields } from './ValueWidget';
@@ -99,8 +100,8 @@ function widgetPlaces(s: StoredConfig['screens'][number], id: string) {
 }
 
 /** The type as the admin names it (the type select and the folded card). */
-const TYPE_LABEL: Record<WidgetType, string> = { image: 'Imagen', web: 'Página web', prices: 'Precio de la luz', currency: 'Divisas', value: 'Valor' };
-const typeIcon = (type: WidgetType): IconName => (type === 'image' ? 'image' : type === 'prices' ? 'zap' : type === 'currency' ? 'exchange' : type === 'value' ? 'activity' : 'globe');
+const TYPE_LABEL: Record<WidgetType, string> = { image: 'Imagen', web: 'Página web', prices: 'Precio de la luz', currency: 'Divisas', value: 'Valor', commute: 'Trayectos' };
+const typeIcon = (type: WidgetType): IconName => (type === 'image' ? 'image' : type === 'prices' ? 'zap' : type === 'currency' ? 'exchange' : type === 'value' ? 'activity' : type === 'commute' ? 'pin' : 'globe');
 
 const LS_OPEN = 'calendar-admin.widgets-open';
 /** Ids of the widget cards left open (this browser only). */
@@ -213,8 +214,9 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
   const prices = w.type === 'prices';
   const currency = w.type === 'currency';
   const value = w.type === 'value';
+  const commute = w.type === 'commute';
   /** a card this server feeds (no address, no reload interval) */
-  const own = prices || currency || value;
+  const own = prices || currency || value || commute;
   // Marco Cloud fetches the image itself (https only) and serves it to the screens; self-hosted TVs load the address
   const cloud = edition() === 'cloud';
   const webOk = has('webWidgets');
@@ -275,7 +277,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
       <div class="card__body">
       <div class="grid grid--2">
         <Field label={t('Nombre')} error={errors[`wdg.${w.id}.name`]}>
-          <TextInput value={w.name} maxLength={60} placeholder={currency ? t('Cambio de divisas') : value ? t('Baterías de los coches') : t('Precios de la luz')} onValue={(v) => upd((x) => void (x.name = v))} />
+          <TextInput value={w.name} maxLength={60} placeholder={currency ? t('Cambio de divisas') : value ? t('Baterías de los coches') : commute ? t('Trayectos') : t('Precios de la luz')} onValue={(v) => upd((x) => void (x.name = v))} />
         </Field>
         <Field
           label={t('Tipo')}
@@ -289,7 +291,9 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
                   ? t('El cambio de monedas del Banco Central Europeo. Lo consulta este servidor unas pocas veces al día; las pantallas no llaman a ninguna web.')
                   : value
                     ? t('Números que Home Assistant u otro programa envía a Marco: la batería del coche, la producción solar. Uno en grande, o varios en lista.')
-                    : undefined
+                    : commute
+                      ? t('Tiempo de viaje en tiempo real con Google Maps (coche, transporte público, bici o a pie).')
+                      : undefined
           }
         >
           {((w.type === 'web' && !webOk) || (prices && !pricesOk) || (value && !valuesOk)) && <span class="chip chip--static chip--bad">{t('No disponible aquí')}</span>}
@@ -302,6 +306,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
               ...(pricesOk || prices ? [{ value: 'prices' as const }] : []),
               { value: 'currency' as const },
               ...(valuesOk || value ? [{ value: 'value' as const }] : []),
+              { value: 'commute' as const },
             ].map((o) => ({ ...o, label: t(TYPE_LABEL[o.value]) }))}
             onChange={(v) =>
               upd((x) => {
@@ -310,10 +315,18 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
                 if (v !== 'value') delete x.options.value;
                 if (v === 'prices') {
                   delete x.options.currency;
+                  delete x.options.commute;
                   x.options.prices ??= newPriceOptions(full.datetime.timezone);
                   return;
                 }
+                if (v === 'commute') {
+                  delete x.options.prices;
+                  delete x.options.currency;
+                  x.options.commute ??= newCommuteOptions();
+                  return;
+                }
                 delete x.options.prices;
+                delete x.options.commute;
                 if (v === 'currency') {
                   x.options.currency ??= newCurrencyOptions();
                   return;
@@ -333,6 +346,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
       {prices && w.options.prices && <PriceWidgetFields w={w} errors={errors} upd={upd} part="main" tz={full.datetime.timezone} />}
       {currency && <CurrencyWidgetFields w={w} errors={errors} upd={upd} />}
       {value && <ValueWidgetFields w={w} errors={errors} upd={upd} go={go} />}
+      {commute && w.options.commute && <CommuteWidgetFields w={w} errors={errors} upd={upd} part="main" />}
       {!own && (
         <>
           <Field
@@ -406,6 +420,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
         <Icon name={more ? 'up' : 'chevron'} size={14} /> {t('Más opciones')}
       </button>}
       {more && prices && w.options.prices && <PriceWidgetFields w={w} errors={errors} upd={upd} part="more" tz={full.datetime.timezone} />}
+      {more && commute && w.options.commute && <CommuteWidgetFields w={w} errors={errors} upd={upd} part="more" />}
       {more && !own && (
         <div class="stack">
           <Field label={t('Ajuste')} hint={t('Solo cuenta cuando el widget ocupa toda la pantalla.')}>

@@ -45,7 +45,7 @@ export const PLANNER_CALENDAR = { weeks: 'auto', eventStyle: 'cards' };
 export const SCREEN_ONLY_KEYS = ['screen', 'layout', 'background', 'message', 'alerts', 'privacy', 'widgets', 'canvas'];
 
 // ---- Widgets: images and web pages the owner adds (config.widgets), placed per screen (screen.widgets) ----
-export const WIDGET_TYPES = ['image', 'web', 'prices', 'currency', 'value'];
+export const WIDGET_TYPES = ['image', 'web', 'prices', 'currency', 'value', 'commute'];
 /** A Value widget's keys (#34): 1 to this many values pushed by POST /api/hooks/values, as a list. */
 export const MAX_VALUE_WIDGET_KEYS = 6;
 /** Refresh choices in seconds. Web pages also have 0 (never reload: many dashboards update themselves). */

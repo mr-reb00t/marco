@@ -119,7 +119,15 @@ function shortHash(s) {
 }
 
 /** What changes when a saved widget changes in a way the display must load again (its `v`). */
-export const widgetVersion = (w) => shortHash(JSON.stringify(w.type === 'currency' || w.type === 'value' ? [w.type] : w.type === 'prices' ? [w.type, w.options.prices?.zone, ...(w.options.prices?.tariff === 'grid' ? [w.options.prices.grid] : [])] : [w.type, w.options.url, w.options.refreshSec, w.options.bust]));
+export const widgetVersion = (w) => shortHash(JSON.stringify(
+  w.type === 'currency' || w.type === 'value'
+    ? [w.type]
+    : w.type === 'prices'
+      ? [w.type, w.options.prices?.zone, ...(w.options.prices?.tariff === 'grid' ? [w.options.prices.grid] : [])]
+      : w.type === 'commute'
+        ? [w.type, w.options.commute]
+        : [w.type, w.options.url, w.options.refreshSec, w.options.bust],
+));
 
 /**
  * Widgets a screen shows, in display form. `widgetSrc(w)` = what the display loads: the URL itself on a server whose
@@ -140,13 +148,15 @@ export function displayWidgets(cfg, screen, { isPrivate = false, widgetSrc = nul
     : w.type === 'prices'
     // the display asks this server for the zone's prices (GET /api/display/prices) and draws them itself
     ? { id: w.id, type: w.type, name: w.name, place, corner, size, refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: widgetVersion(w), prices: { ...w.options.prices } }
-    : {
-        id: w.id, type: w.type, name: w.name, place, corner, size,
-        refreshSec: w.options.refreshSec, fit: w.options.fit, bust: w.options.bust,
-        src: widgetSrc ? widgetSrc(w) : w.options.url,
-        via: widgetSrc ? 'proxy' : 'direct',
-        v: widgetVersion(w),
-      });
+    : w.type === 'commute'
+      ? { id: w.id, type: w.type, name: w.name, place, corner, size, refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: widgetVersion(w), commute: structuredClone(w.options.commute) }
+      : {
+          id: w.id, type: w.type, name: w.name, place, corner, size,
+          refreshSec: w.options.refreshSec, fit: w.options.fit, bust: w.options.bust,
+          src: widgetSrc ? widgetSrc(w) : w.options.url,
+          via: widgetSrc ? 'proxy' : 'direct',
+          v: widgetVersion(w),
+        });
   const out = [];
   const full = screen.layout?.preset === 'widget' ? defs.get(screen.layout.widgetId) : null;
   if (full) out.push(one(full, 'full', 'br', 'l'));

@@ -27,6 +27,9 @@ import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
 } from './pricesCore.js';
+import {
+  COMMUTE_MODES, COMMUTE_DIRECTIONS, COMMUTE_UNITS, COMMUTE_REFRESH_MIN, MAX_COMMUTE_ROUTES, COMMUTE_ROUTE_PREFIX,
+} from './commuteCore.js';
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -554,6 +557,14 @@ function sanitizeWidget(ctx, p, x, seen, opts) {
       options: { url: '', refreshSec: 0, fit: 'contain', bust: false, value: sanitizeValueOptions(ctx, `${p}.options.value`, o.value) },
     };
   }
+  if (type === 'commute') {
+    return {
+      id: id(ctx, `${p}.id`, typeof x.id === 'string' && x.id.startsWith(WIDGET_PREFIX) ? x.id : undefined, WIDGET_PREFIX, seen),
+      type,
+      name: str(ctx, `${p}.name`, x.name, '', 60).trim() || 'Commute',
+      options: { url: '', refreshSec: 900, fit: 'contain', bust: false, commute: sanitizeCommuteOptions(ctx, `${p}.options.commute`, o.commute) },
+    };
+  }
   let url = str(ctx, `${p}.options.url`, o.url, '', 2048).trim();
   if (!url) ctx.err(`${p}.options.url`, 'URL required');
   else {
@@ -617,6 +628,39 @@ function sanitizePriceOptions(ctx, p, v) {
     axis: oneOf(ctx, `${p}.axis`, o.axis, 'simple', PRICE_AXES),
     chartShape: oneOf(ctx, `${p}.chartShape`, o.chartShape, 'columns', PRICE_SHAPES),
     ...sanitizeTariff(ctx, p, o),
+  };
+}
+
+/** Options of a commute time widget (server/core/commuteCore.js). */
+function sanitizeCommuteOptions(ctx, p, v) {
+  const o = obj(ctx, p, v);
+  const seenRoutes = new Set();
+  const routesIn = arr(ctx, `${p}.routes`, o.routes, [], MAX_COMMUTE_ROUTES);
+  if (!routesIn.length) ctx.err(`${p}.routes`, 'at least one route');
+  const routes = routesIn.map((r, i) => {
+    const q = `${p}.routes[${i}]`;
+    if (!isObj(r)) { ctx.err(q, 'expected object'); return null; }
+    const fromVal = r.from === '' || r.from === undefined || r.from === null ? '' : hhmm(ctx, `${q}.from`, r.from, '');
+    const toVal = r.to === '' || r.to === undefined || r.to === null ? '' : hhmm(ctx, `${q}.to`, r.to, '');
+    return {
+      id: id(ctx, `${q}.id`, typeof r.id === 'string' && r.id.startsWith(COMMUTE_ROUTE_PREFIX) ? r.id : undefined, COMMUTE_ROUTE_PREFIX, seenRoutes),
+      name: str(ctx, `${q}.name`, r.name, '', 60).trim() || 'Commute',
+      origin: requiredStr(ctx, `${q}.origin`, r.origin, '', 200),
+      destination: requiredStr(ctx, `${q}.destination`, r.destination, '', 200),
+      mode: oneOf(ctx, `${q}.mode`, r.mode, 'driving', COMMUTE_MODES),
+      direction: oneOf(ctx, `${q}.direction`, r.direction, 'to', COMMUTE_DIRECTIONS),
+      reverseAfter: hhmm(ctx, `${q}.reverseAfter`, r.reverseAfter, '12:00'),
+      days: weekdays(ctx, `${q}.days`, r.days),
+      from: fromVal,
+      to: toVal,
+    };
+  }).filter(Boolean);
+  return {
+    units: oneOf(ctx, `${p}.units`, o.units, 'auto', COMMUTE_UNITS),
+    refreshMin: oneOf(ctx, `${p}.refreshMin`, o.refreshMin, 10, COMMUTE_REFRESH_MIN),
+    showRouteSummary: bool(ctx, `${p}.showRouteSummary`, o.showRouteSummary, true),
+    showArrival: bool(ctx, `${p}.showArrival`, o.showArrival, true),
+    routes,
   };
 }
 

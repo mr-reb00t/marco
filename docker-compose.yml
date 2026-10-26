@@ -44,6 +44,8 @@ services:
       # Optional: Google OAuth client (see README → Connecting Google Calendar).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Optional: Google Maps / Routes API key for the commute time widget (can also be entered in Admin → Widgets).
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
       # Optional: process time zone for "floating" iCal times (default: the zone set in the admin, applied live).
       # TZ: Europe/Lisbon
       # Optional: extra CA certificates for iCal feeds behind a private CA. Mount the file and point to it:

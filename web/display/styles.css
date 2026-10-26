@@ -2159,6 +2159,7 @@ html.widget-only .main {
 }
 /* the side column's cards are dark glass over the photo on a light screen too: no photo here, so a darker glass */
 html.widget-only.theme-light .pw--side { --pw-bg: rgb(20 24 32 / 0.9) !important; }
+html.widget-only.theme-light .cw--side { --cw-bg: rgb(20 24 32 / 0.9) !important; }
 
 /* ---- exchange rates widget (widgets/currency.ts): the Divisas card (styles-data.css) inside the price widget's
    glass card, with its inks and up / down colours taken from the card's own (light cards: the darker shades) */
@@ -2205,3 +2206,90 @@ html.widget-only.theme-light .pw--side { --pw-bg: rgb(20 24 32 / 0.9) !important
 .todo li > .td-star:not(.td-due + .td-star), .bd-task > .td-star:not(.td-due + .td-star), .kf-task > .td-star:not(.td-due + .td-star) { margin-left: auto; }
 .todo li.tap { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .todo li.tap-fail .td-err { flex: none; font-size: 0.65em; font-style: normal; color: #ff8a7a; }
+
+/* ---- commute widget (widgets/commute.ts) ---- */
+.cw {
+  --cw-scale: 1;
+  --cw-bg: rgb(8 10 14 / min(0.92, calc(0.5 * var(--panel-shade, 1))));
+  --cw-line: rgb(255 255 255 / 0.08);
+  --cw-ink: #f6f6f8;
+  --cw-ink-2: rgb(246 246 248 / 0.66);
+  --cw-ink-3: rgb(246 246 248 / 0.42);
+  --cw-sep: rgb(255 255 255 / 0.1);
+  --cw-clear: #30d158;
+  --cw-moderate: #ffd60a;
+  --cw-heavy: #ff453a;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--cw-scale) * 0.9rem);
+  min-width: calc(var(--cw-scale) * 22rem);
+  padding: 1.6rem 2rem 1.4rem;
+  border: 1px solid var(--cw-line);
+  border-radius: 2.2rem;
+  background: var(--cw-bg);
+  color: var(--cw-ink);
+  box-shadow: 0 1.2rem 4rem rgb(0 0 0 / 0.25), inset 0 1px 0 rgb(255 255 255 / 0.06);
+  -webkit-backdrop-filter: blur(calc(var(--panel-blur, 18) * 0.1rem)) saturate(1.25);
+  backdrop-filter: blur(calc(var(--panel-blur, 18) * 0.1rem)) saturate(1.25);
+  font-size: calc(var(--cw-scale) * 1.6rem);
+  line-height: 1.25;
+  text-shadow: none;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+.lite .cw { -webkit-backdrop-filter: none; backdrop-filter: none; --cw-bg: rgb(14 14 18 / min(0.92, calc(0.86 * var(--panel-shade, 1)))); }
+.cw--side { width: 100%; --cw-bg: rgb(8 10 14 / min(0.92, calc((0.16 + var(--tone-bottom, 0.5) * 0.34) * var(--panel-shade, 1)))); }
+.lite .cw--side { --cw-bg: rgb(8 10 14 / min(0.92, calc((0.32 + var(--tone-bottom, 0.5) * 0.3) * var(--panel-shade, 1)))); }
+.no-photo .cw--side { --cw-bg: rgb(255 255 255 / 0.03); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.theme-light .cw:not(.cw--side) {
+  --cw-bg: rgb(255 255 255 / 0.88);
+  --cw-line: rgb(0 0 0 / 0.1);
+  --cw-ink: #16161a;
+  --cw-ink-2: rgb(22 22 26 / 0.64);
+  --cw-ink-3: rgb(22 22 26 / 0.44);
+  --cw-sep: rgb(0 0 0 / 0.08);
+  --cw-clear: #1d9a3e;
+  --cw-moderate: #b27b00;
+  --cw-heavy: #d70015;
+  box-shadow: 0 0.6rem 2.4rem rgb(0 0 0 / 0.1);
+}
+.lite.theme-light .cw:not(.cw--side) { --cw-bg: #fff; }
+.cw--full { padding: calc(var(--cw-scale) * 1.8rem) calc(var(--cw-scale) * 2.2rem); }
+.cw-head { display: flex; align-items: center; gap: 0.6em; color: var(--cw-ink-2); font-size: 0.88em; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.cw-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-note, .cw-empty { color: var(--cw-ink-2); font-size: 0.9em; padding: 0.2em 0; }
+.cw-list { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.cw-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  padding: 0.55em 0;
+}
+.cw-row + .cw-row { border-top: 1px solid var(--cw-sep); }
+.cw-left { display: flex; align-items: center; gap: 0.7em; min-width: 0; flex: 1 1 auto; overflow: hidden; }
+.cw-mode { width: 1.55em; height: 1.55em; flex: none; color: var(--cw-ink-2); }
+.cw-info { display: flex; flex-direction: column; gap: 0.15em; min-width: 0; overflow: hidden; }
+.cw-name { display: flex; align-items: center; gap: 0.4em; font-weight: 600; font-size: 1.05em; color: var(--cw-ink); min-width: 0; }
+.cw-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; min-width: 0; }
+.cw-rev { font-size: 0.82em; color: var(--cw-ink-2); flex: none; }
+.cw-meta { color: var(--cw-ink-2); font-size: 0.82em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cw-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.2em; flex: none; text-align: right; }
+.cw-dur { font-family: var(--font-num); font-weight: 700; font-size: 1.35em; line-height: 1.05; white-space: nowrap; }
+.cw-dur--clear { color: var(--cw-clear); }
+.cw-dur--moderate { color: var(--cw-moderate); }
+.cw-dur--heavy { color: var(--cw-heavy); }
+.cw-dur--na { color: var(--cw-ink-3); }
+.cw-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14em 0.55em;
+  border-radius: 99em;
+  font-size: 0.74em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cw-badge--clear { background: rgb(48 209 88 / 0.15); color: var(--cw-clear); }
+.cw-badge--moderate { background: rgb(255 214 10 / 0.16); color: var(--cw-moderate); }
+.cw-badge--heavy { background: rgb(255 69 58 / 0.18); color: var(--cw-heavy); }
+.uw-commute .uw-pill { right: auto; left: 50%; bottom: auto; top: 0.8rem; transform: translateX(-50%); }

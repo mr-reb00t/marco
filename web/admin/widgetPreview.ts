@@ -61,6 +61,7 @@ export function widgetPreviewSpot(cfg: StoredConfig, screenId: string, w: Widget
   if (w.type === 'value') return (w.options.value?.items?.length ?? 1) > 1 ? { place: 'side', size: 'm', corner: 'br' } : { place: 'corner', size: 'm', corner: 'br' };
   if (w.type === 'currency') return w.options.currency?.layout === 'big' ? { place: 'corner', size: 'l', corner: 'br' } : { place: 'side', size: 'm', corner: 'br' };
   if (w.type === 'prices') return { place: 'side', size: w.options.prices?.view === 'next' || w.options.prices?.chartShape === 'rows' ? 'l' : 'm', corner: 'br' };
+  if (w.type === 'commute') return { place: 'side', size: 'm', corner: 'br' };
   return { place: 'corner', size: 'm', corner: 'br' };
 }
 

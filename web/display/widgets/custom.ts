@@ -20,6 +20,7 @@ import { authHeaders, isPreview, withScreen } from '../identity';
 import { PriceCard, priceFloorHeight } from './prices';
 import { CurrencyCard, currencyFloorHeight } from './currency';
 import { ValueCard, valueFloorHeight } from './values';
+import { CommuteCard } from './commute';
 
 /** Corner boxes: max width (vw) and height (vh) per size. */
 const CORNER_BOX: Record<string, [number, number]> = { s: [18, 22], m: [26, 32], l: [36, 45] };
@@ -35,8 +36,8 @@ interface Entry {
   el: HTMLElement;
   /** what is on screen now (null until the first load) */
   media: HTMLImageElement | HTMLIFrameElement | HTMLElement | null;
-  /** 'prices', 'currency' and 'value' widgets: the card that draws them */
-  card: PriceCard | CurrencyCard | ValueCard | null;
+  /** 'prices', 'currency', 'value' or 'commute' widgets: the card that draws them */
+  card: PriceCard | CurrencyCard | ValueCard | CommuteCard | null;
   /** natural size of the image on screen */
   nat: [number, number] | null;
   timer: ReturnType<typeof setTimeout> | null;
@@ -269,6 +270,7 @@ export class CustomWidgets {
     if (w?.type === 'prices') return typeof w.id === 'string' && typeof w.prices?.zone === 'string' && !!w.prices.zone;
     if (w?.type === 'currency') return typeof w.id === 'string' && Array.isArray(w.currency?.pairs) && w.currency.pairs.length > 0;
     if (w?.type === 'value') return typeof w.id === 'string' && Array.isArray(w.value?.items) && w.value.items.length > 0;
+    if (w?.type === 'commute') return typeof w.id === 'string' && Array.isArray(w.commute?.routes) && w.commute.routes.length > 0;
     if (!w || typeof w.id !== 'string' || !webUrl(w.src)) return false;
     // web pages are framed directly only; a proxied server never sends them, but never frame its routes either
     if (w.type === 'web') return w.via === 'direct';
@@ -291,8 +293,8 @@ export class CustomWidgets {
     pill.className = 'uw-pill';
     el.appendChild(pill);
     const e: Entry = { key, w, el, media: null, card: null, nat: null, timer: null, gen: 0, blobUrl: null, abort: null, waiting: false, dead: false };
-    if (w.type === 'prices' || w.type === 'currency' || w.type === 'value') {
-      const card = w.type === 'prices' ? new PriceCard(w) : w.type === 'currency' ? new CurrencyCard(w) : new ValueCard(w);
+    if (w.type === 'prices' || w.type === 'currency' || w.type === 'value' || w.type === 'commute') {
+      const card = w.type === 'prices' ? new PriceCard(w) : w.type === 'currency' ? new CurrencyCard(w) : w.type === 'value' ? new ValueCard(w) : new CommuteCard(w);
       e.card = card;
       card.onState = (st) => {
         if (e.dead) return;

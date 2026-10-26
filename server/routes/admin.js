@@ -31,6 +31,7 @@ import { testWidget } from '../widgets.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
 import { testPrices, entsoeToken, entsoeTokenStatus, checkEntsoeToken, tokenChanged, ENTSOE_TOKEN_RE } from '../prices.js';
+import { testCommute, commuteKey, commuteKeyStatus, checkCommuteKey, commuteKeyChanged, COMMUTE_KEY_RE } from '../commute.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
@@ -166,6 +167,24 @@ export function adminRouter({ onConfigSaved } = {}) {
     updateSecrets((s) => { s.prices = { ...(s.prices || {}), entsoeToken: k }; });
     if (changed) tokenChanged();
     res.json({ ...entsoeTokenStatus(k), checked: checked === true });
+  }));
+  // commute widget: test a single route leg and manage the Google Maps / Routes API key
+  r.post('/test/commute', wrap(async (req, res) => {
+    const { origin, destination, mode } = req.body || {};
+    res.json(await testCommute({ origin, destination, mode }));
+  }));
+  r.get('/commute/key', (req, res) => res.json(commuteKeyStatus(commuteKey())));
+  r.put('/commute/key', wrap(async (req, res) => {
+    const key = req.body?.key;
+    if (typeof key !== 'string' || key.length > 200) return res.status(400).json({ error: 'key must be a string' });
+    const k = key.trim();
+    if (k && !COMMUTE_KEY_RE.test(k)) return res.status(400).json({ error: 'key_invalid' });
+    const checked = k ? await checkCommuteKey(k) : null;
+    if (checked === false) return res.status(400).json({ error: 'key_invalid' });
+    const changed = commuteKey() !== k;
+    updateSecrets((s) => { s.commute = { ...(s.commute || {}), apiKey: k }; });
+    if (changed) commuteKeyChanged();
+    res.json({ ...commuteKeyStatus(k), checked: checked === true });
   }));
   r.post('/test/homeassistant', wrap(async (req, res) => {
     const { url, token } = req.body || {};

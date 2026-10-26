@@ -123,7 +123,7 @@ export type PlannerBar = 'side' | 'top' | 'bottom';
 
 // ---- Widgets (server/validate.js sanitizeWidget, server/screens.js displayWidgets) ----
 
-export type WidgetType = 'image' | 'web' | 'prices' | 'currency' | 'value';
+export type WidgetType = 'image' | 'web' | 'prices' | 'currency' | 'value' | 'commute';
 export type WidgetPlace = 'corner' | 'side';
 export type WidgetSize = 's' | 'm' | 'l';
 export type WidgetFit = 'contain' | 'cover';
@@ -141,6 +141,8 @@ export interface WidgetOptions {
   currency?: CurrencyOptions;
   /** type 'value' only (its url is empty) */
   value?: ValueWidgetOptions;
+  /** type 'commute' only (its url is empty) */
+  commute?: CommuteWidgetOptions;
 }
 /** One key of a Value widget: the Valor card's options (server/core/canvasCore.js CANVAS_KINDS.value). */
 export interface ValueWidgetItem {
@@ -170,6 +172,56 @@ export interface CurrencyOptions {
   chart: 'area' | 'line' | 'none';
   chartStyle: 'below' | 'background';
 }
+export type CommuteMode = 'driving' | 'transit' | 'bicycling' | 'walking';
+export type CommuteDirection = 'to' | 'from' | 'auto';
+export type CommuteTrafficLevel = 'clear' | 'moderate' | 'heavy';
+export interface CommuteRoute {
+  id: string; // "cr_xxx"
+  name: string;
+  origin: string;
+  destination: string;
+  mode: CommuteMode;
+  direction: CommuteDirection;
+  reverseAfter: string; // HH:MM
+  days: number[]; // 0..6, [] = every day
+  from: string; // HH:MM or ''
+  to: string; // HH:MM or ''
+}
+export interface CommuteWidgetOptions {
+  units: 'auto' | 'metric' | 'imperial';
+  refreshMin: 5 | 10 | 15 | 30 | 60;
+  showRouteSummary: boolean;
+  showArrival: boolean;
+  routes: CommuteRoute[];
+}
+export interface CommuteRouteResult {
+  id: string;
+  name: string;
+  mode: CommuteMode;
+  origin: string;
+  destination: string;
+  reversed: boolean;
+  active: boolean;
+  ok: boolean;
+  durationSec?: number;
+  normalDurationSec?: number;
+  delaySec?: number;
+  traffic?: CommuteTrafficLevel;
+  distanceMeters?: number;
+  summary?: string;
+  provider?: string;
+  fetchedAt?: string;
+  stale?: boolean;
+  error?: string | null;
+}
+export interface CommuteResponse {
+  fetchedAt: string;
+  keySet: boolean;
+  routes: CommuteRouteResult[];
+}
+export type TestCommuteResponse =
+  | { ok: true; durationSec: number; normalDurationSec: number; delaySec: number; traffic: CommuteTrafficLevel; distanceMeters: number; summary: string; provider: string }
+  | { ok: false; error: string };
 export type PriceView = 'auto' | 'chart' | 'now' | 'cheap' | 'next';
 export type PriceAxis = 'simple' | '3h' | '1h';
 export type PriceShape = 'columns' | 'rows';
@@ -282,6 +334,8 @@ export interface DisplayWidget {
   currency?: CurrencyOptions;
   /** type 'value': what to draw (the display reads its screen's values feed, GET /api/display/values) */
   value?: ValueWidgetOptions;
+  /** type 'commute': what to draw (the display fetches /api/display/commute?id=) */
+  commute?: CommuteWidgetOptions;
 }
 /** POST /api/admin/test/widget { type, url } */
 export interface TestWidgetResponse {
