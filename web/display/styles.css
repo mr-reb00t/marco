@@ -911,6 +911,76 @@ body {
 
 /* ========================================== overlays ========================================== */
 
+/* ============ #24: the owner's HTML overlay and the seasonal decorations (widgets/decor.ts) ============
+   Above the dashboard (#app, its corner widgets) and below night dimming (50), the status dot and privacy lock (60),
+   alerts (70), the access and pairing layers, the doorbell (90) and the missing-screen page (100). No taps. */
+#html-overlay {
+  position: fixed; inset: 0; width: 100%; height: 100%; border: 0; margin: 0; padding: 0; z-index: 41;
+  background: transparent; pointer-events: none; overflow: hidden;
+}
+#decor {
+  /* about 10px on a 1080p screen, whatever the font size of the screen */
+  --k: min(0.521vw, 0.926vh);
+  --wire: rgb(225 225 235 / 0.42);
+  position: fixed; inset: 0; z-index: 40; pointer-events: none; overflow: hidden; contain: strict;
+}
+@media (orientation: portrait) { #decor { --k: min(0.8vw, 0.6vh); } }
+#decor.is-light { --wire: rgb(40 40 50 / 0.5); }
+.decor-strand { position: absolute; left: 0; right: 0; top: 0; height: calc(var(--k) * 5); }
+.decor-wire { position: absolute; left: 0; top: 0; width: 100%; height: calc(var(--k) * 3); overflow: visible; }
+.decor-wire path { fill: none; stroke: var(--wire); stroke-width: 1.6px; }
+.decor-bulb {
+  position: absolute; top: calc(var(--k) * 1.45); width: calc(var(--k) * 1.25); height: calc(var(--k) * 1.8);
+  margin-left: calc(var(--k) * -0.625); border-radius: 50% 50% 50% 50% / 58% 58% 42% 42%; background: var(--c);
+  box-shadow: 0 0 calc(var(--k) * 0.9) var(--c); opacity: 0.92;
+  animation: decor-twinkle var(--d) ease-in-out var(--o) infinite;
+}
+.decor-bulb::before {
+  content: ''; position: absolute; left: 22%; top: calc(var(--k) * -0.45); width: 56%; height: calc(var(--k) * 0.55);
+  border-radius: calc(var(--k) * 0.15); background: #3a3a40;
+}
+@keyframes decor-twinkle {
+  0%, 100% { opacity: 0.55; box-shadow: 0 0 calc(var(--k) * 0.2) var(--c); }
+  50% { opacity: 1; box-shadow: 0 0 calc(var(--k) * 1.6) var(--c); }
+}
+.decor-snow, .decor-confetti, .decor-bats { position: absolute; inset: 0; }
+.decor-flake {
+  position: absolute; top: 0; width: calc(var(--k) * var(--s)); height: calc(var(--k) * var(--s)); border-radius: 50%;
+  background: rgb(255 255 255 / 0.75); box-shadow: 0 0 calc(var(--k) * 0.4) rgb(255 255 255 / 0.5);
+  transform: translate3d(0, -3vh, 0); animation: decor-fall var(--d) linear var(--o) infinite; will-change: transform;
+}
+#decor.is-light .decor-flake { background: rgb(150 170 200 / 0.7); box-shadow: none; }
+@keyframes decor-fall {
+  0% { transform: translate3d(0, -3vh, 0); }
+  50% { transform: translate3d(calc(var(--x) * 1vw), 50vh, 0); }
+  100% { transform: translate3d(0, 103vh, 0); }
+}
+/* New Year: a short shower now and then (about 9 s every 90 s) */
+.decor-bit {
+  position: absolute; top: 0; width: calc(var(--k) * 0.55); height: calc(var(--k) * 0.9); border-radius: 1px; background: var(--c);
+  opacity: 0; transform: translate3d(0, -3vh, 0); animation: decor-confetti 90s cubic-bezier(0.3, 0.1, 0.6, 1) var(--o) infinite;
+}
+@keyframes decor-confetti {
+  0% { opacity: 0; transform: translate3d(0, -3vh, 0) rotate(0); }
+  0.6% { opacity: 0.85; }
+  9% { opacity: 0.6; transform: translate3d(calc(var(--x) * 1vw), 102vh, 0) rotate(var(--r)); }
+  9.1%, 100% { opacity: 0; transform: translate3d(0, 102vh, 0); }
+}
+.decor-bat {
+  position: absolute; top: calc(var(--k) * 3.1); width: calc(var(--k) * var(--s)); height: auto; fill: rgb(105 82 135 / 0.9);
+  filter: drop-shadow(0 0 calc(var(--k) * 0.35) rgb(255 122 26 / 0.55)); animation: decor-bob 5s ease-in-out var(--o) infinite;
+}
+@keyframes decor-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(var(--k) * -0.6)); }
+}
+.decor-web { position: absolute; top: 0; right: 0; width: calc(var(--k) * 5); height: calc(var(--k) * 5); }
+.decor-web path { fill: none; stroke: rgb(255 255 255 / 0.3); stroke-width: 0.9px; vector-effect: non-scaling-stroke; }
+#decor.is-light .decor-web path { stroke: rgb(0 0 0 / 0.28); }
+/* calm (lite, "Ahorro", reduced motion): the lights stay lit, nothing moves (snow and confetti are not drawn) */
+#decor.is-calm *, .lite #decor * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { #decor * { animation: none !important; } }
+
 #night {
   position: fixed;
   inset: 0;

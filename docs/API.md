@@ -112,7 +112,8 @@ The admin and the display read these fields to decide which sections, actions an
 
 - `edition`: `'self-hosted'` here. `tenancy`: `'single'`. `runtime`: `'node'`.
 - `pairCodeLength`: characters in the pairing code a TV shows (`6`).
-- `features`: one boolean per feature: `homeassistant`, `news`, `customCss`, `gallery`, `schedules`,
+- `features`: one boolean per feature: `homeassistant`, `news`, `customCss`, `htmlOverlay` (the HTML over a whole
+  screen, `screen.overlay`; see [ARCHITECTURE.md](ARCHITECTURE.md#overlay-and-decorations)), `gallery`, `schedules`,
   `announcements`, `displayCommands`, `openDisplayAccess`, `insecureTls`, `googleCalendar`, `googleLogin`,
   `passwordLogin`, `apiTokens`, `webhooks`, `backups`, `importExport`, `includeSecrets`, `activity`, `setupWizard`,
   `status`, `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`,
@@ -148,7 +149,8 @@ The admin and the display read these fields to decide which sections, actions an
 - `limits` (optional): plan limits such as `screens`, `sources` or `devices`. Absent means no limit beyond the
   config validator's own caps (12 screens, 50 calendars, 20 news feeds, 1000 local events, 500 birthdays,
   100 countdowns, 6 carousels, 20 widgets). `widgetMinRefreshSec` is the shortest widget refresh the server takes
-  (Marco Cloud: 30). The admin disables "add" at the limit and flags a config that goes over it.
+  (Marco Cloud: 30). `customCssBytes` and `htmlOverlayBytes` cap the custom CSS and the HTML overlay of a screen
+  (UTF-8 bytes). The admin disables "add" at the limit and flags a config that goes over it.
 - `displayOrigin` (optional): absolute origin that serves `/d/<key>` and `/pair`. Absent means the same origin. The
   admin opens screens (preview, *View screen*) at `<displayOrigin or its own origin>/d/<key>` when it has the private
   links (a server in private mode, or one without open display access), else at `/?screen=<slug>`. The preview adds

@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- *HTML over the screen* (#24): your own HTML and CSS drawn over a whole screen, always or every year between two
+  dates (1 December to 6 January, say). It sits in a sandboxed frame that runs no scripts, loads nothing but images
+  and takes no taps, so the screen keeps working underneath. In *Screen → Settings*.
+- *Seasonal decorations* (#24): a strand of lights along the top of the screen with a little snow at Christmas, bats
+  and orange lights for Halloween, and some confetti for New Year. Pick one, or *Automatic* to follow the date. Lite
+  mode and reduced motion keep the lights still. Off for every screen until you choose one.
+
 ## [0.20.1] - 2026-10-23
 
 ### Added

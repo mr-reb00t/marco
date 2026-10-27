@@ -74,6 +74,7 @@ import { armBootShell, hideBootShell } from './bootShell';
 import { isKidsPreset, Kids, withToggle } from './widgets/kids';
 import { refreshMarquee } from './marquee';
 import { CustomWidgets } from './widgets/custom';
+import { ScreenDecor } from './widgets/decor';
 import { Canvas, sidebarSide } from './widgets/canvas';
 import { HaFeed } from './haFeed';
 import { ValuesFeed } from './valuesFeed';
@@ -142,6 +143,22 @@ const doorbell = new DoorbellOverlay($('#doorbell'), doorbellFrames, (on) => {
 const views = new Views($('#view'));
 const kids = new Kids($('#kids'), (id, done) => toggleChore(id, done));
 const custom = new CustomWidgets();
+// the owner's HTML overlay and the seasonal decorations over the whole screen (#24, widgets/decor.ts)
+const decor = new ScreenDecor();
+function renderDecor(dayKey = current().dayKey): void {
+  const cfg = state.config ? ctx.cfg : null;
+  let reduce = false;
+  try {
+    reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    /* no matchMedia */
+  }
+  decor.render(isWidgetOnly || !cfg ? null : cfg.screen, dayKey, {
+    calm: lite || cfg?.canvas?.perf === 'low' || reduce,
+    light: document.documentElement.classList.contains('theme-light'),
+    portrait: !!cfg && isPortrait(cfg),
+  });
+}
 // Home Assistant states of the Personalizado cards (haFeed.ts): pushed as the SSE `ha` event, asked for on changes
 const haFeed = new HaFeed(() => {
   syncHaTouch();
@@ -623,6 +640,7 @@ function applyConfig(raw: DisplayConfig): void {
   renderAll();
   // after the layout and the side content: a side widget goes to its corner when there is no side column
   custom.render(cfg, preset);
+  renderDecor();
   revealApp(cfg);
 }
 
@@ -2068,6 +2086,7 @@ onTick((tick) => {
     updateNight(tick);
     fitSide();
     carousel?.tick(); // night mode may have started or ended
+    renderDecor(tick.dayKey); // a new day may start or end the overlay's dates or a season
   }
   if (tick.dayChanged) {
     void fetchFamily();

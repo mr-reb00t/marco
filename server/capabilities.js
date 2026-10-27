@@ -8,7 +8,7 @@ import { CODE_LENGTH } from './pairing.js';
 
 /** Every feature key, in the order docs/API.md lists them. */
 export const FEATURE_KEYS = Object.freeze([
-  'homeassistant', 'news', 'customCss', 'gallery', 'schedules', 'announcements', 'displayCommands',
+  'homeassistant', 'news', 'customCss', 'htmlOverlay', 'gallery', 'schedules', 'announcements', 'displayCommands',
   'openDisplayAccess', 'insecureTls', 'googleCalendar', 'googleLogin', 'passwordLogin', 'apiTokens',
   'webhooks', 'backups', 'importExport', 'includeSecrets', 'activity', 'setupWizard', 'status', 'accountMenu',
   'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich',
@@ -33,7 +33,7 @@ export const FEATURE_KEYS = Object.freeze([
  *  (core/valuesCore.js TOKEN_SCOPES); `stockQuotes`: the Bolsa card can get quotes (here with the owner's own Finnhub
  *  key, saved from the card). `familyAccess`: each person's own dashboard on the phone (/my) with the controls the
  *  admin allows (server/familyAccess.js). `spotify`: "now playing" with the household's own Spotify app
- *  (server/nowPlaying.js). */
+ *  (server/nowPlaying.js). `htmlOverlay`: the owner's HTML drawn over a whole screen (screen.overlay, core/decorCore.js). */
 export function selfHostedFeatures() {
   const google = googleConfigured();
   const out = {};

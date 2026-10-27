@@ -55,6 +55,11 @@ export interface ScreenConfig {
   accent: string;
   orientation: 'auto' | 'landscape' | 'portrait' | string;
   customCss: string;
+  /** The owner's HTML over the whole screen (#24), drawn in a sandboxed frame that runs no scripts. Older servers:
+   *  absent (= none). */
+  overlay?: ScreenOverlay;
+  /** Built-in seasonal decorations (#24). Older servers: absent (= none). */
+  decoration?: ScreenDecoration;
   nightMode: NightMode;
   /** The pills under the date of the usual designs: next event, happening now, birthdays, check-in/out (default true).
    *  Not the Personalizado "highlights" card. Older servers: absent (= shown). */
@@ -62,6 +67,21 @@ export interface ScreenConfig {
   /** "Sonando ahora bajo el reloj": the opaque id of a linked Spotify account whose track shows on one line under the
    *  clock of the usual designs ('' or absent = off). Not used by Personalizado (it has its own card). */
   nowPlaying?: string;
+}
+
+/** When the HTML overlay shows: always, or every year from one day to another (MM-DD, may run over New Year). */
+export type OverlayWhen = { type: 'always' } | { type: 'range'; from: string; to: string };
+/** screen.overlay (server/core/decorCore.js): up to 20000 characters of HTML and CSS, no scripts run. */
+export interface ScreenOverlay {
+  html: string;
+  when: OverlayWhen;
+}
+export type DecorMode = 'none' | 'auto' | 'christmas' | 'halloween' | 'newyear';
+/** screen.decoration: 'auto' follows the date (Christmas 1 Dec to 6 Jan, Halloween 24 to 31 Oct, New Year 31 Dec and
+ *  1 Jan); snow falls with the Christmas lights. */
+export interface ScreenDecoration {
+  mode: DecorMode;
+  snow: boolean;
 }
 
 export interface LayoutConfig {
@@ -1841,6 +1861,8 @@ export interface Features {
   homeassistant: boolean;
   news: boolean;
   customCss: boolean;
+  /** The HTML overlay of a screen (screen.overlay). */
+  htmlOverlay: boolean;
   gallery: boolean;
   schedules: boolean;
   announcements: boolean;
@@ -1928,6 +1950,8 @@ export interface Limits {
   hookCommandsPerDay?: number;
   /** bytes of custom CSS per screen */
   customCssBytes?: number;
+  /** bytes of the HTML overlay per screen (screen.overlay.html) */
+  htmlOverlayBytes?: number;
   /** list caps; absent = the config validator's own caps (web/admin/caps.ts BUILTIN_LIMITS) */
   localEvents?: number;
   birthdays?: number;

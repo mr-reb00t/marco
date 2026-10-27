@@ -189,7 +189,10 @@ color de la foto, transparencia, desenfoque y borde de luz:
   en directo de los próximos 14 días. **Reglas de iconos** con un probador. **Cuentas atrás**.
 - **Galería de fotos:** arrastrar y soltar, optimización en el navegador (rotación EXIF, redimensionado, miniaturas),
   conversión de **HEIC** del iPhone, punto focal automático con editor manual y gestión de nombres duplicados.
-- **CSS personalizado** por pantalla, para los cambios que no cubren los ajustes.
+- **CSS personalizado** por pantalla, para los cambios que no cubren los ajustes, y tu propio **HTML sobre toda la
+  pantalla** (siempre o entre dos fechas cada año; no ejecuta scripts).
+- **Decoración de temporada:** luces de Navidad con un poco de nieve, luces y murciélagos de Halloween, confeti de
+  Año Nuevo, según la fecha o siempre.
 - **Varias pantallas** (salón, cocina, pasillo), cada una con su propio diseño, fondo, calendarios y widgets, y una
   página de **Pantallas conectadas** (resolución, navegador, versión, recargar / identificar / modo noche por
   dispositivo).

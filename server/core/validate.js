@@ -21,6 +21,7 @@ import {
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
 import { currencyProps, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
+import { sanitizeDecoration, sanitizeOverlay } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
@@ -262,6 +263,10 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     accent: color(ctx, `${p}.screen.accent`, sc.accent, D.screen.accent),
     orientation: oneOf(ctx, `${p}.screen.orientation`, sc.orientation, D.screen.orientation, ['auto', 'landscape', 'portrait']),
     customCss: str(ctx, `${p}.screen.customCss`, sc.customCss, '', 20000).replace(/<\/style/gi, ''),
+    // the owner's HTML over the whole screen, in a frame that runs nothing (#24, core/decorCore.js)
+    overlay: sanitizeOverlay(sc.overlay, (path, m) => ctx.err(path, m), `${p}.screen.overlay`),
+    // built-in seasonal decorations: lights along the top, snow, confetti (#24)
+    decoration: sanitizeDecoration(sc.decoration, (path, m) => ctx.err(path, m), `${p}.screen.decoration`),
     nightMode: {
       enabled: bool(ctx, `${p}.screen.nightMode.enabled`, nm.enabled, D.screen.nightMode.enabled),
       from: hhmm(ctx, `${p}.screen.nightMode.from`, nm.from, D.screen.nightMode.from),

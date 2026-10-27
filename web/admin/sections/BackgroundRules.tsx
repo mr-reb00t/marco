@@ -21,7 +21,7 @@ const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const pad = (n: number) => String(n).padStart(2, '0');
 
 /** A month and a day (MM-DD), as two selects in the order the language writes them. */
-function MonthDay({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function MonthDay({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [m, d] = value.split('-').map(Number);
   const month = m >= 1 && m <= 12 ? m : 1;
   const day = Math.min(d >= 1 ? d : 1, DAYS_IN_MONTH[month - 1]);

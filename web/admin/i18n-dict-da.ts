@@ -12,6 +12,7 @@ import { DA_BGRULES } from './i18n-dict-bgrules';
 import { DA_TODO } from './i18n-dict-todo';
 import { DA_ACCESS } from './i18n-dict-access';
 import { DA_SPOTIFY } from './i18n-dict-spotify';
+import { DA_DECOR } from './i18n-dict-decor';
 
 /** Every admin row but the Familia ones. */
 export const DA: Record<string, string> = {
@@ -25,6 +26,7 @@ export const DA: Record<string, string> = {
   ...DA_TODO,
   ...DA_ACCESS,
   ...DA_SPOTIFY,
+  ...DA_DECOR,
   '(ninguno)': '(ingen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du bruger den første adgangskode. Skift den: indtil da godtages den kun fra dit lokale netværk.',
   'Sesiones': 'Sessioner',

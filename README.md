@@ -180,7 +180,10 @@ transparency, blur and a light edge:
   the next 14 days. **Icon rules** with a tester. **Countdowns**.
 - **Photo gallery:** drag and drop, in-browser optimisation (EXIF rotation, resize, thumbnails), iPhone **HEIC**
   conversion, automatic focal point with a manual editor, duplicate-name handling.
-- **Custom CSS** per screen, for the changes the settings do not cover.
+- **Custom CSS** per screen, for the changes the settings do not cover, and your own **HTML over the whole screen**
+  (shown always or between two dates each year; it runs no scripts).
+- **Seasonal decorations:** Christmas lights with a little snow, Halloween lights and bats, New Year confetti, by the
+  date or always.
 - **Multiple screens** (living room, kitchen, hallway) each with its own layout, background, calendars and widgets,
   and a **Connected displays** page (resolution, browser, version, reload / identify / night mode per device).
 - **Private display links and pairing:** every screen has an unguessable link (`/d/<key>`, QR code, one-click

@@ -12,6 +12,9 @@ import { MIN_PASSWORD, passwordProblem } from '../../shared/password';
 import type { SectionProps } from './common';
 import { PrivacyCard } from './Privacy';
 import { TwoFactorCard } from '../components/TwoFactor';
+import { MonthDay } from './BackgroundRules';
+import type { DecorMode } from '../../shared/types';
+import { OVERLAY_MAX } from '../../../server/core/decorCore.js';
 
 const kb = (n: number) => (Math.round((n / 1024) * 10) / 10).toLocaleString(locale());
 
@@ -67,6 +70,8 @@ export function ScreenSection({ cfg, set, errors, screenId, saved, go }: Section
         </div>
       </Card>
       {has('privacy') && <PrivacyCard cfg={cfg} set={set} errors={errors} go={go} />}
+      <DecorationCard cfg={cfg} set={set} />
+      {has('htmlOverlay') && <OverlayCard cfg={cfg} set={set} errors={errors} />}
       {has('customCss') && (
         <Card id="scr-css" scope="screen" title={t('CSS personalizado')} icon="wand" desc={t('Para usuarios avanzados: se inyecta en la pantalla.')}>
           <Field error={errors['screen.customCss']} hint={cssMax != null ? t('{used} de {max} KB', { used: kb(cssBytes(s.customCss)), max: kb(cssMax) }) : undefined}>
@@ -75,6 +80,75 @@ export function ScreenSection({ cfg, set, errors, screenId, saved, go }: Section
         </Card>
       )}
     </>
+  );
+}
+
+/** "Decoración de temporada" (#24): Marco's own lights, snow and confetti, by the date or always one of them. */
+function DecorationCard({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
+  const dec = cfg.screen.decoration ?? { mode: 'none' as DecorMode, snow: true };
+  const upd = (patch: Partial<typeof dec>) => set((d) => void (d.screen.decoration = { ...dec, ...patch }));
+  return (
+    <Card id="scr-decor" scope="screen" title={t('Decoración de temporada')} icon="sparkles" desc={t('Luces, nieve o confeti que dibuja Marco, sin código. Se quedan en el borde de arriba y no tapan nada importante.')}>
+      <Field label={t('Decoración')} hint={dec.mode === 'auto' ? t('Navidad del 1 de diciembre al 6 de enero, Halloween del 24 al 31 de octubre y Año Nuevo el 31 de diciembre y el 1 de enero.') : undefined}>
+        <Select
+          value={dec.mode}
+          options={[
+            { value: 'none' as DecorMode, label: t('Ninguna') },
+            { value: 'auto' as DecorMode, label: t('Automática (según la fecha)') },
+            { value: 'christmas' as DecorMode, label: t('Navidad') },
+            { value: 'halloween' as DecorMode, label: t('Halloween') },
+            { value: 'newyear' as DecorMode, label: t('Año Nuevo') },
+          ]}
+          onChange={(v) => upd({ mode: v })}
+        />
+      </Field>
+      {(dec.mode === 'auto' || dec.mode === 'christmas') && (
+        <ToggleRow label={t('Nieve')} hint={t('Unos pocos copos que caen despacio, con las luces de Navidad.')} checked={dec.snow} onChange={(v) => upd({ snow: v })} />
+      )}
+      {dec.mode !== 'none' && <p class="muted small">{t('En modo ligero, en Ahorro o con menos movimiento, las luces se quedan quietas y no hay nieve ni confeti.')}</p>}
+    </Card>
+  );
+}
+
+/** "HTML sobre la pantalla" (#24): the owner's HTML over the whole screen, in a frame that runs no scripts. */
+function OverlayCard({ cfg, set, errors }: Pick<SectionProps, 'cfg' | 'set' | 'errors'>) {
+  const ov = cfg.screen.overlay ?? { html: '', when: { type: 'always' as const } };
+  const w = ov.when;
+  const max = limit('htmlOverlayBytes');
+  const upd = (patch: Partial<typeof ov>) => set((d) => void (d.screen.overlay = { ...ov, ...patch }));
+  const err = errors['screen.overlay.html'] ?? errors['screen.overlay.when'] ?? errors['screen.overlay.when.from'] ?? errors['screen.overlay.when.to'];
+  return (
+    <Card id="scr-overlay" scope="screen" title={t('HTML sobre la pantalla')} icon="code" desc={t('Tu propio HTML y CSS, dibujado encima de toda la pantalla (por ejemplo, unas luces en diciembre).')}>
+      <Field
+        error={err}
+        hint={
+          <>
+            {t('Los scripts no se ejecutan y solo se cargan imágenes https o data:. No recibe toques: la pantalla sigue funcionando debajo.')}{' '}
+            {max != null ? t('{used} de {max} KB', { used: kb(cssBytes(ov.html)), max: kb(max) }) : t('{used} de {max} caracteres', { used: ov.html.length.toLocaleString(locale()), max: OVERLAY_MAX.toLocaleString(locale()) })}
+          </>
+        }
+      >
+        <Textarea mono rows={8} maxLength={OVERLAY_MAX} value={ov.html} placeholder={'<style>.strand { position: fixed; top: 0; }</style>\n<div class="strand">…</div>'} onValue={(v) => upd({ html: v })} />
+      </Field>
+      <Field label={t('Cuándo')}>
+        <Segmented
+          value={w.type}
+          options={[
+            { value: 'always' as const, label: t('Siempre') },
+            { value: 'range' as const, label: t('Cada año entre dos fechas') },
+          ]}
+          onChange={(v) => upd({ when: v === 'range' ? { type: 'range', from: '12-01', to: '01-06' } : { type: 'always' } })}
+        />
+      </Field>
+      {w.type === 'range' && (
+        <div class="bg-rule__line">
+          <span class="muted small">{t('Desde')}</span>
+          <MonthDay value={w.from} onChange={(v) => upd({ when: { ...w, from: v } })} />
+          <span class="muted small">{t('Hasta')}</span>
+          <MonthDay value={w.to} onChange={(v) => upd({ when: { ...w, to: v } })} />
+        </div>
+      )}
+    </Card>
   );
 }
 

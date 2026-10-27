@@ -111,6 +111,9 @@ The stored config has **global** sections shared by every screen and a list of *
                   // glass (Modern only): { "appearance": "auto", "opacity": 0.5, "blur": 18, "tint": "dark", "edge": true }
                   //   appearance auto | clear | tinted, opacity 0..1 (see-through to solid), blur 0..40, tint dark | light | photo.
                   //   web/shared/glass.ts turns it (plus the current photo) into --g-* CSS variables on <html>.
+                  // overlay: { "html": "", "when": { "type": "always" } } the owner's HTML over the whole screen; when may be
+                  //   { "type": "range", "from": "12-01", "to": "01-06" } (MM-DD, every year). See "Overlay and decorations".
+                  // decoration: { "mode": "none", "snow": true } mode none | auto | christmas | halloween | newyear.
   "layout":     { "preset": "bigCalendar", "sidePanel": "left", "sideWidth": 0.36, "people": null, "corner": "br", "plannerBar": "side" },
                   // preset: bigCalendar | leftRight | topBottom | bigTime | agenda | today | people | photoFrame | twoWeeks | board | bedside | planner
                   //   | kidsRoutines | kidsFamily | kidsMeals (Modern style only; with Classic the display shows bigCalendar)
@@ -534,6 +537,33 @@ first photo of it at once; the photo card of *Personalizado* does the same, and 
 photo settings it compares between screens (`photoSigOf`). A gallery file that a rule of a screen names may be
 loaded by that screen's displays even when the screen does not show the gallery (never a hidden one); the albums of
 rules count as albums in use for the Immich proxy and the admin's Immich status.
+
+## Overlay and decorations
+
+Two layers over a whole screen (#24), both per screen, both in `server/core/decorCore.js` (validation and the date
+checks, shared with the display and Marco Cloud) and drawn by `web/display/widgets/decor.ts`:
+
+- `screen.overlay = { html, when }`: up to 20000 characters of the owner's HTML and CSS. `when` is `{ type: 'always' }`
+  or `{ type: 'range', from, to }` (`MM-DD` every year, inclusive; `to < from` wraps the year end, as in special
+  backgrounds), checked on the display in the screen's time zone, again every minute (so a new day turns it on or off).
+  The HTML never enters the display page: it is the `srcdoc` of an `<iframe sandbox="">` with no permission at all (an
+  opaque origin: no scripts, storage, forms, popups or navigation of the screen), `referrerpolicy="no-referrer"`,
+  `allow=""`, `aria-hidden`, `tabindex=-1` and `pointer-events: none`. The document starts with a meta CSP
+  (`default-src 'none'; style-src 'unsafe-inline'; img-src https: data:`, so nothing loads but inline styles and
+  images) and a base style (transparent `html` and `body`, no margin, nothing scrolls). The frame element gets the
+  colour scheme of its document so Chromium paints no backdrop behind it. A carousel with no screens left copies the
+  look of the default screen but never its overlay (nor its custom CSS). The `htmlOverlay` feature gates the admin card.
+- `screen.decoration = { mode, snow }`: lights along the top edge drawn by Marco (DOM and CSS, no files), within the
+  top 50 px of a 1080p screen. `christmas` adds a few snowflakes when `snow` is on, `halloween` a few bats and a small
+  cobweb in the top right corner, `newyear` a short shower of confetti every 90 s. `auto` follows the date: Christmas
+  1 December to 6 January, Halloween 24 to 31 October, New Year 31 December and 1 January (it wins over Christmas on
+  those days). Calm screens (`?lite=1`, *Ahorro* on Personalizado, `prefers-reduced-motion`) get still lights and no
+  snow or confetti.
+
+Layers: `#decor` (z-index 40) and `#html-overlay` (41) are children of `<body>`, above `#app` (1) and its corner
+widgets, under night dimming (50), the status dot and privacy lock (60), announcements (70), identify and access
+codes (80, 85), the doorbell (90) and the missing-screen page (100). Neither is drawn in the admin's widget-only
+preview.
 
 ## Immich source
 

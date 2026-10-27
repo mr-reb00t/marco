@@ -35,6 +35,8 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Tema claro / oscuro', route: 'layout', anchor: 'layout-look', keywords: 'theme dark light tema' },
   { label: 'Color de acento', route: 'layout', anchor: 'layout-look', keywords: 'accent color cor' },
   { label: 'Modo noche (horario y brillo)', route: 'screen', anchor: 'scr-night', keywords: 'night dim noche noturno brillo atenuar' },
+  { label: 'Decoración de temporada', route: 'screen', anchor: 'scr-decor', keywords: 'decoration decoración decoração seasonal temporada navidad christmas natal luces lights luzes nieve snow neve halloween murciélagos bats año nuevo new year ano novo confeti confetti kerst jul święta' },
+  { label: 'HTML sobre la pantalla', route: 'screen', anchor: 'scr-overlay', keywords: 'html overlay superposición sobreposição capa layer custom personalizado luces lights christmas navidad home assistant', feature: 'htmlOverlay' },
   { label: 'CSS personalizado', route: 'screen', anchor: 'scr-css', keywords: 'custom css estilos avanzado', feature: 'customCss' },
   { label: 'Enlace privado', route: 'screen', anchor: 'scr-link', keywords: 'private link url qr kiosk raspberry enlace privado ligação privada key clave' },
   { label: 'Reloj (digital / analógico, segundos, 24 h)', route: 'datetime', anchor: 'dt-clock', keywords: 'clock seconds segundos 12h 24h ampm reloj' },

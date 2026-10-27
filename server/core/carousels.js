@@ -64,7 +64,7 @@ export function offScreenOf(cfg, c) {
 export function emptyCarouselScreen(cfg, c) {
   const p = defaultScreenProfile({ id: c.id, slug: c.slug, name: c.name });
   const look = (cfg?.screens || []).find((s) => s.id === cfg?.defaultScreen) || cfg?.screens?.[0];
-  if (look?.screen) p.screen = { ...structuredClone(look.screen), customCss: '' };
+  if (look?.screen) p.screen = { ...structuredClone(look.screen), customCss: '', overlay: { html: '', when: { type: 'always' } } };
   p.calendar.enabled = false;
   p.calendar.sourceIds = [];
   p.background.source = 'stock';
