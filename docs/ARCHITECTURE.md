@@ -557,10 +557,12 @@ checks, shared with the display and Marco Cloud) and drawn by `web/display/widge
   when `opts.htmlOverlay` is false and caps it at `opts.htmlOverlayBytes` (UTF-8) when that is set.
 - `screen.decoration = { mode, snow }`: lights along the top edge drawn by Marco (DOM and CSS, no files), within the
   top 50 px of a 1080p screen. `christmas` adds a few snowflakes when `snow` is on, `halloween` a few bats and a small
-  cobweb in the top right corner, `newyear` a short shower of confetti every 90 s. `auto` follows the date: Christmas
+  cobweb in the top right corner, plus a bigger cobweb in the bottom right one with a spider: every 60 s it walks out
+  along the bottom edge, takes a bite out of the screen (a patch of the background colour) and goes home, and the bite
+  heals. `newyear` a short shower of confetti every 90 s. `auto` follows the date: Christmas
   1 December to 6 January, Halloween 24 to 31 October, New Year 31 December and 1 January (it wins over Christmas on
-  those days). Calm screens (`?lite=1`, *Ahorro* on Personalizado, `prefers-reduced-motion`) get still lights and no
-  snow or confetti.
+  those days). Calm screens (`?lite=1`, *Ahorro* on Personalizado, `prefers-reduced-motion`) get still lights, a
+  spider that stays home and no snow, bites or confetti.
 
 Layers: `#decor` (z-index 40) and `#html-overlay` (41) are children of `<body>`, above `#app` (1) and its corner
 widgets, under night dimming (50), the status dot and privacy lock (60), announcements (70), identify and access

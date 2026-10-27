@@ -104,6 +104,11 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
         band: Math.max(0, ...[...d.querySelectorAll('.decor-strand, .decor-bulb, .decor-bat, .decor-web')].map((b) => b.getBoundingClientRect().bottom)),
         anim: bulbs[0] ? getComputedStyle(bulbs[0]).animationName : '',
         flakes: d.querySelectorAll('.decor-flake').length, confetti: d.querySelectorAll('.decor-bit').length, bats: d.querySelectorAll('.decor-bat').length,
+        corner: (() => {
+          const r = (q) => { const e = d.querySelector(q); if (!e) return null; const b = e.getBoundingClientRect(); return { left: b.left, top: b.top, right: b.right, bottom: b.bottom }; };
+          const bite = d.querySelector('.decor-bite');
+          return { web: r('.decor-cornerweb'), spider: r('.decor-spider'), bite: bite ? Number(getComputedStyle(bite).opacity) : null };
+        })(),
       } : null,
     };
   })()`;
@@ -228,6 +233,10 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
       assert.ok(s.decor.bats > 0);
       assert.ok(s.decor.band <= 50, `bats and cobweb within the top 50 px too (${s.decor.band})`);
       assert.equal(s.decor.flakes, 0, 'snow goes with Christmas only');
+      const { web: w, spider: sp } = s.decor.corner;
+      assert.ok(w && w.right <= 1081 && w.bottom <= 1921 && w.left > 800 && w.top > 1600, `big cobweb in the bottom right corner (${JSON.stringify(w)})`);
+      assert.ok(sp && sp.left > 700 && sp.top > 1500, `the spider starts at home in it (${JSON.stringify(sp)})`);
+      assert.equal(s.decor.corner.bite, 0, 'no bite out of the screen until the spider gets there');
     } finally {
       await p.close();
     }

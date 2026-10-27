@@ -977,6 +977,50 @@ body {
 .decor-web { position: absolute; top: 0; right: 0; width: calc(var(--k) * 5); height: calc(var(--k) * 5); }
 .decor-web path { fill: none; stroke: rgb(255 255 255 / 0.3); stroke-width: 0.9px; vector-effect: non-scaling-stroke; }
 #decor.is-light .decor-web path { stroke: rgb(0 0 0 / 0.28); }
+.decor-cornerweb { position: absolute; right: 0; bottom: 0; width: calc(var(--k) * 26); height: calc(var(--k) * 26); }
+.decor-cornerweb path { fill: none; stroke: rgb(255 255 255 / 0.22); stroke-width: 0.9px; vector-effect: non-scaling-stroke; }
+#decor.is-light .decor-cornerweb path { stroke: rgb(0 0 0 / 0.22); }
+/* The spider: sits in the corner web, every 60 s walks out along the bottom edge, nibbles (the bite grows in
+   front of it), turns round and goes home; the bite heals a few seconds later. Calm: it stays home, no bite. */
+.decor-spider {
+  position: absolute; right: calc(var(--k) * 3.5); bottom: calc(var(--k) * 3.5); width: calc(var(--k) * 7); height: calc(var(--k) * 7);
+  overflow: visible; transform: rotate(-45deg); animation: decor-prowl 60s ease-in-out infinite; will-change: transform;
+  filter: drop-shadow(0 0 calc(var(--k) * 0.5) rgb(255 122 26 / 0.6));
+}
+.decor-spider path { fill: none; stroke: rgb(128 104 160); stroke-width: 1.7; stroke-linecap: round; }
+.decor-spider-body { fill: rgb(128 104 160); }
+.decor-spider-eye { fill: #ff7a1a; }
+#decor.is-light .decor-spider { filter: none; }
+#decor.is-light .decor-spider path { stroke: rgb(40 32 48); }
+#decor.is-light .decor-spider-body { fill: rgb(40 32 48); }
+.decor-legs-a, .decor-legs-b { transform-box: view-box; transform-origin: 50% 50%; animation: decor-legs 0.45s ease-in-out infinite alternate; }
+.decor-legs-b { animation-delay: -0.45s; }
+@keyframes decor-legs { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes decor-prowl {
+  0%, 44% { transform: translate(0, 0) rotate(-45deg); }
+  47% { transform: translate(calc(var(--k) * -1), var(--k)) rotate(-95deg); }
+  57% { transform: translate(calc(var(--k) * -34), calc(var(--k) * 3)) rotate(-90deg); }
+  60% { transform: translate(calc(var(--k) * -34.4), calc(var(--k) * 3)) rotate(-96deg); }
+  63% { transform: translate(calc(var(--k) * -34), calc(var(--k) * 3)) rotate(-86deg); }
+  66% { transform: translate(calc(var(--k) * -34.4), calc(var(--k) * 3)) rotate(-95deg); }
+  69% { transform: translate(calc(var(--k) * -34), calc(var(--k) * 3)) rotate(-90deg); }
+  73% { transform: translate(calc(var(--k) * -33.4), calc(var(--k) * 3)) rotate(85deg); }
+  84% { transform: translate(calc(var(--k) * -1), var(--k)) rotate(110deg); }
+  88%, 100% { transform: translate(0, 0) rotate(-45deg); }
+}
+.decor-bite {
+  position: absolute; bottom: 0; right: calc(var(--k) * 42); width: calc(var(--k) * 14); height: calc(var(--k) * 9); overflow: visible;
+  opacity: 0; transform: scale(0.2); transform-origin: 90% 100%; animation: decor-bite 60s ease-out infinite;
+}
+.decor-bite path { fill: var(--bg); stroke: rgb(255 122 26 / 0.5); stroke-width: 1.5px; vector-effect: non-scaling-stroke; stroke-dasharray: 3 2; }
+#decor.is-light .decor-bite path { stroke: rgb(120 70 30 / 0.45); }
+@keyframes decor-bite {
+  0%, 58% { opacity: 0; transform: scale(0.2); }
+  59% { opacity: 1; transform: scale(0.35); }
+  63% { transform: scale(0.65); }
+  68%, 80% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; transform: scale(1); }
+}
 /* calm (lite, "Ahorro", reduced motion): the lights stay lit, nothing moves (snow and confetti are not drawn) */
 #decor.is-calm *, .lite #decor * { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { #decor * { animation: none !important; } }

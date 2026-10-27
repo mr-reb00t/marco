@@ -8,8 +8,8 @@
 // files. The frame is transparent and has the same colour scheme as its document, else Chromium paints a backdrop.
 //
 // The decorations are Marco's own DOM and CSS (no files): a strand of lights along the top edge, with snow for
-// Christmas, a few bats and a cobweb for Halloween, a short shower of confetti now and then for New Year. Calm (lite,
-// "Ahorro", reduced motion) keeps the lights still and leaves out the snow and the confetti.
+// Christmas, a few bats, two cobwebs and a spider for Halloween, a short shower of confetti now and then for New Year. Calm (lite,
+// "Ahorro", reduced motion) keeps the lights still, the spider at home, and leaves out the snow and the confetti.
 import type { ScreenConfig } from '../../shared/types';
 import { decorationOn, overlayShown } from '../../../server/core/decorCore.js';
 
@@ -90,6 +90,87 @@ function confetti(): HTMLElement {
 
 const BAT = 'M12 7c-1-2-3-2.6-4.4-1.6.6.2 1 .8 1 1.5-1.4-.8-3.4-.6-4.6.6.8 0 1.6.4 2 1C3.8 8 2 8.6 1 10c1.6-.6 3.4-.4 4.6.4C6.4 9.6 8 9.6 9 10.4c.6-.8 1.6-1.2 3-1.2s2.4.4 3 1.2c1-.8 2.6-.8 3.4 0 1.2-.8 3-1 4.6-.4-1-1.4-2.8-2-5-1.4.4-.6 1.2-1 2-1-1.2-1.2-3.2-1.4-4.6-.6 0-.7.4-1.3 1-1.5C15 4.4 13 5 12 7z';
 
+/** A cobweb in the top or bottom right corner of a 100x100 box: threads out from the corner, rings sagging towards it. */
+function cobweb(cls: string, edge: 'top' | 'bottom', angles: number[], rings: number[]): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', cls);
+  svg.setAttribute('viewBox', '0 0 100 100');
+  const y = (v: number) => (edge === 'top' ? v : 100 - v);
+  const sag = edge === 'top' ? -3 : 3;
+  let d = '';
+  for (const a of angles) {
+    const rad = (a * Math.PI) / 180;
+    d += `M100,${y(0)} L${(100 - Math.cos(rad) * 100).toFixed(1)},${y(Math.sin(rad) * 100).toFixed(1)} `;
+  }
+  for (const rr of rings) {
+    const pts = angles.map((a) => {
+      const rad = (a * Math.PI) / 180;
+      return [100 - Math.cos(rad) * rr, y(Math.sin(rad) * rr)];
+    });
+    d += `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} `;
+    for (let i = 1; i < pts.length; i++) d += `Q${((pts[i - 1][0] + pts[i][0]) / 2 + 3).toFixed(1)},${((pts[i - 1][1] + pts[i][1]) / 2 + sag).toFixed(1)} ${pts[i][0].toFixed(1)},${pts[i][1].toFixed(1)} `;
+  }
+  const p = document.createElementNS(SVG_NS, 'path');
+  p.setAttribute('d', d.trim());
+  svg.appendChild(p);
+  return svg;
+}
+
+/** Head up, centred at (20,22) in a 40x40 box; two sets of legs that twitch in turn. */
+function spider(): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'decor-spider');
+  svg.setAttribute('viewBox', '0 0 40 40');
+  const left = ['M17,15 Q9,8 6,2', 'M16,18 Q7,14 2,12', 'M16,22 Q7,24 3,30', 'M17,25 Q10,32 8,38'];
+  const mirror = (d: string) => d.replace(/(\d+(?:\.\d+)?),/g, (_, x) => `${40 - Number(x)},`);
+  const legs = (cls: string, ds: string[]) => {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', cls);
+    for (const d of ds) {
+      const p = document.createElementNS(SVG_NS, 'path');
+      p.setAttribute('d', d);
+      g.appendChild(p);
+    }
+    svg.appendChild(g);
+  };
+  legs('decor-legs-a', [left[0], left[2], mirror(left[1]), mirror(left[3])]);
+  legs('decor-legs-b', [left[1], left[3], mirror(left[0]), mirror(left[2])]);
+  const body = (tag: string, attrs: Record<string, string>) => {
+    const e = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    svg.appendChild(e);
+  };
+  body('ellipse', { class: 'decor-spider-body', cx: '20', cy: '26', rx: '6.5', ry: '8' });
+  body('circle', { class: 'decor-spider-body', cx: '20', cy: '15', r: '4.5' });
+  body('circle', { class: 'decor-spider-eye', cx: '18.3', cy: '13.4', r: '1.3' });
+  body('circle', { class: 'decor-spider-eye', cx: '21.7', cy: '13.4', r: '1.3' });
+  return svg;
+}
+
+/** The bite: a half oval standing on the bottom edge with tooth marks round it, in the screen's background colour (left
+ *  open along the edge, so only the tooth marks get the rim). */
+function bite(): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('class', 'decor-bite');
+  svg.setAttribute('viewBox', '0 0 80 50');
+  const n = 9;
+  const at = (i: number) => {
+    const a = Math.PI - (i / n) * Math.PI;
+    return [40 + Math.cos(a) * 38, 50 - Math.sin(a) * 46];
+  };
+  let d = 'M2,50';
+  for (let i = 1; i <= n; i++) {
+    const [x0, y0] = at(i - 1);
+    const [x1, y1] = at(i);
+    // each tooth mark bulges in, towards the middle of the bite
+    d += ` Q${(40 + ((x0 + x1) / 2 - 40) * 0.84).toFixed(1)},${(50 + ((y0 + y1) / 2 - 50) * 0.84).toFixed(1)} ${x1.toFixed(1)},${y1.toFixed(1)}`;
+  }
+  const p = document.createElementNS(SVG_NS, 'path');
+  p.setAttribute('d', d);
+  svg.appendChild(p);
+  return svg;
+}
+
 function bats(): HTMLElement {
   const box = el('div', 'decor-bats');
   [
@@ -106,27 +187,12 @@ function bats(): HTMLElement {
     svg.appendChild(p);
     box.appendChild(svg);
   });
-  // a small cobweb in the top right corner
-  const web = document.createElementNS(SVG_NS, 'svg');
-  web.setAttribute('class', 'decor-web');
-  web.setAttribute('viewBox', '0 0 100 100');
-  let d = '';
-  for (const a of [0, 22.5, 45, 67.5, 90]) {
-    const rad = (a * Math.PI) / 180;
-    d += `M100,0 L${(100 - Math.cos(rad) * 100).toFixed(1)},${(Math.sin(rad) * 100).toFixed(1)} `;
-  }
-  for (const rr of [28, 52, 76]) {
-    const pts = [0, 22.5, 45, 67.5, 90].map((a) => {
-      const rad = (a * Math.PI) / 180;
-      return [100 - Math.cos(rad) * rr, Math.sin(rad) * rr];
-    });
-    d += `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)} `;
-    for (let i = 1; i < pts.length; i++) d += `Q${((pts[i - 1][0] + pts[i][0]) / 2 + 3).toFixed(1)},${((pts[i - 1][1] + pts[i][1]) / 2 - 3).toFixed(1)} ${pts[i][0].toFixed(1)},${pts[i][1].toFixed(1)} `;
-  }
-  const p = document.createElementNS(SVG_NS, 'path');
-  p.setAttribute('d', d.trim());
-  web.appendChild(p);
-  box.appendChild(web);
+  box.appendChild(cobweb('decor-web', 'top', [0, 22.5, 45, 67.5, 90], [28, 52, 76]));
+  // a bigger one in the bottom right corner, and its spider: it sits in the web, now and then walks out along the
+  // bottom edge, takes a bite out of the screen and goes home, and the bite heals (60 s, styles.css)
+  box.appendChild(cobweb('decor-cornerweb', 'bottom', [0, 15, 30, 45, 60, 75, 90], [16, 32, 50, 68, 88]));
+  box.appendChild(bite());
+  box.appendChild(spider());
   return box;
 }
 
