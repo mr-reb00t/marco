@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.23.0] - 2026-10-27
+
+### Added
+- *Grupo* in the editor (#25), under *Content*: 2 to 4 cards in the space of one, in rows or in columns, without a
+  Rotativa around it. Three one-row cards such as entities fit in two rows.
+
+### Changed
+- The cards of a group in rows may now get a little smaller than on their own, so a group needs less height (three
+  one-row cards in two rows). This also applies to groups inside a Rotativa.
+
 ## [0.22.0] - 2026-10-27
 
 ### Added
