@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.21.0] - 2026-10-27
 
 ### Added
 - *HTML over the screen* (#24): your own HTML and CSS drawn over a whole screen, always or every year between two
