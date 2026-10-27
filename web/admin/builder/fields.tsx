@@ -1,5 +1,5 @@
 // Inspector, Contenido tab: draws the options of each kind (fieldSpecs.ts) as one small form.
-import { RotatorCards } from './RotatorFields';
+import { LoneGroupCards, RotatorCards } from './RotatorFields';
 import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, TodoList, WidgetDef } from '../../shared/types';
 import { ColorPicker, EmojiPicker, Field, NumberInput, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { HaEntitySelect } from '../components/HaEntityPicker';
@@ -8,7 +8,8 @@ import { FEATURE_DOMAINS, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
 import { t } from '../i18n';
 import { Icon } from '../components/icons';
-import { FIELDS } from './fieldSpecs';
+import { FIELDS, type Spec } from './fieldSpecs';
+import { isLoneGroup } from './kinds';
 import { HtmlEditor } from './HtmlEditor';
 import { ValueKeyInput } from './ValueKeyInput';
 import { CoinsField, FollowField, PairsField, StocksKeyField, SymbolsField } from './DataPickers';
@@ -331,7 +332,8 @@ export function HaOffNote({ env }: { env: FieldEnv }) {
 
 /** The kind's own options for `item`. `put` changes one prop (`merge`: a key for undo to merge typing). */
 export function ContentFields({ item, env, put }: { item: CanvasItem; env: FieldEnv; put: (k: string, v: unknown, merge?: string) => void }) {
-  const specs = FIELDS[item.kind] ?? [];
+  // (a lone group, #25: only its cards; it never turns)
+  const specs: Spec[] = isLoneGroup(item) ? [{ type: 'rotatorCards' }] : FIELDS[item.kind] ?? [];
   const p = item.props as Record<string, any>;
   const domains: readonly string[] = (CANVAS_KINDS[item.kind] as { ha?: { domains: string[] } } | undefined)?.ha?.domains ?? [];
   // a Home Assistant card while Home Assistant is off: one note with the way there, and no entity pickers
@@ -350,7 +352,7 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
             </Field>
           );
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
-        if (s.type === 'rotatorCards') return <RotatorCards item={item} env={env} put={put} />;
+        if (s.type === 'rotatorCards') return isLoneGroup(item) ? <LoneGroupCards item={item} env={env} put={put} /> : <RotatorCards item={item} env={env} put={put} />;
         if (s.type === 'todoView') return <TodoViewFields value={p} lists={env.todoLists ?? []} onChange={(k, v, merge) => put(k, v, merge ? `${item.id}.${k}` : undefined)} />;
         if (s.type === 'note')
           return (

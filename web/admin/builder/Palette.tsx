@@ -11,7 +11,7 @@ import { Icon } from '../components/icons';
 import { SearchInput } from '../components/ui';
 import { t } from '../i18n';
 import { gesture } from './dnd';
-import { AWAY_NOTE, GROUPS, KIND_META, PALETTE_KINDS, groupOf, lockOf, matchesSearch, outOfEdition, type PaletteGroup } from './kinds';
+import { AWAY_NOTE, GROUP_HELP, GROUPS, KIND_META, PALETTE_KINDS, groupOf, lockOf, matchesSearch, outOfEdition, type PaletteGroup } from './kinds';
 import { cellsOf } from './model';
 import type { AddSpec, StageApi } from './Stage';
 import { colorOfKind } from './thumb';
@@ -55,6 +55,12 @@ const haSpace = (): Record<string, unknown> => {
     ],
   };
 };
+
+/**
+ * "Grupo" (#25): a group on its own, 2 to 4 cards in the box of one, kept as a Rotativa whose only card is the group
+ * (kinds isLoneGroup), so it never turns. Three Entidad cards in rows where Home Assistant is on, else three values.
+ */
+const loneGroup = (kind: CanvasKind): Record<string, unknown> => ({ ...canvasDefaults('rotator'), dots: false, cards: [groupDefaults([kind, kind, kind], 'rows')] });
 
 /** The default size of a kind, drawn on a tiny 12×8 grid. */
 function MiniSize({ kind }: { kind: CanvasKind }) {
@@ -109,6 +115,11 @@ export function Palette(props: {
       const name = 'Cambiar un espacio según Casa';
       const help = 'Una cámara y un grupo de tres tarjetas en el mismo hueco: la cámara cuando hay movimiento, las tres tarjetas cuando no.';
       out.push({ key: 'rot:ha-space', spec: { kind: 'rotator', props: haSpace(), label: name }, name, help, icon: 'layout', group: 'home', lock: lockOf('ha.camera', props) ?? lockOf('rotator', props), away: outOfEdition('ha.camera', props) });
+    }
+    {
+      const name = 'Grupo';
+      const kind = ((props.ha && !props.cloud ? ['ha.tile'] : []) as CanvasKind[]).concat(['value', 'weather.now']).find((k) => !lockOf(k, props)) ?? 'value';
+      out.push({ key: 'rot:group', spec: { kind: 'rotator', props: loneGroup(kind), label: name }, name, help: GROUP_HELP, icon: 'layout', group: 'content', lock: lockOf('rotator', props) ?? lockOf(kind, props), away: false });
     }
     for (const w of props.widgets) {
       const name = w.name.trim() || t('Widget sin nombre');

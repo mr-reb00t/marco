@@ -6,12 +6,14 @@
 import { PL_ACCESS } from './i18n-dict-access';
 import { PL_SPOTIFY } from './i18n-dict-spotify';
 import { PL_DECOR } from './i18n-dict-decor';
+import { PL_GROUP } from './i18n-dict-group';
 
 /** Every admin row but the Familia ones. */
 export const PL: Record<string, string> = {
   ...PL_ACCESS,
   ...PL_SPOTIFY,
   ...PL_DECOR,
+  ...PL_GROUP,
   '(ninguno)': '(brak)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Używasz hasła początkowego. Zmień je: do tego czasu działa tylko z sieci lokalnej.',
   'Sesiones': 'Sesje',

@@ -12,7 +12,7 @@ import { Icon } from '../components/icons';
 import { t } from '../i18n';
 import { gesture } from './dnd';
 import { cellAt, cellBox, computeGeometry, inSide, mainBox, sideBox, sideIndexAt, sideTracks, type Box, type Geometry } from './geometry';
-import { KIND_META, SIZE_LABEL, SPAN_LABEL, kindName } from './kinds';
+import { KIND_META, SIZE_LABEL, SPAN_LABEL, itemIcon, itemKindName } from './kinds';
 import {
   addItem, applyBox, applyMain, boxCells, boxFor, fitSpan, grid, sizingOf, handleBox, itemOf, occupantsAt, placements, rangeOf, voidIds, readOnly, reorderSide, resize, resolveMain,
   sideOf, sideStack, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
@@ -252,7 +252,7 @@ export function Stage(props: {
     const cy = Math.min(Math.max(0, y), gr - h);
     return occupantsAt(c, orient, cx, cy, w, h, except).map((id) => {
       const it = itemOf(c, id)!;
-      return it.kind === 'widget' ? t('Widget') : t(kindName(it.kind));
+      return it.kind === 'widget' ? t('Widget') : t(itemKindName(it));
     });
   };
   const boxOf = (id: string): Box | null => {
@@ -604,7 +604,7 @@ export function Stage(props: {
               const it = itemOf(cv, id)!;
               const b = boxOf(id);
               if (!b) return null;
-              const name = it.kind === 'widget' ? t('Widget') : t(kindName(it.kind));
+              const name = it.kind === 'widget' ? t('Widget') : t(itemKindName(it));
               const soon = KIND_META[it.kind]?.soon;
               const why = props.why?.get(id) ?? null;
               // a card that draws nothing still takes its cells: a dashed box with its name, so it can be found
@@ -631,7 +631,7 @@ export function Stage(props: {
                 >
                   {(!props.url || it.hidden || soon || isVoid) && (
                     <span class="bld-it__name">
-                      <Icon name={KIND_META[it.kind]?.icon ?? 'widget'} size={18} />
+                      <Icon name={itemIcon(it)} size={18} />
                       {name}
                       {vtext && props.url && <span class="bld-it__void">{vtext}</span>}
                     </span>

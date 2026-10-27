@@ -141,15 +141,15 @@ test('caps: every card of a group counts towards the 48 cards and its kind\'s ow
 
 test('the box of a Rotativa holds its groups: rows add up the heights, columns the widths', () => {
   const rows = run([rotator()]).out.items[0];
-  // a camera (3×2 at its smallest) and three entity cards in rows (2×1 each): 3×3
+  // a camera (3×2 at its smallest) and three entity cards in rows (2×1 each), which fit in two rows (#25): 3×2
   const r = cellRange(kindFor(rows), 'landscape');
-  assert.deepEqual([r.minW, r.minH], [3, 3]);
+  assert.deepEqual([r.minW, r.minH], [3, 2]);
   const cols = run([rotator([camera(), group({}, null, 'cols')], { pos: { zone: 'main', x: 0, y: 0, size: 'w', w: 6, h: 2 } })]).out.items[0];
   const c = cellRange(kindFor(cols), 'landscape');
   assert.deepEqual([c.minW, c.minH], [6, 2]);
   // a box saved smaller than that grows to it
-  const small = run([rotator(null, { pos: { zone: 'main', x: 0, y: 0, size: 'xs', w: 3, h: 2 } })]).out.items[0];
-  assert.ok(small.pos.h >= 3 && small.pos.w >= 3, JSON.stringify(small.pos));
+  const small = run([rotator(null, { pos: { zone: 'main', x: 0, y: 0, size: 'xs', w: 2, h: 1 } })]).out.items[0];
+  assert.ok(small.pos.h >= 2 && small.pos.w >= 3, JSON.stringify(small.pos));
   // the cards a Rotativa shows: the camera and the group's three
   assert.deepEqual(rotatorLeaves(rows.props.cards).map((x) => x.kind), ['ha.camera', 'ha.tile', 'ha.tile', 'ha.tile']);
 });

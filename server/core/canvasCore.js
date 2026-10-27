@@ -1303,9 +1303,12 @@ function rotatorCardRange(cd, grid) {
   if (!rs.length) return null;
   const sum = (k) => rs.reduce((n, r) => n + r[k], 0);
   const max = (k) => Math.max(...rs.map((r) => r[k]));
+  // (#25) in rows on the fine grid the cards of a group may shrink to two thirds of their smallest height: three
+  // one-row cards fit in two rows (side by side they keep their widths, or their names would be cut)
+  const least = (k) => (grid === 'fine' ? Math.max(max(k), Math.ceil((sum(k) * 2) / 3)) : sum(k));
   return cd.props.dir === 'cols'
     ? { minW: sum('minW'), minH: max('minH'), maxW: sum('maxW'), maxH: max('maxH') }
-    : { minW: max('minW'), minH: sum('minH'), maxW: max('maxW'), maxH: sum('maxH') };
+    : { minW: max('minW'), minH: least('minH'), maxW: max('maxW'), maxH: sum('maxH') };
 }
 
 /**

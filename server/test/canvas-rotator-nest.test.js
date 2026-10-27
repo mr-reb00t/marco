@@ -152,12 +152,14 @@ test('the box: a small Rotativa needs the largest of its cards\' smallest boxes'
   const withNest = run([rotator()]).out.items[0];
   const a = cellRange(kindFor(plain), 'landscape');
   const b = cellRange(kindFor(withNest), 'landscape');
-  // in rows: the widest smallest width (the forecast's) and the sum of the heights with the forecast's in place of a tile
+  // in rows: the widest smallest width (the forecast's) and the sum of the heights with the forecast's in place of a tile,
+  // which the cards of a group may shrink to two thirds of on the fine grid (#25), never under the tallest of them
   const fc = cellRange('weather.forecast', 'landscape');
   const hr = cellRange('weather.hourly', 'landscape');
   const t = cellRange('ha.tile', 'landscape');
   assert.equal(b.minW, Math.max(cellRange('ha.camera', 'landscape').minW, fc.minW, hr.minW, t.minW));
-  assert.equal(b.minH, Math.max(cellRange('ha.camera', 'landscape').minH, t.minH * 2 + Math.max(fc.minH, hr.minH)));
+  const nh = Math.max(fc.minH, hr.minH);
+  assert.equal(b.minH, Math.max(cellRange('ha.camera', 'landscape').minH, t.minH, nh, Math.ceil(((t.minH * 2 + nh) * 2) / 3)));
   assert.ok(b.minH >= a.minH && b.minW >= a.minW, JSON.stringify({ a, b }));
 });
 

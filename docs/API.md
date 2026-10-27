@@ -1143,8 +1143,11 @@ screen itself, but each of its cards is (the 48 cards, each kind's own cap and t
 that does not fit goes whole). The group and each of its cards get ids unique on the screen. A group left with one
 card (a saved widget deleted since, a kind an import leaves out) becomes that card with the group's condition, and
 with none it goes. The Rotativa's box holds every group (`kindFor`): in rows the widest of its cards' smallest widths
-by the sum of their smallest heights, in columns the other way round (a camera and three entity cards in rows: 3×3 at
-least; in columns: 6×2). `canvasCards(items)` lists the cards of a group in its place, each with `group` (the group's
+by the sum of their smallest heights, which on the fine grid may shrink to two thirds of it but never below the
+tallest card (#25: three one-row cards fit in two rows), in columns the widest sum of their smallest widths by the
+tallest smallest height (a camera and three entity cards in rows: 3×2 at least; in columns: 6×2). A *Grupo* on its
+own (#25) is a Rotativa whose only card is a group: the editor's palette adds it, its inspector shows only the
+group's options, and it never turns (one slide, no dots). `canvasCards(items)` lists the cards of a group in its place, each with `group` (the group's
 id) and the group's condition as `own`, so the feeds treat them like any card of a Rotativa (aliases under their own
 ids, values, data, never touch controls, `conditionHidden` names each of them while the group's condition does not
 hold); `rotatorLeaves(cards)` lists the cards a Rotativa shows. In the display config a group comes as `{ id, kind:

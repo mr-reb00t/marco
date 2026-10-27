@@ -2,7 +2,8 @@
 // hall camera while someone moves and a group of three entity cards while all is clear: one of 3×3 cells with the
 // group in rows (its smallest box), one of 6×2 with the group in columns (its smallest too) and a large one in rows.
 // The group shows as three equal parts of the box, each card whole (no "No cabe", no cut text), and the space swaps
-// at once when the sensor changes ('marco:demo-ha', mockHa.ts). Skipped without Chrome.
+// at once when the sensor changes ('marco:demo-ha', mockHa.ts). The 'groups' screen has groups on their own (#25), three
+// cards in two rows among them. Skipped without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { findChrome, launchChrome, startWeb } from './browser.js';
@@ -108,6 +109,37 @@ describe('a Rotativa that swaps a space for a group of cards (#19), in a browser
       [a, b, c] = await p.eval(STATE);
       assertGroup(a, false);
       assertGroup(b, true);
+      const errors = p.errors().map((e) => JSON.stringify(e.params)).filter((s) => !/vite|Vite/.test(s));
+      assert.deepEqual(errors, []);
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('a group on its own (#25): three cards in two rows, four in three, three side by side, whole and still', { timeout: 60_000 }, async () => {
+    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=groups`, LAND);
+    try {
+      await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1500)))');
+      const [a, b, c] = await p.eval(STATE);
+      assert.deepEqual([a.cells, b.cells, c.cells], ['3x2', '3x3', '6x2']);
+      for (const [r, cols, n] of [[a, false, 3], [b, false, 4], [c, true, 3]]) {
+        const msg = JSON.stringify(r);
+        assert.equal(r.seen, true, msg);
+        assert.match(r.on, /cv-rot-grp/, msg);
+        assert.equal(r.dots, false, msg);
+        assert.equal(r.cramped, false, msg);
+        assert.equal(r.group.cols, cols, msg);
+        assert.equal(r.group.cards.length, n, msg);
+        for (const x of r.group.cards) {
+          assert.equal(x.over, false, msg);
+          assert.deepEqual(x.cut, [], msg);
+        }
+      }
+      // in rows each card has an equal share of the height
+      for (const r of [a, b]) {
+        const hs = r.group.cards.map((x) => x.h);
+        assert.ok(Math.max(...hs) - Math.min(...hs) <= 2, JSON.stringify(r));
+      }
       const errors = p.errors().map((e) => JSON.stringify(e.params)).filter((s) => !/vite|Vite/.test(s));
       assert.deepEqual(errors, []);
     } finally {

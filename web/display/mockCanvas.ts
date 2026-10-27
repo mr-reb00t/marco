@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -378,6 +378,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'rotator', pos: M(8, 6, 'l'), props: { everySec: 5, cards: motionGroup('rows') } },
     ],
   },
+  // "Grupo" on its own (#25): a Rotativa whose only card is a group, so it never turns: three entity cards in two rows
+  // (3x2, its smallest), four in three rows (3x3) and three side by side (6x2)
+  groups: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'rotator', pos: B(8, 0, 3, 2), props: { dots: false, cards: [loneGroup('rows', 3)] } },
+      { kind: 'rotator', pos: B(12, 0, 3, 3), props: { dots: false, cards: [loneGroup('rows', 4)] } },
+      { kind: 'rotator', pos: B(16, 0, 6, 2), props: { dots: false, cards: [loneGroup('cols', 3)] } },
+    ],
+  },
   // a small Rotativa inside a group (#19): the 'motion-group' space of 6×6 cells, its group of three in rows, the last
   // of them a Rotativa of its own that turns between two temperature cards every 5 s (a third one, shown only while
   // someone moves, is skipped while all is clear)
@@ -582,6 +593,13 @@ function motionGroup(dir: 'rows' | 'cols'): Record<string, unknown>[] {
     { id: '', kind: 'ha.camera', props: { ...canvasDefaults('ha.camera'), entity: 'camera.hall' }, when: when('on') },
     { id: '', kind: 'group', props: { dir, cards: [tile('light.hall', 'Pasillo'), tile('binary_sensor.front_door', 'Puerta'), tile('sensor.living_temperature', 'Salón')] }, when: when('off') },
   ];
+}
+
+/** The group of the 'groups' demo (#25): `n` entity cards in rows or columns. */
+function loneGroup(dir: 'rows' | 'cols', n: number): Record<string, unknown> {
+  const tile = (entity: string, name: string) => ({ id: '', kind: 'ha.tile', props: { ...canvasDefaults('ha.tile'), entity, name } });
+  const all = [tile('light.hall', 'Pasillo'), tile('binary_sensor.front_door', 'Puerta'), tile('sensor.living_temperature', 'Salón'), tile('switch.fan', 'Ventilador')];
+  return { id: '', kind: 'group', props: { dir, cards: all.slice(0, n) } };
 }
 
 /** The cards of the 'motion-nest' demo: the hall camera, or a group of two entity cards and a small Rotativa (#19). */

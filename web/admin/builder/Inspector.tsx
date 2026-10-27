@@ -14,7 +14,7 @@ import { ConditionField } from './ConditionField';
 import { ScheduleField } from './ScheduleField';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { PICK_TEXT } from './picks';
-import { KIND_META, SIZE_LABEL, SPAN_LABEL, kindName } from './kinds';
+import { KIND_META, SIZE_LABEL, SPAN_LABEL, GROUP_HELP, isLoneGroup, itemIcon, itemKindName } from './kinds';
 import { boxCells, cellsOf, fitSpan, grid, growToCards, itemOf, placements, rangeOf, readOnly, resize, setCells, sideOf, sizesOf, sizingOf, type Orient, type Refusal, type Result } from './model';
 
 /** The corners the editor offers; a screen saved with the old soft corners ('m') shows the nearest, Redondeadas. */
@@ -403,10 +403,10 @@ function PagePanel(p: InspectorProps) {
                 <>
                   {i > 0 && ', '}
                   {cv.portraitAuto ? (
-                    t(kindName(itemOf(cv, id)?.kind ?? ''))
+                    t(itemKindName(itemOf(cv, id) ?? { kind: '', props: {} }))
                   ) : (
                     <button type="button" class="link-btn" onClick={() => p.onPlacePortrait(id)}>
-                      {t(kindName(itemOf(cv, id)?.kind ?? ''))}
+                      {t(itemKindName(itemOf(cv, id) ?? { kind: '', props: {} }))}
                     </button>
                   )}
                 </>
@@ -445,7 +445,7 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
   const kind = CANVAS_KINDS[item.kind];
   const pos = placements(cv, orient).get(item.id);
   const ro = readOnly(cv, orient);
-  const name = item.kind === 'widget' ? (p.env.widgets.find((w) => w.id === (item.props as { widgetId?: string }).widgetId)?.name || t('Widget')) : t(kindName(item.kind));
+  const name = item.kind === 'widget' ? (p.env.widgets.find((w) => w.id === (item.props as { widgetId?: string }).widgetId)?.name || t('Widget')) : t(itemKindName(item));
   const upd = (fn: (it: CanvasItem) => void, merge?: string) => {
     const c = structuredClone(cv);
     const x = itemOf(c, item.id);
@@ -468,11 +468,11 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
     <div class="stack bld-item">
       <div class="bld-item__head">
         <span class="bld-item__icon">
-          <Icon name={meta?.icon ?? 'widget'} size={18} />
+          <Icon name={itemIcon(item)} size={18} />
         </span>
         <div>
           <h4 class="bld-h">{name}</h4>
-          {meta && <p class="muted small">{t(meta.help)}</p>}
+          {meta && <p class="muted small">{t(isLoneGroup(item) ? GROUP_HELP : meta.help)}</p>}
         </div>
         {p.onClose && (
           <button type="button" class="icon-btn" onClick={p.onClose} aria-label={t('Cerrar')}>

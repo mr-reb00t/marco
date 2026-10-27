@@ -33,7 +33,7 @@ import { allSourceOptions } from '../util';
 import { clearDraft, loadDraft, pruneDrafts, saveDraft, type CanvasDraft } from './draftStore';
 import { push, redo, startHistory, undo, type History } from './history';
 import { Inspector, type InspectorTab } from './Inspector';
-import { kindName } from './kinds';
+import { itemKindName } from './kinds';
 import {
   addItem, autoPortrait, boxCells, cardCount, maxCards, duplicateItem, fitContent, editPortrait, itemOf, nudge, omittedInPortrait, placeInPortrait, placements, readOnly, removeItem,
   setCells, setSidebarSide, sideItems, sideOf, stepSize, toMain, toSide, voidIds, type MainDrop, type Orient, type Refusal, type Result,
@@ -292,7 +292,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       if (selected !== id) setTab('content');
       if (narrow) setPanel('inspector');
       const it = itemOf(cv, id);
-      if (it) announce(`${t(kindName(it.kind))}`);
+      if (it) announce(`${t(itemKindName(it))}`);
     }
   };
   /** A new or moved card took the place of cards that showed nothing: say what happened, with a way back. */
@@ -300,7 +300,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
     const moved = rp.move.map((m) => itemOf(cv, m.id)).filter((x): x is CanvasItem => !!x);
     const parts = [
       ...(rp.remove.length ? [t('Sustituido el espacio vacío')] : []),
-      ...(moved.length ? [t('{name} no mostraba nada y ha pasado al hueco libre más cercano', { name: moved.map((x) => (x.kind === 'widget' ? t('Widget') : t(kindName(x.kind)))).join(', ') })] : []),
+      ...(moved.length ? [t('{name} no mostraba nada y ha pasado al hueco libre más cercano', { name: moved.map((x) => (x.kind === 'widget' ? t('Widget') : t(itemKindName(x)))).join(', ') })] : []),
     ];
     const m = parts.join('. ');
     toast(m, 'ok', 6000, { label: t('Deshacer'), run: doUndo });
@@ -319,7 +319,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
   };
   const remove = (id: string) => {
     const it = itemOf(cv, id);
-    apply(removeItem(cv, id), it ? t('Eliminado: {name}', { name: t(kindName(it.kind)) }) : undefined);
+    apply(removeItem(cv, id), it ? t('Eliminado: {name}', { name: t(itemKindName(it)) }) : undefined);
     setSelected(null);
   };
   const duplicate = (id: string) => {
@@ -468,7 +468,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       const m = /items\[(\d+)\]/.exec(errors[0].path);
       const it = m ? cv.items[Number(m[1])] : null;
       if (it) select(it.id);
-      toast(t('Hay un problema en {name}: {msg}', { name: it ? t(kindName(it.kind)) : t('la página'), msg: errors[0].msg }), 'error');
+      toast(t('Hay un problema en {name}: {msg}', { name: it ? t(itemKindName(it)) : t('la página'), msg: errors[0].msg }), 'error');
       return;
     }
     setSaving(true);

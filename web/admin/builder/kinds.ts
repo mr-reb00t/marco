@@ -1,7 +1,7 @@
 // What the builder's palette shows for each kind: its Spanish name (a t() key), a one-line help, an icon, search
 // words and whether this server can use it yet. Sizes, options and editions come from server/core/canvasCore.js.
 import type { CanvasCategory, CanvasKind } from '../../shared/types';
-import { CANVAS_KINDS } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, isRotatorGroup } from '../../../server/core/canvasCore.js';
 import type { IconName } from '../components/icons';
 
 /** Palette groups, in order: the registry's categories plus the owner's saved widgets ("Mis widgets"). */
@@ -140,6 +140,19 @@ export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly s
 
 /** Display name of a kind (a t() key). */
 export const kindName = (k: CanvasKind | string): string => KIND_META[k as CanvasKind]?.name ?? k;
+
+/**
+ * A "Grupo" on its own (#25): a Rotativa whose only card is a group, so it never turns. The palette adds it and the
+ * inspector shows only the group's options; the server and the display take it as any Rotativa.
+ */
+export const isLoneGroup = (it: { kind: string; props: Record<string, unknown> }): boolean =>
+  it.kind === 'rotator' && Array.isArray(it.props.cards) && it.props.cards.length === 1 && isRotatorGroup(it.props.cards[0]);
+/** What a "Grupo" is, under its name in the palette and the inspector (#25). */
+export const GROUP_HELP = 'De 2 a 4 tarjetas en el hueco de una, en filas o en columnas.';
+/** Display name of an item's kind (a t() key): a lone group is "Grupo". */
+export const itemKindName = (it: { kind: string; props: Record<string, unknown> }): string => (isLoneGroup(it) ? 'Grupo' : kindName(it.kind));
+/** Icon of an item's kind: a lone group has the group's. */
+export const itemIcon = (it: { kind: string; props: Record<string, unknown> }): IconName => (isLoneGroup(it) ? 'layout' : KIND_META[it.kind as CanvasKind]?.icon ?? 'widget');
 
 /** Names of the sizes (t() keys). */
 export const SIZE_LABEL: Record<string, string> = {
