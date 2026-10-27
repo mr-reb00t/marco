@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.22.0] - 2026-10-27
+
+### Added
+- Up to 4 *HTML over the screen* per screen (#24), each with its own name and dates, so one can be for Christmas and
+  another for Halloween. Those whose dates meet show together. The one you had becomes the first.
+- Your own dates for each *Seasonal decoration* when it is on *Automatic* (#24): Christmas lights all of December
+  only, say. The usual dates stay until you change them.
+
 ## [0.21.1] - 2026-10-27
 
 ### Changed
