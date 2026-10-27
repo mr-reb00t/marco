@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.21.1] - 2026-10-27
+
+### Changed
+- *Halloween* decoration: a bigger cobweb in the bottom right corner, with a spider that now and then walks out along
+  the bottom of the screen, takes a bite out of it and goes home. The bite heals a few seconds later. Lite mode and
+  reduced motion keep the spider at home.
+
 ## [0.21.0] - 2026-10-27
 
 ### Added
