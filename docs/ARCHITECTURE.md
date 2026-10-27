@@ -552,7 +552,9 @@ checks, shared with the display and Marco Cloud) and drawn by `web/display/widge
   (`default-src 'none'; style-src 'unsafe-inline'; img-src https: data:`, so nothing loads but inline styles and
   images) and a base style (transparent `html` and `body`, no margin, nothing scrolls). The frame element gets the
   colour scheme of its document so Chromium paints no backdrop behind it. A carousel with no screens left copies the
-  look of the default screen but never its overlay (nor its custom CSS). The `htmlOverlay` feature gates the admin card.
+  look of the default screen but never its overlay (nor its custom CSS). Private mode hides it (it may show anything).
+  The `htmlOverlay` feature gates the admin card, and the server too: `validateConfig` refuses an overlay with HTML
+  when `opts.htmlOverlay` is false and caps it at `opts.htmlOverlayBytes` (UTF-8) when that is set.
 - `screen.decoration = { mode, snow }`: lights along the top edge drawn by Marco (DOM and CSS, no files), within the
   top 50 px of a 1080p screen. `christmas` adds a few snowflakes when `snow` is on, `halloween` a few bats and a small
   cobweb in the top right corner, `newyear` a short shower of confetti every 90 s. `auto` follows the date: Christmas

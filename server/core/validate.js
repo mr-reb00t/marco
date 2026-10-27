@@ -239,6 +239,23 @@ function requiredStr(ctx, path, v, d, max) {
   return s;
 }
 
+/**
+ * The screen's HTML overlay. `opts.htmlOverlay` false (an edition without it) refuses one with HTML in it, and
+ * `opts.htmlOverlayBytes` caps its size in UTF-8 bytes, so neither rests on the admin alone.
+ */
+function overlayFor(ctx, p, raw, opts) {
+  const o = sanitizeOverlay(raw, (path, m) => ctx.err(path, m), `${p}.screen.overlay`);
+  if (!o.html) return o;
+  if (opts.htmlOverlay === false) {
+    ctx.err(`${p}.screen.overlay.html`, 'not available on this server');
+    return { ...o, html: '' };
+  }
+  if (opts.htmlOverlayBytes && new TextEncoder().encode(o.html).length > opts.htmlOverlayBytes) {
+    ctx.err(`${p}.screen.overlay.html`, `too long (max ${opts.htmlOverlayBytes} bytes)`);
+  }
+  return o;
+}
+
 function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds = [], widgetIds = new Set(), canvasRefs = {}, opts = {}) {
   const D = defaultScreenProfile();
   const x = obj(ctx, p, raw);
@@ -264,7 +281,7 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     orientation: oneOf(ctx, `${p}.screen.orientation`, sc.orientation, D.screen.orientation, ['auto', 'landscape', 'portrait']),
     customCss: str(ctx, `${p}.screen.customCss`, sc.customCss, '', 20000).replace(/<\/style/gi, ''),
     // the owner's HTML over the whole screen, in a frame that runs nothing (#24, core/decorCore.js)
-    overlay: sanitizeOverlay(sc.overlay, (path, m) => ctx.err(path, m), `${p}.screen.overlay`),
+    overlay: overlayFor(ctx, p, sc.overlay, opts),
     // built-in seasonal decorations: lights along the top, snow, confetti (#24)
     decoration: sanitizeDecoration(sc.decoration, (path, m) => ctx.err(path, m), `${p}.screen.decoration`),
     nightMode: {
@@ -832,6 +849,7 @@ export function migrateConfig(raw) {
  * Personalizado screens (core/canvasCore.js sanitizeCanvas): `opts.canvasKinds` (default every kind but the reserved
  * ones) refuses other kinds with 'not available on this server', `opts.haControls` false turns every touch control off
  * and `opts.cameraLive` false turns live cameras into snapshots. Marco Cloud passes CLOUD_CANVAS_KINDS, false, false.
+ * `opts.htmlOverlay` false refuses a screen's HTML overlay, `opts.htmlOverlayBytes` caps it (UTF-8 bytes).
  * `warnings` lists what was fixed on the way without refusing the save (a widget moved to a free spot).
  */
 export function validateConfig(input, opts = {}) {

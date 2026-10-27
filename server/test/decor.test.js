@@ -174,3 +174,18 @@ test('the frame document: Marco base style and a CSP that blocks everything but 
   assert.ok(doc.endsWith(`<body>${html}</body></html>`));
   assert.doesNotMatch(decor.OVERLAY_CSP, /script-src|unsafe-eval/);
 });
+
+test('an edition without the overlay refuses it, and its byte cap holds on the server', () => {
+  const c = defaultConfig();
+  c.screens[0].screen.overlay = { html: '<b>hi</b>', when: { type: 'always' } };
+  const off = validateConfig(c, { htmlOverlay: false });
+  assert.equal(off.ok, false);
+  assert.ok(errPaths(off).includes('screens[0].screen.overlay.html'));
+  // an empty one is fine there
+  assert.equal(validateConfig(defaultConfig(), { htmlOverlay: false }).ok, true);
+  c.screens[0].screen.overlay.html = 'é'.repeat(600); // 1200 bytes
+  const capped = validateConfig(c, { htmlOverlayBytes: 1000 });
+  assert.equal(capped.ok, false);
+  assert.ok(errPaths(capped).includes('screens[0].screen.overlay.html'));
+  assert.equal(validateConfig(c, { htmlOverlayBytes: 2000 }).ok, true);
+});

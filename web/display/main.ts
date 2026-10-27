@@ -153,7 +153,9 @@ function renderDecor(dayKey = current().dayKey): void {
   } catch {
     /* no matchMedia */
   }
-  decor.render(isWidgetOnly || !cfg ? null : cfg.screen, dayKey, {
+  // private mode hides the owner's HTML (it may show anything, photos too); the built-in decorations stay
+  const screen = isWidgetOnly || !cfg ? null : state.config?.privacy?.active ? { ...cfg.screen, overlay: { html: '', when: { type: 'always' as const } } } : cfg.screen;
+  decor.render(screen, dayKey, {
     calm: lite || cfg?.canvas?.perf === 'low' || reduce,
     light: document.documentElement.classList.contains('theme-light'),
     portrait: !!cfg && isPortrait(cfg),
@@ -1997,6 +1999,7 @@ function applyPrivacy(p: DisplayConfig['privacy']): void {
   document.documentElement.classList.toggle('is-private', on);
   privacyLock.classList.toggle('show', on && p?.lock !== false);
   privacyLock.title = on ? ctx.t('privateMode') : '';
+  renderDecor();
   if (privacyTimer) clearTimeout(privacyTimer);
   privacyTimer = null;
   if (state.demo) return;
