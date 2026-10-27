@@ -243,7 +243,7 @@ export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors
   const cssMax = caps.limits.customCssBytes;
   if (typeof cssMax === 'number' && hasFeature(caps, 'customCss') && cssBytes(s.customCss) > cssMax) e['screen.customCss'] = LIMIT_EXCEEDED;
   const overlayMax = caps.limits.htmlOverlayBytes;
-  if (typeof overlayMax === 'number' && hasFeature(caps, 'htmlOverlay') && cssBytes(s.overlay?.html ?? '') > overlayMax) e['screen.overlay.html'] = LIMIT_EXCEEDED;
+  if (typeof overlayMax === 'number' && hasFeature(caps, 'htmlOverlay') && (s.overlays ?? []).reduce((n, o) => n + cssBytes(o.html), 0) > overlayMax) e['screen.overlays'] = LIMIT_EXCEEDED;
   // Familia (same limits as server/core/familyCore.js)
   const fam = c.family;
   fam?.members.forEach((m) => {

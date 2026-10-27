@@ -65,11 +65,16 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       glass: { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true },
       // the pills under the date of the usual designs (next event, happening now, birthdays, check-in/out)
       highlights: true,
-      // overlay: the owner's HTML over the whole screen, in a frame that runs no scripts; when: { type: 'always' } or
-      // a yearly { type: 'range', from: 'MM-DD', to: 'MM-DD' }. decoration: built-in seasonal lights, snow or
-      // confetti, mode 'none' | 'auto' (by the date) | 'christmas' | 'halloween' | 'newyear' (core/decorCore.js)
-      overlay: { html: '', when: { type: 'always' } },
-      decoration: { mode: 'none', snow: true },
+      // overlays: up to 4 of the owner's HTML over the whole screen, each { name, html, when } in a frame that runs
+      // no scripts; when: { type: 'always' } or a yearly { type: 'range', from: 'MM-DD', to: 'MM-DD' }. decoration:
+      // built-in seasonal lights, snow or confetti, mode 'none' | 'auto' (by the date, the days of `seasons`) |
+      // 'christmas' | 'halloween' | 'newyear' (core/decorCore.js)
+      overlays: [],
+      decoration: {
+        mode: 'none',
+        snow: true,
+        seasons: { newyear: { from: '12-31', to: '01-01' }, christmas: { from: '12-01', to: '01-06' }, halloween: { from: '10-24', to: '10-31' } },
+      },
     },
     // people: calendar ids shown as columns by the 'people' layout (null = automatic); corner: where the
     // 'photoFrame' layout puts its small clock card (tl, tr, bl, br)

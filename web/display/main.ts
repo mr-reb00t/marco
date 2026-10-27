@@ -143,7 +143,7 @@ const doorbell = new DoorbellOverlay($('#doorbell'), doorbellFrames, (on) => {
 const views = new Views($('#view'));
 const kids = new Kids($('#kids'), (id, done) => toggleChore(id, done));
 const custom = new CustomWidgets();
-// the owner's HTML overlay and the seasonal decorations over the whole screen (#24, widgets/decor.ts)
+// the owner's HTML overlays and the seasonal decorations over the whole screen (#24, widgets/decor.ts)
 const decor = new ScreenDecor();
 function renderDecor(dayKey = current().dayKey): void {
   const cfg = state.config ? ctx.cfg : null;
@@ -154,7 +154,7 @@ function renderDecor(dayKey = current().dayKey): void {
     /* no matchMedia */
   }
   // private mode hides the owner's HTML (it may show anything, photos too); the built-in decorations stay
-  const screen = isWidgetOnly || !cfg ? null : state.config?.privacy?.active ? { ...cfg.screen, overlay: { html: '', when: { type: 'always' as const } } } : cfg.screen;
+  const screen = isWidgetOnly || !cfg ? null : state.config?.privacy?.active ? { ...cfg.screen, overlays: [] } : cfg.screen;
   decor.render(screen, dayKey, {
     calm: lite || cfg?.canvas?.perf === 'low' || reduce,
     light: document.documentElement.classList.contains('theme-light'),

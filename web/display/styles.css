@@ -914,7 +914,8 @@ body {
 /* ============ #24: the owner's HTML overlay and the seasonal decorations (widgets/decor.ts) ============
    Above the dashboard (#app, its corner widgets) and below night dimming (50), the status dot and privacy lock (60),
    alerts (70), the access and pairing layers, the doorbell (90) and the missing-screen page (100). No taps. */
-#html-overlay {
+/* each of the owner's overlays, in its own sandboxed frame */
+.html-overlay {
   position: fixed; inset: 0; width: 100%; height: 100%; border: 0; margin: 0; padding: 0; z-index: 41;
   background: transparent; pointer-events: none; overflow: hidden;
 }

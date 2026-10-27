@@ -21,7 +21,7 @@ import {
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
 import { currencyProps, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
-import { sanitizeDecoration, sanitizeOverlay } from './decorCore.js';
+import { migrateOverlay, overlaysBytes, sanitizeDecoration, sanitizeOverlays } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
   PRICE_ZONE_IDS, PRICE_VIEWS, PRICE_UNITS, PRICE_RESOLUTIONS, PRICE_AXES, PRICE_SHAPES, MAX_VAT, MIN_SURCHARGE, MAX_SURCHARGE,
@@ -240,20 +240,21 @@ function requiredStr(ctx, path, v, d, max) {
 }
 
 /**
- * The screen's HTML overlay. `opts.htmlOverlay` false (an edition without it) refuses one with HTML in it, and
- * `opts.htmlOverlayBytes` caps its size in UTF-8 bytes, so neither rests on the admin alone.
+ * The screen's HTML overlays (`legacy`: the single screen.overlay of 0.21). `opts.htmlOverlay` false (an edition
+ * without them) refuses any with HTML in it, and `opts.htmlOverlayBytes` caps the HTML of all of them together in
+ * UTF-8 bytes, so neither rests on the admin alone.
  */
-function overlayFor(ctx, p, raw, opts) {
-  const o = sanitizeOverlay(raw, (path, m) => ctx.err(path, m), `${p}.screen.overlay`);
-  if (!o.html) return o;
+function overlaysFor(ctx, p, raw, legacy, opts) {
+  const list = sanitizeOverlays(raw, (path, m) => ctx.err(path, m), `${p}.screen.overlays`, legacy);
+  if (!list.some((o) => o.html)) return list;
   if (opts.htmlOverlay === false) {
-    ctx.err(`${p}.screen.overlay.html`, 'not available on this server');
-    return { ...o, html: '' };
+    ctx.err(`${p}.screen.overlays`, 'not available on this server');
+    return [];
   }
-  if (opts.htmlOverlayBytes && new TextEncoder().encode(o.html).length > opts.htmlOverlayBytes) {
-    ctx.err(`${p}.screen.overlay.html`, `too long (max ${opts.htmlOverlayBytes} bytes)`);
+  if (opts.htmlOverlayBytes && overlaysBytes(list) > opts.htmlOverlayBytes) {
+    ctx.err(`${p}.screen.overlays`, `too long (max ${opts.htmlOverlayBytes} bytes in all)`);
   }
-  return o;
+  return list;
 }
 
 function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds = [], widgetIds = new Set(), canvasRefs = {}, opts = {}) {
@@ -280,8 +281,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     accent: color(ctx, `${p}.screen.accent`, sc.accent, D.screen.accent),
     orientation: oneOf(ctx, `${p}.screen.orientation`, sc.orientation, D.screen.orientation, ['auto', 'landscape', 'portrait']),
     customCss: str(ctx, `${p}.screen.customCss`, sc.customCss, '', 20000).replace(/<\/style/gi, ''),
-    // the owner's HTML over the whole screen, in a frame that runs nothing (#24, core/decorCore.js)
-    overlay: overlayFor(ctx, p, sc.overlay, opts),
+    // the owner's HTML over the whole screen, each in a frame that runs nothing (#24, core/decorCore.js)
+    overlays: overlaysFor(ctx, p, sc.overlays, sc.overlay, opts),
     // built-in seasonal decorations: lights along the top, snow, confetti (#24)
     decoration: sanitizeDecoration(sc.decoration, (path, m) => ctx.err(path, m), `${p}.screen.decoration`),
     nightMode: {
@@ -849,7 +850,8 @@ export function migrateConfig(raw) {
  * Personalizado screens (core/canvasCore.js sanitizeCanvas): `opts.canvasKinds` (default every kind but the reserved
  * ones) refuses other kinds with 'not available on this server', `opts.haControls` false turns every touch control off
  * and `opts.cameraLive` false turns live cameras into snapshots. Marco Cloud passes CLOUD_CANVAS_KINDS, false, false.
- * `opts.htmlOverlay` false refuses a screen's HTML overlay, `opts.htmlOverlayBytes` caps it (UTF-8 bytes).
+ * `opts.htmlOverlay` false refuses a screen's HTML overlays, `opts.htmlOverlayBytes` caps them (UTF-8 bytes, all
+ * of a screen's together).
  * `warnings` lists what was fixed on the way without refusing the save (a widget moved to a free spot).
  */
 export function validateConfig(input, opts = {}) {
@@ -1125,7 +1127,13 @@ export function mergeDefaults(stored) {
       if (isObj(s.canvas) && !('grid' in s.canvas) && isObj(m.canvas)) delete m.canvas.grid;
       return m;
     };
-    out.screens = src.screens.map((s) => (isObj(s) ? legacyCanvas(s, merge(defaultScreenProfile({ id: s.id, slug: s.slug, name: s.name }), keepGrid(keepStyle(s)))) : s));
+    // 0.21 had one HTML overlay (screen.overlay); 0.22 a list of them (screen.overlays)
+    const listOverlays = (s) => {
+      if (!isObj(s.screen) || 'overlays' in s.screen || !('overlay' in s.screen)) return s;
+      const { overlay, ...screen } = s.screen;
+      return { ...s, screen: { ...screen, overlays: migrateOverlay(overlay) } };
+    };
+    out.screens = src.screens.map((s) => (isObj(s) ? legacyCanvas(s, merge(defaultScreenProfile({ id: s.id, slug: s.slug, name: s.name }), listOverlays(keepGrid(keepStyle(s))))) : s));
   }
   return out;
 }

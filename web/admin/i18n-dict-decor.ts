@@ -15,14 +15,6 @@ const ROWS: [string, string, string, string, string, string][] = [
   ['Automática (según la fecha)', 'Automatic (by the date)', 'Automática (conforme a data)', 'Automatisch (op datum)', 'Automatisk (efter datoen)', 'Automatyczna (według daty)'],
   ['Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween'],
   ['Año Nuevo', 'New Year', 'Ano Novo', 'Oud en nieuw', 'Nytår', 'Nowy Rok'],
-  [
-    'Navidad del 1 de diciembre al 6 de enero, Halloween del 24 al 31 de octubre y Año Nuevo el 31 de diciembre y el 1 de enero.',
-    'Christmas from 1 December to 6 January, Halloween from 24 to 31 October and New Year on 31 December and 1 January.',
-    'Natal de 1 de dezembro a 6 de janeiro, Halloween de 24 a 31 de outubro e Ano Novo a 31 de dezembro e 1 de janeiro.',
-    'Kerst van 1 december tot 6 januari, Halloween van 24 tot 31 oktober en oud en nieuw op 31 december en 1 januari.',
-    'Jul fra 1. december til 6. januar, halloween fra 24. til 31. oktober og nytår den 31. december og 1. januar.',
-    'Boże Narodzenie od 1 grudnia do 6 stycznia, Halloween od 24 do 31 października, a Nowy Rok 31 grudnia i 1 stycznia.',
-  ],
   ['Nieve', 'Snow', 'Neve', 'Sneeuw', 'Sne', 'Śnieg'],
   [
     'Unos pocos copos que caen despacio, con las luces de Navidad.',
@@ -49,16 +41,30 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Din egen HTML og CSS, tegnet over hele skærmen (for eksempel nogle lys i december).',
     'Twój własny HTML i CSS, rysowany nad całym ekranem (na przykład światełka w grudniu).',
   ],
-  [
-    'Los scripts no se ejecutan y solo se cargan imágenes https o data:. No recibe toques: la pantalla sigue funcionando debajo.',
-    'Scripts do not run and only https or data: images load. It takes no taps: the screen keeps working underneath.',
-    'Os scripts não são executados e só se carregam imagens https ou data:. Não recebe toques: o ecrã continua a funcionar por baixo.',
-    'Scripts worden niet uitgevoerd en alleen https- of data:-afbeeldingen worden geladen. Het reageert niet op tikken: het scherm eronder blijft gewoon werken.',
-    'Scripts køres ikke, og kun https- eller data:-billeder indlæses. Det tager ikke imod tryk: skærmen virker fortsat nedenunder.',
-    'Skrypty się nie uruchamiają, a wczytywane są tylko obrazy https lub data:. Nie reaguje na dotyk: ekran pod spodem działa dalej.',
-  ],
   ['Cada año entre dos fechas', 'Every year between two dates', 'Todos os anos entre duas datas', 'Elk jaar tussen twee datums', 'Hvert år mellem to datoer', 'Co roku między dwiema datami'],
   ['{used} de {max} caracteres', '{used} of {max} characters', '{used} de {max} caracteres', '{used} van {max} tekens', '{used} af {max} tegn', '{used} z {max} znaków'],
+  ['Fechas de cada una', 'Dates of each', 'Datas de cada uma', 'Datums van elk', 'Datoer for hver', 'Daty każdej'],
+  [
+    'Cada año, los dos días incluidos. Si dos coinciden, gana Año Nuevo, luego Navidad y luego Halloween.',
+    'Every year, both days included. If two overlap, New Year wins, then Christmas, then Halloween.',
+    'Todos os anos, com os dois dias incluídos. Se duas coincidirem, ganha o Ano Novo, depois o Natal e depois o Halloween.',
+    'Elk jaar, beide dagen inbegrepen. Als er twee samenvallen, gaat oud en nieuw voor, dan kerst en dan Halloween.',
+    'Hvert år, begge dage medregnet. Hvis to overlapper, vinder nytår, så jul og så halloween.',
+    'Co roku, oba dni włącznie. Jeśli dwie się pokrywają, wygrywa Nowy Rok, potem Boże Narodzenie, potem Halloween.',
+  ],
+  ['Volver a las fechas de siempre', 'Back to the usual dates', 'Voltar às datas habituais', 'Terug naar de gewone datums', 'Tilbage til de sædvanlige datoer', 'Przywróć zwykłe daty'],
+  [
+    'Puedes tener hasta {n}, cada uno con sus fechas; los que coinciden se ven a la vez. Los scripts no se ejecutan y solo se cargan imágenes https o data:. No reciben toques: la pantalla sigue funcionando debajo.',
+    'You can have up to {n}, each with its own dates; those that overlap show together. Scripts do not run and only https or data: images load. They take no taps: the screen keeps working underneath.',
+    'Pode ter até {n}, cada um com as suas datas; os que coincidem veem-se ao mesmo tempo. Os scripts não são executados e só se carregam imagens https ou data:. Não recebem toques: o ecrã continua a funcionar por baixo.',
+    'Je kunt er tot {n} hebben, elk met eigen datums; die samenvallen zie je tegelijk. Scripts worden niet uitgevoerd en alleen https- of data:-afbeeldingen worden geladen. Ze reageren niet op tikken: het scherm eronder blijft gewoon werken.',
+    'Du kan have op til {n}, hver med sine egne datoer; dem, der overlapper, vises samtidig. Scripts køres ikke, og kun https- eller data:-billeder indlæses. De tager ikke imod tryk: skærmen virker fortsat nedenunder.',
+    'Możesz mieć do {n}, każdy z własnymi datami; te, które się pokrywają, widać naraz. Skrypty się nie uruchamiają, a wczytywane są tylko obrazy https lub data:. Nie reagują na dotyk: ekran pod spodem działa dalej.',
+  ],
+  ['{used} de {max} KB entre todos.', '{used} of {max} KB for all of them.', '{used} de {max} KB entre todos.', '{used} van {max} KB voor alles samen.', '{used} af {max} KB i alt.', '{used} z {max} KB łącznie.'],
+  ['Nombre, p. ej. Luces de Navidad', 'Name, e.g. Christmas lights', 'Nome, p. ex. Luzes de Natal', 'Naam, bijv. Kerstverlichting', 'Navn, f.eks. Julelys', 'Nazwa, np. Światełka świąteczne'],
+  ['Añadir HTML', 'Add HTML', 'Adicionar HTML', 'HTML toevoegen', 'Tilføj HTML', 'Dodaj HTML'],
+  ['Añadir otro HTML', 'Add another HTML', 'Adicionar outro HTML', 'Nog een HTML toevoegen', 'Tilføj endnu en HTML', 'Dodaj kolejny HTML'],
 ];
 
 export const ROWS_DECOR: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

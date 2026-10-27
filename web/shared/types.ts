@@ -55,9 +55,9 @@ export interface ScreenConfig {
   accent: string;
   orientation: 'auto' | 'landscape' | 'portrait' | string;
   customCss: string;
-  /** The owner's HTML over the whole screen (#24), drawn in a sandboxed frame that runs no scripts. Older servers:
-   *  absent (= none). */
-  overlay?: ScreenOverlay;
+  /** The owner's HTML over the whole screen (#24), up to 4, each drawn in a sandboxed frame that runs no scripts and
+   *  shown on its own dates. Older servers: absent (= none; 0.21 had one, `overlay`, which the server migrates). */
+  overlays?: ScreenOverlay[];
   /** Built-in seasonal decorations (#24). Older servers: absent (= none). */
   decoration?: ScreenDecoration;
   nightMode: NightMode;
@@ -71,17 +71,23 @@ export interface ScreenConfig {
 
 /** When the HTML overlay shows: always, or every year from one day to another (MM-DD, may run over New Year). */
 export type OverlayWhen = { type: 'always' } | { type: 'range'; from: string; to: string };
-/** screen.overlay (server/core/decorCore.js): up to 20000 characters of HTML and CSS, no scripts run. */
+/** One of screen.overlays (server/core/decorCore.js): up to 20000 characters of HTML and CSS, no scripts run. */
 export interface ScreenOverlay {
+  /** the owner's label for it in the admin ("Luces de Navidad"); older servers: absent */
+  name?: string;
   html: string;
   when: OverlayWhen;
 }
 export type DecorMode = 'none' | 'auto' | 'christmas' | 'halloween' | 'newyear';
-/** screen.decoration: 'auto' follows the date (Christmas 1 Dec to 6 Jan, Halloween 24 to 31 Oct, New Year 31 Dec and
- *  1 Jan); snow falls with the Christmas lights. */
+/** The days of each season for 'auto' (yearly MM-DD, both ends included). */
+export type DecorSeasons = Record<'christmas' | 'halloween' | 'newyear', { from: string; to: string }>;
+/** screen.decoration: 'auto' follows the date, by `seasons` (by default Christmas 1 Dec to 6 Jan, Halloween 24 to 31
+ *  Oct, New Year 31 Dec and 1 Jan); snow falls with the Christmas lights. */
 export interface ScreenDecoration {
   mode: DecorMode;
   snow: boolean;
+  /** older servers: absent (= the default days) */
+  seasons?: DecorSeasons;
 }
 
 export interface LayoutConfig {

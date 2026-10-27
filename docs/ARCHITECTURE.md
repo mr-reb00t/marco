@@ -111,9 +111,11 @@ The stored config has **global** sections shared by every screen and a list of *
                   // glass (Modern only): { "appearance": "auto", "opacity": 0.5, "blur": 18, "tint": "dark", "edge": true }
                   //   appearance auto | clear | tinted, opacity 0..1 (see-through to solid), blur 0..40, tint dark | light | photo.
                   //   web/shared/glass.ts turns it (plus the current photo) into --g-* CSS variables on <html>.
-                  // overlay: { "html": "", "when": { "type": "always" } } the owner's HTML over the whole screen; when may be
-                  //   { "type": "range", "from": "12-01", "to": "01-06" } (MM-DD, every year). See "Overlay and decorations".
-                  // decoration: { "mode": "none", "snow": true } mode none | auto | christmas | halloween | newyear.
+                  // overlays: [{ "name": "", "html": "", "when": { "type": "always" } }] up to 4 of the owner's HTML over the
+                  //   whole screen; when may be { "type": "range", "from": "12-01", "to": "01-06" } (MM-DD, every year).
+                  //   0.21 had one, "overlay": { "html", "when" }, which becomes the first. See "Overlay and decorations".
+                  // decoration: { "mode": "none", "snow": true, "seasons": { "christmas": { "from": "12-01", "to": "01-06" }, … } }
+                  //   mode none | auto | christmas | halloween | newyear; seasons: the days of each for auto.
   "layout":     { "preset": "bigCalendar", "sidePanel": "left", "sideWidth": 0.36, "people": null, "corner": "br", "plannerBar": "side" },
                   // preset: bigCalendar | leftRight | topBottom | bigTime | agenda | today | people | photoFrame | twoWeeks | board | bedside | planner
                   //   | kidsRoutines | kidsFamily | kidsMeals (Modern style only; with Classic the display shows bigCalendar)
@@ -543,7 +545,11 @@ rules count as albums in use for the Immich proxy and the admin's Immich status.
 Two layers over a whole screen (#24), both per screen, both in `server/core/decorCore.js` (validation and the date
 checks, shared with the display and Marco Cloud) and drawn by `web/display/widgets/decor.ts`:
 
-- `screen.overlay = { html, when }`: up to 20000 characters of the owner's HTML and CSS. `when` is `{ type: 'always' }`
+- `screen.overlays = [{ name, html, when }]`: up to 4 overlays, each with up to 20000 characters of the owner's HTML
+  and CSS and a `name` (up to 60 characters, for the admin only). Those whose dates hold show together, each in a frame
+  of its own, a later one over an earlier one. Until 0.21 a screen had one, `screen.overlay = { html, when }`:
+  `mergeDefaults` (loading) and `validateConfig` (saving) turn it into the first of the list, unless a list is there
+  already. `when` is `{ type: 'always' }`
   or `{ type: 'range', from, to }` (`MM-DD` every year, inclusive; `to < from` wraps the year end, as in special
   backgrounds), checked on the display in the screen's time zone, again every minute (so a new day turns it on or off).
   The HTML never enters the display page: it is the `srcdoc` of an `<iframe sandbox="">` with no permission at all (an
@@ -552,19 +558,21 @@ checks, shared with the display and Marco Cloud) and drawn by `web/display/widge
   (`default-src 'none'; style-src 'unsafe-inline'; img-src https: data:`, so nothing loads but inline styles and
   images) and a base style (transparent `html` and `body`, no margin, nothing scrolls). The frame element gets the
   colour scheme of its document so Chromium paints no backdrop behind it. A carousel with no screens left copies the
-  look of the default screen but never its overlay (nor its custom CSS). Private mode hides it (it may show anything).
-  The `htmlOverlay` feature gates the admin card, and the server too: `validateConfig` refuses an overlay with HTML
-  when `opts.htmlOverlay` is false and caps it at `opts.htmlOverlayBytes` (UTF-8) when that is set.
-- `screen.decoration = { mode, snow }`: lights along the top edge drawn by Marco (DOM and CSS, no files), within the
+  look of the default screen but never its overlays (nor its custom CSS). Private mode hides them (they may show
+  anything). The `htmlOverlay` feature gates the admin card, and the server too: `validateConfig` refuses overlays
+  with HTML when `opts.htmlOverlay` is false and caps the HTML of all of a screen's together at
+  `opts.htmlOverlayBytes` (UTF-8) when that is set.
+- `screen.decoration = { mode, snow, seasons }`: lights along the top edge drawn by Marco (DOM and CSS, no files), within the
   top 50 px of a 1080p screen. `christmas` adds a few snowflakes when `snow` is on, `halloween` a few bats and a small
   cobweb in the top right corner, plus a bigger cobweb in the bottom right one with a spider: every 60 s it walks out
   along the bottom edge, takes a bite out of the screen (a patch of the background colour) and goes home, and the bite
-  heals. `newyear` a short shower of confetti every 90 s. `auto` follows the date: Christmas
-  1 December to 6 January, Halloween 24 to 31 October, New Year 31 December and 1 January (it wins over Christmas on
-  those days). Calm screens (`?lite=1`, *Ahorro* on Personalizado, `prefers-reduced-motion`) get still lights, a
+  heals. `newyear` a short shower of confetti every 90 s. `auto` follows the date, by the days in `seasons`
+  (`{ christmas, halloween, newyear }`, each `{ from, to }` in `MM-DD`, every year, inclusive), by default Christmas
+  1 December to 6 January, Halloween 24 to 31 October, New Year 31 December and 1 January. When two overlap New Year
+  wins, then Christmas, then Halloween. A season missing or broken in a stored value keeps its default days. Calm screens (`?lite=1`, *Ahorro* on Personalizado, `prefers-reduced-motion`) get still lights, a
   spider that stays home and no snow, bites or confetti.
 
-Layers: `#decor` (z-index 40) and `#html-overlay` (41) are children of `<body>`, above `#app` (1) and its corner
+Layers: `#decor` (z-index 40) and the `.html-overlay` frames (41) are children of `<body>`, above `#app` (1) and its corner
 widgets, under night dimming (50), the status dot and privacy lock (60), announcements (70), identify and access
 codes (80, 85), the doorbell (90) and the missing-screen page (100). Neither is drawn in the admin's widget-only
 preview.

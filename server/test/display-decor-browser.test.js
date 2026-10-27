@@ -1,7 +1,8 @@
-// The HTML overlay and the seasonal decorations on a running display (#24): the owner's HTML is drawn only in a
-// sandboxed frame (no scripts, an opaque origin, no taps) over the dashboard and under night dimming; the lights stay
-// in a thin band along the top, with snow at Christmas and confetti at New Year, and stand still in lite mode. The
-// real app on a random port behind the Vite dev server, in headless Chrome (skipped without a browser).
+// The HTML overlays and the seasonal decorations on a running display (#24): the owner's HTML is drawn only in
+// sandboxed frames, one per overlay (no scripts, an opaque origin, no taps) over the dashboard and under night
+// dimming; the lights stay in a thin band along the top, with snow at Christmas and confetti at New Year, and stand
+// still in lite mode. The real app on a random port behind the Vite dev server, in headless Chrome (skipped without
+// a browser).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -44,12 +45,16 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
     c.news.feeds = [];
     c.security.displayAccess = 'open';
     Object.assign(c.screens[0].background, { enabled: false, ambient: 'none' });
-    c.screens[0].screen.overlay = { html: LIGHTS, when: { type: 'range', from: '12-01', to: '01-06' } };
-    c.screens[0].screen.decoration = { mode: 'auto', snow: true };
+    c.screens[0].screen.overlays = [
+      { name: 'Lights', html: LIGHTS, when: { type: 'range', from: '12-01', to: '01-06' } },
+      { name: 'Last week', html: '<div class="second" style="position:fixed;bottom:0">2</div>', when: { type: 'range', from: '12-24', to: '12-31' } },
+    ];
+    // Christmas all of December only (the owner's days), New Year and Halloween as usual
+    c.screens[0].screen.decoration = { mode: 'auto', snow: true, seasons: { christmas: { from: '12-01', to: '12-31' } } };
     const k = defaultScreenProfile({ id: 's_kitchen', slug: 'kitchen', name: 'Kitchen' });
     Object.assign(k.background, { enabled: false, ambient: 'none' });
     k.screen.theme = 'light';
-    k.screen.overlay = { html: LIGHTS, when: { type: 'range', from: '06-01', to: '06-30' } };
+    k.screen.overlays = [{ html: LIGHTS, when: { type: 'range', from: '06-01', to: '06-30' } }];
     k.screen.decoration = { mode: 'halloween', snow: true };
     c.screens.push(k);
     const v = validateConfig(c);
@@ -82,7 +87,8 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
   });
 
   const STATE = `(() => {
-    const f = document.getElementById('html-overlay');
+    const frames = document.querySelectorAll('.html-overlay');
+    const f = frames[0];
     const d = document.getElementById('decor');
     const bulbs = d ? [...d.querySelectorAll('.decor-bulb')] : [];
     const cs = f ? getComputedStyle(f) : null;
@@ -96,6 +102,8 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
         reachable: (() => { try { return !!f.contentDocument; } catch { return false; } })(),
         inApp: !!f.closest('#app'), hit: document.elementFromPoint(innerWidth / 2, 20) === f,
       } : null,
+      frames: frames.length,
+      sandboxed: [...frames].every((x) => x.getAttribute('sandbox') === '' && getComputedStyle(x).pointerEvents === 'none'),
       strandInPage: document.querySelectorAll('.light-strand, .bulb').length,
       night: Number(getComputedStyle(document.getElementById('night')).zIndex),
       decor: d ? {
@@ -154,6 +162,7 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
     try {
       const s = await until(p, (x) => x.frame && x.decor);
       assert.ok(s.frame, 'the overlay frame is on the page');
+      assert.equal(s.frames, 1, 'the second overlay waits for its own dates');
       assert.equal(s.frame.sandbox, '', 'sandbox with no permission at all');
       assert.equal(s.frame.sandboxTokens, 0, 'no allow-scripts, no allow-same-origin');
       assert.equal(s.frame.reachable, false, 'an opaque origin: the page cannot reach into it, nor it into the page');
@@ -201,10 +210,12 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
   test('New Year\'s Eve: New Year wins over Christmas; lite mode keeps the lights still, with no confetti', async () => {
     const p = await open('screen=living-room&now=2026-12-31T20:00&photos=0');
     try {
-      const s = await until(p, (x) => x.decor);
+      const s = await until(p, (x) => x.decor && x.frames === 2);
       assert.match(s.decor.cls, /decor--newyear/);
       assert.ok(s.decor.confetti > 0);
       assert.equal(s.decor.flakes, 0);
+      assert.equal(s.frames, 2, 'both overlays on the days they share, each in a frame of its own');
+      assert.equal(s.sandboxed, true);
     } finally {
       await p.close();
     }
@@ -218,6 +229,19 @@ describe('HTML overlay and seasonal decorations on a running display', { skip: !
       assert.ok(s.frame, 'the owner\'s overlay stays in lite mode');
     } finally {
       await l.close();
+    }
+  });
+
+  test("the owner's days for Christmas: none on 3 January, though the lights overlay still runs to the 6th", async () => {
+    const p = await open('screen=living-room&now=2027-01-03T10:00&photos=0');
+    try {
+      const s = await until(p, (x) => x.frame);
+      assert.equal(s.frames, 1);
+      await wait(500);
+      const t = await p.eval(STATE);
+      assert.equal(t.decor, null, 'Christmas ended on 31 December for this screen');
+    } finally {
+      await p.close();
     }
   });
 

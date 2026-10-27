@@ -6056,3 +6056,32 @@ button.immich-album:hover {
   -webkit-text-security: disc;
   text-security: disc;
 }
+
+/* Pantalla → Ajustes (#24): the HTML overlays, one block each, and the days of each season */
+.overlay-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 13px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.overlay-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.overlay-item__head > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.decor-seasons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.decor-seasons__name {
+  min-width: 6.5em;
+  font-weight: 600;
+}

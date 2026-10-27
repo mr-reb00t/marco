@@ -1,14 +1,14 @@
-// The HTML overlay (screen.overlay) and the seasonal decorations (screen.decoration) of a screen (#24): validation,
+// The HTML overlays (screen.overlays, screen.overlay until 0.21) and the seasonal decorations (screen.decoration) of a screen (#24): validation,
 // defaults, the dates they show on, carousels, capabilities, and the frame document the display builds
 // (web/display/widgets/decor.ts, loaded through Node's type stripping).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateConfig } from '../core/validate.js';
+import { mergeDefaults, validateConfig } from '../core/validate.js';
 import { defaultConfig } from '../core/defaults.js';
 import { displayConfig } from '../core/screens.js';
 import { emptyCarouselScreen } from '../core/carousels.js';
 import { FEATURE_KEYS } from '../capabilities.js';
-import { decorationOn, inYearlyRange, OVERLAY_MAX, overlayShown, sanitizeDecoration, sanitizeOverlay, seasonOn, SEASONS } from '../core/decorCore.js';
+import { decorationOn, inYearlyRange, migrateOverlay, OVERLAY_MAX, OVERLAYS_MAX, overlaysBytes, overlayShown, sanitizeDecoration, sanitizeOverlay, seasonOn, SEASONS } from '../core/decorCore.js';
 
 let decor = null;
 try {
@@ -25,43 +25,92 @@ const withScreen = (patch) => {
 };
 const errPaths = (r) => r.errors.map((e) => e.path);
 
-test('new and old screens: no overlay and no decoration', () => {
+const DEF_DECOR = { mode: 'none', snow: true, seasons: { newyear: { from: '12-31', to: '01-01' }, christmas: { from: '12-01', to: '01-06' }, halloween: { from: '10-24', to: '10-31' } } };
+const ov = (html, when = { type: 'always' }, name = '') => ({ name, html, when });
+
+test('new and old screens: no overlays and no decoration', () => {
   const fresh = validateConfig(defaultConfig());
   assert.equal(fresh.ok, true);
-  assert.deepEqual(fresh.value.screens[0].screen.overlay, { html: '', when: { type: 'always' } });
-  assert.deepEqual(fresh.value.screens[0].screen.decoration, { mode: 'none', snow: true });
+  assert.deepEqual(fresh.value.screens[0].screen.overlays, []);
+  assert.deepEqual(fresh.value.screens[0].screen.decoration, DEF_DECOR);
+  assert.equal('overlay' in fresh.value.screens[0].screen, false);
   const c = defaultConfig();
-  delete c.screens[0].screen.overlay;
+  delete c.screens[0].screen.overlays;
   delete c.screens[0].screen.decoration;
   const old = validateConfig(c);
   assert.equal(old.ok, true, JSON.stringify(old.errors));
-  assert.deepEqual(old.value.screens[0].screen.overlay, { html: '', when: { type: 'always' } });
-  assert.equal(old.value.screens[0].screen.decoration.mode, 'none');
+  assert.deepEqual(old.value.screens[0].screen.overlays, []);
+  assert.deepEqual(old.value.screens[0].screen.decoration, DEF_DECOR);
 });
 
-test('the overlay keeps the HTML as written and reaches the display', () => {
+test('the single overlay of 0.21 becomes the first of the list, on load and on save', () => {
+  const html = '<div class="b"></div>';
+  const legacy = { html, when: { type: 'range', from: '12-01', to: '01-06' } };
+  const stored = defaultConfig();
+  delete stored.screens[0].screen.overlays;
+  stored.screens[0].screen.overlay = legacy;
+  stored.screens[0].screen.decoration = { mode: 'auto', snow: false };
+  const loaded = mergeDefaults(structuredClone(stored));
+  assert.deepEqual(loaded.screens[0].screen.overlays, [ov(html, legacy.when)]);
+  assert.equal('overlay' in loaded.screens[0].screen, false);
+  assert.deepEqual(loaded.screens[0].screen.decoration.seasons, DEF_DECOR.seasons, 'the default days filled in');
+  const saved = validateConfig(structuredClone(stored));
+  assert.equal(saved.ok, true, JSON.stringify(saved.errors));
+  assert.deepEqual(saved.value.screens[0].screen.overlays, [ov(html, legacy.when)]);
+  assert.equal('overlay' in saved.value.screens[0].screen, false);
+  // an empty one leaves an empty list, and a list already there wins
+  assert.deepEqual(migrateOverlay({ html: ' ', when: { type: 'always' } }), []);
+  const both = defaultConfig();
+  both.screens[0].screen.overlay = legacy;
+  both.screens[0].screen.overlays = [ov('<i>new</i>')];
+  assert.deepEqual(validateConfig(both).value.screens[0].screen.overlays, [ov('<i>new</i>')]);
+  assert.deepEqual(mergeDefaults(both).screens[0].screen.overlays, [ov('<i>new</i>')]);
+});
+
+test('the overlays keep the HTML as written, with a name, and reach the display', () => {
   const html = '<style>.b{position:fixed;top:0}</style><div class="b"><i class="bulb red"></i></div>';
-  const r = withScreen({ overlay: { html, when: { type: 'range', from: '12-01', to: '01-06' } } });
+  const r = withScreen({ overlays: [ov(html, { type: 'range', from: '12-01', to: '01-06' }, '  Luces de Navidad '), ov('<b>2</b>')] });
   assert.equal(r.ok, true, JSON.stringify(r.errors));
-  assert.equal(r.value.screens[0].screen.overlay.html, html);
-  assert.deepEqual(r.value.screens[0].screen.overlay.when, { type: 'range', from: '12-01', to: '01-06' });
+  const list = r.value.screens[0].screen.overlays;
+  assert.equal(list.length, 2);
+  assert.equal(list[0].html, html);
+  assert.equal(list[0].name, 'Luces de Navidad');
+  assert.deepEqual(list[0].when, { type: 'range', from: '12-01', to: '01-06' });
   const d = displayConfig(r.value, r.value.screens[0]);
-  assert.equal(d.screen.overlay.html, html);
+  assert.equal(d.screen.overlays[0].html, html);
+  assert.equal(d.screen.overlays[1].html, '<b>2</b>');
 });
 
-test('the overlay is capped at 20000 characters', () => {
+test('at most 4 overlays, a list and nothing else, names capped at 60', () => {
+  assert.equal(OVERLAYS_MAX, 4);
+  const four = withScreen({ overlays: [1, 2, 3, 4].map((n) => ov(`<b>${n}</b>`)) });
+  assert.equal(four.ok, true);
+  const five = withScreen({ overlays: [1, 2, 3, 4, 5].map((n) => ov(`<b>${n}</b>`)) });
+  assert.equal(five.ok, false);
+  assert.ok(errPaths(five).includes('screens[0].screen.overlays'));
+  assert.equal(five.value.screens[0].screen.overlays.length, 4);
+  const notList = withScreen({ overlays: { html: 'x' } });
+  assert.equal(notList.ok, false);
+  assert.deepEqual(notList.value.screens[0].screen.overlays, []);
+  assert.equal(sanitizeOverlay({ name: 'a\u0000b'.repeat(40) }).name.length, 60);
+  assert.equal(sanitizeOverlay({ name: 'a\u0007b' }).name, 'ab');
+  const badName = withScreen({ overlays: [{ name: 5, html: 'x' }] });
+  assert.ok(errPaths(badName).includes('screens[0].screen.overlays[0].name'));
+});
+
+test('each overlay is capped at 20000 characters', () => {
   assert.equal(OVERLAY_MAX, 20000);
-  const ok = withScreen({ overlay: { html: 'a'.repeat(20000) } });
+  const ok = withScreen({ overlays: [ov('a'.repeat(20000))] });
   assert.equal(ok.ok, true);
-  const long = withScreen({ overlay: { html: 'a'.repeat(20001) } });
+  const long = withScreen({ overlays: [ov('x'), ov('a'.repeat(20001))] });
   assert.equal(long.ok, false);
-  assert.ok(errPaths(long).includes('screens[0].screen.overlay.html'), JSON.stringify(long.errors));
-  assert.equal(long.value.screens[0].screen.overlay.html.length, 20000);
+  assert.ok(errPaths(long).includes('screens[0].screen.overlays[1].html'), JSON.stringify(long.errors));
+  assert.equal(long.value.screens[0].screen.overlays[1].html.length, 20000);
   // control characters go, and a value that is not a string is refused
   assert.equal(sanitizeOverlay({ html: 'a\u0000b\u0007c' }).html, 'abc');
-  const num = withScreen({ overlay: { html: 42 } });
+  const num = withScreen({ overlays: [{ html: 42 }] });
   assert.equal(num.ok, false);
-  assert.equal(num.value.screens[0].screen.overlay.html, '');
+  assert.equal(num.value.screens[0].screen.overlays[0].html, '');
 });
 
 test('the overlay schedule: always or a yearly range of real days, anything else refused', () => {
@@ -73,30 +122,40 @@ test('the overlay schedule: always or a yearly range of real days, anything else
     [{ type: 'range', from: '12-1', to: '01-06' }, 'when.from'],
     [{ type: 'range' }, 'when.from'],
   ]) {
-    const r = withScreen({ overlay: { html: 'x', when } });
+    const r = withScreen({ overlays: [{ html: 'x', when }] });
     assert.equal(r.ok, false, JSON.stringify(when));
-    assert.ok(errPaths(r).includes(`screens[0].screen.overlay.${path}`), JSON.stringify(r.errors));
+    assert.ok(errPaths(r).includes(`screens[0].screen.overlays[0].${path}`), JSON.stringify(r.errors));
   }
   const errs = [];
   assert.deepEqual(sanitizeOverlay({ html: 'x', when: { type: 'range', from: '02-29', to: '03-01', extra: 1 } }, (p) => errs.push(p)).when, { type: 'range', from: '02-29', to: '03-01' });
   assert.deepEqual(errs, []);
   assert.deepEqual(sanitizeOverlay({ html: 'x', when: { type: 'always', from: '01-01' } }).when, { type: 'always' });
-  assert.deepEqual(sanitizeOverlay('nope', (p) => errs.push(p)), { html: '', when: { type: 'always' } });
+  assert.deepEqual(sanitizeOverlay('nope', (p) => errs.push(p)), ov(''));
   assert.deepEqual(errs, ['screen.overlay']);
 });
 
-test('the decoration: a known mode and a boolean snow, unknown values back to the defaults', () => {
+test('the decoration: a known mode, a boolean snow and real days per season, the rest back to the defaults', () => {
   for (const mode of ['none', 'auto', 'christmas', 'halloween', 'newyear']) {
     const r = withScreen({ decoration: { mode, snow: false } });
     assert.equal(r.ok, true, mode);
-    assert.deepEqual(r.value.screens[0].screen.decoration, { mode, snow: false });
+    assert.deepEqual(r.value.screens[0].screen.decoration, { ...DEF_DECOR, mode, snow: false });
   }
   const bad = withScreen({ decoration: { mode: 'easter', snow: 'yes' } });
   assert.equal(bad.ok, false);
   assert.ok(errPaths(bad).includes('screens[0].screen.decoration.mode'));
   assert.ok(errPaths(bad).includes('screens[0].screen.decoration.snow'));
-  assert.deepEqual(bad.value.screens[0].screen.decoration, { mode: 'none', snow: true });
-  assert.deepEqual(sanitizeDecoration([1]), { mode: 'none', snow: true });
+  assert.deepEqual(bad.value.screens[0].screen.decoration, DEF_DECOR);
+  assert.deepEqual(sanitizeDecoration([1]), DEF_DECOR);
+  // the owner's days: all of December for Christmas, the others as they were
+  const dec = withScreen({ decoration: { mode: 'auto', snow: true, seasons: { christmas: { from: '12-01', to: '12-31' } } } });
+  assert.equal(dec.ok, true, JSON.stringify(dec.errors));
+  assert.deepEqual(dec.value.screens[0].screen.decoration.seasons, { ...DEF_DECOR.seasons, christmas: { from: '12-01', to: '12-31' } });
+  const wrong = withScreen({ decoration: { mode: 'auto', snow: true, seasons: { halloween: { from: '10-32', to: '10-31' }, newyear: 'x', easter: { from: '04-01', to: '04-02' } } } });
+  assert.equal(wrong.ok, false);
+  assert.ok(errPaths(wrong).includes('screens[0].screen.decoration.seasons.halloween.from'));
+  assert.ok(errPaths(wrong).includes('screens[0].screen.decoration.seasons.newyear'));
+  assert.deepEqual(wrong.value.screens[0].screen.decoration.seasons, DEF_DECOR.seasons, 'unknown seasons are dropped');
+  assert.equal(withScreen({ decoration: { mode: 'auto', snow: true, seasons: [] } }).ok, false);
 });
 
 test('yearly ranges include both ends and may run over New Year', () => {
@@ -145,14 +204,29 @@ test('automatic decorations follow the dates, New Year wins over Christmas on it
   assert.equal(decorationOn(undefined, '2026-12-24'), null);
 });
 
+test("automatic decorations on the owner's days", () => {
+  const seasons = { ...DEF_DECOR.seasons, christmas: { from: '12-01', to: '12-31' }, halloween: { from: '10-01', to: '11-02' } };
+  const d = { mode: 'auto', snow: true, seasons };
+  assert.equal(decorationOn(d, '2026-12-30'), 'christmas');
+  assert.equal(decorationOn(d, '2026-12-31'), 'newyear', 'New Year still wins on its days');
+  assert.equal(decorationOn(d, '2027-01-03'), null, 'no Christmas in January any more');
+  assert.equal(decorationOn(d, '2026-10-05'), 'halloween');
+  assert.equal(decorationOn(d, '2026-11-02'), 'halloween');
+  // a season broken in the stored value keeps its usual days
+  assert.equal(seasonOn('2027-01-03', { christmas: { from: 'x', to: '12-31' } }), 'christmas');
+  // Christmas over Halloween when someone makes them meet
+  assert.equal(seasonOn('2026-11-15', { christmas: { from: '11-01', to: '01-06' }, halloween: { from: '10-24', to: '11-20' } }), 'christmas');
+});
+
 test('a carousel with no screens borrows the look but never the overlay or the CSS', () => {
   const c = defaultConfig();
   c.screens[0].screen.customCss = 'a{}';
-  c.screens[0].screen.overlay = { html: '<b>hi</b>', when: { type: 'always' } };
+  c.screens[0].screen.overlays = [ov('<b>hi</b>'), ov('<b>2</b>')];
   c.screens[0].screen.decoration = { mode: 'christmas', snow: false };
   const p = emptyCarouselScreen(c, { id: 'v_x', slug: 'x', name: 'X' });
   assert.equal(p.screen.customCss, '');
-  assert.deepEqual(p.screen.overlay, { html: '', when: { type: 'always' } });
+  assert.deepEqual(p.screen.overlays, []);
+  assert.equal('overlay' in p.screen, false);
   assert.deepEqual(p.screen.decoration, { mode: 'christmas', snow: false });
 });
 
@@ -175,17 +249,21 @@ test('the frame document: Marco base style and a CSP that blocks everything but 
   assert.doesNotMatch(decor.OVERLAY_CSP, /script-src|unsafe-eval/);
 });
 
-test('an edition without the overlay refuses it, and its byte cap holds on the server', () => {
+test('an edition without the overlays refuses them, and its byte cap holds on the server for all of them together', () => {
   const c = defaultConfig();
-  c.screens[0].screen.overlay = { html: '<b>hi</b>', when: { type: 'always' } };
+  c.screens[0].screen.overlays = [ov('<b>hi</b>')];
   const off = validateConfig(c, { htmlOverlay: false });
   assert.equal(off.ok, false);
-  assert.ok(errPaths(off).includes('screens[0].screen.overlay.html'));
-  // an empty one is fine there
+  assert.ok(errPaths(off).includes('screens[0].screen.overlays'));
+  assert.deepEqual(off.value.screens[0].screen.overlays, []);
+  // empty ones are fine there
   assert.equal(validateConfig(defaultConfig(), { htmlOverlay: false }).ok, true);
-  c.screens[0].screen.overlay.html = 'é'.repeat(600); // 1200 bytes
+  c.screens[0].screen.overlays = [ov('')];
+  assert.equal(validateConfig(c, { htmlOverlay: false }).ok, true);
+  c.screens[0].screen.overlays = [ov('é'.repeat(300)), ov('é'.repeat(300))]; // 1200 bytes in all
+  assert.equal(overlaysBytes(c.screens[0].screen.overlays), 1200);
   const capped = validateConfig(c, { htmlOverlayBytes: 1000 });
   assert.equal(capped.ok, false);
-  assert.ok(errPaths(capped).includes('screens[0].screen.overlay.html'));
+  assert.ok(errPaths(capped).includes('screens[0].screen.overlays'));
   assert.equal(validateConfig(c, { htmlOverlayBytes: 2000 }).ok, true);
 });

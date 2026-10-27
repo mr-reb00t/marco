@@ -1,8 +1,8 @@
-// Over the whole screen (#24): the owner's HTML overlay (screen.overlay) and the built-in seasonal decorations
+// Over the whole screen (#24): the owner's HTML overlays (screen.overlays) and the built-in seasonal decorations
 // (screen.decoration). Both sit above the dashboard and below night dimming, alerts, the doorbell and every other
-// system layer (styles.css, #decor and #html-overlay), and neither takes a tap.
+// system layer (styles.css, #decor and .html-overlay), and neither takes a tap.
 //
-// The overlay is never put in this page. It goes in <iframe sandbox="" srcdoc>: an opaque origin with no scripts,
+// An overlay is never put in this page. Each one whose dates hold goes in an <iframe sandbox="" srcdoc> of its own: an opaque origin with no scripts,
 // forms, popups, navigation of the screen or storage, so it cannot reach the display key or anything else here. A meta
 // CSP in the document also stops every request but images (https and data:) and keeps out frames, fonts and other
 // files. The frame is transparent and has the same colour scheme as its document, else Chromium paints a backdrop.
@@ -11,7 +11,7 @@
 // Christmas, a few bats, two cobwebs and a spider for Halloween, a short shower of confetti now and then for New Year. Calm (lite,
 // "Ahorro", reduced motion) keeps the lights still, the spider at home, and leaves out the snow and the confetti.
 import type { ScreenConfig } from '../../shared/types';
-import { decorationOn, overlayShown } from '../../../server/core/decorCore.js';
+import { decorationOn, OVERLAYS_MAX, overlayShown } from '../../../server/core/decorCore.js';
 
 export const OVERLAY_CSP = "default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; frame-src 'none'; form-action 'none'";
 
@@ -205,14 +205,18 @@ export interface DecorEnv {
 }
 
 export class ScreenDecor {
-  private frame: HTMLIFrameElement | null = null;
-  private frameDoc = '';
+  private frames: HTMLIFrameElement[] = [];
+  private frameDocs: string[] = [];
   private deco: HTMLElement | null = null;
   private decoKey = '';
 
   /** Draw what `screen` asks for on `today` (YYYY-MM-DD in the screen's time zone); cheap when nothing changed. */
   render(screen: ScreenConfig | null, today: string, env: DecorEnv): void {
-    this.renderOverlay(screen && overlayShown(screen.overlay, today) ? screen.overlay!.html : '', env.light ? 'light' : 'dark');
+    const shown = (screen?.overlays ?? []).filter((o) => overlayShown(o, today)).slice(0, OVERLAYS_MAX);
+    this.renderOverlays(
+      shown.map((o) => o.html),
+      env.light ? 'light' : 'dark'
+    );
     const kind = screen ? decorationOn(screen.decoration, today) : null;
     this.renderDecoration(kind, !!screen?.decoration?.snow, env);
   }
@@ -221,30 +225,31 @@ export class ScreenDecor {
     return document.getElementById('night');
   }
 
-  private renderOverlay(html: string, scheme: 'dark' | 'light'): void {
-    const doc = html ? overlayDocument(html, scheme) : '';
-    if (doc === this.frameDoc) return;
-    this.frameDoc = doc;
-    if (this.frame) {
-      this.frame.srcdoc = '';
-      this.frame.remove();
-      this.frame = null;
+  /** One sandboxed frame per overlay shown, in the order of the list (a later one draws over an earlier one). */
+  private renderOverlays(htmls: string[], scheme: 'dark' | 'light'): void {
+    const docs = htmls.map((h) => overlayDocument(h, scheme));
+    if (docs.length === this.frameDocs.length && docs.every((d, i) => d === this.frameDocs[i])) return;
+    this.frameDocs = docs;
+    for (const f of this.frames) {
+      f.srcdoc = '';
+      f.remove();
     }
-    if (!doc) return;
-    const f = document.createElement('iframe');
-    f.id = 'html-overlay';
-    f.setAttribute('sandbox', '');
-    f.setAttribute('referrerpolicy', 'no-referrer');
-    f.setAttribute('allow', '');
-    f.setAttribute('allowtransparency', 'true');
-    f.setAttribute('loading', 'eager');
-    f.setAttribute('aria-hidden', 'true');
-    f.setAttribute('title', '');
-    f.tabIndex = -1;
-    f.style.colorScheme = scheme;
-    f.srcdoc = doc;
-    document.body.insertBefore(f, this.anchor());
-    this.frame = f;
+    this.frames = docs.map((doc) => {
+      const f = document.createElement('iframe');
+      f.className = 'html-overlay';
+      f.setAttribute('sandbox', '');
+      f.setAttribute('referrerpolicy', 'no-referrer');
+      f.setAttribute('allow', '');
+      f.setAttribute('allowtransparency', 'true');
+      f.setAttribute('loading', 'eager');
+      f.setAttribute('aria-hidden', 'true');
+      f.setAttribute('title', '');
+      f.tabIndex = -1;
+      f.style.colorScheme = scheme;
+      f.srcdoc = doc;
+      document.body.insertBefore(f, this.anchor());
+      return f;
+    });
   }
 
   private renderDecoration(kind: string | null, wantSnow: boolean, env: DecorEnv): void {
