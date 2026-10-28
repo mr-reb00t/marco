@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, groups, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -387,6 +387,22 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'rotator', pos: B(8, 0, 3, 2), props: { dots: false, cards: [loneGroup('rows', 3)] } },
       { kind: 'rotator', pos: B(12, 0, 3, 3), props: { dots: false, cards: [loneGroup('rows', 4)] } },
       { kind: 'rotator', pos: B(16, 0, 6, 2), props: { dots: false, cards: [loneGroup('cols', 3)] } },
+    ],
+  },
+  // icons an owner picks and a battery's level (#26): the issue's car cards, a battery sensor (its own icon, filled to
+  // 54 %) and a tank (the fuel icon) with a bar under each, a room of a range (the gauge icon), the plug and a phone at
+  // 12 % (a red battery)
+  vehicles: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'ha.tile', pos: M(8, 0, 's'), props: { entity: 'sensor.tesla_battery', features: ['gauge'] } },
+      { kind: 'ha.tile', pos: M(14, 0, 's'), props: { entity: 'sensor.toyota_fuel', icon: 'fuel', features: ['gauge'] } },
+      { kind: 'ha.room', pos: M(8, 4, 'l'), props: { title: 'Tesla', rows: [
+        { entity: 'sensor.tesla_range', name: 'Range', icon: 'gauge' },
+        { entity: 'binary_sensor.tesla_plug', name: 'Charger', icon: 'plug', textOff: 'Unplugged' },
+        { entity: 'sensor.phone_battery', name: 'Phone' },
+      ] } },
     ],
   },
   // a small Rotativa inside a group (#19): the 'motion-group' space of 6×6 cells, its group of three in rows, the last

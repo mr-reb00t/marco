@@ -141,6 +141,16 @@ export const DEMO_RAW: Record<string, string> = {
   'binary_sensor.hall_motion': typeof location === 'undefined' ? 'off' : new URLSearchParams(location.search).get('motion') ?? 'off',
 };
 
+/** Demo entities with a state of their own by entity id (the 'vehicles' demo, #26: a battery, a tank, a range, a plug). */
+const DEMO_FIXED: Record<string, HaSlim> = {
+  'sensor.tesla_battery': { d: 'sensor', v: '54', num: 54, unit: '%', dc: 'battery', n: 'Tesla' },
+  'sensor.toyota_fuel': { d: 'sensor', v: '74', num: 74, unit: '%', dc: null, n: 'Toyota' },
+  'sensor.tesla_range': { d: 'sensor', v: '137', num: 137, unit: 'mi', dc: 'distance', n: 'Range' },
+  'sensor.toyota_range': { d: 'sensor', v: '292', num: 292, unit: 'mi', dc: 'distance', n: 'Range' },
+  'binary_sensor.tesla_plug': { d: 'binary', on: false, dc: 'plug', n: 'Charger' },
+  'sensor.phone_battery': { d: 'sensor', v: '12', num: 12, unit: '%', dc: 'battery', n: 'Phone' },
+};
+
 /** The demo screen's items a server would hide now by their conditions (canvasCore conditionHidden). */
 export function demoHaHidden(): Set<string> {
   const canvas = DEMO_SAVED.canvas;
@@ -180,7 +190,8 @@ export function demoHaStates(cfg: DisplayConfig | null): Record<string, HaState>
       // a demo entity with a state of its own (DEMO_RAW): a motion sensor on or off, or unavailable
       const raw = DEMO_RAW[DEMO_SAVED.entities.get(r.a) ?? ''];
       const moving: HaSlim | null = raw === undefined ? null : raw === 'on' || raw === 'off' ? { d: 'binary', on: raw === 'on', dc: 'motion', n: 'Movimiento' } : { d: 'other', v: raw, n: 'Movimiento' };
-      const base: HaSlim = mine ?? moving ?? (list ? list[n % list.length] : { d: 'other', v: 'home', n: 'Casa' });
+      const fixed = DEMO_FIXED[DEMO_SAVED.entities.get(r.a) ?? ''] ?? null;
+      const base: HaSlim = mine ?? moving ?? fixed ?? (list ? list[n % list.length] : { d: 'other', v: 'home', n: 'Casa' });
       // a showcase player: a made-up track with its cover (unless the screen plays its own), two minutes in
       let slim: HaSlim = showcase && base.d === 'media' && base.state === 'playing' && !mine ? { ...base, title: 'Harbour Lights', artist: 'The Low Tides', art: true } : base;
       if (showcase && slim.d === 'media' && slim.state === 'playing' && slim.dur === undefined) slim = { ...slim, pos: 132, dur: 247 };

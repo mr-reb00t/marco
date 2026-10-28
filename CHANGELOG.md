@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.24.0] - 2026-10-28
+
+### Added
+- An *Icono* for the Entidad, Sensor and Indicador cards and for each row of a Habitación (#26): pick one of 32
+  icons, among them a fuel pump and a car, or leave it on automatic.
+- A battery's icon shows how much charge is left, and turns red at 20 % or under.
+
+### Changed
+- A battery sensor now has the battery icon instead of the lightning bolt, and its level is shown without decimals.
+
 ## [0.23.0] - 2026-10-27
 
 ### Added

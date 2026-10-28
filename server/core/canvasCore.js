@@ -425,6 +425,21 @@ export const NAV_SHOW = ['both', 'icon', 'text'];
 /** "Volver solo tras": minutes without a touch before a device that navigated goes back (0 = it stays). */
 export const NAV_RETURN_DEFAULT = 5;
 export const NAV_RETURN_MAX = 120;
+/**
+ * The icons an owner may pick for a Home Assistant card or a room row ("Icono", #26; '' = the automatic one by domain
+ * and device class). The display draws them (widgets/ha/haIcons.ts, same names); a battery shows its level.
+ */
+export const HA_ICONS = [
+  'battery', 'fuel', 'car', 'gauge', 'plug', 'bolt', 'bulb', 'thermo', 'drop', 'sun', 'fan', 'climate', 'home', 'door',
+  'window', 'shutter', 'lock', 'shield', 'person', 'motion', 'bell', 'wifi', 'valve', 'vacuum', 'play', 'music', 'scene',
+  'list', 'slider', 'stats', 'update', 'dot',
+];
+/** A stored HA icon: one of HA_ICONS, or '' (automatic; anything else, too). */
+function haIconOf(c, p, v) {
+  const s = P.str(c, p, v, '', 12).trim();
+  return HA_ICONS.includes(s) ? s : '';
+}
+
 /** The built-in icons of the navigation cards ('i:<name>'); anything else in `icon` is an emoji. */
 export const NAV_ICONS = ['home', 'back', 'prev', 'next', 'grid', 'pause', 'play', 'star', 'photo', 'calendar'];
 /** The target of "Ir a pantalla": a screen id, 'home' (the device's own screen or carousel) or '' (not chosen yet). */
@@ -952,7 +967,7 @@ export const CANVAS_KINDS = {
     defaults: () => ({ title: '', rows: [] }),
     props: (c, p, x) => ({
       title: P.str(c, `${p}.title`, x.title, '', 40),
-      rows: P.list(c, `${p}.rows`, x.rows, 6, (r, q) => ({ entity: P.entity(c, `${q}.entity`, r.entity, DOMAINS.tile), name: P.str(c, `${q}.name`, r.name, '', 40), interactive: P.bool(c, `${q}.interactive`, r.interactive, true), ...stateWordsOf(c, q, r) })),
+      rows: P.list(c, `${p}.rows`, x.rows, 6, (r, q) => ({ entity: P.entity(c, `${q}.entity`, r.entity, DOMAINS.tile), name: P.str(c, `${q}.name`, r.name, '', 40), icon: haIconOf(c, `${q}.icon`, r.icon), interactive: P.bool(c, `${q}.interactive`, r.interactive, true), ...stateWordsOf(c, q, r) })),
     }),
   },
   'ha.chart': {
@@ -1401,7 +1416,7 @@ function haKind(sizes, def, cells, domains, { controls = false, one = true, bigT
     props: (c, p, x, refs, opts) => ({
       entity: P.entity(c, `${p}.entity`, x.entity, ds),
       name: P.str(c, `${p}.name`, x.name, '', 40),
-      icon: P.str(c, `${p}.icon`, x.icon, '', 8),
+      icon: haIconOf(c, `${p}.icon`, x.icon),
       showName: P.bool(c, `${p}.showName`, x.showName, true),
       ...(state ? { showState: P.bool(c, `${p}.showState`, x.showState, true) } : {}),
       ...(extra ? extra(c, p, x, refs, opts) : {}),

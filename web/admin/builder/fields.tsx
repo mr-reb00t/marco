@@ -1,9 +1,11 @@
 // Inspector, Contenido tab: draws the options of each kind (fieldSpecs.ts) as one small form.
+import { useState } from 'preact/hooks';
 import { LoneGroupCards, RotatorCards } from './RotatorFields';
 import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, TodoList, WidgetDef } from '../../shared/types';
 import { ColorPicker, EmojiPicker, Field, NumberInput, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { HaEntitySelect } from '../components/HaEntityPicker';
-import { CANVAS_KINDS, NAV_ICONS, TILE_FEATURES } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, HA_ICONS, NAV_ICONS, TILE_FEATURES } from '../../../server/core/canvasCore.js';
+import { HA_ICON, haIconOf } from '../../display/widgets/ha/haIcons';
 import { FEATURE_DOMAINS, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
 import { t } from '../i18n';
@@ -87,6 +89,44 @@ function NavIconField({ value, onChange, label }: { value: string; onChange: (v:
   );
 }
 
+/** One icon of the Home Assistant cards (static SVG strings from haIcons.ts, no owner text in them). */
+const haSvg = (name: string) => {
+  const k = haIconOf(name);
+  return k ? <span class="bld-haicon__svg" dangerouslySetInnerHTML={{ __html: HA_ICON[k] }} /> : null;
+};
+
+/**
+ * "Icono" of a Home Assistant card or room row (#26): the automatic one ('') or one of HA_ICONS. A button shows the
+ * current one; it opens the grid of icons below it.
+ */
+function HaIconPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const cur = haIconOf(value) ? value : '';
+  const pick = (v: string) => {
+    onChange(v);
+    setOpen(false);
+  };
+  return (
+    <div class="bld-haicon">
+      <button type="button" class="bld-chip bld-haicon__cur" aria-expanded={open} aria-label={t('Icono')} title={t('Icono')} onClick={() => setOpen(!open)}>
+        {cur ? haSvg(cur) : <span class="bld-haicon__auto">{t('Auto')}</span>}
+      </button>
+      {open && (
+        <div class="bld-navicons bld-haicon__grid" role="group">
+          <button type="button" class={`bld-chip ${cur === '' ? 'is-on' : ''}`} aria-pressed={cur === ''} onClick={() => pick('')}>
+            {t('Auto')}
+          </button>
+          {HA_ICONS.map((n) => (
+            <button type="button" class={`bld-chip bld-navicon ${cur === n ? 'is-on' : ''}`} aria-pressed={cur === n} aria-label={n} title={n} onClick={() => pick(n)}>
+              {haSvg(n)}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** A multi-pick of chips with "all" first (null = all). */
 function MultiPick({ all, items, value, onChange }: { all: string; items: { id: string; label: string; color?: string }[]; value: string[] | null; onChange: (v: string[] | null) => void }) {
   const on = (id: string) => !value || value.includes(id);
@@ -146,7 +186,7 @@ function Zones({ value, onChange }: { value: { tz: string; label: string }[]; on
   );
 }
 
-type Row = { entity: string; name: string; interactive: boolean; textOn?: string; textOff?: string };
+type Row = { entity: string; name: string; icon?: string; interactive: boolean; textOn?: string; textOff?: string };
 type Series = { entity: string; label: string; color: string | null };
 
 /**
@@ -162,6 +202,7 @@ function Rows({ value, domains, env, onChange }: { value: Row[]; domains: readon
         <div class="bld-ha-item">
           <HaEntitySelect domains={domains} enabled={env.ha} value={r.entity} taken={rows.map((x) => x.entity)} onChange={(v) => put(i, { entity: v })} />
           <div class="bld-ha-line">
+            <HaIconPicker value={r.icon ?? ''} onChange={(v) => put(i, { icon: v })} />
             <TextInput value={r.name} maxLength={40} placeholder={t('Nombre')} onValue={(v) => put(i, { name: v })} aria-label={t('Nombre')} />
             <button type="button" class="icon-btn" onClick={() => onChange(rows.filter((_, j) => j !== i))} aria-label={t('Quitar')}>
               ×
@@ -176,7 +217,7 @@ function Rows({ value, domains, env, onChange }: { value: Row[]; domains: readon
         </div>
       ))}
       {rows.length < 6 && (
-        <button type="button" class="link-btn" disabled={!env.ha} onClick={() => onChange([...rows, { entity: '', name: '', interactive: true }])}>
+        <button type="button" class="link-btn" disabled={!env.ha} onClick={() => onChange([...rows, { entity: '', name: '', icon: '', interactive: true }])}>
           {t('Añadir fila')}
         </button>
       )}
@@ -397,6 +438,12 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
             </Field>
           );
         }
+        if (s.type === 'haIcon')
+          return (
+            <Field label={t(s.label)} hint={t('Auto: según lo que es. Una batería muestra cuánta carga le queda.')}>
+              <HaIconPicker value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} />
+            </Field>
+          );
         if (s.type === 'navIcon') return <NavIconField value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} label={t(s.label)} />;
         if (s.type === 'num')
           return (

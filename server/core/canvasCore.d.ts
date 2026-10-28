@@ -131,6 +131,8 @@ export const NAV_SHOW: ('both' | 'icon' | 'text')[];
 export const NAV_RETURN_DEFAULT: number;
 export const NAV_RETURN_MAX: number;
 export const NAV_ICONS: string[];
+/** The icons an owner may pick for a Home Assistant card or room row (#26); the display draws the same names. */
+export const HA_ICONS: string[];
 export const NAV_HOME: 'home';
 export const NAV_TAP_KINDS: CanvasKind[];
 export function navTargets(screen: unknown): string[];

@@ -12,6 +12,8 @@ export type Spec =
   | { k: 'target'; type: 'screen'; label: string }
   /** an emoji, or one of the built-in icons of the navigation cards (canvasCore NAV_ICONS, 'i:<name>') */
   | { k: 'icon'; type: 'navIcon'; label: string }
+  /** a Home Assistant icon (canvasCore HA_ICONS) or '' for the automatic one */
+  | { k: 'icon'; type: 'haIcon'; label: string }
   | { k: string; type: 'num'; label: string; min: number; max: number; step?: number; unit?: 'days' | 'sec' | 'n' | 'min' }
   /** any number, typed (the ends of a bar); `show`: only while it applies */
   | { k: string; type: 'number'; label: string; step?: number; hint?: string; show?: (p: Record<string, any>) => boolean }
@@ -66,6 +68,7 @@ const HIDE_PAST: Spec = { k: 'hidePast', type: 'bool', label: 'Ocultar lo que ya
 const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
 const DATE_POS_FIELD: Spec = { k: 'datePos', type: 'seg', label: 'Posición de la fecha', opts: [{ v: 'above', l: 'Arriba' }, { v: 'below', l: 'Abajo' }] };
 const HA_NAME: Spec = { k: 'name', type: 'text', label: 'Nombre', max: 40, hint: 'Vacío: el nombre que tiene en Home Assistant.' };
+const HA_ICON_SPEC: Spec = { k: 'icon', type: 'haIcon', label: 'Icono' };
 const SHOW_NAME: Spec = { k: 'showName', type: 'bool', label: 'Mostrar nombre' };
 /** The card's own words for the state (#20), beside its colours: empty for the words Home Assistant uses. */
 const isBinary = (p: Record<string, any>) => typeof p.entity === 'string' && p.entity.startsWith('binary_sensor.');
@@ -238,6 +241,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   'ha.tile': [
     { k: 'entity', type: 'entity', label: 'Entidad' },
     HA_NAME,
+    HA_ICON_SPEC,
     SHOW_NAME,
     SHOW_STATE,
     { k: 'features', type: 'features', label: 'Debajo', hint: 'Una fila en los tamaños pequeño y ancho, dos en el mediano. En el mini y en la línea no se ven. Toca el icono para encender o apagar.' },
@@ -251,6 +255,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   'ha.gauge': [
     { k: 'entity', type: 'entity', label: 'Sensor' },
     HA_NAME,
+    HA_ICON_SPEC,
     SHOW_NAME,
     { k: 'min', type: 'number', label: 'Mínimo' },
     { k: 'max', type: 'number', label: 'Máximo' },
@@ -284,6 +289,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   'ha.sensor': [
     { k: 'entity', type: 'entity', label: 'Sensor' },
     HA_NAME,
+    HA_ICON_SPEC,
     SHOW_NAME,
     { k: 'decimals', type: 'num', label: 'Decimales', min: 0, max: 3, unit: 'n' },
     { k: 'sparkline', type: 'bool', label: 'Curva de hoy', hint: 'Cómo ha cambiado en las últimas 24 horas, con el mínimo y el máximo.' },

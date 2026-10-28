@@ -373,3 +373,11 @@
 /* "Icono" of the Navegación cards: the built-in icons and the emoji picker on one row (fields.tsx NavIconField) */
 .bld-navicons { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .bld-navicon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
+/* "Icono" of a Home Assistant card or room row (#26): the current one, and the grid it opens */
+.bld-haicon { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.bld-haicon__cur { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; height: 36px; padding: 0 8px; align-self: flex-start; }
+.bld-haicon__svg { display: inline-flex; width: 20px; height: 20px; }
+.bld-haicon__auto { font-size: 0.85em; }
+.bld-ha-line > .bld-haicon { flex: none; }
+.bld-ha-line:has(.bld-haicon__grid) { flex-wrap: wrap; }
+.bld-ha-line .bld-haicon:has(.bld-haicon__grid) { flex: 1 1 100%; order: 9; }

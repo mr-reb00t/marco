@@ -1059,6 +1059,13 @@ and the modes for a climate, the options of a select, a slider or −/+ for a nu
 for a vacuum, the versions of an update, a bar for a percentage sensor. Each state the display gets lists them
 (`f`); the controls they open are in `c` as for every card.
 
+**Icons.** The Entidad, Sensor and Indicador cards and each row of a Habitación (`rows[].icon`) take `props.icon`: `""`
+(automatic, by domain and device class) or one of `HA_ICONS` (battery, fuel, car, gauge, plug, bolt, bulb, thermo,
+drop, sun, fan, climate, home, door, window, shutter, lock, shield, person, motion, bell, wifi, valve, vacuum, play,
+music, scene, list, slider, stats, update, dot). Anything else is stored as `""`. A battery icon shows the level of a
+sensor in % (device class `battery` or unit `%`), or nearly empty for a low-battery binary sensor, and turns red at
+20 % or under; a battery sensor's state is shown in whole percents.
+
 **Estadística.** `GET /api/display/ha/statistic/:item` answers `{ stat, period, value, unit }`: the change, mean,
 minimum or maximum of a sensor today, this week or this month, from Home Assistant's long-term statistics
 (`recorder/statistic_during_period`, over the mirror's WebSocket connection). Kept 5 minutes and shared by every

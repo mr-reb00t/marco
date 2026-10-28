@@ -7,9 +7,9 @@
 import type { DisplayCanvasItem, HaState, HaStatistic, TileFeature } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { sizeCells } from '../../../../server/core/canvasCore.js';
-import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, domainOf, fmtNum, modeName, ownStateText, stateIcon, stateText, stepDecimals, svgEl, stateTone, tone } from '../ha/haui';
+import { ago, aliasOf, ctlButton, ctlChips, ctlSlider, fmtNum, modeName, ownStateText, stateText, stepDecimals, svgEl, stateTone, tone } from '../ha/haui';
 import { bigType, fitWidth, typeCap } from './clock';
-import { el, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
+import { el, entityIcon, haAdapter, icon, live, miniLine, nameOf, tappable } from './ha';
 import { climateState, colorRow, ctChips, fitSwatches, kelvinRgb } from './haControls';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
 
@@ -288,7 +288,7 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   // when it changed, under the state while there is room (it is the first thing to go)
   const when = s?.at && !drawn.length && size !== 'row' ? ago(s.at) : '';
   if (when) txt.append(el('span', 'cv-ha-ago cv-sec1', when));
-  wrap.append(icon(stateIcon(domainOf(p.entity), s)), txt);
+  wrap.append(entityIcon(p.entity, s, p.icon), txt);
   tappable(wrap, env, alias, s);
   // the line of a cover: small up and down at its end while the width allows them (fitTile takes them out)
   if (size === 'row' && s?.d === 'cover') {
@@ -569,7 +569,7 @@ function drawGauge(root: HTMLElement, env: AdapterEnv): void {
   const head = el('div', 'cv-ha-head');
   const htxt = el('div', 'cv-ha-txt');
   htxt.append(el('span', 'cv-ha-name', nameOf(p, s)));
-  head.append(icon(stateIcon(domainOf(p.entity), s)), htxt);
+  head.append(entityIcon(p.entity, s, p.icon), htxt);
   root.appendChild(head);
   const big = el('div', 'cv-ha-big');
   const num = s?.d === 'sensor' ? s.num : null;

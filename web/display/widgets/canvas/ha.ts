@@ -8,7 +8,7 @@
 import type { DisplayCanvasItem, HaHistory, HaState } from '../../../shared/types';
 import { ctx } from '../../ctx';
 import { isPreview } from '../../identity';
-import { HA_ICON, ago, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, ownStateText, stateIcon, stateText, stateTone, tone, type HaIconName } from '../ha/haui';
+import { HA_ICON, ago, batteryIcon, haIconOf, aliasOf, ctlButton, ctlSlider, domainOf, fmtNum, ownStateText, stateIcon, stateText, stateTone, tone, type HaIconName } from '../ha/haui';
 import { now as clockNow, onTick } from '../../time';
 import { bigType, fitWidth, typeCap } from './clock';
 import { drawTile, fitTile } from './haTile';
@@ -27,6 +27,31 @@ export function icon(name: HaIconName, cls = 'cv-ha-ico'): HTMLElement {
   const e = el('span', cls);
   const svg = HA_ICON[name];
   e.innerHTML = svg;
+  e.dataset.icon = name;
+  return e;
+}
+
+/** At or under this a battery's icon turns red. */
+const BATTERY_LOW = 20;
+
+/**
+ * The icon of an entity on a card or a room row: the one the owner picked ("Icono"), else the automatic one. A battery
+ * shows its level (#26): a sensor in % fills it, a low-battery binary sensor shows it nearly empty, and at
+ * BATTERY_LOW or under it turns red.
+ */
+export function entityIcon(entity: unknown, s: HaState | null, picked?: unknown): HTMLElement {
+  const name = haIconOf(picked) ?? stateIcon(domainOf(entity), s);
+  const e = icon(name);
+  if (name !== 'battery' || !s) return e;
+  let pct: number | null = null;
+  if (s.d === 'sensor' && s.num !== null && (s.dc === 'battery' || s.unit === '%')) pct = s.num;
+  else if (s.d === 'binary' && s.dc === 'battery') pct = s.on ? 10 : 100;
+  if (pct === null) return e;
+  // static markup with one number in it (the width of the fill)
+  const svg = batteryIcon(pct);
+  e.innerHTML = svg;
+  e.dataset.level = String(Math.round(Math.max(0, Math.min(100, pct))));
+  if (pct <= BATTERY_LOW) e.classList.add('is-low');
   return e;
 }
 
@@ -371,7 +396,7 @@ function sensorAdapter(): CanvasAdapter {
     const htxt = el('div', 'cv-ha-txt');
     htxt.append(el('span', 'cv-ha-name', nameOf(p, s)));
     if (s?.at) htxt.append(el('span', 'cv-ha-ago cv-sec1', ago(s.at)));
-    head.append(icon(stateIcon(domainOf(p.entity), s)), htxt);
+    head.append(entityIcon(p.entity, s, p.icon), htxt);
     root.appendChild(head);
     const big = el('div', 'cv-ha-big');
     if (s?.d === 'sensor' && s.num !== null) {
@@ -428,7 +453,7 @@ function drawRoom(root: HTMLElement, env: AdapterEnv): void {
     if (!a) continue;
     const s = env.ha.state(a);
     const row = el('div', `cv-ha-row tone-${tone(s)}`);
-    row.append(icon(stateIcon(domainOf(r.entity), s)), el('span', 'cv-ha-name', String(r.name || s?.n || '')));
+    row.append(entityIcon(r.entity, s, r.icon), el('span', 'cv-ha-name', String(r.name || s?.n || '')));
     // a row that can be switched shows a switch; the whole row is the tap target
     const t = tapControl(s);
     if (t?.control === 'toggle' && live(env, s, 'toggle') && (s?.d === 'light' || s?.d === 'switch')) {
