@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.24.1] - 2026-10-28
+
+### Changed
+- Smaller Home Assistant cards (#26): an entity two cells wide keeps its icon (beside the name, or above it when the
+  card is two cells high), and a small entity card at least two cells high shows the bar under it when you chose it.
+  The Gauge on one line shows its icon before the name, and a Room card can be three cells wide.
+- A number with no decimals of its own on the card shows as Home Assistant sends it, with at most one decimal
+  (137 mi instead of 137.0 mi).
+
 ## [0.24.0] - 2026-10-28
 
 ### Added

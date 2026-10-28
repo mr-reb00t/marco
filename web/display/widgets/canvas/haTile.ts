@@ -56,7 +56,7 @@ export function tileStateText(s: HaState | null, rows: TileFeature[] = [], line 
       return s.state === 'playing' && s.title ? `${ctx.t('haPlaying')} · ${s.title}` : stateText(s);
     case 'sensor':
       // the Sensor card's own decimals on its one-line size
-      return stateText(s, decimals === undefined || decimals === null ? 1 : Math.min(3, Math.max(0, Number(decimals) || 0)));
+      return stateText(s, decimals === undefined || decimals === null ? undefined : Math.min(3, Math.max(0, Number(decimals) || 0)));
     default:
       return stateText(s);
   }
@@ -262,13 +262,17 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   // the rows first: the state line says what they do not
   // a cover on the Mini: its buttons still (the one row it takes); other kinds show none there
   const coverMini = size === 'xs' && s?.d === 'cover';
-  const max = coverMini ? 1 : rowsFor(size);
+  // the line two or more cells high (#26): the thin bar under it when the owner chose it in Debajo (fitTile takes it
+  // out when it does not fit)
+  const barMini = size === 'row' && root.dataset.mini !== undefined && Number(root.dataset.mh) >= 2 && Array.isArray(p.features) && p.features.includes('gauge');
+  const max = coverMini || barMini ? 1 : rowsFor(size);
   const box = el('div', 'cv-ha-feats');
   const drawn: TileFeature[] = [];
   if (s && max) {
     for (const f of feats ?? s.f ?? []) {
       if (box.childNodes.length >= max) break;
       if (coverMini && f !== 'cover') continue;
+      if (barMini && f !== 'gauge') continue;
       const row = featureRow(f, env, alias, s, p);
       if (row) {
         box.append(row);
@@ -327,10 +331,14 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
   // named sizes: the icon over the name and the state, all larger (styles-canvas-room.css)
   const tall = root.dataset.room !== undefined && box.zone === 'main' && box.size !== 'row' && box.h > box.w * 1.05;
   root.classList.toggle('is-tall', tall);
-  const nominal = tall ? 13 + rowsFor(box.size) * 5.6 : box.size === 'xs' ? 9.5 : box.size === 'row' ? 4.5 : 5.5 + Math.max(1, rowsFor(box.size)) * 5.6;
-  // the line two cells wide (#9): no icon, the name over the state, the type from the height as on a wider line
+  // (a line with its thin bar under it, #26: a little more)
+  const barLine = box.size === 'row' && root.classList.contains('has-feats');
+  const nominal = tall ? 13 + rowsFor(box.size) * 5.6 : box.size === 'xs' ? 9.5 : box.size === 'row' ? (barLine ? 6.6 : 4.5) : 5.5 + Math.max(1, rowsFor(box.size)) * 5.6;
+  // the line two cells wide (#9): the name over the state, the type from the height as on a wider line; the icon
+  // beside them while the name keeps a few letters (#26), else none (no-nico, below)
   const narrow = box.size === 'row' && root.dataset.mini !== undefined && Number(root.dataset.mw) <= 2;
   root.classList.toggle('is-mnarrow', narrow);
+  root.classList.remove('no-nico');
   // a line much narrower than its height wants (4×2): the name over the
   // state, the type from the height, the same for every card of that box whatever its name (#9)
   const deep = !narrow && box.size === 'row' && box.zone === 'main' && box.w / 22 < (box.h / nominal) * 0.8 && belowRow(root);
@@ -393,6 +401,13 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
     root.classList.toggle('is-stack', !!root.querySelector('.cv-ha-tile .cv-ha-state')?.textContent);
     smaller(0.5);
     if (deep) return;
+    // two cells wide: the icon goes when it leaves the name fewer than about four letters
+    const txt = root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-txt');
+    const em = txt ? parseFloat(getComputedStyle(txt).fontSize) || 16 : 16;
+    if (txt && txt.clientWidth < em * 2.6) {
+      root.classList.add('no-nico');
+      smaller(0.5);
+    }
   } else if (box.size === 'row') stackLine(root, () => smaller(0.5));
   // a narrow box of its own (two cells of a wide sidebar): the type a little smaller until the name reads, since
   // the icon beside it grows with the type and leaves the name a letter or two

@@ -2,7 +2,9 @@
 // display draws, widgets/ha/haIcons.ts) on an Entidad, Sensor or Indicador card and on each row of a Habitación, kept
 // when known and dropped to the automatic one otherwise; and a battery that shows its level. In a browser, the demo
 // 'vehicles' screen (mockCanvas.ts): a battery at 54 % filled, the fuel icon picked, a range with the gauge icon and a
-// phone at 12 % in red. Skipped without Chrome.
+// phone at 12 % in red. The 'vehicles-small' screen: the icon on an entity card two cells wide (beside the name, or
+// over it when the card is two high), the thin bar under a 3×2 one, the icon of the Indicador on one line and a
+// Habitación three cells wide. Skipped without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -86,6 +88,53 @@ describe('icons on the Home Assistant cards (#26), in a browser', { skip: !chrom
       assert.equal(plug.state, 'Unplugged', msg);
       assert.deepEqual([phone.icon, phone.level, phone.low, phone.state], ['battery', '12', true, '12 %'], msg);
       assert.notEqual(phone.red, range.red, msg);
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('small boxes: the icon two cells wide, the bar under a 3×2 card, the Indicador on one line, a room 3×3', { timeout: 60_000 }, async () => {
+    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=vehicles-small`, LAND);
+    try {
+      await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1200)))');
+      const r = await p.eval(`[...document.querySelectorAll('.cv-item')].map((e) => {
+        const body = e.querySelector('.cv-body');
+        const ico = body.querySelector('.cv-ha-ico');
+        const ir = ico?.getBoundingClientRect();
+        const name = body.querySelector('.cv-ha-name');
+        const nr = name?.getBoundingClientRect();
+        return {
+          kind: e.dataset.kind, cells: e.dataset.cells, cramped: e.classList.contains('is-cramped'),
+          icon: ico && getComputedStyle(ico).display !== 'none' && ir.width > 0 ? { w: Math.round(ir.width), bottom: Math.round(ir.bottom), right: Math.round(ir.right) } : null,
+          name: nr && nr.width ? { top: Math.round(nr.top), left: Math.round(nr.left), w: Math.round(nr.width), text: name.textContent } : null,
+          bar: !!body.querySelector('.cv-ha-feats .cv-ha-featbar'),
+          over: body.scrollHeight > body.clientHeight + 1,
+          rows: [...body.querySelectorAll('.cv-ha-row')].map((x) => x.querySelector('.cv-ha-state').textContent),
+        };
+      })`);
+      const msg = JSON.stringify(r);
+      const at = (kind, cells) => r.find((x) => x.kind === kind && x.cells === cells);
+      for (const x of r) {
+        assert.equal(x.cramped, false, msg);
+        assert.equal(x.over, false, msg);
+      }
+      // two cells wide, one high: the icon beside the name; two high: over it
+      const t21 = at('ha.tile', '2x1');
+      assert.ok(t21.icon && t21.name && t21.icon.right <= t21.name.left, msg);
+      const t22 = at('ha.tile', '2x2');
+      assert.ok(t22.icon && t22.name && t22.icon.bottom <= t22.name.top, msg);
+      // the bar the owner chose: under the 3×2 card, left out where it does not fit (2×2)
+      assert.equal(at('ha.tile', '3x2').bar, true, msg);
+      assert.ok(at('ha.tile', '3x2').icon, msg);
+      assert.equal(t22.bar, false, msg);
+      // the Indicador on one line: its icon before the name from three cells wide (two: the number and the bar alone)
+      assert.ok(at('ha.gauge', '3x1').icon, msg);
+      assert.ok(at('ha.gauge', '4x1').icon, msg);
+      assert.equal(at('ha.gauge', '2x1').icon, null, msg);
+      // a Habitación three cells wide: every row, a number as Home Assistant sends it (no ".0")
+      const rooms = r.filter((x) => x.kind === 'ha.room');
+      assert.deepEqual(rooms.map((x) => x.cells), ['3x3', '3x3'], msg);
+      assert.deepEqual(rooms[1].rows, ['54 %', '137 mi', 'Unplugged'], msg);
     } finally {
       await p.close();
     }

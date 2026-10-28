@@ -1488,7 +1488,8 @@ const FINE_MIN = {
   // when the name does not fit; two cells wide, the value without its unit when the unit does not fit)
   'ha.gauge': [2, 1],
   'ha.statistic': [4, 1],
-  'ha.room': [4, 3],
+  // three cells wide (#26): the icon, the name and the state of each row, the name cut short first
+  'ha.room': [3, 3],
   'ha.chart': [4, 2],
   'ha.camera': [3, 2],
   'ha.media': [6, 1],

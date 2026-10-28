@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -402,6 +402,31 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
         { entity: 'sensor.tesla_range', name: 'Range', icon: 'gauge' },
         { entity: 'binary_sensor.tesla_plug', name: 'Charger', icon: 'plug', textOff: 'Unplugged' },
         { entity: 'sensor.phone_battery', name: 'Phone' },
+      ] } },
+    ],
+  },
+  // the same in small boxes (#26): entity cards two and three cells wide (the icon kept; the thin bar under the 3×2),
+  // the Indicador on one line (its icon before the name) and two Habitación cards three cells wide
+  'vehicles-small': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'ha.tile', pos: B(0, 0, 2, 1), props: { entity: 'sensor.tesla_battery' } },
+      { kind: 'ha.tile', pos: B(3, 0, 3, 1), props: { entity: 'sensor.toyota_fuel', icon: 'fuel' } },
+      { kind: 'ha.tile', pos: B(7, 0, 2, 2), props: { entity: 'sensor.tesla_battery', features: ['gauge'] } },
+      { kind: 'ha.tile', pos: B(10, 0, 3, 2), props: { entity: 'sensor.toyota_fuel', icon: 'fuel', features: ['gauge'] } },
+      { kind: 'ha.gauge', pos: B(0, 3, 2, 1), props: { entity: 'sensor.tesla_battery', invert: true, thresholds: [20, 50] } },
+      { kind: 'ha.gauge', pos: B(3, 3, 3, 1), props: { entity: 'sensor.tesla_battery' } },
+      { kind: 'ha.gauge', pos: B(7, 3, 4, 1), props: { entity: 'sensor.toyota_fuel', icon: 'fuel' } },
+      { kind: 'ha.gauge', pos: B(12, 3, 2, 2), props: { entity: 'sensor.tesla_battery' } },
+      { kind: 'ha.gauge', pos: B(15, 3, 3, 2), props: { entity: 'sensor.toyota_fuel', icon: 'fuel' } },
+      { kind: 'ha.room', pos: B(0, 6, 3, 3), props: { title: 'Tesla', rows: [
+        { entity: 'sensor.tesla_range', name: 'Range', icon: 'gauge' },
+        { entity: 'binary_sensor.tesla_plug', name: 'Charger', icon: 'plug', textOff: 'Unplugged' },
+      ] } },
+      { kind: 'ha.room', pos: B(5, 6, 3, 3), props: { title: '', rows: [
+        { entity: 'sensor.tesla_battery', name: 'Tesla' },
+        { entity: 'sensor.tesla_range', name: 'Range', icon: 'gauge' },
+        { entity: 'binary_sensor.tesla_plug', name: 'Charger', icon: 'plug', textOff: 'Unplugged' },
       ] } },
     ],
   },

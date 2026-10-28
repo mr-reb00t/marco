@@ -85,8 +85,8 @@ export function fmtNum(n: number, decimals = 1): string {
   }
 }
 
-/** The state in words ("Encendido", "Abierta", "21,5 °C"…). `decimals` for numbers. */
-export function stateText(s: HaState | null, decimals = 1): string {
+/** The state in words ("Encendido", "Abierta", "21,5 °C"…). `decimals` for numbers (none: as Home Assistant sends them, at most one). */
+export function stateText(s: HaState | null, decimals?: number): string {
   if (!s) return '';
   switch (s.d) {
     case 'unavailable': return ctx.t('haUnavailable');
@@ -94,8 +94,9 @@ export function stateText(s: HaState | null, decimals = 1): string {
     case 'switch': return s.on ? (s.pct !== undefined && s.pct !== null ? `${s.pct} %` : ctx.t('haOn')) : ctx.t('haOff');
     case 'binary': return binaryText(s.on, s.dc ?? '');
     case 'sensor': {
-      // a number entity: as many decimals as its step has; a battery in whole percents (#26)
-      const dec = s.step !== undefined ? stepDecimals(s.step) : s.dc === 'battery' ? 0 : decimals;
+      // a number entity: as many decimals as its step has; a battery in whole percents (#26); a card with no decimals
+      // of its own: as many as Home Assistant sends, at most one (137 mi, 21.5 °C)
+      const dec = s.step !== undefined ? stepDecimals(s.step) : s.dc === 'battery' ? 0 : decimals ?? Math.min(1, stepDecimals(Number(s.v)));
       return s.num !== null ? `${fmtNum(s.num, dec)}${s.unit ? ` ${s.unit}` : ''}` : s.v;
     }
     case 'cover':

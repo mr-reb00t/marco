@@ -274,8 +274,17 @@
 #app.preset-canvas .cv-rot[data-mini][data-mh='1'] > .cv-rot-dots i { width: 0.5rem; height: 0.5rem; }
 
 /* ---- Casa (Home Assistant) ---- */
-/* the line two cells wide (haTile.ts fitTile): the name over the state, no icon */
-#app.preset-canvas .cv-ha-tile-card.is-mnarrow[data-mini] .cv-ha-tile > .cv-ha-ico, #app.preset-canvas .cv-ha-tile-card.no-lico .cv-ha-tile > .cv-ha-ico { display: none; }
+/* the line two cells wide (haTile.ts fitTile): the name over the state, the icon beside them while the name keeps a
+   few letters (no-nico: none) */
+#app.preset-canvas .cv-ha-tile-card.no-nico[data-mini] .cv-ha-tile > .cv-ha-ico, #app.preset-canvas .cv-ha-tile-card.no-lico .cv-ha-tile > .cv-ha-ico { display: none; }
+/* two cells wide and two or more high (#26): the icon over the name and the state */
+#app.preset-canvas .cv-ha-tile-card.is-mnarrow[data-mini]:not([data-mh='1']) .cv-ha-tile { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0.35em; }
+#app.preset-canvas .cv-ha-tile-card.is-mnarrow[data-mini]:not([data-mh='1']) .cv-ha-tile > .cv-ha-txt { align-self: stretch; }
+/* the line with its thin bar under it (#26): the bar sized by the type, close under the line */
+#app.preset-canvas .cv-ha-tile-card[data-size='row'][data-mini].has-feats { gap: 0.45em; }
+#app.preset-canvas .cv-ha-tile-card[data-size='row'][data-mini] > .cv-ha-feats { gap: 0; }
+#app.preset-canvas .cv-ha-tile-card[data-size='row'][data-mini] .cv-ha-feat { font-size: 1em; }
+#app.preset-canvas .cv-ha-tile-card[data-size='row'][data-mini] .cv-ha-featbar { margin: 0; height: 0.4em; }
 /* the media player on one line: the art as high as the card, the title and where it plays, play or pause at the end */
 #app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-player { gap: 0.7em; }
 #app.preset-canvas .cv-ha-media[data-mini][data-mh='1'] .cv-ha-art { width: 100cqh; height: 100cqh; border-radius: 0.6em; }
@@ -298,7 +307,10 @@
 #app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-big { grid-column: 1; grid-row: 1 / -1; align-self: center; gap: 0.3rem; }
 #app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head { grid-column: 2; grid-row: 2; font-size: calc(1.3rem * var(--cv-scale, 1)); line-height: 1.2; }
 #app.preset-canvas .cv-ha-stat[data-mini][data-mh='1'] > .cv-ha-head { grid-row: 2 / 4; }
-#app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head > .cv-ha-ico { display: none; }
+#app.preset-canvas .cv-ha-stat[data-mini][data-mh='1'] > .cv-ha-head > .cv-ha-ico { display: none; }
+/* the Indicador on one line (#26): its icon small before the name, no circle */
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-head { display: flex; align-items: center; gap: 0.35em; min-width: 0; }
+#app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-head > .cv-ha-ico { width: 1.2em; height: 1.2em; padding: 0; background: none; }
 #app.preset-canvas :is(.cv-ha-gauge, .cv-ha-stat)[data-mini][data-mh='1'] > .cv-ha-head .cv-ha-txt > * { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugebar { grid-column: 2; grid-row: 3; height: 0.7rem; margin: 0; }
 #app.preset-canvas .cv-ha-gauge[data-mini][data-mh='1'] > .cv-ha-gaugeends { display: none; }

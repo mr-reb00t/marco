@@ -1064,7 +1064,8 @@ for a vacuum, the versions of an update, a bar for a percentage sensor. Each sta
 drop, sun, fan, climate, home, door, window, shutter, lock, shield, person, motion, bell, wifi, valve, vacuum, play,
 music, scene, list, slider, stats, update, dot). Anything else is stored as `""`. A battery icon shows the level of a
 sensor in % (device class `battery` or unit `%`), or nearly empty for a low-battery binary sensor, and turns red at
-20 % or under; a battery sensor's state is shown in whole percents.
+20 % or under; a battery sensor's state is shown in whole percents. A state with no decimals set on the card shows
+the decimals Home Assistant sends, at most one.
 
 **Estadística.** `GET /api/display/ha/statistic/:item` answers `{ stat, period, value, unit }`: the change, mean,
 minimum or maximum of a sensor today, this week or this month, from Home Assistant's long-term statistics
