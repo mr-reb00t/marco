@@ -104,3 +104,22 @@ test('admin: Days in the agenda, with texts in Spanish, English and Portuguese',
   assert.ok(dict.includes("['Días en la agenda', 'Days in the agenda', 'Dias na agenda']"));
   for (const f of ['CHANGELOG.md', 'docs/ARCHITECTURE.md', 'docs/API.md']) assert.match(read(f), /agendaDays/, f);
 });
+
+test('the agenda shows the calendar legend when showLegend is on: the agenda view always, the canvas card when asked', async () => {
+  const { CANVAS_KINDS, canvasDefaults } = await import('../core/canvasCore.js');
+  const errs = [];
+  const c = { err: (path, message) => errs.push({ path, message }), warn: () => {}, errors: errs };
+  // the card: off for the cards made before it existed, kept when turned on
+  assert.equal(canvasDefaults('calendar.agenda').showLegend, false);
+  assert.equal(CANVAS_KINDS['calendar.agenda'].props(c, 'p', {}, {}, {}).showLegend, false);
+  assert.equal(CANVAS_KINDS['calendar.agenda'].props(c, 'p', { showLegend: true }, {}, {}).showLegend, true);
+  assert.match(read('web/display/widgets/canvas/config.ts'), /item\.kind === 'calendar\.agenda'\) \{\s*cfg\.calendar\.showLegend = p\.showLegend === true;/);
+  assert.match(read('web/admin/builder/fieldSpecs.ts'), /'calendar\.agenda': \[[^\]]*k: 'showLegend'/);
+  // the small side agenda never draws it
+  assert.match(read('web/display/main.ts'), /new Agenda\(\$\('#side-agenda'\), \{[^}]*legend: false/);
+  // the agenda view of the demo (calendar.showLegend on by default) draws it over the day blocks
+  for (const name of ['modern-agenda', 'classic-agenda']) {
+    const html = read(`server/test/fixtures/golden/${name}.html`);
+    assert.match(html, /<div id="agenda" class="agenda"><div class="legend ag-legend"><span class="lg">/, name);
+  }
+});

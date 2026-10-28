@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.24.2] - 2026-10-28
+
+### Fixed
+- *Leyenda de calendarios* now also shows in the agenda view: a line over the days with each calendar's colour and
+  name. Before, the switch was on but only the month view drew it. The Agenda card of a canvas screen has its own
+  *Leyenda de calendarios* option, off for the cards you already have. The small agenda beside a big clock has none.
+
 ## [0.24.1] - 2026-10-28
 
 ### Changed

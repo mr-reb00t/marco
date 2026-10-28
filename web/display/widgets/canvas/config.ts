@@ -35,6 +35,8 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
       });
     } else if (item.kind === 'calendar.week') {
       Object.assign(cfg.calendar, { view: 'week', weeks: 1, startOn: p.start === 'monday' ? 'week' : 'today', eventStyle: 'cards', showLegend: false });
+    } else if (item.kind === 'calendar.agenda') {
+      cfg.calendar.showLegend = p.showLegend === true;
     }
   }
   if (item.kind.startsWith('clock.') || item.kind === 'date') {

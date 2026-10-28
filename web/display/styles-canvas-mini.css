@@ -38,6 +38,7 @@
 
 /* Agenda: a short line per day, a line per event (the time, then the title ending in …) */
 #app.preset-canvas .cv-agenda[data-mini] .ag-day { margin-bottom: 0.8rem; }
+#app.preset-canvas .cv-agenda[data-mini] .ag-legend { font-size: 1.3rem; gap: 0.3rem 1.2rem; margin-bottom: 0.8rem; }
 #app.preset-canvas .cv-agenda[data-mini] .ag-date { display: block; padding: 0 0.2rem 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-agenda[data-mini] .ag-date b { font-size: 1.8rem; }
 #app.preset-canvas .cv-agenda[data-mini] .ag-date span { margin-left: 0.6rem; font-size: 1.5rem; }

@@ -166,6 +166,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'days', type: 'num', label: 'Días', min: 1, max: 14, unit: 'days' },
     { k: 'maxPerDay', type: 'num', label: 'Eventos por día como mucho', min: 1, max: 10, unit: 'n' },
     { k: 'compact', type: 'bool', label: 'Compacta' },
+    { k: 'showLegend', type: 'bool', label: 'Leyenda de calendarios' },
     HIDE_PAST,
   ],
   'calendar.today': [SOURCES],

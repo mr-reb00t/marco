@@ -560,12 +560,14 @@ export const CANVAS_KINDS = {
   },
   'calendar.agenda': {
     cat: 'calendar', sizes: ['s', 'm', 't', 'l', 'xl', 'full'], def: 'm', cells: [3, 2, 12, 8], side: true, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, days: 7, maxPerDay: 4, compact: false }),
+    defaults: () => ({ sourceIds: null, hidePast: false, days: 7, maxPerDay: 4, compact: false, showLegend: false }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       days: P.num(c, `${p}.days`, x.days, 7, 1, 14),
       maxPerDay: P.num(c, `${p}.maxPerDay`, x.maxPerDay, 4, 1, 10),
       compact: P.bool(c, `${p}.compact`, x.compact, false),
+      // off for the cards made before it existed: they look as they did
+      showLegend: P.bool(c, `${p}.showLegend`, x.showLegend, false),
     }),
   },
   'calendar.today': {

@@ -856,6 +856,8 @@ body {
 
 .agenda { column-count: 2; column-gap: 3.6rem; height: 100%; overflow: hidden; padding: 0.6rem 0.8rem 1.4rem; }
 .ag-day { break-inside: avoid; margin-bottom: 2.6rem; }
+/* calendar.showLegend: one line over both columns, two at most (a third would be cut, so it is never drawn) */
+.ag-legend { column-span: all; justify-content: flex-start; line-height: 1.4; max-height: calc(2.8em + 0.5rem); overflow: hidden; padding: 0 0.4rem; margin-bottom: 2.2rem; }
 .ag-date { display: flex; align-items: baseline; gap: 1.2rem; padding: 0 0.4rem 0.6rem; border-bottom: 1px solid var(--line); }
 .ag-date b { font-size: 2.6rem; font-weight: 700; letter-spacing: -0.01em; }
 .ag-date span { font-size: 1.9rem; color: var(--fg-2); }
@@ -886,6 +888,7 @@ body {
 
 .agenda.compact { column-count: 1; padding: 0; height: auto; }
 .agenda.compact .ag-day { margin-bottom: 1.6rem; }
+.agenda.compact .ag-legend { margin-bottom: 1.4rem; }
 .agenda.compact .ag-date { border-bottom-color: rgb(255 255 255 / 0.16); }
 .agenda.compact .ag-date b { font-size: 2.1rem; }
 .agenda.compact .ag-date span { font-size: 1.6rem; color: rgb(255 255 255 / 0.6); }

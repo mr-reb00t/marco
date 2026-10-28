@@ -23,7 +23,8 @@ export class Agenda {
    * `days`: a fixed number of days (the side agenda), or omitted to follow calendar.agendaDays.
    * `cfg`: where the settings come from (default: the screen's, ctx.cfg); every read goes through it.
    */
-  constructor(private root: HTMLElement, private opts: { days?: number; compact?: boolean; maxPerDay?: number; cfg?: () => DisplayConfig }) {
+  /** `legend: false`: never the legend line (the small side agenda), whatever calendar.showLegend says. */
+  constructor(private root: HTMLElement, private opts: { days?: number; compact?: boolean; maxPerDay?: number; legend?: boolean; cfg?: () => DisplayConfig }) {
     this.cfg = opts.cfg ?? (() => ctx.cfg);
     root.classList.add('agenda');
     if (opts.compact) root.classList.add('compact');
@@ -32,10 +33,21 @@ export class Agenda {
   render(events: NEvent[], tick: Tick): void {
     const setting: AgendaDays | number = this.opts.days ?? this.cfg().calendar.agendaDays ?? 'auto';
     const { specs, offsets } = this.days(events, tick, agendaHorizon(setting));
+    const legend = this.legend();
     let shown = specs;
-    if (setting === 'auto' && specs.length) shown = specs.slice(0, this.autoKeep(specs, offsets));
+    if (setting === 'auto' && specs.length) shown = specs.slice(0, this.autoKeep(specs, offsets, legend));
     if (!shown.length) shown = [{ key: 'empty', className: 'ag-empty big', html: esc(ctx.t('noUpcoming')) }];
-    reconcile(this.root, shown, { flip: true });
+    reconcile(this.root, legend ? [legend, ...shown] : shown, { flip: true });
+  }
+
+  /** calendar.showLegend: a line over the day blocks with each calendar's colour and name (as the month view's). */
+  private legend(): Spec | null {
+    const c = this.cfg().calendar;
+    if (this.opts.legend === false || !c.showLegend || !c.sources.length) return null;
+    const html = c.sources
+      .map((s) => `<span class="lg"><i style="--c:${chipColors(s.color).base}"></i>${s.emoji ? `<span class="em">${esc(s.emoji)}</span>` : ''}${esc(s.name)}</span>`)
+      .join('');
+    return { key: 'legend', className: 'legend ag-legend', html };
   }
 
   /**
@@ -43,7 +55,7 @@ export class Agenda {
    * blocks that are fully inside it (agendaKeep). Measured again only when the days, the size or the look change,
    * and the visible agenda is written once, so a render never feeds back into the next one.
    */
-  private autoKeep(specs: Spec[], offsets: number[]): number {
+  private autoKeep(specs: Spec[], offsets: number[], legend: Spec | null): number {
     const root = this.root;
     const w = root.offsetWidth, h = root.offsetHeight;
     // not on screen (another view, booting): show what the 14 days would show; the next render measures
@@ -52,7 +64,7 @@ export class Agenda {
     try {
       fonts = document.fonts?.status ?? '';
     } catch { /* old browser */ }
-    const sig = `${w}x${h}|${root.className}|${document.documentElement.className}|${fonts}|${specs.map((s) => `${s.key}|${s.className}|${s.html}`).join('\n')}`;
+    const sig = `${w}x${h}|${root.className}|${document.documentElement.className}|${fonts}|${legend?.html ?? ''}|${specs.map((s) => `${s.key}|${s.className}|${s.html}`).join('\n')}`;
     if (this.fill?.sig === sig) return this.fill.keep;
     let probe = this.probe;
     if (!probe) {
@@ -63,12 +75,13 @@ export class Agenda {
     probe.classList.add('ag-probe');
     probe.style.cssText = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;visibility:hidden;pointer-events:none;`;
     if (probe.parentElement !== root.parentElement) root.parentElement.appendChild(probe);
-    probe.innerHTML = specs.map((s) => `<div class="${s.className}">${s.html}</div>`).join('');
+    // the legend first, as on screen: it takes its room, but only the day blocks are measured
+    probe.innerHTML = (legend ? [legend, ...specs] : specs).map((s) => `<div class="${s.className}">${s.html}</div>`).join('');
     const box = probe.getBoundingClientRect();
     const cs = getComputedStyle(probe);
     const right = box.right - (parseFloat(cs.paddingRight) || 0) + 1;
     const bottom = box.bottom - (parseFloat(cs.paddingBottom) || 0) + 1;
-    const fits = Array.from(probe.children).map((d) => {
+    const fits = Array.from(probe.children).slice(legend ? 1 : 0).map((d) => {
       const r = d.getBoundingClientRect();
       return r.right <= right && r.bottom <= bottom;
     });

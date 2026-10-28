@@ -116,7 +116,7 @@ const highlights = new Highlights($('#highlights'), { shown: () => ctx.cfg.scree
 const weather = new Weather($('#weather'));
 const calendar = new MonthCalendar($('#calendar'));
 const agenda = new Agenda($('#agenda'), {}); // days: calendar.agendaDays
-const sideAgenda = new Agenda($('#side-agenda'), { days: 3, compact: true, maxPerDay: 4 });
+const sideAgenda = new Agenda($('#side-agenda'), { days: 3, compact: true, maxPerDay: 4, legend: false });
 const news = new News($('#news'));
 const photos = new Photos(photoArea, $('.photo-meta'));
 const countdowns = new Countdowns($('#countdowns'), $('#cd-strip'));
