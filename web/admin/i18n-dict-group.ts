@@ -1,4 +1,4 @@
-// A "Grupo" on its own in the builder (#25) and the "Icono" of a Home Assistant card (#26). Admin text keyed by the
+// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28). Admin text keyed by the
 // Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
 const ROWS: [string, string, string, string, string, string][] = [
@@ -25,6 +25,15 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Auto: naar wat het is. Een batterij laat zien hoeveel lading er nog in zit.',
     'Auto: efter hvad det er. Et batteri viser, hvor meget strøm der er tilbage.',
     'Auto: według tego, czym jest. Bateria pokazuje, ile ładunku jej zostało.',
+  ],
+  ['Segundo sensor', 'Second sensor', 'Segundo sensor', 'Tweede sensor', 'Anden sensor', 'Drugi czujnik'],
+  [
+    'Su valor sale detrás del primero, por ejemplo 21,4 °C / 48 %.',
+    'Its value shows after the first one, for example 21.4 °C / 48 %.',
+    'O seu valor aparece a seguir ao primeiro, por exemplo 21,4 °C / 48 %.',
+    'De waarde staat na de eerste, bijvoorbeeld 21,4 °C / 48 %.',
+    'Værdien vises efter den første, for eksempel 21,4 °C / 48 %.',
+    'Jego wartość pojawia się po pierwszej, na przykład 21,4 °C / 48 %.',
   ],
 ];
 

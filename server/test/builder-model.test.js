@@ -634,14 +634,14 @@ test('a small Rotativa (#19): it starts at its first card\'s size, goes down to 
   const sgId = sgCv.items.at(-1).id;
   const sgRange = M.rangeOf(M.sizingOf(M.itemOf(sgCv, sgId)), 'landscape');
   assert.deepEqual([sgRange.minW, sgRange.minH], [2, 1]);
-  // a weather card added inside: the box grows at its place to the 8×2 the hourly strip needs
+  // a month calendar added inside: the box grows at its place to the 6×4 the month needs
   const more = structuredClone(cv);
-  M.itemOf(more, a.id).props.cards.push({ id: 'cv_hourly01', kind: 'weather.hourly', props: {} });
+  M.itemOf(more, a.id).props.cards.push({ id: 'cv_month001', kind: 'calendar.month', props: {} });
   const g = M.growToCards(more, a.id);
   assert.deepEqual(g.grown, ['landscape']);
   assert.deepEqual(g.stuck, []);
   const p = M.placements(g.cv, 'landscape').get(a.id);
-  assert.deepEqual([p.x, p.y, ...M.boxCells(p, 'landscape')], [0, 0, 8, 2]);
+  assert.deepEqual([p.x, p.y, ...M.boxCells(p, 'landscape')], [0, 0, 6, 4]);
   // nothing to do when it already fits; no room at all: said, and the box stays
   assert.deepEqual(M.growToCards(g.cv, a.id).grown, []);
   const full = structuredClone(more);

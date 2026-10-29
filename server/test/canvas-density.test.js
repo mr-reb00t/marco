@@ -199,15 +199,15 @@ test('rotativa: its defaults validate, its cards get ids of their own, a range i
   // a camera inside shows pictures; a deleted widget's card goes quietly
   const cam = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', [card('', 'ha.camera', { entity: 'camera.door', mode: 'live' }), card('', 'widget', { widgetId: 'gone' }), card('', 'widget', { widgetId: 'w1' })])] }, {}, { widgets: new Map([['w1', {}]]) });
   assert.deepEqual(cam.cv.items[0].props.cards.map((c) => [c.kind, c.props.mode ?? c.props.widgetId]), [['ha.camera', 'snapshot'], ['widget', 'w1']]);
-  // its range: what every one of its cards allows too (the largest of their minimums, the hourly strip's 8×2; its
+  // its range: what every one of its cards allows too (the largest of their minimums, the strips' 4×2 (#27); its
   // full look from 12×4, the hourly forecast's)
   const k = kindFor({ kind: 'rotator', props: d });
-  assert.deepEqual([cellRange(k).minW, cellRange(k).minH], [8, 2]);
+  assert.deepEqual([cellRange(k).minW, cellRange(k).minH], [4, 2]);
   assert.deepEqual(fullLookMin(k), [12, 4]);
   assert.deepEqual(cellRange(kindFor({ kind: 'rotator', props: { cards: [] } })), cellRange('rotator'), 'no cards: the kind itself');
   // so a box too small for its cards is grown on save
   const small = clean({ ...defaultCanvas(), items: [rot('cv_rrrrrrr1', d.cards, {}, { pos: B(0, 0, 3, 2) })] });
-  assert.deepEqual(posCells(small.cv.items[0].pos, 'landscape'), [8, 2]);
+  assert.deepEqual(posCells(small.cv.items[0].pos, 'landscape'), [4, 2]);
   // a light and a camera (#19): down to the camera's 3×2 and up to the whole screen, starting as small as the light
   const lc = kindFor({ kind: 'rotator', props: { cards: [card('', 'ha.tile'), card('', 'ha.camera')] } });
   assert.deepEqual(cellRange(lc), { minW: 3, minH: 2, maxW: 24, maxH: 16 });
@@ -406,9 +406,9 @@ test('builder: a Rotativa counts its cards, gets ids of its own when added or co
   const all = canvasCards(d.cv.items).map((x) => x.id);
   assert.equal(new Set(all).size, all.length);
   assert.equal(M.cardCount(d.cv), 6);
-  // its smallest box: what the hourly forecast needs
-  assert.equal(M.setCells(c, 'landscape', r.id, 6, 2).ok, false);
-  assert.equal(M.setCells(c, 'landscape', r.id, 8, 2).ok, true);
+  // its smallest box: what the hourly forecast needs (#27: four cells wide)
+  assert.equal(M.setCells(c, 'landscape', r.id, 3, 2).ok, false);
+  assert.equal(M.setCells(c, 'landscape', r.id, 4, 2).ok, true);
   // the cap counts the cards inside
   const full = clean({ ...defaultCanvas(), items: Array.from({ length: 46 }, (_, i) => item(`cv_fffff${String(i).padStart(3, '0')}`, 'spacer', B(i % 24, Math.floor(i / 24), 1, 1))) }).cv;
   assert.equal(M.canAdd(full, 'rotator'), 'tooMany', 'a Rotativa of two cards needs three');

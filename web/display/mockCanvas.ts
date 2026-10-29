@@ -428,6 +428,11 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
         { entity: 'sensor.tesla_range', name: 'Range', icon: 'gauge' },
         { entity: 'binary_sensor.tesla_plug', name: 'Charger', icon: 'plug', textOff: 'Unplugged' },
       ] } },
+      // a temperature and a humidity on one card (#28)
+      { kind: 'ha.tile', pos: B(14, 0, 4, 1), props: { entity: 'sensor.garage_temp', entity2: 'sensor.garage_humidity', icon: 'home' } },
+      { kind: 'ha.tile', pos: B(19, 0, 3, 1), props: { entity: 'sensor.garage_temp', entity2: 'sensor.garage_humidity', icon: 'home' } },
+      { kind: 'ha.tile', pos: B(14, 6, 4, 2), props: { entity: 'sensor.garage_temp', entity2: 'sensor.garage_humidity', icon: 'home' } },
+      { kind: 'ha.tile', pos: B(19, 6, 3, 3), props: { entity: 'sensor.garage_temp', entity2: 'sensor.garage_humidity', icon: 'home' } },
     ],
   },
   // a small Rotativa inside a group (#19): the 'motion-group' space of 6×6 cells, its group of three in rows, the last

@@ -380,6 +380,9 @@ const DOMAINS = {
   gauge: ['sensor', 'number', 'input_number'],
   statistic: ['sensor'],
 };
+/** What the second sensor of an Entidad card (ha.tile props.entity2) may be: something read, never controlled. */
+export const TILE_SECOND_DOMAINS = ['sensor', 'binary_sensor'];
+
 /** What can go in the row under an Entidad card (ha.tile props.features; null = chosen for its domain). */
 export const TILE_FEATURES = ['brightness', 'colorTemp', 'color', 'cover', 'position', 'hvacModes', 'target', 'valve', 'select', 'number', 'vacuum', 'update', 'gauge'];
 /** The periods and values of a Estadística card (Home Assistant's long-term statistics). */
@@ -903,7 +906,9 @@ export const CANVAS_KINDS = {
       if (Array.isArray(x.features)) features = [...new Set(x.features.filter((f) => TILE_FEATURES.includes(f)))].slice(0, 3);
       else if (x.features !== undefined && x.features !== null) c.err(`${p}.features`, 'expected array');
       const [lo, hi] = rangeOf(c, p, x.gaugeMin, x.gaugeMax, 'gaugeMin', 'gaugeMax');
-      return { features, gaugeMin: lo, gaugeMax: hi, ...stateColorsOf(c, p, x), ...stateWordsOf(c, p, x) };
+      // a second sensor shown after the first on the state line (#28: "74.0 °F / 46.3 %"); read only, never a control
+      const entity2 = P.entity(c, `${p}.entity2`, x.entity2, TILE_SECOND_DOMAINS);
+      return { entity2, features, gaugeMin: lo, gaugeMax: hi, ...stateColorsOf(c, p, x), ...stateWordsOf(c, p, x) };
     },
   }),
   'ha.light': haKind(['row', 'xs', 's', 'sq', 'm', 't'], 's', [2, 1, 6, 4], 'light', {
@@ -1450,8 +1455,9 @@ const FINE_MIN = {
   'calendar.people': [6, 3],
   'countdowns': [4, 1],
   'weather.now': [3, 1],
-  'weather.hourly': [8, 2],
-  'weather.forecast': [6, 2],
+  // four cells wide (#27): the strip shows the hours or days that fit (five), so a Rotativa of them can be that small
+  'weather.hourly': [4, 2],
+  'weather.forecast': [4, 2],
   'weather.cities': [4, 1],
   'message': [4, 1],
   'todo': [4, 2],
@@ -2215,6 +2221,7 @@ export function haEntitiesOf(item) {
   if (item.kind === 'rotator') return rotatorLeaves(p.cards).flatMap((cd) => (cd.kind !== 'rotator' ? haEntitiesOf({ kind: cd.kind, props: cd.props }) : []));
   if (!item.kind?.startsWith('ha.') && item.kind !== 'html') return out;
   add(p.entity);
+  add(p.entity2);
   add(p.showWhen);
   for (const r of p.rows ?? []) add(r.entity);
   for (const s of p.series ?? []) add(s.entity);
@@ -2305,12 +2312,13 @@ function fnv(s) {
 
 /**
  * Walk an item's HA bindings in alias order: `fn(entity)` returns what goes in its place. The n-th bound entity
- * (empty ones skipped) is alias `${itemId}:${n}`, in this order: entity, showWhen, rows, series, buttons, bind.
+ * (empty ones skipped) is alias `${itemId}:${n}`, in this order: entity, entity2, showWhen, rows, series, buttons, bind.
  * projectCanvas and itemAliases both use it, so the server, the admin and the display agree on every alias.
  */
 function mapEntities(item, fn) {
   const p = structuredClone(item.props ?? {});
   if ('entity' in p) p.entity = fn(p.entity);
+  if ('entity2' in p) p.entity2 = fn(p.entity2);
   if ('showWhen' in p) p.showWhen = fn(p.showWhen);
   if (Array.isArray(p.rows)) p.rows = p.rows.map((r) => ({ ...r, entity: fn(r.entity) }));
   if (Array.isArray(p.series)) p.series = p.series.map((s) => ({ ...s, entity: fn(s.entity) }));
@@ -2328,6 +2336,7 @@ export function itemNames(item) {
   };
   if (!item?.kind || (!item.kind.startsWith('ha.') && item.kind !== 'html')) return out;
   add(p.entity, p.name);
+  add(p.entity2, '');
   add(p.showWhen, '');
   for (const r of Array.isArray(p.rows) ? p.rows : []) add(r?.entity, r?.name);
   for (const s of Array.isArray(p.series) ? p.series : []) add(s?.entity, s?.label);
@@ -2952,6 +2961,7 @@ function stripItem(it) {
   };
   if (it.kind?.startsWith('ha.') || it.kind === 'html') {
     if ('entity' in p) p.entity = ent(p.entity);
+    if ('entity2' in p) p.entity2 = ent(p.entity2);
     if ('showWhen' in p) p.showWhen = ent(p.showWhen);
     if (Array.isArray(p.rows)) p.rows = p.rows.map((r) => ({ ...r, entity: ent(r?.entity) }));
     if (Array.isArray(p.series)) p.series = p.series.map((s) => ({ ...s, entity: ent(s?.entity) }));

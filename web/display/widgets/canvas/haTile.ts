@@ -243,6 +243,16 @@ function featureRow(f: TileFeature | 'fanPct', env: AdapterEnv, alias: string, s
 }
 
 // ------------------------------------------------------------------------------------------------ tile
+/** The state line with the Entidad's second sensor after it (#28: "74.0 °F / 46.3 %"), when it has one and it is known. */
+function withSecond(text: string, env: AdapterEnv, p: Props): string {
+  const a2 = aliasOf(p.entity2);
+  const s2 = a2 ? env.ha.state(a2) : null;
+  const t2 = s2 ? tileStateText(s2, [], true) : '';
+  // each value kept whole, so a line too long for the card breaks at the slash only (fitTile)
+  const keep = (x: string) => x.replace(/ /g, '\u00a0');
+  return t2 ? (text ? `${keep(text)} / ${keep(t2)}` : t2) : text;
+}
+
 export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeature | 'fanPct')[]): void {
   const p = env.item().props as Props;
   const alias = aliasOf(p.entity);
@@ -284,7 +294,7 @@ export function drawTile(root: HTMLElement, env: AdapterEnv, feats?: (TileFeatur
   const wrap = el('div', `cv-ha-tile tone-${tn}${s?.d === 'binary' && t0 !== 'off' && t0 !== 'na' ? ' is-pulse' : ''}`);
   const txt = el('div', 'cv-ha-txt');
   // the owner's own words (Texto si está activo / Texto si no) before the automatic ones, always as text
-  const stEl = el('span', 'cv-ha-state cv-sec3', ownStateText(s, p) || tileStateText(s, drawn, size === 'row', p.decimals));
+  const stEl = el('span', 'cv-ha-state cv-sec3', withSecond(ownStateText(s, p) || tileStateText(s, drawn, size === 'row', p.decimals), env, p));
   // a sensor's "Colores según el valor" in the small look too (the value is the state line there)
   const lvT = s?.d === 'sensor' && s.num !== null ? level(s.num, p.thresholds, !!p.invert) : '';
   if (lvT) stEl.classList.add(`lv-${lvT}`);
@@ -372,12 +382,28 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
     const st = root.querySelector('.cv-ha-tile .cv-ha-state');
     const ip = env.item().props as Props;
     const sNow = env.ha.state(aliasOf(ip.entity));
-    if (st) st.textContent = ownStateText(sNow, ip) || tileStateText(sNow, left);
+    if (st) st.textContent = withSecond(ownStateText(sNow, ip) || tileStateText(sNow, left), env, ip);
     wk = wk0;
     root.style.setProperty('--wk', wk.toFixed(3));
     smaller(wk0 * 0.9);
   }
   smaller(0.5);
+  // a state line with a second value (#28) is often longer than the name: on two lines at the slash when the card is
+  // more than a line high, else smaller type until it reads whole (a line first goes under the name, stackLine)
+  const st2 = aliasOf((env.item().props as Props).entity2) ? root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-state') : null;
+  st2?.classList.remove('is-wrap');
+  const fitSecond = () => {
+    const cut = () => !!st2 && st2.scrollWidth > st2.clientWidth + 1;
+    if (cut() && box.size !== 'row') {
+      st2!.classList.add('is-wrap');
+      smaller(0.5);
+    }
+    for (let i = 0; i < 4 && cut() && wk > 0.5; i++) {
+      wk = Math.max(0.5, wk * (st2!.clientWidth / st2!.scrollWidth) * 0.97);
+      root.style.setProperty('--wk', wk.toFixed(3));
+    }
+  };
+  if (box.size !== 'row') fitSecond();
   // the line of a cover: up and down only while the name keeps a word or so beside them
   const lb = box.size === 'row' ? root.querySelector<HTMLElement>('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line') : null;
   // the stacked line with buttons at its end: the icon gives the name its room, so the buttons can stay
@@ -400,6 +426,7 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
     if (narrow) root.querySelector('.cv-ha-coverbtns.is-line, .cv-ha-stepper.is-line')?.remove();
     root.classList.toggle('is-stack', !!root.querySelector('.cv-ha-tile .cv-ha-state')?.textContent);
     smaller(0.5);
+    fitSecond();
     if (deep) return;
     // two cells wide: the icon goes when it leaves the name fewer than about four letters
     const txt = root.querySelector<HTMLElement>('.cv-ha-tile .cv-ha-txt');
@@ -408,7 +435,10 @@ export function fitTile(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
       root.classList.add('no-nico');
       smaller(0.5);
     }
-  } else if (box.size === 'row') stackLine(root, () => smaller(0.5));
+  } else if (box.size === 'row') {
+    stackLine(root, () => smaller(0.5));
+    fitSecond();
+  }
   // a narrow box of its own (two cells of a wide sidebar): the type a little smaller until the name reads, since
   // the icon beside it grows with the type and leaves the name a letter or two
   else if (narrowName(root, wk)) return;
@@ -682,7 +712,7 @@ function statisticAdapter(): CanvasAdapter {
 }
 
 export const HA_TILE_ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
-  'ha.tile': () => haAdapter('cv-ha-tile-card', (p) => [aliasOf(p.entity)].filter(Boolean), drawTile, (root, box, env) => {
+  'ha.tile': () => haAdapter('cv-ha-tile-card', (p) => [aliasOf(p.entity), aliasOf(p.entity2)].filter(Boolean), drawTile, (root, box, env) => {
     fitTile(root, box, env);
     fitSwatches(root);
   }),

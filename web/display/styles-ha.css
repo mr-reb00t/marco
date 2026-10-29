@@ -75,6 +75,8 @@
 #app.preset-canvas .cv-ha-tile .cv-ha-txt { flex: 1; gap: 0.1em; }
 #app.preset-canvas .cv-ha-tile .cv-ha-name { font-size: 1.1em; line-height: 1.2; }
 #app.preset-canvas .cv-ha-tile .cv-ha-state { font-size: 0.98em; line-height: 1.25; font-variant-numeric: tabular-nums; }
+/* a second value that does not fit beside the first (#28): under it, the line broken at the slash (haTile.ts fitTile) */
+#app.preset-canvas .cv-ha-tile-card .cv-ha-tile .cv-ha-txt > .cv-ha-state.is-wrap { white-space: normal; text-overflow: clip; }
 #app.preset-canvas .cv-ha-tile .cv-ha-ago { font-size: 0.8em; }
 /* the mini: the icon on top, the name and the state at the bottom */
 #app.preset-canvas .cv-ha-tile-card[data-size='xs'] { justify-content: stretch; }

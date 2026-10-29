@@ -1059,6 +1059,11 @@ and the modes for a climate, the options of a select, a slider or −/+ for a nu
 for a vacuum, the versions of an update, a bar for a percentage sensor. Each state the display gets lists them
 (`f`); the controls they open are in `c` as for every card.
 
+**Second sensor.** An Entidad card can show a second value after the first (`props.entity2`, `""` = none): a
+`sensor` or `binary_sensor` (`TILE_SECOND_DOMAINS`), read only. Its alias is the one after the card's entity
+(`${itemId}:1`) and is never a touch control. The state line reads `74 °F / 46.3 %`; on a card more than one row high
+that has no room for it on one line, it breaks at the slash.
+
 **Icons.** The Entidad, Sensor and Indicador cards and each row of a Habitación (`rows[].icon`) take `props.icon`: `""`
 (automatic, by domain and device class) or one of `HA_ICONS` (battery, fuel, car, gauge, plug, bolt, bulb, thermo,
 drop, sun, fan, climate, home, door, window, shutter, lock, shield, person, motion, bell, wifi, valve, vacuum, play,
@@ -1127,7 +1132,8 @@ Assistant card); each card has an id like an item's, unique on the screen. `ever
 a boolean (default true), `transition` how it goes to the next card (#21): `"fade"` (the default), `"slide"` (the new
 card slides in from the right) or `"none"` (a cut). The cards count towards the cards of a screen (48) and towards each kind's own
 cap, their entities towards the screen's (80), and the box of a Rotativa is kept within what its cards allow
-(`kindFor(item)`): at least the largest of their smallest boxes (so each card fits, in its compact look when the box is
+(`kindFor(item)`): at least the largest of their smallest boxes (the weather strips need 4×2, so the default
+Rotativa of the two forecasts fits four cells wide) (so each card fits, in its compact look when the box is
 small), at most the largest any of them takes; a new one starts at its first card's default size. A Rotativa's cards share its hiding, schedule and condition: every feed walks them like items
 (`canvasCards(items)`), so a card inside gets its Home Assistant states under aliases of its own id (`<cardId>:<n>`),
 its values, its data, its widget and its calendars, and gets nothing while its Rotativa is hidden. They are never touch

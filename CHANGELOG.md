@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.25.0] - 2026-10-29
+
+### Added
+- A *Segundo sensor* for the Entidad card (#28): a second value after the first on the same card, such as a
+  temperature and a humidity (74 °F / 46.3 %). It is only shown, never switched from the screen.
+
+### Changed
+- A Rotativa can be four cells wide (#27). The hourly and daily forecasts now fit four cells wide too and show the
+  hours or days that fit, so the Rotativa of the two forecasts no longer needs eight.
+
 ## [0.24.2] - 2026-10-28
 
 ### Fixed

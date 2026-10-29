@@ -508,7 +508,7 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
                 domains={s.domains ?? domains}
                 enabled={env.ha}
                 value={String(p[s.k] ?? '')}
-                emptyLabel={s.optional ? t('Siempre') : undefined}
+                emptyLabel={s.optional ? t(s.none ?? 'Siempre') : undefined}
                 onChange={(v) => put(s.k, s.optional ? v || null : v)}
               />
             </Field>

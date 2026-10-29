@@ -1,6 +1,7 @@
 // Inspector, Contenido tab: the options of each kind, described as data (fields.tsx draws them). Labels are Spanish
 // t() keys. The values and their ranges are the ones server/core/canvasCore.js validates.
 import type { CanvasKind } from '../../shared/types';
+import { TILE_SECOND_DOMAINS } from '../../../server/core/canvasCore.js';
 
 export type Opt = { v: string | number; l: string };
 export type Spec =
@@ -30,8 +31,9 @@ export type Spec =
   | { k: 'places'; type: 'places'; label: string }
   /** `show`: only while it applies */
   | { k: string; type: 'text'; label: string; max: number; placeholder?: string; hint?: string; show?: (p: Record<string, any>) => boolean }
-  /** one Home Assistant entity of the kind's domains (canvasCore CANVAS_KINDS[kind].ha), or of `domains` */
-  | { k: 'entity' | 'showWhen'; type: 'entity'; label: string; domains?: string[]; optional?: boolean; hint?: string }
+  /** one Home Assistant entity of the kind's domains (canvasCore CANVAS_KINDS[kind].ha), or of `domains`; `optional`:
+   * it can be left empty, which the list calls `none` (default «Siempre») */
+  | { k: 'entity' | 'entity2' | 'showWhen'; type: 'entity'; label: string; domains?: string[]; optional?: boolean; none?: string; hint?: string }
   /** a room's rows: an entity and an optional name each, up to six */
   | { k: 'rows'; type: 'rows'; label: string }
   /** a chart's series: an entity, a label and a colour each, up to four */
@@ -241,6 +243,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   announcement: [{ type: 'note', text: 'Los avisos se mandan desde Avisos.', go: { label: 'Ir a Avisos', route: 'alerts' } }],
   'ha.tile': [
     { k: 'entity', type: 'entity', label: 'Entidad' },
+    { k: 'entity2', type: 'entity', label: 'Segundo sensor', domains: TILE_SECOND_DOMAINS, optional: true, none: 'Ninguno', hint: 'Su valor sale detrás del primero, por ejemplo 21,4 °C / 48 %.' },
     HA_NAME,
     HA_ICON_SPEC,
     SHOW_NAME,

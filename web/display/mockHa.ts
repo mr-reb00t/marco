@@ -146,6 +146,8 @@ const DEMO_FIXED: Record<string, HaSlim> = {
   'sensor.tesla_battery': { d: 'sensor', v: '54', num: 54, unit: '%', dc: 'battery', n: 'Tesla' },
   'sensor.toyota_fuel': { d: 'sensor', v: '74', num: 74, unit: '%', dc: null, n: 'Toyota' },
   'sensor.tesla_range': { d: 'sensor', v: '137', num: 137, unit: 'mi', dc: 'distance', n: 'Range' },
+  'sensor.garage_temp': { d: 'sensor', v: '74.0', num: 74, unit: '°F', dc: 'temperature', n: 'Garage' },
+  'sensor.garage_humidity': { d: 'sensor', v: '46.3', num: 46.3, unit: '%', dc: 'humidity', n: 'Garage humidity' },
   'sensor.toyota_range': { d: 'sensor', v: '292', num: 292, unit: 'mi', dc: 'distance', n: 'Range' },
   'binary_sensor.tesla_plug': { d: 'binary', on: false, dc: 'plug', n: 'Charger' },
   'sensor.phone_battery': { d: 'sensor', v: '12', num: 12, unit: '%', dc: 'battery', n: 'Phone' },
@@ -176,7 +178,7 @@ export function demoHaStates(cfg: DisplayConfig | null): Record<string, HaState>
   const own = showcaseOf(cfg)?.ha;
   for (const it of canvasCards(cfg?.canvas?.items)) {
     const p = it.props as Record<string, any>;
-    const refs: Ref[] = [p.entity, ...(p.rows ?? []).map((r: any) => r.entity), ...(p.buttons ?? []).map((b: any) => b.entity), ...(p.bind ?? []).map((b: any) => b.entity)];
+    const refs: Ref[] = [p.entity, p.entity2, ...(p.rows ?? []).map((r: any) => r.entity), ...(p.buttons ?? []).map((b: any) => b.entity), ...(p.bind ?? []).map((b: any) => b.entity)];
     const gate = p.showWhen as Ref;
     if (gate?.a) out[gate.a] = { ...DEMO_GATE, at: now - 60_000, c: [] };
     refs.forEach((r, i) => {
