@@ -19,7 +19,7 @@ export const DEFAULT_CONFIG: DisplayConfig = {
   },
   calendar: {
     enabled: true, view: 'month', weeks: 5, weekStart: 1, startOn: 'week', showLocation: false, showEndTime: false, showDayXofY: true,
-    showLegend: true, hidePast: false, maxEventsPerDay: 4, marquee: true, rotateBusyDays: true, compactBusyDays: false, eventStyle: 'lines', agendaDays: 'auto', sources: [], iconRules: DEFAULT_ICON_RULES,
+    showLegend: true, hidePast: false, maxEventsPerDay: 4, marquee: true, rotateBusyDays: true, compactBusyDays: false, eventStyle: 'lines', gridLines: 'soft', gridColor: null, agendaDays: 'auto', sources: [], iconRules: DEFAULT_ICON_RULES,
   },
   datetime: {
     enabled: true, timezone: 'Europe/Lisbon', clock: 'digital', format24: true, showSeconds: true, showAmPm: false,
@@ -72,6 +72,8 @@ export function normalizeConfig(raw: unknown): DisplayConfig {
   const rawCal = isObj(raw) && isObj(raw.calendar) ? raw.calendar : null;
   c.calendar.weeks = rawCal?.weeks === 'auto' || c.calendar.weeks === 'auto' ? 'auto' : clampInt(c.calendar.weeks, 1, 8, 5);
   c.calendar.eventStyle = c.calendar.eventStyle === 'cards' ? 'cards' : 'lines';
+  c.calendar.gridLines = c.calendar.gridLines === 'clear' || c.calendar.gridLines === 'strong' ? c.calendar.gridLines : 'soft';
+  c.calendar.gridColor = typeof rawCal?.gridColor === 'string' && /^#[0-9a-f]{6}$/i.test(rawCal.gridColor) ? rawCal.gridColor : null;
   c.calendar.agendaDays = normalizeAgendaDays(rawCal?.agendaDays);
   c.calendar.maxEventsPerDay = clampInt(c.calendar.maxEventsPerDay, 1, 12, 4);
   c.calendar.weekStart = clampInt(c.calendar.weekStart, 0, 6, 1);

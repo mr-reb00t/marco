@@ -502,6 +502,8 @@ export interface IconRule {
 
 export type CalendarWeeks = number | 'auto';
 export type EventStyle = 'lines' | 'cards';
+/** calendar.gridLines: how much the month / week grid's lines show. */
+export type GridLines = 'soft' | 'clear' | 'strong';
 /** calendar.startOn: the grid starts on the first day of this week (weekStart) or on today. */
 export type CalendarStartOn = 'week' | 'today';
 /** Days the agenda view looks ahead, or 'auto': Today and Tomorrow, then the next days with events until it is full. */
@@ -538,6 +540,10 @@ export interface CalendarConfig<S = CalendarSource> {
    * lines, stacked in the day; multi-day events stay bars). Cards take precedence over compactBusyDays inside a day.
    */
   eventStyle: EventStyle;
+  /** Month / week grid: how much its lines show, 'soft' (default, the look it always had), 'clear' or 'strong'. */
+  gridLines: GridLines;
+  /** Month / week grid: its lines' own colour (#rrggbb), or null for the theme's (default). */
+  gridColor: string | null;
   /**
    * Agenda view: how many days ahead it looks (7, 14 or 30), or 'auto' (default): Today and Tomorrow, then the next days
    * with events, as many as fit (never fewer than 14 days would show). The compact side agenda always shows 3 days.
@@ -2495,7 +2501,7 @@ export interface ScreenProfile {
   screen: Omit<ScreenConfig, 'name'>;
   layout: LayoutConfig;
   background: BackgroundConfig;
-  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'agendaDays'> & { sourceIds: string[] | null };
+  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'gridLines' | 'gridColor' | 'agendaDays'> & { sourceIds: string[] | null };
   datetime: Omit<DateTimeConfig, 'timezone'>;
   weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { enabled: boolean; rotateSec: number };

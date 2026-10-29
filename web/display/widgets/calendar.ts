@@ -118,6 +118,13 @@ export class MonthCalendar {
     const wantL = Math.max(1, isWeek ? Math.min(14, c.maxEventsPerDay * 3) : c.maxEventsPerDay);
     this.root.classList.toggle('is-week', isWeek);
     this.root.classList.toggle('ev-cards', cards);
+    // calendar.gridLines / gridColor: how much the grid's lines show, and their own colour (styles.css, "grid lines")
+    const gridC = typeof c.gridColor === 'string' && /^#[0-9a-f]{6}$/i.test(c.gridColor) ? c.gridColor : '';
+    if (c.gridLines === 'clear' || c.gridLines === 'strong') this.root.dataset.grid = c.gridLines;
+    else delete this.root.dataset.grid;
+    this.root.classList.toggle('has-grid-c', !!gridC);
+    if (gridC) this.root.style.setProperty('--grid-c', gridC);
+    else this.root.style.removeProperty('--grid-c');
     const compact = c.compactBusyDays === true && !cards;
     const m = this.metrics();
     const cm = cards && m ? this.cardMetrics(m.rem) : null;

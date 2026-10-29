@@ -160,7 +160,7 @@ test('migration v1 → v2 keeps every value (global vs screens[0])', async () =>
   // the motion options did not exist yet: both are back-filled on
   // compact busy days neither: it stays off for screens saved before it; events keep the one-line chips and the grid
   // keeps starting on the first day of the week
-  assert.deepEqual(s.calendar, { ...calView, startOn: 'week', marquee: true, rotateBusyDays: true, compactBusyDays: false, eventStyle: 'lines', agendaDays: 'auto', sourceIds: null });
+  assert.deepEqual(s.calendar, { ...calView, startOn: 'week', marquee: true, rotateBusyDays: true, compactBusyDays: false, eventStyle: 'lines', gridLines: 'soft', gridColor: null, agendaDays: 'auto', sourceIds: null });
   // privacy mode did not exist yet: every source gets the default for its kind
   assert.deepEqual(v.calendar, { sources: sources.map((x) => ({ ...x, privacy: 'busy' })), iconRules });
   const { timezone, ...dtView } = V1.datetime;

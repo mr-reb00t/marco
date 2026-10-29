@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.27.0] - 2026-10-29
+
+### Added
+- *Líneas de la cuadrícula* for the month and week calendars (#29): *Suaves* (as before), *Marcadas* or *Fuertes*,
+  and a colour of their own. In the Modern style, *Marcadas* and *Fuertes* also draw the lines between the days. It is
+  in Calendarios for the screen's calendar, and on the month and week cards (the colour in the Estilo tab).
+
 ## [0.26.0] - 2026-10-29
 
 ### Added

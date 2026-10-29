@@ -405,11 +405,14 @@ export const DATA_KIND_IDS = ['market', 'sports', 'stocks', 'currency'];
  */
 export const CHART_STYLES = ['below', 'background'];
 
+/** calendar.gridLines (the screen's and the month / week cards'): how much the grid's lines show. */
+export const GRID_LINES = ['soft', 'clear', 'strong'];
+
 /**
- * "Color de la hora" and "Color de la fecha" of the clocks and the date card (Estilo tab): #rrggbb, kept only when
- * chosen, so a card on Automático (the look it always had) saves as before.
+ * "Color de la hora" and "Color de la fecha" of the clocks and the date card, and "Color de las líneas" of the month and
+ * week grids (Estilo tab): #rrggbb, kept only when chosen, so a card on Automático (the look it always had) saves as before.
  */
-export const INK_PROPS = { 'clock.digital': ['timeColor', 'dateColor'], 'clock.analog': ['timeColor', 'dateColor'], 'clock.flip': ['timeColor', 'dateColor'], 'clock.world': ['timeColor'], date: ['dateColor'] };
+export const INK_PROPS = { 'calendar.month': ['gridColor'], 'calendar.week': ['gridColor'], 'clock.digital': ['timeColor', 'dateColor'], 'clock.analog': ['timeColor', 'dateColor'], 'clock.flip': ['timeColor', 'dateColor'], 'clock.world': ['timeColor'], date: ['dateColor'] };
 function inkProps(c, p, x, kind) {
   const out = {};
   for (const k of INK_PROPS[kind]) {
@@ -547,19 +550,26 @@ export const CANVAS_KINDS = {
   // ---- Calendario
   'calendar.month': {
     cat: 'calendar', sizes: ['m', 'l', 'xl', 'full'], def: 'l', cells: [4, 3, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, weeks: 'auto', eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true }),
+    defaults: () => ({ sourceIds: null, hidePast: false, weeks: 'auto', eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true, gridLines: 'soft' }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       weeks: x.weeks === 'auto' || x.weeks === undefined || x.weeks === null ? 'auto' : P.num(c, `${p}.weeks`, x.weeks, 'auto', 1, 6),
       eventStyle: P.oneOf(c, `${p}.eventStyle`, x.eventStyle, 'lines', ['lines', 'cards']),
       maxEventsPerDay: P.num(c, `${p}.maxEventsPerDay`, x.maxEventsPerDay, 4, 1, 12),
       showLegend: P.bool(c, `${p}.showLegend`, x.showLegend, true),
+      gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
+      ...inkProps(c, p, x, 'calendar.month'),
     }),
   },
   'calendar.week': {
     cat: 'calendar', sizes: ['w', 'l', 'xl', 'full'], def: 'xl', cells: [6, 2, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, start: 'today' }),
-    props: (c, p, x, refs) => ({ ...calendarCommon(c, p, x, refs), start: P.oneOf(c, `${p}.start`, x.start, 'today', ['today', 'monday']) }),
+    defaults: () => ({ sourceIds: null, hidePast: false, start: 'today', gridLines: 'soft' }),
+    props: (c, p, x, refs) => ({
+      ...calendarCommon(c, p, x, refs),
+      start: P.oneOf(c, `${p}.start`, x.start, 'today', ['today', 'monday']),
+      gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
+      ...inkProps(c, p, x, 'calendar.week'),
+    }),
   },
   'calendar.agenda': {
     cat: 'calendar', sizes: ['s', 'm', 't', 'l', 'xl', 'full'], def: 'm', cells: [3, 2, 12, 8], side: true, edition: 'all', events: true,

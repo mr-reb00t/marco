@@ -616,7 +616,7 @@ body {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--grid-w, 1px) solid var(--line);
 }
 .cal-dow > div {
   padding: 0 1.1rem;
@@ -641,7 +641,7 @@ body {
   grid-template-columns: repeat(14, minmax(0, 1fr));
   grid-template-rows: var(--num-h) repeat(var(--lanes, 4), minmax(var(--lane-min), var(--lane-h))) minmax(0, 1fr);
   row-gap: var(--lane-gap);
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--grid-w, 1px) solid var(--line);
   min-height: 0;
   overflow: hidden;
 }
@@ -657,10 +657,17 @@ body {
 .cal.is-week .ev:not(.bar) .tt, .cal.is-week .ev.single .tt { flex: 1 0 100%; }
 .cal.is-week .ev.bar:not(.single) { align-self: start; height: 3.4rem; }
 
-.cell { grid-row: 1 / -1; border-left: 1px solid var(--line); position: relative; }
+.cell { grid-row: 1 / -1; border-left: var(--grid-w, 1px) solid var(--line); position: relative; }
 .cell:first-child { border-left-color: transparent; }
+/* Grid lines (calendar.gridLines, #29): 'clear' and 'strong' show more of the text colour (strong is thicker too);
+   gridColor gives them their own colour, at three strengths. Only this grid's --line changes. */
+.cal[data-grid='clear'] { --line: color-mix(in srgb, currentColor 26%, transparent); }
+.cal[data-grid='strong'] { --line: color-mix(in srgb, currentColor 46%, transparent); --grid-w: 2px; }
+.cal.has-grid-c { --line: color-mix(in srgb, var(--grid-c) 55%, transparent); }
+.cal.has-grid-c[data-grid='clear'] { --line: color-mix(in srgb, var(--grid-c) 80%, transparent); }
+.cal.has-grid-c[data-grid='strong'] { --line: var(--grid-c); }
 .cell.we { background: var(--cell-we); }
-.cell.m1 { border-left: 1px solid rgb(var(--accent-rgb) / 0.4); }
+.cell.m1 { border-left: var(--grid-w, 1px) solid rgb(var(--accent-rgb) / 0.4); }
 .cell.today {
   background: linear-gradient(to bottom, rgb(var(--accent-rgb) / 0.13), rgb(var(--accent-rgb) / 0.035) 70%);
   box-shadow: inset 0 0 0 1px rgb(var(--accent-rgb) / 0.32);

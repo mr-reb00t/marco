@@ -67,6 +67,11 @@ export type Spec =
 
 /** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
 const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
+/** The month and week grids' lines (#29); their colour is in the Estilo tab ("Color de las líneas"). */
+const GRID_LINES: Spec = {
+  k: 'gridLines', type: 'seg', label: 'Líneas de la cuadrícula', hint: 'Su color, en la pestaña Estilo.',
+  opts: [{ v: 'soft', l: 'Suaves' }, { v: 'clear', l: 'Marcadas' }, { v: 'strong', l: 'Fuertes' }],
+};
 const HIDE_PAST: Spec = { k: 'hidePast', type: 'bool', label: 'Ocultar lo que ya ha pasado' };
 const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
 const DATE_POS_FIELD: Spec = { k: 'datePos', type: 'seg', label: 'Posición de la fecha', opts: [{ v: 'above', l: 'Arriba' }, { v: 'below', l: 'Abajo' }] };
@@ -161,9 +166,10 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'eventStyle', type: 'seg', label: 'Eventos', opts: [{ v: 'lines', l: 'Líneas' }, { v: 'cards', l: 'Tarjetas' }] },
     { k: 'maxEventsPerDay', type: 'num', label: 'Eventos por día como mucho', min: 1, max: 12, unit: 'n' },
     { k: 'showLegend', type: 'bool', label: 'Leyenda de calendarios' },
+    GRID_LINES,
     HIDE_PAST,
   ],
-  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, HIDE_PAST],
+  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, GRID_LINES, HIDE_PAST],
   'calendar.agenda': [
     SOURCES,
     { k: 'days', type: 'num', label: 'Días', min: 1, max: 14, unit: 'days' },

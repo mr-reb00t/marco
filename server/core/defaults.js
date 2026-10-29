@@ -26,7 +26,7 @@ export const RESERVED_SOURCE_IDS = [LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID];
 
 /** Per-screen part of the keys that are split between global and per-screen ("merged sections"). */
 export const SCREEN_SPLIT_KEYS = {
-  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'agendaDays', 'sourceIds'],
+  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
@@ -111,6 +111,9 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       // eventStyle: 'lines' (one-line chips) or 'cards' (time on top, title below on up to 2 lines, stacked in the day);
       // weeks may also be 'auto' (rows picked so each day fits maxEventsPerDay events). The planner layout sets both.
       eventStyle: 'lines',
+      // gridLines: how much the month / week grid's lines show, 'soft' (the look it always had), 'clear' or 'strong';
+      // gridColor: their own colour (#rrggbb) or null (the theme's)
+      gridLines: 'soft', gridColor: null,
       // agendaDays: how far the agenda view looks ahead, 7, 14 or 30 days, or 'auto' (Today and Tomorrow, then the
       // next days with events until the agenda is full)
       agendaDays: 'auto',

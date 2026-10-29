@@ -6085,3 +6085,6 @@ button.immich-album:hover {
   min-width: 6.5em;
   font-weight: 600;
 }
+
+/* calendar.gridLines + gridColor (Calendarios): the strength and the colour on one line */
+.row-inline { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

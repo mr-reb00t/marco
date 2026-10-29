@@ -38,6 +38,11 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
     } else if (item.kind === 'calendar.agenda') {
       cfg.calendar.showLegend = p.showLegend === true;
     }
+    if (item.kind === 'calendar.month' || item.kind === 'calendar.week') {
+      // the card's own grid lines (#29), not the screen's calendar settings
+      cfg.calendar.gridLines = p.gridLines === 'clear' || p.gridLines === 'strong' ? p.gridLines : 'soft';
+      cfg.calendar.gridColor = typeof p.gridColor === 'string' ? p.gridColor : null;
+    }
   }
   if (item.kind.startsWith('clock.') || item.kind === 'date') {
     cfg.datetime = {

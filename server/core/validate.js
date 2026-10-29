@@ -19,7 +19,7 @@ import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
-import { currencyProps, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
+import { currencyProps, GRID_LINES, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
 import { migrateOverlay, overlaysBytes, sanitizeDecoration, sanitizeOverlays } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
@@ -377,6 +377,9 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     compactBusyDays: bool(ctx, `${p}.calendar.compactBusyDays`, ca.compactBusyDays, false),
     // how events look in the month / week grid: one-line chips (default, what every screen had) or stacked cards
     eventStyle: oneOf(ctx, `${p}.calendar.eventStyle`, ca.eventStyle, D.calendar.eventStyle, EVENT_STYLES),
+    // the month / week grid's lines: how much they show, and their own colour (null: the theme's)
+    gridLines: oneOf(ctx, `${p}.calendar.gridLines`, ca.gridLines, D.calendar.gridLines, GRID_LINES),
+    gridColor: color(ctx, `${p}.calendar.gridColor`, ca.gridColor, D.calendar.gridColor, true),
     // how far the agenda view looks ahead: 7, 14 or 30 days, or 'auto' (the default for every screen: it only adds
     // days with events where the agenda had empty room)
     agendaDays: oneOf(ctx, `${p}.calendar.agendaDays`, ca.agendaDays, D.calendar.agendaDays, AGENDA_DAYS),

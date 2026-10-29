@@ -5,7 +5,7 @@ import type { AppConfig, ScreenProfile, StoredConfig } from './types';
 
 /** Per-screen part of the sections that are split between global and per-screen. */
 export const SCREEN_SPLIT_KEYS = {
-  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'agendaDays', 'sourceIds'],
+  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],

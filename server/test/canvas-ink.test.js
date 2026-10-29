@@ -18,6 +18,8 @@ const run = (kind, props) => {
 
 test('ink: the clocks take a time and a date colour, the world clock a time colour, the date card a date colour', () => {
   assert.deepEqual(INK_PROPS, {
+    'calendar.month': ['gridColor'],
+    'calendar.week': ['gridColor'],
     'clock.digital': ['timeColor', 'dateColor'],
     'clock.analog': ['timeColor', 'dateColor'],
     'clock.flip': ['timeColor', 'dateColor'],

@@ -715,7 +715,7 @@ function StylePanel(p: InspectorProps & { item: CanvasItem; upd: (fn: (it: Canva
               : t('También el día de la semana, mientras la tarjeta no tenga color de acento.')
             : undefined;
         return (
-          <Field label={k === 'timeColor' ? t('Color de la hora') : t('Color de la fecha')} hint={hint}>
+          <Field label={k === 'timeColor' ? t('Color de la hora') : k === 'gridColor' ? t('Color de las líneas') : t('Color de la fecha')} hint={hint}>
             <ColorPicker value={v} allowNone onChange={(c) => putInk(k, c)} />
           </Field>
         );

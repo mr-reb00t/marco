@@ -455,8 +455,10 @@
 .style-modern .cal-dow { border-bottom: 0; padding-bottom: 0.8rem; }
 .style-modern .cal-dow > div { padding: 0 1.2rem; font-size: 1.5rem; font-weight: 600; letter-spacing: 0.04em; color: var(--fg-3); }
 .style-modern .cal-dow > div.is-today { color: var(--accent); }
-.style-modern .wk { border-bottom: 0; border-top: 1px solid var(--line); }
+.style-modern .wk { border-bottom: 0; border-top: var(--grid-w, 1px) solid var(--line); }
 .style-modern .cell, .style-modern .cell.m1 { border-left-color: transparent; }
+/* calendar.gridLines 'clear' / 'strong': the day columns get their lines too */
+.style-modern .cal:is([data-grid='clear'], [data-grid='strong']) .cell:not(:first-child) { border-left-color: var(--line); }
 .style-modern .cell.we { background: none; }
 .style-modern .cell.today::before { display: none; }
 .style-modern .num {

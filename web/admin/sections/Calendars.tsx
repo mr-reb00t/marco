@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { CalendarSource, GoogleCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
+import type { AppConfig, CalendarSource, GridLines, GoogleCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
 import { api, ApiError, UNAUTHORIZED_EVENT } from '../api';
 import { fetchErrorText } from '../apiErrors';
 import { choiceDialog, confirmDialog, toast } from '../components/feedback';
@@ -42,6 +42,27 @@ const KINDS: { value: SourceKind; label: string }[] = [
   { value: 'holidays', label: 'Festivos' },
 ];
 
+
+/** calendar.gridLines and gridColor: how much the month / week grid's lines show, and their own colour (#29). */
+function GridLinesField({ cfg, set }: { cfg: AppConfig; set: SectionProps['set'] }) {
+  const v: GridLines = cfg.calendar.gridLines ?? 'soft';
+  return (
+    <Field label={t('Líneas de la cuadrícula')} hint={t('Su color: Auto es el del tema.')}>
+      <div class="row-inline">
+        <Segmented<GridLines>
+          value={v}
+          options={[
+            { value: 'soft', label: t('Suaves') },
+            { value: 'clear', label: t('Marcadas') },
+            { value: 'strong', label: t('Fuertes') },
+          ]}
+          onChange={(x) => set((d) => void (d.calendar.gridLines = x))}
+        />
+        <ColorPicker value={cfg.calendar.gridColor ?? null} allowNone onChange={(c) => set((d) => void (d.calendar.gridColor = c))} />
+      </div>
+    </Field>
+  );
+}
 
 function nextColor(sources: CalendarSource[]) {
   const used = new Set(sources.map((s) => s.color.toLowerCase()));
@@ -738,6 +759,7 @@ export function CalendarsSection(props: SectionProps) {
             </Field>
             <WeeksField cfg={props.cfg} set={set} error={errors['calendar.weeks']} />
             <EventStyleField cfg={props.cfg} set={set} />
+            {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <GridLinesField cfg={props.cfg} set={set} />}
             {(c.view === 'agenda' || props.cfg.layout.preset === 'agenda') && <AgendaDaysField cfg={props.cfg} set={set} />}
             <Field
               label={t('Máx. eventos visibles por día')}

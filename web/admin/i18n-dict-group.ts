@@ -59,6 +59,12 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Baggrund: kurven bag prisen, fra kant til kant; i en liste har hver kurs sin egen bagved.',
     'W tle: krzywa za ceną, od krawędzi do krawędzi; na liście każde notowanie ma swoją za sobą.',
   ],
+  ['Líneas de la cuadrícula', 'Grid lines', 'Linhas da grelha', 'Rasterlijnen', 'Gitterlinjer', 'Linie siatki'],
+  ['Marcadas', 'Clear', 'Marcadas', 'Duidelijk', 'Tydelige', 'Wyraźne'],
+  ['Fuertes', 'Strong', 'Fortes', 'Sterk', 'Kraftige', 'Mocne'],
+  ['Color de las líneas', 'Line colour', 'Cor das linhas', 'Kleur van de lijnen', 'Farve på linjerne', 'Kolor linii'],
+  ['Su color, en la pestaña Estilo.', 'Their colour is in the Style tab.', 'A cor está no separador Estilo.', 'De kleur staat op het tabblad Stijl.', 'Farven finder du på fanen Stil.', 'Ich kolor jest w karcie Styl.'],
+  ['Su color: Auto es el del tema.', 'Colour: Auto follows the theme.', 'Cor: Auto segue o tema.', 'Kleur: Auto volgt het thema.', 'Farve: Auto følger temaet.', 'Kolor: Auto zgodnie z motywem.'],
 ];
 
 // the Bolsa card's currencies (fieldSpecs.ts): an ISO code reads the same in every language
