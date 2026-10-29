@@ -524,7 +524,14 @@ function countdowns(): CanvasAdapter {
     layout(box) {
       // a small box (the compact look): one line per countdown (emoji, title ending in …, days), as many as fit
       const mini = root.dataset.mini !== undefined;
-      root.classList.toggle('is-mline', mini);
+      // a narrow small box (#30): each countdown on two lines, the name over the days left (in short: "12 días")
+      const stack = mini && box.w / box.rem < 30;
+      root.classList.toggle('is-mline', mini && !stack);
+      root.classList.toggle('is-mstack', stack);
+      if (cds.short !== stack) {
+        cds.short = stack;
+        cds.render(state.countdowns, env.now().dayKey);
+      }
       root.classList.toggle('is-narrow', !mini && box.w / box.rem < 40);
       // a long low box past the named sizes: the countdowns in two or three columns, read down each one
       const n = card.querySelectorAll('.cd').length;
@@ -535,7 +542,8 @@ function countdowns(): CanvasAdapter {
       root.style.setProperty('--cd-rows', String(Math.ceil(n / cols)));
       // a narrow line: the emoji goes before the title would show only a letter or two
       root.classList.remove('is-noem');
-      if (mini) {
+      if (stack && box.w / box.rem < 20) root.classList.add('is-noem');
+      else if (mini && !stack) {
         const tt = card.querySelector<HTMLElement>('.cd-tt');
         if (tt && tt.scrollWidth > tt.clientWidth + 1 && tt.clientWidth < (parseFloat(getComputedStyle(tt).fontSize) || 16) * 4.5) root.classList.add('is-noem');
       }

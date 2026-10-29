@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.28.0] - 2026-10-29
+
+### Changed
+- The Cuentas atrás card can be two cells wide (#30); it needed four. Narrow, each countdown takes two lines: the
+  name, and under it the days left in short ("12 días").
+
 ## [0.27.0] - 2026-10-29
 
 ### Added

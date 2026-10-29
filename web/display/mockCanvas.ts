@@ -428,6 +428,16 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'calendar.week', pos: B(12, 8, 12, 7), props: { gridLines: 'clear', gridColor: '#ffb340' } },
     ],
   },
+  // Cuentas atrás two and three cells wide (#30): the name over the days left, in short
+  'countdowns-narrow': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'countdowns', pos: B(0, 0, 2, 1) },
+      { kind: 'countdowns', pos: B(3, 0, 2, 4) },
+      { kind: 'countdowns', pos: B(6, 0, 3, 4) },
+      { kind: 'countdowns', pos: B(10, 0, 3, 2), props: { style: 'cards' } },
+    ],
+  },
   'vehicles-small': {
     canvas: { background: 'ambient' },
     items: [

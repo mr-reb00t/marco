@@ -1469,7 +1469,7 @@ const FINE_MIN = {
   'calendar.today': [4, 2],
   'calendar.next': [3, 1],
   'calendar.people': [6, 3],
-  'countdowns': [4, 1],
+  'countdowns': [2, 1],
   'weather.now': [3, 1],
   // four cells wide (#27): the strip shows the hours or days that fit (five), so a Rotativa of them can be that small
   'weather.hourly': [4, 2],

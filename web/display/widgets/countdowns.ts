@@ -32,10 +32,12 @@ function title(it: CountdownItem): string {
   return typeof it.age === 'number' && Number.isFinite(it.age) && it.age >= 0 ? `${t} (${it.age})` : t;
 }
 
-function whenHtml(days: number): string {
+/** `short`: "12 días" instead of "Faltan 12 días" (a narrow canvas card). */
+function whenHtml(days: number, short = false): string {
   const { t } = ctx;
   if (days === 0) return esc(t('cdToday'));
   if (days === 1) return esc(t('cdTomorrow'));
+  if (short) return `<b>${days}</b> ${esc(t('daysWord'))}`;
   // bold number inside the localized sentence ("Faltan <b>12</b> días")
   const marker = '\u0001';
   return esc(t('cdDays', { n: marker })).replace(marker, `<b>${days}</b>`);
@@ -44,6 +46,9 @@ function whenHtml(days: number): string {
 export class Countdowns {
   /** The settings these chips read (the screen's, or a canvas item's merged over them). */
   private readonly cfg: () => DisplayConfig;
+
+  /** The days left in short ("12 días"): a narrow canvas card sets it. */
+  short = false;
 
   /** `opts.cfg`: where the settings come from (default: the screen's, ctx.cfg). */
   constructor(private card: HTMLElement, private strip: HTMLElement, opts: { cfg?: () => DisplayConfig } = {}) {
@@ -74,7 +79,7 @@ export class Countdowns {
           key: `${variant}${item.id}|${item.date}`,
           className: cls,
           style: `--c:${col.base};--tint:${col.tint};--on:${col.onSolid};--deep:${col.shade}`,
-          html: `<span class="cd-em">${esc(item.emoji || '⏳')}</span><span class="cd-tt">${esc(title(item))}</span><span class="cd-when">${whenHtml(days)}</span>`,
+          html: `<span class="cd-em">${esc(item.emoji || '⏳')}</span><span class="cd-tt">${esc(title(item))}</span><span class="cd-when">${whenHtml(days, this.short)}</span>`,
         };
       });
     reconcile(this.card, specs('c'), { flip: true });

@@ -35,6 +35,16 @@
 #app.preset-canvas .cv-cd.is-mline[data-mini] .cd-tt { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-cd.is-mline[data-mini] .cd-when { flex: none; white-space: nowrap; }
 #app.preset-canvas .cv-cd.is-mline.is-noem[data-mini] .cd-em { display: none; }
+/* a narrow one (is-mstack, #30): the name over the days left, the emoji beside both while there is room */
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-card { flex-direction: column; flex-wrap: nowrap; gap: 0; padding: 0; font-size: 1.7rem; }
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-card .cd { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 0.8rem; row-gap: 0; padding: 0.3rem 0; font-size: 1.7rem; line-height: 1.2; min-width: 0; }
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-card .cd::after { display: none; }
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-em { grid-row: 1 / span 2; width: 2.8rem; height: 2.8rem; border-radius: 0.8rem; font-size: 1.6rem; }
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-tt { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cd.is-mstack[data-mini] .cd-when { grid-column: 2; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: 0.85em; }
+#app.preset-canvas .cv-cd.is-mstack.is-noem[data-mini] .cd-em { display: none; }
+#app.preset-canvas .cv-cd.is-mstack.is-noem[data-mini] .cd-card .cd { grid-template-columns: minmax(0, 1fr); }
+#app.preset-canvas .cv-cd.is-mstack.is-noem[data-mini] :is(.cd-tt, .cd-when) { grid-column: 1; }
 
 /* Agenda: a short line per day, a line per event (the time, then the title ending in …) */
 #app.preset-canvas .cv-agenda[data-mini] .ag-day { margin-bottom: 0.8rem; }
