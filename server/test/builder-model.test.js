@@ -322,6 +322,16 @@ test('palette search: tags in five languages, the group name and tags, no case o
   }
   // "ha" is a whole word: not every kind with an h and an a
   assert.ok(find('ha').includes('ha.light') && !find('ha').includes('weather.hourly'));
+  // one or two letters: the cards whose name (or group's name) has a word that starts so
+  assert.ok(find('re').includes('clock.digital') && find('Re').includes('clock.analog'));
+  assert.ok(!find('re').includes('weather.hourly'));
+  assert.ok(K.matchesSearch('gr', { kind: 'rotator', name: 'Grupo', help: K.GROUP_HELP, group: 'content' }));
+  // every card is found by any start of any word of its name, from the first letter
+  for (const k of K.PALETTE_KINDS) {
+    for (const word of K.KIND_META[k].name.split(/\s+/)) {
+      for (let n = 1; n <= word.length; n++) assert.ok(find(word.slice(0, n)).includes(k), `${k}: "${word.slice(0, n)}"`);
+    }
+  }
   assert.ok(find('bitcoin').includes('market') && find('futbol').includes('sports') && find('Fútbol').includes('sports') && find('stocks').includes('stocks'));
   for (const k of ['clock.digital', 'clock.analog', 'clock.flip', 'clock.world', 'date']) assert.ok(find('reloj').includes(k) && find('time').includes(k), k);
   assert.ok(find('ninos').includes('family.routines') && find('kids').includes('family.points'));

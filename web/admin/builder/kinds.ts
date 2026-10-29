@@ -174,7 +174,10 @@ export function matchesSearch(q: string, entry: { kind: string; name: string; he
   const g = GROUPS.find((x) => x.id === entry.group);
   const parts = [entry.name, entry.help, m?.words ?? '', g?.name ?? ''];
   const hay = fold([...parts, ...parts.map(tr), m?.tags ?? '', GROUP_TAGS[entry.group] ?? '', entry.kind].join(' '));
-  // a short word ("ha") must be a whole word, or it would match half the list
-  const whole = ` ${hay.replace(/[^a-z0-9\u00c0-\u024f]+/g, ' ')} `;
-  return words.every((w) => (w.length <= 2 ? whole.includes(` ${w} `) : hay.includes(w)));
+  // a short word ("ha") must be a whole word, or it would match half the list; or the start of a word of the card's
+  // or its group's name, so the first letters typed find it ("gr": Grupo)
+  const spaced = (x: string) => ` ${x.replace(/[^a-z0-9\u00c0-\u024f]+/g, ' ')} `;
+  const whole = spaced(hay);
+  const names = spaced(fold([entry.name, tr(entry.name), g?.name ?? '', g ? tr(g.name) : ''].join(' ')));
+  return words.every((w) => (w.length <= 2 ? whole.includes(` ${w} `) || names.includes(` ${w}`) : hay.includes(w)));
 }

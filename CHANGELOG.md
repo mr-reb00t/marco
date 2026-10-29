@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.25.1] - 2026-10-29
+
+### Fixed
+- The editor's widget search finds a card from its first letter: "gr" finds *Grupo*. Before, one or two letters
+  had to be a whole word.
+
 ## [0.25.0] - 2026-10-29
 
 ### Added
