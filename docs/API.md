@@ -744,9 +744,13 @@ with Marco Cloud); `server/dataFeeds.js` does the network part.
   'post', clk, half?, note?, home, away }] }], age, stale, error? }` (`stale` when a call failed or an answer is past
   its own refresh plus 20 minutes), each side `{ n, ab, sc, w, c, cr }` (`cr` a crest token). ESPN's site API is public
   but not documented or promised: it may change without notice. A team is followed in one competition (its league, or a cup added as another entry).
-- `stocks` props: `{ symbols: [{ sym, name }] (1 to 12, Finnhub symbols), layout: 'ticker' | 'list', sparkline, chartStyle:
-  'below' | 'background' }` (the chart style of the list; the ticker keeps its small curves).
-  Answer: `{ kind: 'stocks', quotes: [{ sym, name, price, ch, pts, noData? }], age, stale, error?, needsKey? }`. No
+- `stocks` props: `{ symbols: [{ sym, name }] (1 to 12, Finnhub symbols), layout: 'ticker' | 'list' | 'big', sparkline,
+  chartStyle: 'below' | 'background', currency: '' | one of FX_CURRENCIES, label: 'both' | 'name' | 'sym' }` (the chart
+  style of the list and of the big layout, one quote large with its curve, each in turn; the ticker keeps its small
+  curves). `currency` `''` shows the number alone; Finnhub's prices are in dollars, so any other currency is worked out
+  with the ECB rate of the latest day (while there is none, the prices stay in dollars and `cur` says `USD`). `label`:
+  the symbol and the owner's name, the name only (the symbol when it has none) or the symbol only.
+  Answer: `{ kind: 'stocks', quotes: [{ sym, name, price, ch, pts, noData? }], cur?, age, stale, error?, needsKey? }`. No
   reliable keyless source exists (Stooq's CSV links now sit behind a browser check), so stocks need a free Finnhub key.
   Its free plan has no price history: the curve is drawn from the quotes this server has read, up to the last 24 hours.
   It has no forex either: a symbol Finnhub does not know (an all-zero quote, `404`) or that its plan does not cover

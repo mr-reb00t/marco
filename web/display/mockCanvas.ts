@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -407,6 +407,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
   },
   // the same in small boxes (#26): entity cards two and three cells wide (the icon kept; the thin bar under the 3×2),
   // the Indicador on one line (its icon before the name) and two Habitación cards three cells wide
+  // Bolsa (at most four on a screen): one quote large in euros with its curve, one in dollars with its curve behind
+  // it and its name only, a list and a line with the owner's names only
+  stocks: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'stocks', pos: B(0, 0, 6, 5), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'NVDA', name: 'NVIDIA' }], layout: 'big', currency: 'EUR', sparkline: true } },
+      { kind: 'stocks', pos: B(7, 0, 6, 5), props: { symbols: [{ sym: 'SPY', name: 'S&P 500' }], layout: 'big', currency: 'USD', sparkline: true, chartStyle: 'background', label: 'name' } },
+      { kind: 'stocks', pos: B(0, 6, 8, 6), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }, { sym: 'GOOGL', name: 'Google' }], layout: 'list', currency: 'EUR', label: 'name' } },
+      { kind: 'stocks', pos: B(0, 13, 16, 2), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'ticker', currency: 'EUR', label: 'name' } },
+    ],
+  },
   'vehicles-small': {
     canvas: { background: 'ambient' },
     items: [

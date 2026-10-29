@@ -4,7 +4,7 @@
 import { isValidTimeZone } from './lib/tz.js';
 import { enabledWindows, nextWindowBoundary, windowState } from './schedules.js';
 import { cardErrorText, checkCard, cssProblem } from './cardTemplate.js';
-import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
+import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, FX_CURRENCIES, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
 import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 import { defaultTodoView, sanitizeTodoView } from './todoCore.js';
 
@@ -860,7 +860,7 @@ export const CANVAS_KINDS = {
   },
   stocks: {
     cat: 'data', sizes: ['xs', 's', 'w', 'm', 't', 'l', 'band'], def: 'w', cells: [2, 2, 12, 6], side: true, edition: 'all', private: true, perScreen: 4,
-    defaults: () => ({ symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'ticker', sparkline: false, chartStyle: 'below' }),
+    defaults: () => ({ symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'ticker', sparkline: false, chartStyle: 'below', currency: '', label: 'both' }),
     props: (c, p, x) => {
       const seen = new Set();
       const symbols = P.list(c, `${p}.symbols`, x.symbols, DATA_LIMITS.symbols, (o, q) => {
@@ -875,9 +875,15 @@ export const CANVAS_KINDS = {
       });
       return {
         symbols,
-        layout: P.oneOf(c, `${p}.layout`, x.layout, 'ticker', ['ticker', 'list']),
+        // 'big': one quote large with its curve, each in turn, as a Cripto card's "Una en grande"
+        layout: P.oneOf(c, `${p}.layout`, x.layout, 'ticker', ['ticker', 'list', 'big']),
         sparkline: P.bool(c, `${p}.sparkline`, x.sparkline, false),
         chartStyle: P.oneOf(c, `${p}.chartStyle`, x.chartStyle, 'below', CHART_STYLES),
+        // the prices in a currency ('' = the number alone, as before): Finnhub's are in dollars, any other is
+        // worked out with the ECB rate of the day (dataCore stocksData)
+        currency: P.oneOf(c, `${p}.currency`, x.currency, '', ['', ...FX_CURRENCIES]),
+        // what says which quote it is: the symbol and the owner's name, or only one of them
+        label: P.oneOf(c, `${p}.label`, x.label, 'both', ['both', 'name', 'sym']),
       };
     },
   },

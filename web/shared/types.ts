@@ -1260,6 +1260,8 @@ export interface StockQuoteData {
 export interface StocksData extends DataItemBase {
   kind: 'stocks';
   quotes: StockQuoteData[];
+  /** the currency the prices are in (the card's own, or USD while there is no rate for it yet); absent: no sign */
+  cur?: string;
   /** no Finnhub key saved, or it was refused */
   needsKey?: boolean;
 }

@@ -878,11 +878,26 @@ function projectGame(g) {
 /** Why a symbol has nothing to show: Finnhub does not know it (all zeros, 404) or its plan does not cover it (403). */
 const NO_DATA_ERRORS = new Set(['not_found', 'no_access']);
 
+/** Finnhub's quotes (US markets on the free plan) are in dollars. */
+const STOCKS_QUOTED_IN = 'USD';
+
 async function stocksData(hub, p, now) {
   const syms = Array.isArray(p.symbols) ? p.symbols.filter((s) => STOCK_SYMBOL_RE.test(s?.sym ?? '')).slice(0, DATA_LIMITS.symbols) : [];
   let oldest = Infinity;
   let error = null;
   const quotes = [];
+  // the owner's currency: dollars as they come, another one at the ECB rate of the latest day it has (no rate yet:
+  // dollars, and the card says so with its sign)
+  let cur = FX_CURRENCIES.includes(p.currency) ? p.currency : '';
+  let rate = 1;
+  if (cur && cur !== STOCKS_QUOTED_IN && syms.length) {
+    const series = (await hub.fx('month'))?.value ?? null;
+    const i = series ? lastWith(series, STOCKS_QUOTED_IN, cur) : -1;
+    const r = i >= 0 ? fxRate(series, STOCKS_QUOTED_IN, cur, i) : null;
+    if (r) rate = r;
+    else cur = STOCKS_QUOTED_IN;
+  }
+  const conv = (v) => (v === null || v === undefined ? null : rate === 1 ? v : sig(v * rate));
   for (const s of syms) {
     const r = await hub.quote(s.sym);
     const v = r?.value;
@@ -894,9 +909,9 @@ async function stocksData(hub, p, now) {
     quotes.push({
       sym: s.sym,
       name: str(s.name, 40),
-      price: v?.quote?.price ?? null,
+      price: conv(v?.quote?.price ?? null),
       ch: v?.quote?.ch ?? null,
-      pts: p.sparkline && v?.pts?.length >= 2 ? thin(v.pts, 60) : [],
+      pts: p.sparkline && v?.pts?.length >= 2 ? thin(v.pts, 60).map(([t, y]) => [t, conv(y)]) : [],
       ...(none ? { noData: true } : {}),
     });
   }
@@ -904,7 +919,7 @@ async function stocksData(hub, p, now) {
   const anyData = quotes.some((x) => !x.noData);
   // every symbol without data: nothing is old, there is just nothing to show
   const stale = !!error || (anyData && (age === null || age * 1000 > staleAfter('stocks')));
-  const out = { kind: 'stocks', quotes, age, stale, ...(error ? { error } : {}) };
+  const out = { kind: 'stocks', quotes, age, stale, ...(cur ? { cur } : {}), ...(error ? { error } : {}) };
   if (error === 'no_key' || error === 'key_refused') out.needsKey = true;
   return out;
 }

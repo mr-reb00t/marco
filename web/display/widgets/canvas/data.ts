@@ -23,14 +23,15 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: s
 // ------------------------------------------------------------------------------------------------ formatting
 
 /** A price in its currency: no decimals from 1000 up, two from 1, more below (a coin worth cents). */
-export function fmtPrice(v: number | null, cur = ''): string {
+/** `narrow`: the short sign ($ rather than US$ in Spanish, as a Bolsa card shows it). */
+export function fmtPrice(v: number | null, cur = '', narrow = false): string {
   if (v === null || !Number.isFinite(v)) return '–';
   const a = Math.abs(v);
   const d = a >= 1000 ? 0 : a >= 1 ? 2 : a >= 0.01 ? 4 : 6;
   try {
     if (!cur) return new Intl.NumberFormat(ctx.lang, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
     if (cur === 'btc') return `₿${new Intl.NumberFormat(ctx.lang, { maximumSignificantDigits: 6 }).format(v)}`;
-    return new Intl.NumberFormat(ctx.lang, { style: 'currency', currency: cur.toUpperCase(), minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
+    return new Intl.NumberFormat(ctx.lang, { style: 'currency', currency: cur.toUpperCase(), ...(narrow ? { currencyDisplay: 'narrowSymbol' as const } : {}), minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
   } catch {
     return v.toFixed(d);
   }
@@ -829,8 +830,32 @@ function sports(item0: DisplayCanvasItem): CanvasAdapter {
 
 // ------------------------------------------------------------------------------------------------ stocks
 
+/** A Bolsa card's quote as a row of the big layout (drawBig): its label as the card's "Mostrar" says. */
+function stockRow(q: StockQuoteData, cur: string, label: unknown): PriceRow {
+  // the badge only with a name beside it; one of the two alone is the name line
+  const both = label !== 'name' && label !== 'sym' && !!q.name;
+  const name = label === 'sym' || !q.name ? q.sym : q.name;
+  return { id: q.sym, sym: both ? q.sym : '', name, cur, price: q.price, ch: q.ch, pts: q.pts, ...(q.noData ? { noData: true } : {}) };
+}
+
+const STOCK_LOOK: PriceLook = {
+  cls: 'cv-st',
+  rows: () => null,
+  skeleton: () => [],
+  label: (c) => (c.sym ? el('b', 'cv-fx-pair', c.sym) : el('span', 'cv-st-nolabel')),
+  fmt: (v, c) => fmtPrice(v, c.cur, c.cur === 'usd'),
+  range: '1d',
+};
+
 function stocks(item0: DisplayCanvasItem): CanvasAdapter {
   const b = { box: null, sig: '' } as unknown as Base;
+  /** the price as the card's currency says, and what names a quote (its symbol, its name or both), set by render */
+  let price = (v: number | null) => fmtPrice(v);
+  let who = (q: StockQuoteData, cls: string) => {
+    const w = el('div', cls);
+    w.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
+    return w;
+  };
   let anim: Animation | null = null;
   /** where the running line was (ms into its loop), so a redraw (new numbers, a new minute) carries on from there */
   let phase = 0;
@@ -861,21 +886,59 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
     const quotes = (d as StocksData).quotes ?? [];
     // no symbol with data (unknown, all zeros, not on the free plan): which ones, never a card that keeps loading
     if (quotes.length && quotes.every((q) => q.noData)) return note(root, ctx.t('dtNoDataFor', { s: quotes.map((q) => q.sym).join(', ') }));
-    const ticker = p.layout !== 'list';
+    // the card's currency: the sign with each price, '' the number alone as before
+    const cur = String((d as StocksData).cur ?? '').toLowerCase();
+    price = (v) => fmtPrice(v, cur, cur === 'usd');
+    // "Mostrar": the symbol and the name, only the name (the symbol when it has none), or only the symbol
+    const label = p.label;
+    who = (q, cls) => {
+      const w = el('div', cls);
+      if (label === 'sym' || !q.name) w.append(el('b', 'sym', q.sym));
+      else if (label === 'name') w.append(el('b', 'sym is-name', q.name));
+      else w.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
+      return w;
+    };
+    const big = p.layout === 'big';
+    const ticker = p.layout !== 'list' && !big;
     const line = isLine(root);
     root.classList.toggle('is-ticker', ticker);
-    root.classList.remove('is-line');
+    root.classList.remove('is-line', 'is-big', 'has-bgchart');
     delete root.dataset.pages;
+    if (big && !line) {
+      // one quote large, its curve under it or behind it, each in turn (tick), as a Cripto card's "Una en grande"
+      const rows = quotes.map((q) => stockRow(q, cur, label));
+      if (!rows.length) return;
+      if (rows.length > 1) root.dataset.pages = String(rows.length);
+      const i = page % rows.length;
+      root.classList.add('is-big');
+      const chart = p.sparkline === true ? 'area' : 'none';
+      drawBig(root, rows[i], rows.length, i, chart, b.box, chartStyleOf(p, 'below'), STOCK_LOOK);
+      const foot = el('div', 'cv-dt-foot');
+      // the curve is the quotes this server has read, the last 24 hours
+      if (chart !== 'none') foot.append(el('span', 'cv-dt-range', ctx.t('dt1d')));
+      const st = staleText(env, item0.id, d);
+      if (st) foot.append(el('span', 'cv-dt-stale', st));
+      root.appendChild(foot);
+      root.classList.toggle('is-stale', !!st);
+      const mm = root.querySelector(':scope > .cv-mk-minmax');
+      if (mm && root.classList.contains('is-bg')) {
+        if (st) mm.remove();
+        else foot.appendChild(mm);
+      }
+      if (b.box) {
+        fitBig(root, b.box, Number(it.style?.scale) || 1);
+        if (root.classList.contains('is-bg')) placeBg(root, rows[i], chart);
+      }
+      return;
+    }
     if (line && !ticker) {
       // a list one cell high: one quote on one line, each in turn (tick)
       const q = quotes[page % Math.max(1, quotes.length)];
       if (!q) return;
       if (quotes.length > 1) root.dataset.pages = String(quotes.length);
       const row = drawLineRow(root, p.sparkline === true ? spark(q.pts, trend(q.ch)) : null, `cv-st-row is-${trend(q.ch)}`);
-      const who = el('div', 'cv-st-who');
-      who.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
-      row.prepend(who);
-      row.appendChild(valueOf(q, (v) => fmtPrice(v)));
+      row.prepend(who(q, 'cv-st-who'));
+      row.appendChild(valueOf(q, price));
       root.classList.toggle('is-stale', !!staleText(env, item0.id, d));
       if (b.box) fitLine(root, b.box);
       return;
@@ -913,7 +976,8 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
         x.append(el('b', 'sym', q.sym), el('span', 'cv-dt-nd', ctx.t('dtNoDataRow')));
         return x;
       }
-      x.append(el('b', 'sym', q.sym), el('span', 'p', fmtPrice(q.price)));
+      // the line names a quote once: its symbol, or the owner's name for it ("Mostrar")
+      x.append(el('b', 'sym', b.env.item().props.label === 'name' && q.name ? q.name : q.sym), el('span', 'p', price(q.price)));
       x.appendChild(changeChip(q.ch));
       if (withSpark) {
         const s = spark(q.pts, trend(q.ch), 'cv-st-spark');
@@ -977,9 +1041,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
     const list = el('div', 'cv-st-list');
     for (const q of quotes.slice(0, rows)) {
       const row = el('div', `cv-st-row is-${trend(q.ch)}`);
-      const who = el('div', 'cv-st-who');
-      who.append(el('b', 'sym', q.sym), el('span', 'nm', q.name));
-      row.appendChild(who);
+      row.appendChild(who(q, 'cv-st-who'));
       if (sp) {
         const holder = el('div', 'cv-mk-spark');
         const s = spark(q.pts, trend(q.ch));
@@ -987,7 +1049,7 @@ function stocks(item0: DisplayCanvasItem): CanvasAdapter {
         row.appendChild(holder);
       }
       // the price and its change on one line in a card wide enough for them (each quote one line, not two)
-      row.appendChild(valueOf(q, (v) => fmtPrice(v), `cv-mk-val${!box || box.w / rem >= 30 ? ' is-inline' : ''}`));
+      row.appendChild(valueOf(q, price, `cv-mk-val${!box || box.w / rem >= 30 ? ' is-inline' : ''}`));
       // (a card too narrow for it beside the numbers: behind the row, never none)
       if (behind || (withSpark && !sp)) rowBg(row, q.pts, trend(q.ch), behind);
       list.appendChild(row);

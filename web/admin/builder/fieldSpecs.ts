@@ -2,6 +2,7 @@
 // t() keys. The values and their ranges are the ones server/core/canvasCore.js validates.
 import type { CanvasKind } from '../../shared/types';
 import { TILE_SECOND_DOMAINS } from '../../../server/core/canvasCore.js';
+import { FX_CURRENCIES } from '../../../server/core/dataCore.js';
 
 export type Opt = { v: string | number; l: string };
 export type Spec =
@@ -395,9 +396,15 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   ],
   stocks: [
     { k: 'symbols', type: 'symbols', label: 'Acciones y fondos' },
-    { k: 'layout', type: 'seg', label: 'Cómo', opts: [{ v: 'ticker', l: 'Línea que se mueve' }, { v: 'list', l: 'En lista' }] },
+    { k: 'layout', type: 'seg', label: 'Cómo', opts: [{ v: 'ticker', l: 'Línea que se mueve' }, { v: 'list', l: 'En lista' }, { v: 'big', l: 'Una en grande' }], hint: 'En grande, si hay varios valores se van turnando.' },
+    { k: 'label', type: 'seg', label: 'Mostrar', opts: [{ v: 'both', l: 'Símbolo y nombre' }, { v: 'name', l: 'Solo el nombre' }, { v: 'sym', l: 'Solo el símbolo' }], hint: 'El nombre es el que le pones tú a cada valor.' },
+    {
+      k: 'currency', type: 'select', label: 'Moneda',
+      opts: [{ v: '', l: 'Sin símbolo' }, { v: 'USD', l: 'Dólar ($)' }, { v: 'EUR', l: 'Euro (€)' }, ...FX_CURRENCIES.filter((c) => c !== 'USD' && c !== 'EUR').map((c) => ({ v: c, l: c }))],
+      hint: 'Los precios llegan en dólares. En otra moneda se pasan con el cambio del Banco Central Europeo de ese día.',
+    },
     { k: 'sparkline', type: 'bool', label: 'Curva', hint: 'Se dibuja con las cotizaciones que este servidor va leyendo, así que tarda unas horas en llenarse.' },
-    CHART_STYLE('De fondo: la curva de cada valor detrás de su fila, de borde a borde.', (p) => p.layout === 'list' && !!p.sparkline),
+    CHART_STYLE('De fondo: la curva detrás del precio, de borde a borde; en una lista, cada valor lleva la suya detrás.', (p) => (p.layout === 'list' || p.layout === 'big') && !!p.sparkline),
     { type: 'stocksKey' },
   ],
   currency: CURRENCY_FIELDS,

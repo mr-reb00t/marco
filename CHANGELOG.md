@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.26.0] - 2026-10-29
+
+### Added
+- The Bolsa card can show one quote in large, with its curve under it or behind it, like Cripto's *Una en grande*.
+  With several quotes they take turns.
+- A *Moneda* for Bolsa: the number alone as before, dollars, euros or another ECB currency. Finnhub's prices are in
+  dollars, and other currencies use the ECB rate of the day.
+- *Mostrar* for Bolsa: the symbol and the name, only the name you gave each quote, or only the symbol.
+
 ## [0.25.1] - 2026-10-29
 
 ### Fixed
