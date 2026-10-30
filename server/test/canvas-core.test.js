@@ -497,7 +497,9 @@ test('flexible sizes: every kind has a range in cells that holds all its named s
   // the smallest boxes (the compact look below twice the old minimum, fullLookMin)
   assert.deepEqual([cellRange('family.members').minW, cellRange('family.members').minH], [4, 1]);
   assert.deepEqual(fullLookMin('family.members'), [6, 4]);
-  assert.equal(boxAllowed('meals.week', 4, 16), false);
+  // three cells wide since #31: a list of days
+  assert.ok(boxAllowed('meals.week', 4, 16) && boxAllowed('meals.week', 3, 2));
+  assert.equal(boxAllowed('meals.week', 2, 16), false);
   assert.ok(boxAllowed('ha.cover', 4, 4));
   assert.equal(boxAllowed('clock.digital', 2, 1), false);
   assert.equal(boxAllowed('clock.flip', 3, 1), false);

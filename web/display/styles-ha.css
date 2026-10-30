@@ -103,6 +103,9 @@
 #app.preset-canvas .cv-ha-big .v { font-family: var(--font-num); font-size: calc(5.6rem * var(--wk, 1)); font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
 #app.preset-canvas .cv-ha-big .v.is-text { font-family: inherit; font-size: calc(3.4rem * var(--wk, 1)); letter-spacing: 0; }
 #app.preset-canvas .cv-ha-big .u { font-size: calc(2.2rem * var(--wk, 1)); color: var(--fg-2); }
+/* an Indicador's second sensor after the number (#28), left out on a line with no room for it (haTile.ts fitGaugeNarrow, fitNumberLine) */
+#app.preset-canvas .cv-ha-big .v2 { font-size: calc(2.2rem * var(--wk, 1)); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+#app.preset-canvas .cv-ha-gauge.is-no2 .cv-ha-big .v2 { display: none; }
 #app.preset-canvas .cv-ha-big.lv-ok .v { color: var(--ha-ok); }
 #app.preset-canvas .cv-ha-big.lv-warn .v { color: var(--ha-warn); }
 #app.preset-canvas .cv-ha-big.lv-err .v { color: var(--ha-alert); }

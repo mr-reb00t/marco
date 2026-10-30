@@ -380,7 +380,7 @@ const DOMAINS = {
   gauge: ['sensor', 'number', 'input_number'],
   statistic: ['sensor'],
 };
-/** What the second sensor of an Entidad card (ha.tile props.entity2) may be: something read, never controlled. */
+/** What the second sensor of an Entidad or Indicador card (props.entity2) may be: something read, never controlled. */
 export const TILE_SECOND_DOMAINS = ['sensor', 'binary_sensor'];
 
 /** What can go in the row under an Entidad card (ha.tile props.features; null = chosen for its domain). */
@@ -973,6 +973,8 @@ export const CANVAS_KINDS = {
         decimals: P.num(c, `${p}.decimals`, x.decimals, 1, 0, 3),
         thresholds: thresholdsOf(c, `${p}.thresholds`, x.thresholds),
         invert: P.bool(c, `${p}.invert`, x.invert, false),
+        // a second sensor after the number (#28: the charge and the range left), read only like an Entidad's
+        entity2: P.entity(c, `${p}.entity2`, x.entity2, TILE_SECOND_DOMAINS),
       };
     },
   }),
@@ -1491,8 +1493,8 @@ const FINE_MIN = {
   'family.points': [4, 1],
   'family.rewards': [4, 1],
   'family.chores': [4, 2],
-  'meals.today': [4, 1],
-  'meals.week': [6, 2],
+  'meals.today': [3, 1],
+  'meals.week': [3, 2],
   'birthdays': [4, 1],
   'highlights': [4, 1],
   'announcement': [6, 1],

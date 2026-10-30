@@ -559,7 +559,12 @@ function fitNumberLine(root: HTMLElement, box: AdapterBox, env: AdapterEnv): voi
   let wk = Math.min(1.2, (h * 0.66) / (5.6 * box.rem)) * Math.min(1, scaleOf(env));
   root.style.setProperty('--wk', wk.toFixed(3));
   const big = root.querySelector<HTMLElement>('.cv-ha-big');
-  const bw = big?.getBoundingClientRect().width ?? 0;
+  let bw = big?.getBoundingClientRect().width ?? 0;
+  // an Indicador's second value (#28) is left out before the number gets much smaller for it
+  if (bw > w * 0.5 && big?.querySelector('.v2') && (w * 0.5) / bw < 0.75) {
+    root.classList.add('is-no2');
+    bw = big.getBoundingClientRect().width;
+  }
   if (bw > w * 0.5) {
     wk = Math.max(0.25, (wk * w * 0.5) / bw);
     root.style.setProperty('--wk', wk.toFixed(3));
@@ -573,7 +578,7 @@ function fitNumberLine(root: HTMLElement, box: AdapterBox, env: AdapterEnv): voi
  * would take the number below about three quarters of the line's height is left out too (is-nounit).
  */
 function fitGaugeNarrow(root: HTMLElement, box: AdapterBox, env: AdapterEnv): void {
-  root.classList.remove('is-noname', 'is-nounit');
+  root.classList.remove('is-noname', 'is-nounit', 'is-no2');
   const cs = getComputedStyle(root);
   const h = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
   const w = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
@@ -588,7 +593,13 @@ function fitGaugeNarrow(root: HTMLElement, box: AdapterBox, env: AdapterEnv): vo
     root.style.setProperty('--wk', wk.toFixed(3));
     return wk;
   };
-  const wk = fitBig();
+  let wk = fitBig();
+  // the second value (#28) goes first, then (two cells wide) the unit, when they take the number below about three
+  // quarters of the line's height
+  if (big?.querySelector('.v2') && wk < wk0 * 0.75) {
+    root.classList.add('is-no2');
+    wk = fitBig();
+  }
   if (root.dataset.mw === '2' && big?.querySelector('.u') && wk < wk0 * 0.75) {
     root.classList.add('is-nounit');
     fitBig();
@@ -626,6 +637,10 @@ function drawGauge(root: HTMLElement, env: AdapterEnv): void {
   const lv = level(num, p.thresholds, !!p.invert);
   big.append(el('span', 'v', fmtNum(num, decimals)));
   if (s?.d === 'sensor' && s.unit) big.append(el('span', 'u', s.unit));
+  // the second sensor after the number (#28: "80 % / 320 km"), in the unit's size
+  const s2 = aliasOf(p.entity2) ? env.ha.state(aliasOf(p.entity2)) : null;
+  const t2 = s2 ? tileStateText(s2, [], true) : '';
+  if (t2) big.append(el('span', 'v2', `/ ${t2}`));
   if (lv) big.classList.add(`lv-${lv}`);
   root.appendChild(big);
   // the bar: the bands of the breakpoints underneath, the value filled in its band's colour
@@ -716,8 +731,8 @@ export const HA_TILE_ADAPTERS: Record<string, (item: DisplayCanvasItem) => Canva
     fitTile(root, box, env);
     fitSwatches(root);
   }),
-  'ha.gauge': () => haAdapter('cv-ha-sensor cv-ha-gauge', (p) => [aliasOf(p.entity)].filter(Boolean), drawGauge, (root, box, env) => {
-    root.classList.remove('is-noname', 'is-nounit');
+  'ha.gauge': () => haAdapter('cv-ha-sensor cv-ha-gauge', (p) => [aliasOf(p.entity), aliasOf(p.entity2)].filter(Boolean), drawGauge, (root, box, env) => {
+    root.classList.remove('is-noname', 'is-nounit', 'is-no2');
     if (miniLine(root) && (root.dataset.mw === '2' || root.dataset.mw === '3')) return fitGaugeNarrow(root, box, env);
     if (miniLine(root)) return fitNumberLine(root, box, env);
     const wk = bigType(root, box, box.size === 'xs' ? 11.5 : 13, scaleOf(env), 14, typeCap(root));

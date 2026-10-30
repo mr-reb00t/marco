@@ -265,6 +265,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   ],
   'ha.gauge': [
     { k: 'entity', type: 'entity', label: 'Sensor' },
+    { k: 'entity2', type: 'entity', label: 'Segundo sensor', domains: TILE_SECOND_DOMAINS, optional: true, none: 'Ninguno', hint: 'Su valor sale detrás del número, por ejemplo 80 % / 320 km.' },
     HA_NAME,
     HA_ICON_SPEC,
     SHOW_NAME,

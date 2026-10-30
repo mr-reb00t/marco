@@ -203,6 +203,8 @@ function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
   root.classList.toggle('is-mstack', stack);
   // a block three cells or more each way (#9): what the larger card shows, in smaller type
   if (stack && Number(root.dataset.mw) >= 3 && Number(root.dataset.mh) >= 3 && miniRich(root, box, scale)) return;
+  // a wide box two cells high or more (#31): the sky, the high and low, the place and the details beside them
+  if (!stack && Number(root.dataset.mw) >= 4 && Number(root.dataset.mh) >= 2 && miniWide(root, box, scale)) return;
   let wk = Math.min(2.4, Math.max(0.4, h / (stack ? 10.4 : 7.2))) * scale;
   root.style.setProperty('--wk', wk.toFixed(3));
   const cond = root.querySelector<HTMLElement>('.cv-wx-cond');
@@ -213,7 +215,7 @@ function miniNow(root: HTMLElement, box: AdapterBox, scale: number): void {
   }
 }
 
-const RICH = ['is-mrich', 'm-noloc', 'm-nohl', 'm-nolabel', 'm-nometa'];
+const RICH = ['is-mrich', 'is-mwide', 'm-noloc', 'm-nohl', 'm-nolabel', 'm-nometa'];
 /** What a block leaves out, one step at a time, until it fits: the place, the high and low, the labels, the details. */
 const RICH_STEPS = [[], ['m-noloc'], ['m-noloc', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nolabel'], ['m-noloc', 'm-nohl', 'm-nometa']];
 
@@ -232,6 +234,35 @@ function miniRich(root: HTMLElement, box: AdapterBox, scale: number): boolean {
     root.classList.remove(...RICH);
     root.classList.add('is-mrich', ...step);
     let wk = Math.min(1.8, Math.max(floor, h / 14)) * scale;
+    root.style.setProperty('--wk', wk.toFixed(3));
+    for (let i = 0; i < 20 && !fits() && wk > floor; i++) {
+      wk = Math.max(floor, wk * 0.93);
+      root.style.setProperty('--wk', wk.toFixed(3));
+    }
+    if (fits()) return true;
+  }
+  root.classList.remove(...RICH);
+  return false;
+}
+
+/**
+ * Tiempo ahora in a wide box two cells high or more (the compact look, #31): the icon and the temperature, then the
+ * sky, the high and low and the place under each other, then the details, all on one row, the type from the height
+ * made smaller until it fits; the same steps as miniRich leave things out. False when even the sky does not fit at a
+ * size that still reads (the line of miniNow then).
+ */
+function miniWide(root: HTMLElement, box: AdapterBox, scale: number): boolean {
+  const h = innerH(root, box);
+  const wk0 = Math.min(1.8, Math.max(0.55, h / 7.4)) * scale;
+  // smaller than about three quarters of what the height allows (in a high box, than the type of a box two cells
+  // high), the next thing is left out instead
+  const floor = Math.max(0.55 * Math.min(1, scale), Math.min(wk0 * 0.75, 0.85 * scale));
+  const lines = '.cv-wx-cond, .cv-wx-hl, .cv-wx-loc';
+  const fits = () => !overflows(root) && ![...root.querySelectorAll<HTMLElement>(lines)].some(isCut);
+  for (const step of RICH_STEPS) {
+    root.classList.remove(...RICH);
+    root.classList.add('is-mwide', ...step);
+    let wk = wk0;
     root.style.setProperty('--wk', wk.toFixed(3));
     for (let i = 0; i < 20 && !fits() && wk > floor; i++) {
       wk = Math.max(floor, wk * 0.93);

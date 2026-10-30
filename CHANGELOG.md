@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.29.0] - 2026-10-30
+
+### Added
+- A *Segundo sensor* on the Indicador card (#28), as on the Entidad card: its value after the number, for example the
+  charge and the range left (`80 % / 320 km`). On a narrow line with no room for it, the number keeps its size and
+  the second value is left out.
+
+### Changed
+- Two cells high, the Reloj digital keeps its date (under the time when it does not fit beside it) and the Tiempo
+  ahora, four cells wide or more, keeps the sky, the high and low, the place and the details beside the temperature
+  (#31). Before, both showed only the time or the temperature until three cells high.
+- The Comidas de hoy and Menú de la semana cards can be three cells wide (#31); they needed four and six.
+
 ## [0.28.0] - 2026-10-29
 
 ### Changed

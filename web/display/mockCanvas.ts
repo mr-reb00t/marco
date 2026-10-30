@@ -429,6 +429,29 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
     ],
   },
   // Cuentas atrás two and three cells wide (#30): the name over the days left, in short
+  'two-high': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: B(0, 0, 4, 2) },
+      { kind: 'clock.digital', pos: B(5, 0, 6, 2) },
+      { kind: 'clock.digital', pos: B(12, 0, 6, 3) },
+      { kind: 'clock.digital', pos: B(19, 0, 4, 3) },
+      { kind: 'weather.now', pos: B(0, 4, 4, 2) },
+      { kind: 'weather.now', pos: B(5, 4, 6, 2) },
+      { kind: 'weather.now', pos: B(12, 4, 6, 3) },
+      { kind: 'weather.now', pos: B(19, 4, 4, 3) },
+      { kind: 'meals.today', pos: B(0, 8, 3, 4) },
+      { kind: 'meals.today', pos: B(4, 8, 4, 4) },
+      { kind: 'meals.week', pos: B(9, 8, 3, 6) },
+      { kind: 'meals.week', pos: B(13, 8, 6, 6) },
+      { kind: 'meals.today', pos: B(20, 8, 3, 2) },
+      { kind: 'meals.today', pos: B(20, 11, 3, 1) },
+      { kind: 'ha.gauge', pos: B(0, 13, 2, 1), props: { entity: 'sensor.tesla_battery', entity2: 'sensor.tesla_range' } },
+      { kind: 'ha.gauge', pos: B(3, 13, 3, 1), props: { entity: 'sensor.tesla_battery', entity2: 'sensor.tesla_range' } },
+      { kind: 'ha.gauge', pos: B(0, 14, 5, 2), props: { entity: 'sensor.tesla_battery', entity2: 'sensor.tesla_range' } },
+      { kind: 'ha.gauge', pos: B(19, 13, 4, 1), props: { entity: 'sensor.toyota_fuel', entity2: 'sensor.toyota_range', icon: 'fuel' } },
+    ],
+  },
   'countdowns-narrow': {
     canvas: { background: 'ambient' },
     items: [

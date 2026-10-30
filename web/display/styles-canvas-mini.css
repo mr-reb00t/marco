@@ -112,6 +112,17 @@
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-noloc .cv-wx-loc,
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-nometa .cv-wx-meta,
 #app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mrich.m-nolabel .cv-wx-meta em { display: none; }
+/* ... and in a wide box two cells high or more (miniWide, #31): the same on one row, the sky, the high and low and the
+   place under each other beside the temperature, the details in a column after them */
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide { gap: calc(1.4rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide .cv-wx-side { gap: 0; min-width: 0; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide :is(.cv-wx-hl, .cv-wx-loc) { display: block; max-width: 100%; }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide .cv-wx-meta { display: flex; flex: none; flex-direction: column; flex-wrap: nowrap; gap: calc(0.2rem * var(--wk, 1)); }
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide.no-hl .cv-wx-hl,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide.m-nohl .cv-wx-hl,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide.m-noloc .cv-wx-loc,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide.m-nometa .cv-wx-meta,
+#app.preset-canvas .cv-body.cv-wx-now[data-mini].is-mwide.m-nolabel .cv-wx-meta em { display: none; }
 
 /* Por horas and Previsión: a strip of small hours or days (miniStrip) */
 #app.preset-canvas .cv-body:is(.cv-wx-hourly, .cv-wx-forecast)[data-mini] { gap: 0; }

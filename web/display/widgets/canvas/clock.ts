@@ -184,8 +184,14 @@ export function digitalClock(): CanvasAdapter {
           root.classList.remove('is-mnodate');
           const wk = miniType(root, box, 11, 0, scaleOf(env));
           const d = root.querySelector<HTMLElement>('.date');
-          // the date shrinks the time, or is cut: the time alone
+          // the date shrinks the time, or is cut: under the time in a box two cells high or more (#31), else the time alone
           if (wk < full * 0.92 || (d && d.scrollWidth > d.clientWidth + 1)) {
+            if (Number(root.dataset.mh) >= 2) {
+              root.classList.remove('is-mline');
+              miniType(root, box, 16, 30, scaleOf(env));
+              shrinkLine(d);
+              return;
+            }
             root.classList.add('is-mnodate');
             miniType(root, box, 11, 0, scaleOf(env));
           }

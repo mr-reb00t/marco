@@ -222,8 +222,8 @@ export function aliasesFor(screen) {
     const rows = Array.isArray(it.props?.rows) ? it.props.rows.filter((r) => r?.entity) : [];
     for (const a of list) {
       const row = it.kind === 'ha.room' ? rows[a.slot] : null;
-      // an Entidad's second sensor (#28) is only read: the first alias is its entity whenever it has one
-      const second = it.kind === 'ha.tile' && a.slot > 0;
+      // an Entidad's or Indicador's second sensor (#28) is only read: the first alias is its entity whenever it has one
+      const second = (it.kind === 'ha.tile' || it.kind === 'ha.gauge') && a.slot > 0;
       out.set(a.alias, {
         entity: a.entity, itemId: it.id, kind: it.kind, slot: a.slot,
         interactive: it.interactive !== false && !second && (!row || row.interactive !== false),

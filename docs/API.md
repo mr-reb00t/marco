@@ -1066,7 +1066,8 @@ for a vacuum, the versions of an update, a bar for a percentage sensor. Each sta
 **Second sensor.** An Entidad card can show a second value after the first (`props.entity2`, `""` = none): a
 `sensor` or `binary_sensor` (`TILE_SECOND_DOMAINS`), read only. Its alias is the one after the card's entity
 (`${itemId}:1`) and is never a touch control. The state line reads `74 °F / 46.3 %`; on a card more than one row high
-that has no room for it on one line, it breaks at the slash.
+that has no room for it on one line, it breaks at the slash. An Indicador card takes one too (#28): `80 % / 320 km`, the second
+value after the number in the unit's size (left out on a narrow line that has no room for it).
 
 **Icons.** The Entidad, Sensor and Indicador cards and each row of a Habitación (`rows[].icon`) take `props.icon`: `""`
 (automatic, by domain and device class) or one of `HA_ICONS` (battery, fuel, car, gauge, plug, bolt, bulb, thermo,
