@@ -380,8 +380,12 @@ const DOMAINS = {
   gauge: ['sensor', 'number', 'input_number'],
   statistic: ['sensor'],
 };
-/** What the second sensor of an Entidad or Indicador card (props.entity2) may be: something read, never controlled. */
-export const TILE_SECOND_DOMAINS = ['sensor', 'binary_sensor'];
+/**
+ * What the second sensor of an Entidad or Indicador card (props.entity2) may be: something read, never controlled (its
+ * alias is never a touch control, haCore aliasesFor): a sensor, or the state of a lock, a cover, an alarm or where
+ * someone is (#28: the fuel and whether the car is locked).
+ */
+export const TILE_SECOND_DOMAINS = ['sensor', 'binary_sensor', 'lock', 'cover', 'alarm_control_panel', 'person', 'device_tracker'];
 
 /** What can go in the row under an Entidad card (ha.tile props.features; null = chosen for its domain). */
 export const TILE_FEATURES = ['brightness', 'colorTemp', 'color', 'cover', 'position', 'hvacModes', 'target', 'valve', 'select', 'number', 'vacuum', 'update', 'gauge'];

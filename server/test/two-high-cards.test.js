@@ -17,15 +17,16 @@ test('the meals cards can be three cells wide', () => {
 test('an Indicador takes a second sensor: a sensor read only, never a touch control', () => {
   const gauge = (entity2) => ({ id: 'cv_gauge001', kind: 'ha.gauge', pos: { zone: 'main', x: 0, y: 0, w: 4, h: 1 }, style: defaultItemStyle(), props: { ...canvasDefaults('ha.gauge'), entity: 'sensor.car_battery', entity2 } });
   assert.equal(canvasDefaults('ha.gauge').entity2, '');
-  for (const [v, want] of [['sensor.car_range', 'sensor.car_range'], ['switch.fan', ''], [null, '']]) {
+  for (const [v, want] of [['sensor.car_range', 'sensor.car_range'], ['lock.car', 'lock.car'], ['switch.fan', ''], ['light.hall', ''], [null, '']]) {
     const errors = [];
     const out = sanitizeCanvas({ errors, err: (q, m) => errors.push(`${q}: ${m}`), warn() {} }, 'canvas', { ...defaultCanvas(), items: [gauge(v)] }, {}, {});
     assert.equal(out.items[0].props.entity2, want, String(v));
   }
-  const it = gauge('sensor.car_range');
-  assert.deepEqual(haEntitiesOf(it), ['sensor.car_battery', 'sensor.car_range']);
+  // a lock beside the fuel (#28): shown, never something the screen can open
+  const it = gauge('lock.car');
+  assert.deepEqual(haEntitiesOf(it), ['sensor.car_battery', 'lock.car']);
   const al = aliasesFor({ id: 's1', layout: { preset: 'canvas' }, canvas: { ...defaultCanvas(), items: [it] } });
-  assert.equal(al.get('cv_gauge001:1').entity, 'sensor.car_range');
+  assert.equal(al.get('cv_gauge001:1').entity, 'lock.car');
   assert.equal(al.get('cv_gauge001:1').interactive, false);
 });
 
@@ -65,8 +66,9 @@ describe('two cells high in a browser', { skip: !findChrome() && 'no Chrome' }, 
         const v2 = b.querySelector('.v2');
         return { v2: v2 ? v2.textContent : null, on: !!v2 && v2.getClientRects().length > 0, over: b.scrollWidth > b.clientWidth + 2 };
       })`);
-      assert.equal(g.length, 4, JSON.stringify(g));
-      for (const x of g) assert.ok(/^\/ \d+ mi$/.test(x.v2), JSON.stringify(g));
+      assert.equal(g.length, 5, JSON.stringify(g));
+      for (const x of g.slice(0, 4)) assert.ok(/^\/ \d+ mi$/.test(x.v2), JSON.stringify(g));
+      assert.ok(g[4].on && g[4].v2 === '/ Locked' && !g[4].over, JSON.stringify(g[4]));
       assert.ok(g.filter((x) => x.on).length >= 3, JSON.stringify(g));
     } finally {
       await p.close();

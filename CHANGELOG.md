@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.29.1] - 2026-10-31
+
+### Changed
+- The *Segundo sensor* of the Entidad and Indicador cards can also be a lock, a cover, an alarm, a person or a tracker
+  (#28), for example the fuel and whether the car is locked (`74 % / Locked`). It is only shown, never a control.
+
 ## [0.29.0] - 2026-10-30
 
 ### Added

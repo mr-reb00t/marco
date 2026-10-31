@@ -450,6 +450,7 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'ha.gauge', pos: B(3, 13, 3, 1), props: { entity: 'sensor.tesla_battery', entity2: 'sensor.tesla_range' } },
       { kind: 'ha.gauge', pos: B(0, 14, 5, 2), props: { entity: 'sensor.tesla_battery', entity2: 'sensor.tesla_range' } },
       { kind: 'ha.gauge', pos: B(19, 13, 4, 1), props: { entity: 'sensor.toyota_fuel', entity2: 'sensor.toyota_range', icon: 'fuel' } },
+      { kind: 'ha.gauge', pos: B(6, 14, 5, 2), props: { entity: 'sensor.toyota_fuel', entity2: 'lock.toyota_doors', icon: 'fuel' } },
     ],
   },
   'countdowns-narrow': {

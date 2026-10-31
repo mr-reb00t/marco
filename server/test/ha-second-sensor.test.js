@@ -14,11 +14,12 @@ const collector = () => {
 const tile = (id, props) => ({ id, kind: 'ha.tile', pos: { zone: 'main', x: 0, y: 0, size: 'xs' }, style: defaultItemStyle(), props: { ...canvasDefaults('ha.tile'), ...props } });
 
 test('the second sensor: empty by default, a sensor or a binary sensor, never a light or a switch', () => {
-  assert.deepEqual(TILE_SECOND_DOMAINS, ['sensor', 'binary_sensor']);
+  assert.deepEqual(TILE_SECOND_DOMAINS, ['sensor', 'binary_sensor', 'lock', 'cover', 'alarm_control_panel', 'person', 'device_tracker']);
   assert.equal(canvasDefaults('ha.tile').entity2, '');
   for (const [v, want, bad] of [
     ['sensor.garage_humidity', 'sensor.garage_humidity', false],
     ['binary_sensor.garage_door', 'binary_sensor.garage_door', false],
+    ['lock.front_door', 'lock.front_door', false],
     ['switch.fan', '', true],
     ['light.hall', '', true],
     ['not an entity', '', true],

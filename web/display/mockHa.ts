@@ -151,6 +151,7 @@ const DEMO_FIXED: Record<string, HaSlim> = {
   'sensor.toyota_range': { d: 'sensor', v: '292', num: 292, unit: 'mi', dc: 'distance', n: 'Range' },
   'binary_sensor.tesla_plug': { d: 'binary', on: false, dc: 'plug', n: 'Charger' },
   'sensor.phone_battery': { d: 'sensor', v: '12', num: 12, unit: '%', dc: 'battery', n: 'Phone' },
+  'lock.toyota_doors': { d: 'lock', state: 'locked', n: 'Toyota doors' },
 };
 
 /** The demo screen's items a server would hide now by their conditions (canvasCore conditionHidden). */
