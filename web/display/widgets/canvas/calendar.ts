@@ -358,6 +358,7 @@ export function nextEvents(events: NEvent[], t: Tick, count: number): NEvent[] {
  */
 function fitNext(root: HTMLElement): void {
   root.style.removeProperty('--nx');
+  root.classList.remove('is-wrap');
   const all = Array.from(root.querySelectorAll<HTMLElement>('.cv-next-ev, .cv-next-none'));
   for (const r of all) r.style.removeProperty('display');
   if (!all.length || !root.clientHeight || !root.clientWidth) return;
@@ -390,13 +391,47 @@ function fitNext(root: HTMLElement): void {
   if (!h || !w) return;
   // (a narrow box: a little smaller, down to 80 %, before the title ends in …)
   const k = Math.max(0.8, Math.min(root.dataset.room !== undefined ? 5 : 3, (innerH * 0.72) / h, ((row ? innerW / rows.length : innerW) * 0.92) / w));
-  if (Math.abs(k - 1) < 0.05) return;
-  root.style.setProperty('--nx', k.toFixed(3));
-  const floor = Math.min(1, k);
-  for (let i = 0; i < 12 && (root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1); i++) {
-    const nx = Math.max(floor, parseFloat(root.style.getPropertyValue('--nx')) * 0.97);
-    root.style.setProperty('--nx', nx.toFixed(3));
+  if (Math.abs(k - 1) >= 0.05) {
+    root.style.setProperty('--nx', k.toFixed(3));
+    const floor = Math.min(1, k);
+    for (let i = 0; i < 12 && (root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1); i++) {
+      const nx = Math.max(floor, parseFloat(root.style.getPropertyValue('--nx')) * 0.97);
+      root.style.setProperty('--nx', nx.toFixed(3));
+    }
   }
+  if (root.classList.contains('is-stack')) wrapNext(root, rows, innerH * 0.72, gap, root.dataset.room !== undefined ? 5 : 3);
+}
+
+/**
+ * A tall narrow box whose short title is held small by the width (one line): the titles may break between words, on
+ * up to 3 lines, when that lets the type grow (the largest size whose rows take at most `most` of the height and
+ * whose words are never cut); otherwise the one-line look stays.
+ */
+function wrapNext(root: HTMLElement, rows: HTMLElement[], most: number, gap: number, cap: number): void {
+  const was = parseFloat(root.style.getPropertyValue('--nx')) || 1;
+  const set = (nx: number) => root.style.setProperty('--nx', nx.toFixed(3));
+  const fits = (nx: number) => {
+    set(nx);
+    const h = rows.reduce((a, r) => a + r.offsetHeight, 0) + gap * (rows.length - 1);
+    if (h > most || root.scrollWidth > root.clientWidth + 1 || root.scrollHeight > root.clientHeight + 1) return false;
+    return Array.from(root.querySelectorAll<HTMLElement>('.cv-next-tt')).every((t) => t.scrollWidth <= t.clientWidth + 1 && t.scrollHeight <= t.clientHeight + 1);
+  };
+  root.classList.add('is-wrap');
+  let lo = was * 1.08;
+  if (lo > cap || !fits(lo)) {
+    root.classList.remove('is-wrap');
+    set(was);
+    if (was === 1) root.style.removeProperty('--nx');
+    return;
+  }
+  let hi = cap;
+  if (fits(hi)) lo = hi;
+  else for (let i = 0; i < 8; i++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  set(lo);
 }
 
 function next(): CanvasAdapter {

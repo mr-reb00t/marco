@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format is based on
   *Un poco* or *Normales*. It is in Calendarios for the screen's calendar and in the month, week, agenda and *Hoy*
   cards for each card on its own. Their titles stay easy to read over a photo or a bright background.
 
+### Fixed
+- *Próximo evento* in a tall narrow box: a short title (one or two words) was held small by the width and sat as a
+  small block in the middle of the card. It now breaks between words, on up to three lines, and grows with the box.
+
 ## [0.29.1] - 2026-10-31
 
 ### Changed

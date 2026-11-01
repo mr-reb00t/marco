@@ -81,6 +81,11 @@
 #app.preset-canvas .cv-next.is-stack .cv-next-txt { align-items: center; max-width: 100%; }
 #app.preset-canvas .cv-next.is-stack .cv-next-txt > * { max-width: 100%; }
 #app.preset-canvas .cv-next.is-stack { gap: calc(2.4rem * var(--nx, 1)); }
+/* a short title held small by a narrow box: it breaks between words, on up to 3 lines (calendar.ts wrapNext) */
+#app.preset-canvas .cv-next.is-wrap .cv-next-tt {
+  white-space: normal; overflow-wrap: normal; text-wrap: balance; line-height: 1.12;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; text-overflow: clip;
+}
 
 /* ---------------------------------------------------------------- weather now: stacked in a tall narrow box, more in a big one */
 #app.preset-canvas .cv-wx-now .cv-wx-meta .is-extra { display: none; }
