@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.30.1] - 2026-11-01
+
+### Fixed
+- A *Foto* card on a screen with no photo slideshow behind it (an *Ambiente* or plain background) went round the same
+  twenty photos: only the slideshow asked for the next batch. The card now asks for it once it has shown every photo
+  of the batch, so it goes through the whole gallery (in the gallery's order, or shuffled).
+
 ## [0.30.0] - 2026-11-01
 
 ### Added

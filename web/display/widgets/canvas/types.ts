@@ -85,6 +85,12 @@ export interface AdapterEnv {
   nowPlaying: NowPlayingSource;
   /** the navigation cards: taps, the carousel's progress (main.ts) */
   nav: NavSource;
+  /**
+   * a Foto card that has shown every photo of the screen's batch asks for the next one, after `after` (the last it
+   * showed). The slideshow behind asks at the end of its own; with no slideshow (an Ambiente background) nothing else
+   * would, and the card went round the same twenty photos (main.ts morePhotos).
+   */
+  morePhotos(after: string): void;
 }
 
 /** The room an item has, in px (its card body), and where it is. */

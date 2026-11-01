@@ -203,6 +203,7 @@ const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   family: () => familyShown(current()),
   toggleChore: (id, done) => toggleChore(id, done),
   announcement: () => announcements.newest(),
+  morePhotos: (after) => morePhotos(after),
   ha: haFeed,
   values: valuesFeed,
   data: dataFeed,
@@ -1235,11 +1236,21 @@ function checkBgRule(): void {
   void fetchPhotos();
 }
 
-async function fetchPhotos(): Promise<void> {
+/** When a Foto card last asked for the next batch (morePhotos): at most one every 30 s, whatever the cards' intervals. */
+let moreAt = 0;
+
+/** A Foto card went through the whole batch: the next one, after the photo it showed last (AdapterEnv.morePhotos). */
+function morePhotos(after: string): void {
+  if (state.demo || Date.now() - moreAt < 30_000) return;
+  moreAt = Date.now();
+  void fetchPhotos(after);
+}
+
+async function fetchPhotos(after = photos.lastKey): Promise<void> {
   if (state.demo) return set('photos', mockPhotos(ctx.cfg.background.stockTopic));
   try {
     const sid = getActiveScreen();
-    const r = await api.photos(20, photos.lastKey);
+    const r = await api.photos(20, after);
     photosAt = Date.now();
     if (sid) carousel?.put(sid, 'photos', r);
     if (sid !== getActiveScreen()) return;

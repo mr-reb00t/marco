@@ -156,6 +156,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   let idx = -1;
   let cur: HTMLElement | null = null;
   let listSig = '';
+  // photos of this list shown so far: once it is all of them, the card asks for the next batch (env.morePhotos)
+  let round = 0;
   let rule = state.photos?.rule ?? '';
   // spread items over the list, so two photo cards do not show the same one
   const offset = [...item0.id].reduce((n, c) => n + c.charCodeAt(0), 0);
@@ -176,6 +178,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     root.classList.remove('is-empty');
     idx = idx < 0 ? offset % photos.length : (idx + 1) % photos.length;
     const p = photos[idx];
+    // the whole batch has been on screen: the next one comes in for the next change (it continues from this photo)
+    if (++round >= photos.length && photos.length > 1) env.morePhotos(p.file || p.id || '');
     const props = env.item().props as Props;
     const img = new Image();
     img.decoding = 'async';
@@ -226,6 +230,9 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       const sig = list().map((p) => p.url).join('|');
       if (sig === listSig) return;
       listSig = sig;
+      // a new batch: from its start at the next change (the photo on screen stays until then)
+      round = 0;
+      idx = -1;
       // another special background took over (or ended): its photos come in now, not at the next change
       const r = state.photos?.rule ?? '';
       if (r !== rule) {

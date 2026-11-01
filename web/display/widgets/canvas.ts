@@ -56,6 +56,8 @@ export interface CanvasDeps {
   nowPlaying: NowPlayingSource;
   /** the navigation cards (main.ts, web/display/nav.ts) */
   nav: NavSource;
+  /** the next batch of the screen's photos, after `after` (AdapterEnv.morePhotos) */
+  morePhotos(after: string): void;
 }
 
 /** Canvas.layoutInfo(): boxes in CSS pixels of this page. */
@@ -699,6 +701,7 @@ export class Canvas {
       family: () => this.deps.family(),
       toggleChore: (id, done) => this.deps.toggleChore(id, done),
       announcement: () => this.deps.announcement(),
+      morePhotos: (after) => this.deps.morePhotos(after),
       ha: this.deps.ha,
       values: this.deps.values,
       data: this.deps.data,
