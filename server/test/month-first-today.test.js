@@ -2,9 +2,9 @@
 // accent colour on the accent circle, and "Nov" did not fit in it).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { startWeb, launchChrome } from './browser.js';
+import { startWeb, launchChrome, findChrome } from './browser.js';
 
-test('today on the 1st shows the month name readable inside the today mark', { timeout: 120000 }, async () => {
+test('today on the 1st shows the month name readable inside the today mark', { timeout: 120000, skip: !findChrome() && 'no Chrome' }, async () => {
   const web = await startWeb();
   const chrome = await launchChrome();
   try {
