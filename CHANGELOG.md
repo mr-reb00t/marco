@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.30.2] - 2026-11-01
+
+### Fixed
+- Month view on the 1st of a month: the today mark showed a blank circle. The month name in it (*Nov*) was drawn in
+  the accent colour on the accent circle and did not fit. It is now white on a pill wide enough for the name.
+
 ## [0.30.1] - 2026-11-01
 
 ### Fixed

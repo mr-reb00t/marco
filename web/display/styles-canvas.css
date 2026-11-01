@@ -193,8 +193,8 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
   --ha-ok: #11733a; --ha-alert: #c4261c;
   text-shadow: none;
 }
-.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-zone-off, .cv-date-wd, .cv-next-ev.is-now .cv-next-when, .cal-dow > div.is-today, .num.m1 > span, .news-src, .pp-sec.is-today .pp-day, .pp-ev.ongoing .pp-tm, .bd-day:first-child, .ag-day.today .ag-date b),
-.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-zone-off, .cv-date-wd, .cv-next-ev.is-now .cv-next-when, .cal-dow > div.is-today, .num.m1 > span, .news-src, .pp-sec.is-today .pp-day, .pp-ev.ongoing .pp-tm, .bd-day:first-child, .ag-day.today .ag-date b) { color: var(--cv-accent-ink); }
+.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cv-zone-off, .cv-date-wd, .cv-next-ev.is-now .cv-next-when, .cal-dow > div.is-today, .num.m1 > span:not(.dot), .news-src, .pp-sec.is-today .pp-day, .pp-ev.ongoing .pp-tm, .bd-day:first-child, .ag-day.today .ag-date b),
+.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cv-zone-off, .cv-date-wd, .cv-next-ev.is-now .cv-next-when, .cal-dow > div.is-today, .num.m1 > span:not(.dot), .news-src, .pp-sec.is-today .pp-day, .pp-ev.ongoing .pp-tm, .bd-day:first-child, .ag-day.today .ag-date b) { color: var(--cv-accent-ink); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) :is(.cd.is-today, .cd.is-tomorrow) .cd-when,
 .theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none :is(.cd.is-today, .cd.is-tomorrow) .cd-when { color: var(--deep, var(--tint)); }
 .theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) .cv-next-ev:not(.is-now) .cv-next-when,

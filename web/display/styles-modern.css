@@ -471,7 +471,7 @@
   letter-spacing: -0.01em;
 }
 .style-modern .num.past { color: var(--fg-3); }
-.style-modern .num.m1 > span { font-weight: 600; color: var(--accent); letter-spacing: 0; }
+.style-modern .num.m1 > span:not(.dot) { font-weight: 600; color: var(--accent); letter-spacing: 0; }
 /* The today circle is centred on the number's line and never crosses the top of the row (.wk clips it there) nor
    the bottom of the number row: at most 1.72em, less where the number row is low (the top / bottom frame, 720p). */
 .style-modern .num .dot {
@@ -485,6 +485,7 @@
   box-shadow: none;
 }
 .style-modern .num .dot::after { display: none; }
+.style-modern .num.m1 .dot { width: auto; min-width: var(--dot); padding: 0 0.42em; border-radius: 999px; }
 .style-modern .more {
   margin: 1.2rem 1rem 0 0;
   padding: 0;
