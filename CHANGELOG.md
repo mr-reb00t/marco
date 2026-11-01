@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.30.0] - 2026-11-01
+
+### Added
+- *Eventos pasados* (#32): how faded the events that have already ended are, *Atenuados* (the look it always had),
+  *Un poco* or *Normales*. It is in Calendarios for the screen's calendar and in the month, week, agenda and *Hoy*
+  cards for each card on its own. Their titles stay easy to read over a photo or a bright background.
+
 ## [0.29.1] - 2026-10-31
 
 ### Changed

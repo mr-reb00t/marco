@@ -98,7 +98,7 @@
 }
 .td-ev::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0.4rem; background: rgb(var(--c)); }
 .td-ev.tall { justify-content: flex-start; padding-top: 0.8rem; }
-.td-ev.past { opacity: 0.42; }
+.td-ev.past { opacity: max(0.42, var(--past-op, 0)); }
 .td-ev.ongoing { background: rgb(var(--c) / 0.32); box-shadow: inset 0 0 0 1px rgb(var(--c) / 0.75); }
 .td-l1 { display: flex; align-items: center; gap: 0.8rem; min-width: 0; font-size: 2.1rem; font-weight: 600; line-height: 1.3; white-space: nowrap; }
 .td-l1 b { flex: none; font-weight: 700; color: var(--tint); font-variant-numeric: tabular-nums; }
@@ -204,7 +204,7 @@
 .pp-ev em { flex: none; margin-left: auto; padding-left: 0.6rem; font-style: normal; font-size: 0.82em; font-weight: 600; opacity: 0.75; }
 .pp-ev.allday { background: rgb(var(--c)); color: var(--on); border-radius: 1rem; padding-left: 1.2rem; }
 .pp-ev.allday::before { display: none; }
-.pp-ev.past { opacity: 0.4; }
+.pp-ev.past { opacity: max(0.4, var(--past-op, 0)); }
 .pp-ev.ongoing { background: rgb(var(--c) / 0.3); box-shadow: inset 0 0 0 1px rgb(var(--c) / 0.75); }
 .pp-none { padding: 0.6rem 0; font-size: 2rem; color: var(--fg-3); }
 .pp-more { margin-top: 0.7rem; font-size: 1.7rem; font-weight: 600; color: var(--fg-3); }

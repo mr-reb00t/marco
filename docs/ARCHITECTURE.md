@@ -141,7 +141,7 @@ The stored config has **global** sections shared by every screen and a list of *
                   // immich: albums played with source immich (UUIDs, at most 20, merged without duplicates; [] = stock photos)
                   // rules: special backgrounds, see "Special backgrounds" below
   "calendar":   { "enabled": true, "view": "month", "weeks": 5, "weekStart": 1, "startOn": "week",
-                  "showLocation": false, "showEndTime": false, "showDayXofY": true, "showLegend": true, "hidePast": false, "maxEventsPerDay": 4,
+                  "showLocation": false, "showEndTime": false, "showDayXofY": true, "showLegend": true, "hidePast": false, "pastEvents": "dim", "maxEventsPerDay": 4,
                   "marquee": true, "rotateBusyDays": true, "compactBusyDays": true, "eventStyle": "lines",
                   "gridLines": "soft", "gridColor": null, "agendaDays": "auto", "sourceIds": null },               // null = every enabled source (incl. new ones); array = only these
                   // startOn: week (the grid starts on the first day of this week, weekStart) | today (no past days: the first cell is today)
@@ -164,6 +164,10 @@ The stored config has **global** sections shared by every screen and a list of *
                   //   "clear" or "strong" (thicker; with the Modern style both also draw the lines between the days).
                   //   gridColor: their own colour (#rrggbb) or null (the theme's). The month and week canvas cards have
                   //   the same two as props (gridColor in the Estilo tab).
+                  // pastEvents: how faded the events that have ended are, "dim" (default, also for older screens: the
+                  //   look it always had), "soft" (a little) or "full" (as solid as the rest). The month, week, agenda
+                  //   and Hoy canvas cards have it as a prop of their own. The display sets --past-op, the least
+                  //   opacity a past event keeps (0, 0.72 or 1), on the page and on each calendar card.
                   // agendaDays: how far the agenda view looks ahead: 7, 14 or 30 days, or "auto" (default, also for older
                   //   screens): Today and Tomorrow, then the next days with events. The display lays every candidate
                   //   day out in a hidden copy of the agenda and keeps the leading day blocks that fit whole, never

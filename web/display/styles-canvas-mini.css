@@ -73,7 +73,7 @@
 #app.preset-canvas .cv-vmini[data-mini] .cvm-ev { position: relative; display: flex; align-items: center; gap: 0.6rem; min-width: 0; padding: 0.25rem 0.4rem 0.25rem 1.2rem; border-radius: 0.6rem; white-space: nowrap; }
 #app.preset-canvas .cv-vmini[data-mini] .cvm-ev::before { content: ''; position: absolute; left: 0.2rem; top: 0.45rem; bottom: 0.45rem; width: 0.4rem; border-radius: 9rem; background: rgb(var(--c)); }
 #app.preset-canvas .cv-vmini[data-mini] .cvm-ev.ongoing { background: rgb(var(--c) / 0.14); }
-#app.preset-canvas .cv-vmini[data-mini] .cvm-ev.past { opacity: 0.45; }
+#app.preset-canvas .cv-vmini[data-mini] .cvm-ev.past { opacity: max(0.45, var(--past-op, 0)); }
 #app.preset-canvas .cv-vmini[data-mini] .cvm-ev.cvm-hide { display: none; }
 #app.preset-canvas .cv-vmini[data-mini] .cvm-tm { flex: none; min-width: 0; max-width: 45%; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-num); font-size: 1.5rem; font-weight: 600; color: var(--fg-2); }
 #app.preset-canvas .cv-vmini[data-mini] .cvm-dot { display: none; }

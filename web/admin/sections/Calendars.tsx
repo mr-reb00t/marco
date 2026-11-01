@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { AppConfig, CalendarSource, GridLines, GoogleCalendarListItem, MicrosoftCalendarListItem, SourceKind, TestIcsResponse } from '../../shared/types';
+import type { AppConfig, CalendarSource, GridLines, GoogleCalendarListItem, MicrosoftCalendarListItem, PastEvents, SourceKind, TestIcsResponse } from '../../shared/types';
 import { api, ApiError, UNAUTHORIZED_EVENT } from '../api';
 import { fetchErrorText } from '../apiErrors';
 import { choiceDialog, confirmDialog, toast } from '../components/feedback';
@@ -60,6 +60,23 @@ function GridLinesField({ cfg, set }: { cfg: AppConfig; set: SectionProps['set']
         />
         <ColorPicker value={cfg.calendar.gridColor ?? null} allowNone onChange={(c) => set((d) => void (d.calendar.gridColor = c))} />
       </div>
+    </Field>
+  );
+}
+
+/** calendar.pastEvents: how faded the events that have ended are (#32). */
+function PastEventsField({ cfg, set }: { cfg: AppConfig; set: SectionProps['set'] }) {
+  return (
+    <Field label={t('Eventos pasados')} hint={t('Cuánto se apagan los que ya han terminado.')}>
+      <Segmented<PastEvents>
+        value={cfg.calendar.pastEvents ?? 'dim'}
+        options={[
+          { value: 'dim', label: t('Atenuados') },
+          { value: 'soft', label: t('Un poco') },
+          { value: 'full', label: t('Normales') },
+        ]}
+        onChange={(x) => set((d) => void (d.calendar.pastEvents = x))}
+      />
     </Field>
   );
 }
@@ -761,6 +778,7 @@ export function CalendarsSection(props: SectionProps) {
             <EventStyleField cfg={props.cfg} set={set} />
             {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <GridLinesField cfg={props.cfg} set={set} />}
             {(c.view === 'agenda' || props.cfg.layout.preset === 'agenda') && <AgendaDaysField cfg={props.cfg} set={set} />}
+            <PastEventsField cfg={props.cfg} set={set} />
             <Field
               label={t('Máx. eventos visibles por día')}
               hint={

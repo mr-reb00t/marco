@@ -19,7 +19,7 @@ import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
-import { currencyProps, GRID_LINES, nowPlayingAccountOf, sanitizeCanvas } from './canvasCore.js';
+import { currencyProps, GRID_LINES, nowPlayingAccountOf, PAST_EVENTS, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
 import { migrateOverlay, overlaysBytes, sanitizeDecoration, sanitizeOverlays } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
@@ -370,6 +370,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     showDayXofY: bool(ctx, `${p}.calendar.showDayXofY`, ca.showDayXofY, D.calendar.showDayXofY),
     showLegend: bool(ctx, `${p}.calendar.showLegend`, ca.showLegend, D.calendar.showLegend),
     hidePast: bool(ctx, `${p}.calendar.hidePast`, ca.hidePast, D.calendar.hidePast),
+    // how faded the events that have ended are (screens saved before it keep 'dim', the look they had)
+    pastEvents: oneOf(ctx, `${p}.calendar.pastEvents`, ca.pastEvents, D.calendar.pastEvents, PAST_EVENTS),
     maxEventsPerDay: num(ctx, `${p}.calendar.maxEventsPerDay`, ca.maxEventsPerDay, D.calendar.maxEventsPerDay, 1, 20, true),
     marquee: bool(ctx, `${p}.calendar.marquee`, ca.marquee, D.calendar.marquee),
     rotateBusyDays: bool(ctx, `${p}.calendar.rotateBusyDays`, ca.rotateBusyDays, D.calendar.rotateBusyDays),

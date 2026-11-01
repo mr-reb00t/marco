@@ -15,6 +15,7 @@ import { CANVAS_KINDS, fullLookMin, gridDims, lookSize, posCells, sizeCells } fr
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
+import { pastOpacity } from '../defaults';
 import { photoStats, toneOf } from './photos';
 import type { NEvent } from '../eventModel';
 import { current, type Tick } from '../time';
@@ -90,6 +91,8 @@ function applyScale(e: { kind: string; item: DisplayCanvasItem; body: HTMLElemen
   const k = Number(e.item.style?.scale) || 1;
   e.body.style.setProperty('--cv-scale', String(k));
   e.body.style.zoom = k !== 1 && !OWN_SCALE.test(e.kind) ? String(k) : '';
+  // a calendar card's own "Eventos pasados" (#32), not the screen's
+  if (e.kind.startsWith('calendar.')) e.body.style.setProperty('--past-op', pastOpacity((e.item.props as { pastEvents?: unknown }).pastEvents));
 }
 
 /**

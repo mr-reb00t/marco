@@ -801,8 +801,10 @@ body {
   width: 0.3rem;
   background: rgb(var(--c));
 }
-.ev.past { opacity: 0.4; }
-.ev.bar.past { opacity: 0.38; filter: saturate(0.6); }
+/* Past events: faded by each look's own amount, or less with calendar.pastEvents (#32): --past-op is the least
+   opacity they keep (0 for 'dim', the look they always had; set on the page and on each calendar card, main.ts, canvas.ts) */
+.ev.past { opacity: max(0.4, var(--past-op, 0)); }
+.ev.bar.past { opacity: max(0.38, var(--past-op, 0)); filter: saturate(max(0.6, var(--past-op, 0))); }
 .ev.ongoing { background: rgb(var(--c) / 0.32); box-shadow: inset 0 0 0 1px rgb(var(--c) / 0.75); }
 
 .theme-light .ev.timed { color: #16161a; background: rgb(var(--c) / 0.16); }
@@ -825,7 +827,7 @@ body {
   color: var(--fg-2);
   white-space: nowrap;
 }
-.more.past { opacity: 0.45; }
+.more.past { opacity: max(0.45, var(--past-op, 0)); }
 
 /* Compact busy days (calendar.compactBusyDays): a day that cannot fit its events at normal size lists them as small
    one-line entries in a column below its bars. --cline-* are set by calendar.ts in px (it plans with the same sizes). */
@@ -881,7 +883,7 @@ body {
   background: rgb(var(--c) / 0.13);
 }
 .ag-ev::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0.45rem; background: rgb(var(--c)); }
-.ag-ev.past { opacity: 0.42; }
+.ag-ev.past { opacity: max(0.42, var(--past-op, 0)); }
 .ag-ev.ongoing { background: rgb(var(--c) / 0.26); }
 .ag-em { flex: none; width: 4.6rem; text-align: center; font-family: var(--font-emoji); font-size: 3.4rem; line-height: 1; }
 .ag-dot { display: inline-block; width: 1.4rem; height: 1.4rem; border-radius: 50%; background: rgb(var(--c)); }

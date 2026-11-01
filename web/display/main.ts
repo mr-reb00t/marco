@@ -21,7 +21,7 @@ import { api, ApiError, paths, prefetchJSON } from './api';
 import { initTodoTaps, isListTask } from './todoTaps';
 import { parseColor, toHex } from './color';
 import { ctx, setCtxConfig } from './ctx';
-import { normalizeAgendaDays, normalizeConfig } from './defaults';
+import { normalizeAgendaDays, normalizeConfig, pastOpacity } from './defaults';
 import { Heartbeat, noteError } from './heartbeat';
 import {
   authHeaders, clearDeviceToken, clientId, credential, credentialKind, getActiveScreen, isPreview, isWidgetOnly, screenKey, screenNs, setActiveScreen, storedDeviceToken, withScreen,
@@ -533,6 +533,9 @@ function applyConfig(raw: DisplayConfig): void {
   // ?startOn=week|today (the grid starts on the first day of this week, or on today with no past days)
   const pso = params.get('startOn');
   if (pso === 'week' || pso === 'today') cfg.calendar.startOn = pso;
+  // ?pastEvents=dim|soft|full (how faded the events that have ended are, #32)
+  const ppe = params.get('pastEvents');
+  if (ppe === 'dim' || ppe === 'soft' || ppe === 'full') cfg.calendar.pastEvents = ppe;
   const pcd = params.get('cards');
   if (pcd === '0' || pcd === '1') cfg.calendar.eventStyle = pcd === '1' ? 'cards' : 'lines';
   // automatic weeks: at most 6 rows, fewer where a layout caps the rows below
@@ -595,6 +598,8 @@ function applyConfig(raw: DisplayConfig): void {
   root.style.setProperty('--accent', accent);
   root.style.setProperty('--accent-rgb', parseColor(accent).join(' '));
   root.style.setProperty('--fs', String(cfg.screen.fontScale));
+  // calendar.pastEvents (#32): the least opacity of the events that have ended (styles.css, "past events")
+  root.style.setProperty('--past-op', pastOpacity(cfg.calendar.pastEvents));
   root.style.setProperty('--panel-blur', String(cfg.background.panelBlur ?? 18));
   root.style.setProperty('--panel-shade', String((cfg.background.panelShade ?? 0.5) * 2));
   root.style.setProperty('--side-w', `${(cfg.layout.sideWidth * 100).toFixed(2)}%`);

@@ -26,7 +26,7 @@ export const RESERVED_SOURCE_IDS = [LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID];
 
 /** Per-screen part of the keys that are split between global and per-screen ("merged sections"). */
 export const SCREEN_SPLIT_KEYS = {
-  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
+  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'pastEvents', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
@@ -103,6 +103,8 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       // cell is today and the rows run on from there)
       startOn: 'week',
       showDayXofY: true, showLegend: true, hidePast: false, maxEventsPerDay: 4,
+      // pastEvents: how faded the events that have ended are, 'dim' (the look it always had), 'soft' or 'full' (#32)
+      pastEvents: 'dim',
       // marquee: titles cut short slide to show the rest; rotateBusyDays: a day with more events than fit pages through them
       marquee: true, rotateBusyDays: true,
       // compactBusyDays: a month-grid day that cannot fit its events shows them as small one-line entries, and week

@@ -529,7 +529,7 @@
 .style-modern .ev.bar .tm { color: inherit; }
 .style-modern .ev .dx { opacity: 0.66; font-weight: 500; }
 .style-modern .ev.ongoing { background: rgb(var(--c) / 0.18); box-shadow: none; }
-.style-modern .ev.bar.past { opacity: 0.4; filter: none; }
+.style-modern .ev.bar.past { opacity: max(0.4, var(--past-op, 0)); filter: none; }
 .style-modern.theme-light .ev.bar,
 .style-modern.theme-light .ev.bar.single,
 .style-modern.theme-light .ev.airbnb { background: rgb(var(--c) / 0.2); color: var(--shade); }

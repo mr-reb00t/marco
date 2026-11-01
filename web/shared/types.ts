@@ -504,6 +504,8 @@ export type CalendarWeeks = number | 'auto';
 export type EventStyle = 'lines' | 'cards';
 /** calendar.gridLines: how much the month / week grid's lines show. */
 export type GridLines = 'soft' | 'clear' | 'strong';
+/** calendar.pastEvents: how faded the events that have ended are (#32). */
+export type PastEvents = 'dim' | 'soft' | 'full';
 /** calendar.startOn: the grid starts on the first day of this week (weekStart) or on today. */
 export type CalendarStartOn = 'week' | 'today';
 /** Days the agenda view looks ahead, or 'auto': Today and Tomorrow, then the next days with events until it is full. */
@@ -525,6 +527,8 @@ export interface CalendarConfig<S = CalendarSource> {
   showDayXofY: boolean;
   showLegend: boolean;
   hidePast: boolean;
+  /** Events that have ended: 'dim' (default, the look it always had), 'soft' (a little faded) or 'full' (not faded). */
+  pastEvents: PastEvents;
   maxEventsPerDay: number;
   /** Titles cut short in bars and lists slide slowly to show the rest (default true). */
   marquee: boolean;
@@ -2501,7 +2505,7 @@ export interface ScreenProfile {
   screen: Omit<ScreenConfig, 'name'>;
   layout: LayoutConfig;
   background: BackgroundConfig;
-  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'gridLines' | 'gridColor' | 'agendaDays'> & { sourceIds: string[] | null };
+  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'pastEvents' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'gridLines' | 'gridColor' | 'agendaDays'> & { sourceIds: string[] | null };
   datetime: Omit<DateTimeConfig, 'timezone'>;
   weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { enabled: boolean; rotateSec: number };

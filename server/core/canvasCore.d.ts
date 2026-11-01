@@ -153,6 +153,7 @@ export function canvasDefaults(kind: CanvasKind | string): Record<string, unknow
 /** The text colour props of the clocks and the date card ("Color de la hora", "Color de la fecha"). */
 export const INK_PROPS: Partial<Record<CanvasKind, readonly ('timeColor' | 'dateColor' | 'gridColor')[]>>;
 export const GRID_LINES: readonly ['soft', 'clear', 'strong'];
+export const PAST_EVENTS: readonly ['dim', 'soft', 'full'];
 export function defaultItemStyle(): CanvasItemStyle;
 export function defaultCanvas(): CanvasConfig;
 export function newCanvasId(taken?: Set<string>): string;

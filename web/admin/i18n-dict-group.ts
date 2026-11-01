@@ -1,4 +1,4 @@
-// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels. Admin text keyed by the
+// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29) and past events (#32). Admin text keyed by the
 // Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
 const ROWS: [string, string, string, string, string, string][] = [
@@ -73,6 +73,19 @@ const ROWS: [string, string, string, string, string, string][] = [
   ['Color de las líneas', 'Line colour', 'Cor das linhas', 'Kleur van de lijnen', 'Farve på linjerne', 'Kolor linii'],
   ['Su color, en la pestaña Estilo.', 'Their colour is in the Style tab.', 'A cor está no separador Estilo.', 'De kleur staat op het tabblad Stijl.', 'Farven finder du på fanen Stil.', 'Ich kolor jest w karcie Styl.'],
   ['Su color: Auto es el del tema.', 'Colour: Auto follows the theme.', 'Cor: Auto segue o tema.', 'Kleur: Auto volgt het thema.', 'Farve: Auto følger temaet.', 'Kolor: Auto zgodnie z motywem.'],
+  // how faded the events that have ended are (#32)
+  ['Eventos pasados', 'Past events', 'Eventos passados', 'Voorbije afspraken', 'Tidligere begivenheder', 'Minione wydarzenia'],
+  ['Atenuados', 'Dimmed', 'Esbatidos', 'Gedimd', 'Dæmpede', 'Przygaszone'],
+  ['Un poco', 'Slightly', 'Um pouco', 'Een beetje', 'Lidt', 'Trochę'],
+  ['Normales', 'Normal', 'Normais', 'Normaal', 'Normale', 'Normalne'],
+  [
+    'Cuánto se apagan los que ya han terminado.',
+    'How much the ones that have ended fade.',
+    'Quanto se esbatem os que já terminaram.',
+    'Hoeveel de afspraken die al voorbij zijn vervagen.',
+    'Hvor meget dem, der er slut, tones ned.',
+    'Jak bardzo przygasają te, które już się skończyły.',
+  ],
 ];
 
 // the Bolsa card's currencies (fieldSpecs.ts): an ISO code reads the same in every language

@@ -418,13 +418,14 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'stocks', pos: B(0, 13, 16, 2), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'ticker', currency: 'EUR', label: 'name' } },
     ],
   },
-  // Calendar grid lines (#29): Suaves (the look it always had), Marcadas, Fuertes in a colour of its own, and a week
+  // Calendar grid lines (#29): Suaves (the look it always had), Marcadas, Fuertes in a colour of its own, and a week;
+  // past events (#32) dimmed as always on the first, a little on the second, not at all on the third
   'calendar-grid': {
     canvas: { background: 'ambient' },
     items: [
       { kind: 'calendar.month', pos: B(0, 0, 12, 7), props: { weeks: 4 } },
-      { kind: 'calendar.month', pos: B(12, 0, 12, 7), props: { weeks: 4, gridLines: 'clear' } },
-      { kind: 'calendar.month', pos: B(0, 8, 12, 7), props: { weeks: 4, gridLines: 'strong', gridColor: '#64d2ff' } },
+      { kind: 'calendar.month', pos: B(12, 0, 12, 7), props: { weeks: 4, gridLines: 'clear', pastEvents: 'soft' } },
+      { kind: 'calendar.month', pos: B(0, 8, 12, 7), props: { weeks: 4, gridLines: 'strong', gridColor: '#64d2ff', pastEvents: 'full' } },
       { kind: 'calendar.week', pos: B(12, 8, 12, 7), props: { gridLines: 'clear', gridColor: '#ffb340' } },
     ],
   },
