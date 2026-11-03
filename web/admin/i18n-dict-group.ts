@@ -86,6 +86,19 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Hvor meget dem, der er slut, tones ned.',
     'Jak bardzo przygasają te, które już się skończyły.',
   ],
+  // how much the events' background covers what is behind them (#32)
+  ['Fondo de los eventos', 'Event background', 'Fundo dos eventos', 'Achtergrond van afspraken', 'Baggrund for begivenheder', 'Tło wydarzeń'],
+  ['Suave', 'Soft', 'Suave', 'Zacht', 'Blød', 'Delikatne'],
+  ['Más opaco', 'More solid', 'Mais opaco', 'Voller', 'Mere dækkende', 'Mocniejsze'],
+  ['Sólido', 'Solid', 'Sólido', 'Vol', 'Fyldt', 'Pełne'],
+  [
+    'Más opaco o Sólido se leen mejor sobre una foto.',
+    'More solid or Solid read better over a photo.',
+    'Mais opaco ou Sólido leem-se melhor sobre uma foto.',
+    'Voller of Vol leest beter op een foto.',
+    'Mere dækkende eller Fyldt er lettere at læse oven på et foto.',
+    'Mocniejsze lub Pełne lepiej czytać na zdjęciu.',
+  ],
 ];
 
 // the Bolsa card's currencies (fieldSpecs.ts): an ISO code reads the same in every language

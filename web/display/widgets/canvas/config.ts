@@ -39,8 +39,9 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
       cfg.calendar.showLegend = p.showLegend === true;
     }
     if (item.kind === 'calendar.month' || item.kind === 'calendar.week') {
-      // the card's own grid lines (#29), not the screen's calendar settings
+      // the card's own grid lines (#29) and event fill (#32), not the screen's calendar settings
       cfg.calendar.gridLines = p.gridLines === 'clear' || p.gridLines === 'strong' ? p.gridLines : 'soft';
+      cfg.calendar.eventFill = p.eventFill === 'strong' || p.eventFill === 'solid' ? p.eventFill : 'soft';
       cfg.calendar.gridColor = typeof p.gridColor === 'string' ? p.gridColor : null;
     }
   }

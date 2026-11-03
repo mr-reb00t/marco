@@ -78,6 +78,11 @@ const PAST_EVENTS: Spec = {
   k: 'pastEvents', type: 'seg', label: 'Eventos pasados',
   opts: [{ v: 'dim', l: 'Atenuados' }, { v: 'soft', l: 'Un poco' }, { v: 'full', l: 'Normales' }],
 };
+/** How much the events' background covers what is behind them in the month and week grids (#32). */
+const EVENT_FILL: Spec = {
+  k: 'eventFill', type: 'seg', label: 'Fondo de los eventos', hint: 'Más opaco o Sólido se leen mejor sobre una foto.',
+  opts: [{ v: 'soft', l: 'Suave' }, { v: 'strong', l: 'Más opaco' }, { v: 'solid', l: 'Sólido' }],
+};
 const SOURCES: Spec = { k: 'sourceIds', type: 'sources', label: 'Calendarios' };
 const DATE_POS_FIELD: Spec = { k: 'datePos', type: 'seg', label: 'Posición de la fecha', opts: [{ v: 'above', l: 'Arriba' }, { v: 'below', l: 'Abajo' }] };
 const HA_NAME: Spec = { k: 'name', type: 'text', label: 'Nombre', max: 40, hint: 'Vacío: el nombre que tiene en Home Assistant.' };
@@ -172,10 +177,11 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'maxEventsPerDay', type: 'num', label: 'Eventos por día como mucho', min: 1, max: 12, unit: 'n' },
     { k: 'showLegend', type: 'bool', label: 'Leyenda de calendarios' },
     GRID_LINES,
+    EVENT_FILL,
     HIDE_PAST,
     PAST_EVENTS,
   ],
-  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, GRID_LINES, HIDE_PAST, PAST_EVENTS],
+  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, GRID_LINES, EVENT_FILL, HIDE_PAST, PAST_EVENTS],
   'calendar.agenda': [
     SOURCES,
     { k: 'days', type: 'num', label: 'Días', min: 1, max: 14, unit: 'days' },

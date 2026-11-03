@@ -123,6 +123,9 @@ export class MonthCalendar {
     if (c.gridLines === 'clear' || c.gridLines === 'strong') this.root.dataset.grid = c.gridLines;
     else delete this.root.dataset.grid;
     this.root.classList.toggle('has-grid-c', !!gridC);
+    // calendar.eventFill (#32): how much the events' background covers what is behind them (styles.css, "event fill")
+    if (c.eventFill === 'strong' || c.eventFill === 'solid') this.root.dataset.fill = c.eventFill;
+    else delete this.root.dataset.fill;
     if (gridC) this.root.style.setProperty('--grid-c', gridC);
     else this.root.style.removeProperty('--grid-c');
     const compact = c.compactBusyDays === true && !cards;

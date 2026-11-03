@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { AppConfig, CalendarSource, GridLines, GoogleCalendarListItem, MicrosoftCalendarListItem, PastEvents, SourceKind, TestIcsResponse } from '../../shared/types';
+import type { AppConfig, CalendarSource, GridLines, GoogleCalendarListItem, EventFill, MicrosoftCalendarListItem, PastEvents, SourceKind, TestIcsResponse } from '../../shared/types';
 import { api, ApiError, UNAUTHORIZED_EVENT } from '../api';
 import { fetchErrorText } from '../apiErrors';
 import { choiceDialog, confirmDialog, toast } from '../components/feedback';
@@ -76,6 +76,23 @@ function PastEventsField({ cfg, set }: { cfg: AppConfig; set: SectionProps['set'
           { value: 'full', label: t('Normales') },
         ]}
         onChange={(x) => set((d) => void (d.calendar.pastEvents = x))}
+      />
+    </Field>
+  );
+}
+
+/** calendar.eventFill: how much the events' background covers what is behind them in the month / week grid (#32). */
+function EventFillField({ cfg, set }: { cfg: AppConfig; set: SectionProps['set'] }) {
+  return (
+    <Field label={t('Fondo de los eventos')} hint={t('Más opaco o Sólido se leen mejor sobre una foto.')}>
+      <Segmented<EventFill>
+        value={cfg.calendar.eventFill ?? 'soft'}
+        options={[
+          { value: 'soft', label: t('Suave') },
+          { value: 'strong', label: t('Más opaco') },
+          { value: 'solid', label: t('Sólido') },
+        ]}
+        onChange={(x) => set((d) => void (d.calendar.eventFill = x))}
       />
     </Field>
   );
@@ -777,6 +794,7 @@ export function CalendarsSection(props: SectionProps) {
             <WeeksField cfg={props.cfg} set={set} error={errors['calendar.weeks']} />
             <EventStyleField cfg={props.cfg} set={set} />
             {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <GridLinesField cfg={props.cfg} set={set} />}
+            {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <EventFillField cfg={props.cfg} set={set} />}
             {(c.view === 'agenda' || props.cfg.layout.preset === 'agenda') && <AgendaDaysField cfg={props.cfg} set={set} />}
             <PastEventsField cfg={props.cfg} set={set} />
             <Field

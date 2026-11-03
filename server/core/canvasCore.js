@@ -418,6 +418,12 @@ export const GRID_LINES = ['soft', 'clear', 'strong'];
  * already ended are, 'dim' (the look they always had), 'soft' (a little) or 'full' (as solid as the rest).
  */
 export const PAST_EVENTS = ['dim', 'soft', 'full'];
+/**
+ * calendar.eventFill (the screen's and the month / week cards', #32): how much the events' background covers what is
+ * behind them, 'soft' (the look they always had), 'strong' (more opaque, the time in the text colour) or 'solid'
+ * (filled with the calendar colour, like the all-day bars).
+ */
+export const EVENT_FILLS = ['soft', 'strong', 'solid'];
 
 /**
  * "Color de la hora" and "Color de la fecha" of the clocks and the date card, and "Color de las líneas" of the month and
@@ -561,7 +567,7 @@ export const CANVAS_KINDS = {
   // ---- Calendario
   'calendar.month': {
     cat: 'calendar', sizes: ['m', 'l', 'xl', 'full'], def: 'l', cells: [4, 3, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', weeks: 'auto', eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true, gridLines: 'soft' }),
+    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', weeks: 'auto', eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true, gridLines: 'soft', eventFill: 'soft' }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       weeks: x.weeks === 'auto' || x.weeks === undefined || x.weeks === null ? 'auto' : P.num(c, `${p}.weeks`, x.weeks, 'auto', 1, 6),
@@ -569,17 +575,19 @@ export const CANVAS_KINDS = {
       maxEventsPerDay: P.num(c, `${p}.maxEventsPerDay`, x.maxEventsPerDay, 4, 1, 12),
       showLegend: P.bool(c, `${p}.showLegend`, x.showLegend, true),
       gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
+      eventFill: P.oneOf(c, `${p}.eventFill`, x.eventFill, 'soft', EVENT_FILLS),
       ...pastProps(c, p, x),
       ...inkProps(c, p, x, 'calendar.month'),
     }),
   },
   'calendar.week': {
     cat: 'calendar', sizes: ['w', 'l', 'xl', 'full'], def: 'xl', cells: [6, 2, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', start: 'today', gridLines: 'soft' }),
+    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', start: 'today', gridLines: 'soft', eventFill: 'soft' }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       start: P.oneOf(c, `${p}.start`, x.start, 'today', ['today', 'monday']),
       gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
+      eventFill: P.oneOf(c, `${p}.eventFill`, x.eventFill, 'soft', EVENT_FILLS),
       ...pastProps(c, p, x),
       ...inkProps(c, p, x, 'calendar.week'),
     }),

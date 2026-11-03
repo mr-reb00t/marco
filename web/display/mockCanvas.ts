@@ -425,8 +425,8 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
     items: [
       { kind: 'calendar.month', pos: B(0, 0, 12, 7), props: { weeks: 4 } },
       { kind: 'calendar.month', pos: B(12, 0, 12, 7), props: { weeks: 4, gridLines: 'clear', pastEvents: 'soft' } },
-      { kind: 'calendar.month', pos: B(0, 8, 12, 7), props: { weeks: 4, gridLines: 'strong', gridColor: '#64d2ff', pastEvents: 'full' } },
-      { kind: 'calendar.week', pos: B(12, 8, 12, 7), props: { gridLines: 'clear', gridColor: '#ffb340' } },
+      { kind: 'calendar.month', pos: B(0, 8, 12, 7), props: { weeks: 4, gridLines: 'strong', gridColor: '#64d2ff', pastEvents: 'full', eventFill: 'strong' } },
+      { kind: 'calendar.week', pos: B(12, 8, 12, 7), props: { gridLines: 'clear', gridColor: '#ffb340', eventFill: 'solid' } },
     ],
   },
   // Cuentas atrás two and three cells wide (#30): the name over the days left, in short

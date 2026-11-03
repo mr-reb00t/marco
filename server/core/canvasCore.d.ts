@@ -154,6 +154,7 @@ export function canvasDefaults(kind: CanvasKind | string): Record<string, unknow
 export const INK_PROPS: Partial<Record<CanvasKind, readonly ('timeColor' | 'dateColor' | 'gridColor')[]>>;
 export const GRID_LINES: readonly ['soft', 'clear', 'strong'];
 export const PAST_EVENTS: readonly ['dim', 'soft', 'full'];
+export const EVENT_FILLS: readonly ['soft', 'strong', 'solid'];
 export function defaultItemStyle(): CanvasItemStyle;
 export function defaultCanvas(): CanvasConfig;
 export function newCanvasId(taken?: Set<string>): string;

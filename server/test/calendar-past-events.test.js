@@ -69,7 +69,7 @@ describe('past events in a browser', { skip: !findChrome() && 'no Chrome' }, () 
   test('the screen calendar: dimmed, a little or not at all', { timeout: 90_000 }, async () => {
     const seen = {};
     for (const v of ['dim', 'soft', 'full']) {
-      const p = await browser.page(`${web.url}/?demo=1&lite=1&lang=es&pastEvents=${v}`, { width: 1920, height: 1080 });
+      const p = await browser.page(`${web.url}/?demo=1&lite=1&lang=es&now=2026-11-01T15:00&pastEvents=${v}`, { width: 1920, height: 1080 });
       try {
         await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1200)))');
         const all = (await p.eval(opacities)).flat();
@@ -85,7 +85,8 @@ describe('past events in a browser', { skip: !findChrome() && 'no Chrome' }, () 
   });
 
   test('each month card its own (the calendar-grid demo)', { timeout: 60_000 }, async () => {
-    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=calendar-grid&lang=es`, { width: 1920, height: 1080 });
+    // a day of its own: the demo's events move with today, and on some days every ended one is paged out of its day
+    const p = await browser.page(`${web.url}/?demo=1&preset=canvas&shot=calendar-grid&lang=es&now=2026-11-01T15:00`, { width: 1920, height: 1080 });
     try {
       await p.eval('document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1500)))');
       const r = await p.eval(`[...document.querySelectorAll('.cv-item[data-kind="calendar.month"] .cal')].map((cal) =>

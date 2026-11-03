@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.31.0] - 2026-11-03
+
+### Added
+- *Fondo de los eventos* (#32): how much an event's background covers the photo behind it in the month and week
+  grids. *Suave* is the look it always had, *Más opaco* covers more and writes the time in the text colour, and
+  *Sólido* fills each event with its calendar colour. It is in Calendarios for the screen's calendar and in the month
+  and week cards for each card on its own.
+
 ## [0.30.2] - 2026-11-01
 
 ### Fixed

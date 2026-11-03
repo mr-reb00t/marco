@@ -143,7 +143,7 @@ The stored config has **global** sections shared by every screen and a list of *
   "calendar":   { "enabled": true, "view": "month", "weeks": 5, "weekStart": 1, "startOn": "week",
                   "showLocation": false, "showEndTime": false, "showDayXofY": true, "showLegend": true, "hidePast": false, "pastEvents": "dim", "maxEventsPerDay": 4,
                   "marquee": true, "rotateBusyDays": true, "compactBusyDays": true, "eventStyle": "lines",
-                  "gridLines": "soft", "gridColor": null, "agendaDays": "auto", "sourceIds": null },               // null = every enabled source (incl. new ones); array = only these
+                  "gridLines": "soft", "gridColor": null, "eventFill": "soft", "agendaDays": "auto", "sourceIds": null },               // null = every enabled source (incl. new ones); array = only these
                   // startOn: week (the grid starts on the first day of this week, weekStart) | today (no past days: the first cell is today)
                   // marquee: titles cut short (calendar chips, agenda-like lists, side panel pills, countdowns, news) slide to show the rest
                   // rotateBusyDays: a month-grid day with more events than fit pages through them every 8 s
@@ -168,6 +168,10 @@ The stored config has **global** sections shared by every screen and a list of *
                   //   look it always had), "soft" (a little) or "full" (as solid as the rest). The month, week, agenda
                   //   and Hoy canvas cards have it as a prop of their own. The display sets --past-op, the least
                   //   opacity a past event keeps (0, 0.72 or 1), on the page and on each calendar card.
+                  // eventFill: how much the events' background covers what is behind them in the month / week grid,
+                  //   "soft" (default, also for older screens), "strong" (more opaque, the time in the text colour) or
+                  //   "solid" (the calendar colour, with its own ink). The month and week canvas cards have it as a prop
+                  //   of their own. The grid gets data-fill (styles.css, "Event fill").
                   // agendaDays: how far the agenda view looks ahead: 7, 14 or 30 days, or "auto" (default, also for older
                   //   screens): Today and Tomorrow, then the next days with events. The display lays every candidate
                   //   day out in a hidden copy of the agenda and keeps the leading day blocks that fit whole, never

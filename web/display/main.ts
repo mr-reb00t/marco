@@ -537,6 +537,9 @@ function applyConfig(raw: DisplayConfig): void {
   // ?pastEvents=dim|soft|full (how faded the events that have ended are, #32)
   const ppe = params.get('pastEvents');
   if (ppe === 'dim' || ppe === 'soft' || ppe === 'full') cfg.calendar.pastEvents = ppe;
+  // ?eventFill=soft|strong|solid (how much the events' background covers what is behind them, #32)
+  const pef = params.get('eventFill');
+  if (pef === 'soft' || pef === 'strong' || pef === 'solid') cfg.calendar.eventFill = pef;
   const pcd = params.get('cards');
   if (pcd === '0' || pcd === '1') cfg.calendar.eventStyle = pcd === '1' ? 'cards' : 'lines';
   // automatic weeks: at most 6 rows, fewer where a layout caps the rows below
