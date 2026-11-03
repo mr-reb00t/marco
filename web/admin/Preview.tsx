@@ -4,6 +4,8 @@ import { Icon } from './components/icons';
 import { t } from './i18n';
 import { draftWidgetPreviews } from './livePreview';
 import { postDraftWeather } from './weatherPreview';
+import { displayValues, useHookValues } from './builder/valuesPreview';
+import { has } from './caps';
 
 /** Tested widget copies already read as Blobs (previewUrl → Blob), so a draft change does not read them again. */
 const widgetBlobs = new Map<string, Promise<Blob | null>>();
@@ -52,6 +54,16 @@ export function Preview({ reloadKey, portrait, onClose, variant, saved, url, ope
       }
     } catch { /* the frame went away */ }
   }, [live, loaded, url, focus]);
+  // a Value widget not saved yet (#34): the server sends a screen only the keys of its saved widgets, so the values
+  // the server has are posted to the frame ('marco:preview-values', valuesFeed.ts), as the builder does for its cards
+  const valueWidgets = has('valueHooks') && Array.isArray((live as { widgets?: { type?: string }[] } | null)?.widgets) && (live as { widgets: { type?: string }[] }).widgets.some((x) => x?.type === 'value');
+  const hookValues = useHookValues(valueWidgets);
+  useEffect(() => {
+    if (!valueWidgets || !hookValues || !loaded || !url) return;
+    try {
+      frame.current?.contentWindow?.postMessage({ type: 'marco:preview-values', values: displayValues(hookValues) }, new URL(url, location.href).origin);
+    } catch { /* the frame went away */ }
+  }, [valueWidgets, hookValues, loaded, url, live]);
   // a test of the widget: the display loads it again
   const lastReload = useRef(reload);
   useEffect(() => {

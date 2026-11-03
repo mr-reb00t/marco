@@ -172,6 +172,25 @@ export function mockConfig(show?: string): DisplayConfig {
     cfg.widgets = [...(cfg.widgets ?? []), ...fx];
     if (fx.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
   }
+  // ?vw=n:place:corner:size,... Value widgets (#34) with the first n (1 to 3) of two car batteries and the solar
+  // panels (place corner|side|full). A 'full' one picks the Widget layout.
+  if (q.get('vw')) {
+    const keys = [
+      { key: 'car.one', label: L('Car 1', 'Coche 1', 'Carro 1'), unit: '', decimals: 0, icon: '🚗' },
+      { key: 'car.two', label: L('Car 2', 'Coche 2', 'Carro 2'), unit: '', decimals: 0, icon: '🚙' },
+      { key: 'solar.today', label: '', unit: '', decimals: 1, icon: '☀️' },
+    ];
+    const vw = q.get('vw')!.split(',').map((spec, i) => {
+      const [n = '1', place = 'corner', corner = 'br', size = 'm'] = spec.split(':');
+      return {
+        id: `w_vw${i}`, type: 'value' as const, name: '', place: place as 'corner' | 'side' | 'full', corner: corner as 'tl' | 'tr' | 'bl' | 'br',
+        size: size as 's' | 'm' | 'l', refreshSec: 0, fit: 'contain' as const, bust: false, src: '', via: 'direct' as const, v: `vw${i}`,
+        value: { items: keys.slice(0, Math.min(3, Math.max(1, Number(n) || 1))), staleAfterMin: 60 },
+      };
+    });
+    cfg.widgets = [...(cfg.widgets ?? []), ...vw];
+    if (vw.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
+  }
   // ?preset=canvas: a Personalizado screen (&shot=<fixture>, web/display/mockCanvas.ts), with the message and the to-do
   // list on so their cards have something to show
   if (q.get('preset') === 'canvas') {
@@ -201,8 +220,14 @@ export function mockConfig(show?: string): DisplayConfig {
     if (show?.todo) cfg.todo.items = show.todo.map((t) => ({ ...t }));
     if (show?.message) cfg.message = { ...show.message };
     if (show?.theme) cfg.screen.theme = show.theme;
-    // the saved widget of its widget items: the demo electricity prices (&demowidget=currency: exchange rates)
-    if (m.canvas.items.some((it) => it.kind === 'widget') && q.get('demowidget') === 'currency') {
+    // the saved widget of its widget items: the demo electricity prices (&demowidget=currency: exchange rates,
+    // &demowidget=value: the two car batteries of ?vw=)
+    if (m.canvas.items.some((it) => it.kind === 'widget') && q.get('demowidget') === 'value') {
+      cfg.widgets = [{
+        id: DEMO_WIDGET, type: 'value', name: '', place: 'canvas', corner: 'br', size: 'm', refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: 'demo',
+        value: { items: [{ key: 'car.one', label: L('Car 1', 'Coche 1', 'Carro 1'), unit: '', decimals: 0, icon: '🚗' }, { key: 'car.two', label: L('Car 2', 'Coche 2', 'Carro 2'), unit: '', decimals: 0, icon: '🚙' }], staleAfterMin: 60 },
+      }];
+    } else if (m.canvas.items.some((it) => it.kind === 'widget') && q.get('demowidget') === 'currency') {
       cfg.widgets = [{
         id: DEMO_WIDGET, type: 'currency', name: '', place: 'canvas', corner: 'br', size: 'm', refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: 'demo',
         currency: { pairs: [{ base: 'EUR', quote: 'HUF' }, { base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' },

@@ -634,7 +634,9 @@ fetch that only reaches those hosts, refuses redirects, caps the size and times 
 numbers out from `server/core/dataFake.js` with the same code. The Currency widget (`config.widgets` type `currency`)
 draws the Divisas card in a corner, the side column or the whole screen (`web/display/widgets/currency.ts`, the same
 adapter) from `GET /api/display/currency`, which reads the same cache entries. Details and limits: docs/API.md, Data
-cards and Exchange rates.
+cards and Exchange rates. The Value widget (type `value`) draws pushed values the same way, in the price widget's glass
+card (`web/display/widgets/values.ts`), from the screen's values feed (`valuesFeed.ts`); `screenValueKeys` in
+`server/core/valuesCore.js` counts the keys of the Value widgets placed on a screen with its cards' keys.
 
 ## Now playing
 

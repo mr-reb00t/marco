@@ -97,15 +97,26 @@ export function parseValues(body, limits = VALUES_LIMITS) {
 
 /**
  * The value keys a screen shows: its Valor cards and the custom cards bound to a key (hidden items left out, and
- * the items in `hiddenIds`).
+ * the items in `hiddenIds`), and the keys of the Value widgets (#34) placed on it (`widgets`: config.widgets): in a
+ * corner, the side column, the whole screen or a Personalizado widget card.
  * Only these keys ever reach a display of that screen.
  */
-export function screenValueKeys(screen, hiddenIds = null) {
+export function screenValueKeys(screen, hiddenIds = null, widgets = null) {
   const keys = new Set();
-  if (screen?.layout?.preset !== 'canvas') return keys;
+  if (!screen) return keys;
+  const defs = Array.isArray(widgets) ? widgets : [];
+  const widget = (id) => {
+    const w = typeof id === 'string' && id ? defs.find((x) => x?.id === id) : null;
+    if (w?.type !== 'value' || !Array.isArray(w.options?.value?.items)) return;
+    for (const x of w.options.value.items) if (typeof x?.key === 'string' && VALUE_KEY_RE.test(x.key)) keys.add(x.key);
+  };
+  if (screen.layout?.preset === 'widget') widget(screen.layout.widgetId);
+  for (const pl of Array.isArray(screen.widgets) ? screen.widgets : []) widget(pl?.widgetId);
+  if (screen.layout?.preset !== 'canvas') return keys;
   for (const it of canvasCards(screen.canvas?.items)) {
     // hidden items, and the ones a condition hides now (`hiddenIds`), get no values (a Rotativa's cards: with it)
     if (it.hidden || hiddenIds?.has(it.id)) continue;
+    if (it.kind === 'widget') widget(it.props?.widgetId);
     if (it.kind === 'value' && typeof it.props?.key === 'string' && VALUE_KEY_RE.test(it.props.key)) keys.add(it.props.key);
     if (it.kind === 'html' && Array.isArray(it.props?.bind)) {
       for (const b of it.props.bind) if (typeof b?.value === 'string' && VALUE_KEY_RE.test(b.value)) keys.add(b.value);

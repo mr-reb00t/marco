@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.32.0] - 2026-11-03
+
+### Added
+- The *Valor* widget (#34): values pushed to `/api/hooks/values` on the Modern and Classic layouts, not only on
+  Personalizado screens. 1 to 6 keys, each with the Valor card's name, unit, decimals and emoji, and *En gris pasados*.
+  One key is drawn large and several as a list, for example `🚗 Car 1  43 %` and `🚙 Car 2  23 %`. It goes in a
+  corner, the side column, the whole screen or a Personalizado widget card, like the other widgets. A screen only
+  receives the keys of the widgets placed on it, and none while it is private.
+
 ## [0.31.0] - 2026-11-03
 
 ### Added

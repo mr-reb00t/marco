@@ -11,6 +11,8 @@ import * as store from '../store.js';
 import { defaultConfig, defaultScreenProfile } from '../core/defaults.js';
 import { canvasDefaults, defaultCanvas, defaultItemStyle } from '../core/canvasCore.js';
 import { parseValues, screenValueKeys, VALUES_LIMITS } from '../core/valuesCore.js';
+import { validateConfig } from '../core/validate.js';
+import { displayWidgets } from '../core/screens.js';
 import { ensurePassword, hashPassword } from '../auth.js';
 import { createApp } from '../app.js';
 import { closeAll } from '../sse.js';
@@ -373,5 +375,91 @@ test('Mostrar solo si on a value: the server says which items to leave out, send
     assert.deepEqual(r.json.hide, []);
     // another screen without conditions: no list at all
     assert.equal('hide' in (await display('/api/display/values', 'hall')).json, false);
+  }, { mutate });
+});
+
+// ---- the Value widget (#34): pushed values on the Modern and Classic layouts, in a corner, the side column, the
+// whole screen or a Personalizado widget card
+
+const valueWidget = (id, keys, extra = {}) => ({
+  id, type: 'value', name: 'Cars',
+  options: { url: '', refreshSec: 0, fit: 'contain', bust: false, value: { items: keys.map((key) => ({ key, label: '', unit: '', decimals: 0, icon: '' })), staleAfterMin: 60, ...extra } },
+});
+
+test('Value widget: checked like the Valor card, 1 to 6 keys, only where the server offers it', () => {
+  const withWidget = (w, opts) => {
+    const c = defaultConfig();
+    c.widgets = [w];
+    return validateConfig(c, opts);
+  };
+  let r = withWidget({ ...valueWidget('w_vals0001', ['tesla.mayalicious', 'tesla.topper']), options: { value: { items: [
+    { key: 'tesla.mayalicious', label: 'Car 1', unit: '%', decimals: 9, icon: '🚗', extra: '<b>' }, { key: 'tesla.topper' },
+  ], staleAfterMin: 30 } } });
+  assert.equal(r.ok, true, JSON.stringify(r.errors));
+  assert.deepEqual(r.value.widgets[0].options.value, { items: [
+    { key: 'tesla.mayalicious', label: 'Car 1', unit: '%', decimals: 3, icon: '🚗' },
+    { key: 'tesla.topper', label: '', unit: '', decimals: 1, icon: '' },
+  ], staleAfterMin: 30 });
+  assert.equal(r.value.widgets[0].options.url, '');
+  for (const [bad, path] of [
+    [{ items: [] }, 'items'],
+    [{ items: [{ key: 'Bad Key' }] }, 'items.0.key'],
+    [{ items: [{ key: '' }] }, 'items.0.key'],
+    [{ items: [{ key: '__proto__' }] }, 'items.0.key'],
+    [{ items: Array.from({ length: 7 }, (_, i) => ({ key: `k${i}` })) }, 'items'],
+    [{ items: 'x' }, 'items'],
+  ]) {
+    r = withWidget({ id: 'w_vals0001', type: 'value', name: '', options: { value: bad } });
+    assert.ok(r.errors.some((e) => e.path === `widgets[0].options.value.${path}`), `${JSON.stringify(bad).slice(0, 60)}: ${JSON.stringify(r.errors)}`);
+  }
+  // a server without it (widgetTypes) refuses it
+  r = withWidget(valueWidget('w_vals0001', ['a']), { widgetTypes: ['image', 'prices', 'currency'] });
+  assert.ok(r.errors.some((e) => e.path === 'widgets[0].type'), JSON.stringify(r.errors));
+});
+
+test('Value widget: a screen gets the keys of the widgets placed on it, wherever they are, and no others', () => {
+  const widgets = [valueWidget('w_vals0001', ['car.one', 'car.two']), valueWidget('w_vals0002', ['solar']), valueWidget('w_vals0003', ['secret'])];
+  const side = { layout: { preset: 'bigCalendar' }, widgets: [{ widgetId: 'w_vals0001', place: 'side', corner: 'br', size: 'm' }] };
+  assert.deepEqual([...screenValueKeys(side, null, widgets)].sort(), ['car.one', 'car.two']);
+  // without the widgets list (an older caller): none
+  assert.equal(screenValueKeys(side).size, 0);
+  // the whole screen (the Widget layout), and a Personalizado widget card next to its Valor cards
+  assert.deepEqual([...screenValueKeys({ layout: { preset: 'widget', widgetId: 'w_vals0002' } }, null, widgets)], ['solar']);
+  const canvas = { layout: { preset: 'canvas' }, canvas: { items: [
+    { id: 'a', kind: 'value', props: { key: 'washer' } }, { id: 'b', kind: 'widget', props: { widgetId: 'w_vals0002' } },
+    { id: 'c', kind: 'widget', props: { widgetId: 'w_vals0003' }, hidden: true },
+  ] } };
+  assert.deepEqual([...screenValueKeys(canvas, null, widgets)].sort(), ['solar', 'washer']);
+  // what the display gets: the widget's keys and options, no address
+  const out = displayWidgets({ widgets }, side);
+  assert.deepEqual(out.map((w) => [w.type, w.place, w.src]), [['value', 'side', '']]);
+  assert.deepEqual(out[0].value.items.map((x) => x.key), ['car.one', 'car.two']);
+});
+
+test('Value widget: GET /api/display/values sends a Modern screen the keys of its widget, the admin lists where they show', async () => {
+  const mutate = (c) => {
+    c.widgets = [valueWidget('w_vals0001', ['car.one', 'car.two']), valueWidget('w_vals0002', ['secret.key'])];
+    const hall = c.screens.find((s) => s.id === 's_hall');
+    hall.layout.preset = 'bigCalendar';
+    hall.widgets = [{ widgetId: 'w_vals0001', place: 'side', corner: 'br', size: 'm' }];
+  };
+  await withApp(async ({ hook, display }) => {
+    VALUES_TIMING.windowMs = 0;
+    let r = await hook('POST', '/values', { body: { values: [{ key: 'car.one', value: 43, unit: '%' }, { key: 'secret.key', value: 'x' }, { key: 'garage', value: true }] } });
+    assert.equal(r.status, 200, r.text);
+    r = await display('/api/display/values', 'hall');
+    // the hall is no longer Personalizado: its Valor card's key goes, the widget's come; never the unplaced widget's
+    assert.deepEqual(Object.keys(r.json.values).sort(), ['car.one', 'car.two']);
+    assert.deepEqual({ ...r.json.values['car.one'], at: 0 }, { v: 43, u: '%', at: 0 });
+    assert.equal(r.json.values['car.two'], null);
+    assert.ok(!('car.one' in (await display('/api/display/values')).json.values), 'not on the main screen');
+    // the display config carries the widget (its keys and options)
+    r = await display('/api/display/config', 'hall');
+    const w = r.json.widgets.find((x) => x.id === 'w_vals0001');
+    assert.equal(w.type, 'value');
+    assert.deepEqual(w.value.items.map((x) => x.key), ['car.one', 'car.two']);
+    r = await hook('GET', '/values');
+    assert.deepEqual(r.json.values.find((v) => v.key === 'car.one').screens, ['hall']);
+    assert.deepEqual(r.json.values.find((v) => v.key === 'secret.key').screens, []);
   }, { mutate });
 });

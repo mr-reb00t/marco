@@ -108,7 +108,7 @@ export type PlannerBar = 'side' | 'top' | 'bottom';
 
 // ---- Widgets (server/validate.js sanitizeWidget, server/screens.js displayWidgets) ----
 
-export type WidgetType = 'image' | 'web' | 'prices' | 'currency';
+export type WidgetType = 'image' | 'web' | 'prices' | 'currency' | 'value';
 export type WidgetPlace = 'corner' | 'side';
 export type WidgetSize = 's' | 'm' | 'l';
 export type WidgetFit = 'contain' | 'cover';
@@ -124,6 +124,27 @@ export interface WidgetOptions {
   prices?: PriceWidgetOptions;
   /** type 'currency' only (its url is empty) */
   currency?: CurrencyOptions;
+  /** type 'value' only (its url is empty) */
+  value?: ValueWidgetOptions;
+}
+/** One key of a Value widget: the Valor card's options (server/core/canvasCore.js CANVAS_KINDS.value). */
+export interface ValueWidgetItem {
+  /** a key pushed by POST /api/hooks/values (a-z, 0-9, _ . -) */
+  key: string;
+  /** '' = the label sent with the value, else the key */
+  label: string;
+  /** '' = the unit sent with the value */
+  unit: string;
+  /** 0 .. 3 */
+  decimals: number;
+  /** an emoji, or '' */
+  icon: string;
+}
+/** A Value widget (#34): 1 to 6 pushed values as a list (server/core/validate.js sanitizeValueOptions). */
+export interface ValueWidgetOptions {
+  items: ValueWidgetItem[];
+  /** minutes after which a value is greyed, 0 = never */
+  staleAfterMin: number;
 }
 /** Exchange rates (the Divisas card's props and the Currency widget's options; server/core/canvasCore.js currencyProps). */
 export interface CurrencyOptions {
@@ -244,6 +265,8 @@ export interface DisplayWidget {
   prices?: PriceWidgetOptions;
   /** type 'currency': what to draw (the display fetches /api/display/currency?pairs=) */
   currency?: CurrencyOptions;
+  /** type 'value': what to draw (the display reads its screen's values feed, GET /api/display/values) */
+  value?: ValueWidgetOptions;
 }
 /** POST /api/admin/test/widget { type, url } */
 export interface TestWidgetResponse {

@@ -131,6 +131,8 @@ export const DEMO_MORE: Record<string, [string, string, string]> = {
   'City Herald': ['Stadsblad', 'Byavisen', 'Gazeta Miejska'],
   'Trip to Madeira': ['Reis naar Madeira', 'Rejse til Madeira', 'Wyjazd na Maderę'],
   'Halloween party': ['Halloweenfeest', 'Halloweenfest', 'Impreza halloweenowa'],
+  'Car 1': ['Auto 1', 'Bil 1', 'Auto 1'],
+  'Car 2': ['Auto 2', 'Bil 2', 'Auto 2'],
   'Christmas': ['Kerst', 'Jul', 'Boże Narodzenie'],
   'The washing machine is done': ['De wasmachine is klaar', 'Vaskemaskinen er færdig', 'Pralka skończyła'],
   'Time to hang the laundry': ['De was kan opgehangen worden', 'Tøjet kan hænges op', 'Czas rozwiesić pranie'],

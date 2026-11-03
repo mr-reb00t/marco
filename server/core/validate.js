@@ -2,7 +2,7 @@
 // invalid values produce errors (PUT /api/admin/config answers 400 with the list).
 import {
   defaultConfig, defaultScreenProfile, CONFIG_VERSION, RESERVED_SOURCE_IDS, SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS,
-  WIDGET_TYPES, WIDGET_REFRESH_SEC, WEB_WIDGET_REFRESH_SEC, MAX_WIDGETS, MAX_SCREEN_WIDGETS, WIDGET_PLACES, WIDGET_SIZES, WIDGET_FITS, WIDGET_PREFIX,
+  WIDGET_TYPES, MAX_VALUE_WIDGET_KEYS, WIDGET_REFRESH_SEC, WEB_WIDGET_REFRESH_SEC, MAX_WIDGETS, MAX_SCREEN_WIDGETS, WIDGET_PLACES, WIDGET_SIZES, WIDGET_FITS, WIDGET_PREFIX,
 } from './defaults.js';
 import { isValidTimeZone } from './lib/tz.js';
 import { randomId, fold } from './lib/text.js';
@@ -19,7 +19,7 @@ import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
-import { currencyProps, EVENT_FILLS, GRID_LINES, nowPlayingAccountOf, PAST_EVENTS, sanitizeCanvas } from './canvasCore.js';
+import { CANVAS_KINDS, currencyProps, EVENT_FILLS, GRID_LINES, nowPlayingAccountOf, PAST_EVENTS, sanitizeCanvas } from './canvasCore.js';
 import { sanitizeBackgroundRules } from './bgRules.js';
 import { migrateOverlay, overlaysBytes, sanitizeDecoration, sanitizeOverlays } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
@@ -522,6 +522,16 @@ function sanitizeWidget(ctx, p, x, seen, opts) {
       options: { url: '', refreshSec: 0, fit: 'contain', bust: false, currency: cur },
     };
   }
+  if (type === 'value') {
+    // values pushed by POST /api/hooks/values (#34): the Valor card's options for each key, the screens it is placed
+    // on get only these keys (core/valuesCore.js screenValueKeys)
+    return {
+      id: id(ctx, `${p}.id`, typeof x.id === 'string' && x.id.startsWith(WIDGET_PREFIX) ? x.id : undefined, WIDGET_PREFIX, seen),
+      type,
+      name: str(ctx, `${p}.name`, x.name, '', 60).trim() || 'Widget',
+      options: { url: '', refreshSec: 0, fit: 'contain', bust: false, value: sanitizeValueOptions(ctx, `${p}.options.value`, o.value) },
+    };
+  }
   let url = str(ctx, `${p}.options.url`, o.url, '', 2048).trim();
   if (!url) ctx.err(`${p}.options.url`, 'URL required');
   else {
@@ -546,6 +556,23 @@ function sanitizeWidget(ctx, p, x, seen, opts) {
       bust: bool(ctx, `${p}.options.bust`, o.bust, true),
     },
   };
+}
+
+/** Options of a Value widget (#34): its keys, each with the Valor card's label, unit, decimals and emoji, and when they grey. */
+function sanitizeValueOptions(ctx, p, v) {
+  const o = obj(ctx, p, v);
+  const raw = Array.isArray(o.items) ? o.items : [];
+  if (!Array.isArray(o.items) && o.items !== undefined) ctx.err(`${p}.items`, 'expected array');
+  if (raw.length > MAX_VALUE_WIDGET_KEYS) ctx.err(`${p}.items`, `at most ${MAX_VALUE_WIDGET_KEYS}`);
+  const items = [];
+  raw.slice(0, MAX_VALUE_WIDGET_KEYS).forEach((x, i) => {
+    if (!isObj(x)) return ctx.err(`${p}.items.${i}`, 'expected object');
+    const { key, label, unit, decimals, icon } = CANVAS_KINDS.value.props(ctx, `${p}.items.${i}`, x);
+    if (!key) return ctx.err(`${p}.items.${i}.key`, 'key required');
+    items.push({ key, label, unit, decimals, icon });
+  });
+  if (!items.length && !raw.length) ctx.err(`${p}.items`, 'at least one key');
+  return { items, staleAfterMin: num(ctx, `${p}.staleAfterMin`, o.staleAfterMin, 60, 0, 1440) };
 }
 
 /** Options of an electricity price widget (server/core/pricesCore.js). */

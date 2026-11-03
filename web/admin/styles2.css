@@ -5794,6 +5794,10 @@ button.immich-album:hover {
 .chip--link { cursor: pointer; border: 0; font: inherit; font-size: 12.5px; }
 .chip--link:hover { background: color-mix(in srgb, var(--accent) 25%, transparent); }
 .widget-more { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; }
+/* the Value widget's keys (sections/ValueWidget.tsx): one framed block per key */
+.value-widget-item { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; }
+.value-widget-item__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; }
+.value-widget-add { align-self: flex-start; }
 .widget-row {
   display: grid;
   grid-template-columns: minmax(140px, 1.4fr) auto auto auto auto;

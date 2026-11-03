@@ -2086,6 +2086,30 @@ html.widget-only.theme-light .pw--side { --pw-bg: rgb(20 24 32 / 0.9) !important
 /* the card says itself how old its numbers are ("Actualizado hace…") */
 .uw-currency .uw-pill { display: none; }
 
+/* The Value widget (widgets/values.ts, #34): the price widget's glass card (.pw) with pushed values in it. One key:
+   its name, the number large and "hace 5 min"; several: a row each, the name on the left and the value on the right.
+   Sizes in em of the card's text size (--pk); an old value (staleAfterMin) is greyed. */
+.uw-value .uw-pill { display: none; }
+.pw.vw { gap: 0.35em; min-width: calc(var(--pk) * 15rem); justify-content: center; }
+.pw.vw.pw--full { gap: 0.4em; }
+.vw-head, .vw-who { display: flex; align-items: center; gap: 0.45em; min-width: 0; color: var(--pw-ink-2); font-weight: 600; }
+.vw-icon { flex: none; font-family: var(--font-emoji); }
+.vw-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vw-num { display: flex; align-items: baseline; gap: 0.22em; min-width: 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.vw-num b { font-weight: 600; }
+.vw-unit { color: var(--pw-ink-2); font-weight: 600; }
+.vw--one .vw-num b { font-size: 3.4em; font-weight: 300; line-height: 1; letter-spacing: -0.03em; }
+.vw--one .vw-num b.is-text { font-size: 2.2em; font-weight: 500; letter-spacing: 0; }
+.vw--one .vw-unit { font-size: 1.5em; }
+.vw-note { color: var(--pw-ink-3); font-size: 0.8em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vw-list { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; gap: 0.5em; }
+.vw-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 1em; }
+.vw-row .vw-who { font-size: 1.1em; }
+.vw-row .vw-num b { font-size: 1.5em; }
+.vw-row .vw-num b.is-text { font-size: 1.1em; }
+.vw.is-stale .vw-num, .vw-row.is-stale .vw-num { opacity: 0.45; }
+.style-modern .vw--one .vw-num b { font-weight: 300; letter-spacing: -0.04em; }
+
 /* Microsoft To Do tasks (widgets/extras.ts todoMetaHtml, todoTaps.ts): due day, importance, rows a touch screen ticks */
 .todo li .td-due, .bd-task .td-due, .kf-task .td-due { margin-left: auto; flex: none; font-size: 0.7em; opacity: 0.7; white-space: nowrap; }
 .todo li .td-due.late, .bd-task .td-due.late, .kf-task .td-due.late { color: #ff8a7a; opacity: 1; }

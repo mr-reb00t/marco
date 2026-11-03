@@ -4,6 +4,7 @@ import type { AppConfig, CalendarSource, IconRule, SourceKind, StoredConfig } fr
 import { findKeyword } from '../../server/lib/keywords.js';
 import { MAX_SURCHARGE, MAX_VAT, MIN_SURCHARGE, priceZone } from '../../server/core/pricesCore.js';
 import { gridCompany, MAX_BAND_PRICE, MIN_BAND_PRICE } from '../../server/core/tariffsCore.js';
+import { VALUE_KEY_RE } from '../../server/core/canvasCore.js';
 import { caps as currentCaps, hasFeature, limitOf, type Caps, type LimitName } from './caps';
 
 export const uid = (prefix: string) =>
@@ -364,6 +365,15 @@ export function validateGlobal(c: StoredConfig): Errors {
       const o = w.options.currency;
       if (!o?.pairs?.length) e[`${p}.pairs`] = 'Añade al menos un par';
       else if (o.pairs.some((x) => x.base === x.quote)) e[`${p}.pairs`] = 'Elige dos monedas distintas.';
+      continue;
+    }
+    if (w.type === 'value') {
+      // the keys of a Value widget (#34): each one written, and a key the server accepts
+      const items = w.options.value?.items ?? [];
+      if (!items.length) e[`${p}.items`] = 'Añade al menos un valor';
+      else if (items.some((x) => !x.key)) e[`${p}.items`] = 'Escribe la clave de cada valor';
+      else if (items.some((x) => !VALUE_KEY_RE.test(x.key))) e[`${p}.items`] = 'Solo letras minúsculas sin acentos, números y los signos _ . -';
+      if (!hasFeature(wcaps, 'valueHooks')) e[`${p}.type`] = 'No disponible aquí';
       continue;
     }
     const bad = widgetUrlProblem(w.options.url, wcaps.edition === 'cloud');

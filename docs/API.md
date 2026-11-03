@@ -99,7 +99,7 @@ saved without `security` (old admin builds, backups or exports from before 0.3) 
 | `GET /api/display/ha/art/<itemId>` | The cover art of a media item: fetched only from Home Assistant's own `/api/media_player_proxy/<entity>` (an absolute `entity_picture` on another host is never fetched), JPEG, PNG, WebP or GIF up to 1 MB, cached 5 min, `Cache-Control: private, no-store`. Home network only by default, like the camera pictures (`403 { error: "lan_only" }`). `404 { error: "no_art" }`, `403`, `502` as above |
 | `GET /api/display/ha/camera/<itemId>?n=` | One picture of a Cámara card, through Home Assistant's own `/api/camera_proxy/<entity>` (built from the card's camera entity, never from an `entity_picture`). One picture per camera is shared by every screen (and the doorbell) for 500 ms, and requests that arrive together share one fetch. JPEG, PNG, WebP or GIF up to 4 MB only, `Cache-Control: private, no-store`, `X-Content-Type-Options: nosniff`. `403 { error: "lan_only" }` for a request that does not come straight from the home network (see *Cameras* under Home Assistant), `404` for an item that is not a camera of this screen, `404 { error: "hidden" }` while its `showWhen` sensor is off, `403 { error: "private" }`, `503 { error: "ha_off" }`, `502 { error: "camera_unavailable" }` |
 | `GET /api/display/ha/camera/<itemId>/live` | The live picture of a Cámara card set to *En directo*: `multipart/x-mixed-replace; boundary=marcoframe`, each part with its `Content-Type` and `Content-Length`. The same rules as a picture, plus: never for an admin session (`403 { error: "preview" }`), `404 { error: "not_live" }` for a card that is not live, `503 { error: "busy" }` when the server already streams 4 cameras or has 8 viewers, or when this display already has 2 live pictures open. Ends after 10 minutes (the display opens it again), when the camera stops sending for 15 s, or as soon as the card may not show it any more |
-| `GET /api/display/values?screen=` | `ValuesSnapshot` of the values pushed by `POST /api/hooks/values` that this screen shows: `{ rev, full: true, screenId, values: { <key>: { v, u?, l?, at } \| null } }`. Only the keys of its Valor cards and of custom cards bound to a key (hidden items left out); `null` when the server has no value for a key. `v` is a number, a string or `true`/`false`, `u` the unit, `l` the label, `at` when it was stored (ms). `{}` while the screen is private. `Cache-Control: no-store`. Displays on the poll channel ask every 30 s while such a card is on screen and the page is visible |
+| `GET /api/display/values?screen=` | `ValuesSnapshot` of the values pushed by `POST /api/hooks/values` that this screen shows: `{ rev, full: true, screenId, values: { <key>: { v, u?, l?, at } \| null } }`. Only the keys of its Valor cards, of custom cards bound to a key (hidden items left out) and of the Value widgets placed on it; `null` when the server has no value for a key. `v` is a number, a string or `true`/`false`, `u` the unit, `l` the label, `at` when it was stored (ms). `{}` while the screen is private. `Cache-Control: no-store`. Displays on the poll channel ask every 30 s while such a card is on screen and the page is visible |
 | `GET /api/display/data?screen=` | `{ items: { <itemId>: DataItemData } }`: the numbers of this screen's data cards (Cripto, Deportes, Bolsa, Divisas; see [Data cards](#data-cards)), worked out from this server's cache, never fetched by the display. Hidden items and items a condition hides now are left out. `403 { error: 'private' }` while the screen is private. `Cache-Control: no-store`. Displays ask every minute while such a card is on screen and the page is visible |
 | `GET /api/display/currency?pairs=EUR-HUF,USD-MXN&range=&chart=&screen=` | `CurrencyData` for a Currency widget (see [Exchange rates](#exchange-rates)): 1 to 6 pairs of ISO codes, `range` `7d` \| `30d` \| `1y`, `chart` `area` \| `line` \| `none`. `400 { error: 'invalid_pairs' }` without a valid pair, `403 { error: 'private' }` while the screen is private. `Cache-Control: no-store` |
 | `GET /api/display/data/crest/<token>` | A team crest a data answer named by token (PNG, JPEG or WebP, 256 KB at most, `Cache-Control: private, max-age=86400`, `nosniff`), fetched by this server from ESPN's image host and kept a day. `404` for a token the server never handed out; `403` while the screen is private |
@@ -118,7 +118,7 @@ The admin and the display read these fields to decide which sections, actions an
   `passwordLogin`, `apiTokens`, `webhooks`, `backups`, `importExport`, `includeSecrets`, `activity`, `setupWizard`,
   `status`, `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`,
   `carousels`, `immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings`,
-  `screenBuilder`, `valueHooks` (`/api/hooks/values` and the Valor card), `tokenScopes` (scopes on API tokens),
+  `screenBuilder`, `valueHooks` (`/api/hooks/values`, the Valor card and the Value widget), `tokenScopes` (scopes on API tokens),
   `stockQuotes` (the Bolsa card can get quotes; Marco Cloud only when the service has a Finnhub key), `familyAccess`
   (each person's own phone dashboard, see "Family access"), `spotify` ("now playing" with the household's own Spotify
   app, see [Now playing](#now-playing)). A self-hosted server turns all of them on, except
@@ -234,7 +234,7 @@ calendar's.
 | `family` | `{ rev }` | Familia changed: a routine ticked (phone, TV or admin), stars, a reward, an import, a new or removed family link. Displays with a kids layout ask for `GET /api/display/family` again |
 | `access-code` | `{ id, code, name, expiresAt, url }` or `{ clear: true, id, expiresAt }` | the admin asked to show a family access code on this screen: the display draws the code, the person's name and a QR code of `<url>#code=<code>` (`url` is `…/my?lang=<household language>`) until `expiresAt` (two minutes). `clear` takes the code with that `id` down early (used, replaced, person removed). Never a token, and only sent to displays in with a screen key, a device token or the admin session (never in open display access mode) |
 | `ha` | `HaSnapshot` | Home Assistant states of a Personalizado screen: the full snapshot when the stream opens and when the connection to Home Assistant changes (`full: true`), then only the aliases that changed (`full: false`), at most one event a second per screen, aimed at that screen (`screenId`). Not sent on the poll channel |
-| `values` | `ValuesSnapshot` | Pushed values of a Personalizado screen: the snapshot when the stream opens (`full: true`, only for a screen that shows a key), then the keys that changed (`full: false`, `null` for a key that was cleared), at most one event a second, only to the screens that show those keys and never while one is private. Not sent on the poll channel |
+| `values` | `ValuesSnapshot` | Pushed values of a screen (its Valor cards and Value widgets): the snapshot when the stream opens (`full: true`, only for a screen that shows a key), then the keys that changed (`full: false`, `null` for a key that was cleared), at most one event a second, only to the screens that show those keys and never while one is private. Not sent on the poll channel |
 | `ping` | `{ t }` | every 25 s |
 | `revoked` | `{ code: "invalid_key" \| "key_required" }` | the link was regenerated or replaced by an import, the device revoked or dropped by an import, the screen deleted, display access switched to private for a keyless display, or (`key_required`) the admin session a stream was opened with ended (logout, logout everywhere, password change); the server then closes the stream. Every stream's credential is re-checked after config saves, imports, session revocation and on each heartbeat |
 
@@ -534,8 +534,8 @@ as `token.scopes`.
 
 ### Pushed values (Valor)
 
-`POST /api/hooks/values` feeds the Valor card of Personalizado screens (and custom HTML cards bound to a key): energy
-from the solar panels, the washing machine's state, anything another system knows.
+`POST /api/hooks/values` feeds the Valor card of Personalizado screens (and custom HTML cards bound to a key) and the
+Value widget of any layout: energy from the solar panels, the washing machine's state, anything another system knows.
 
 - `key`: 1 to 40 characters `a-z 0-9 _ . -`. `value`: a number, a string of at most 120 characters, or `true` /
   `false`. `unit` (16 characters) and `label` (40) are optional; when an update leaves them out the last ones are
@@ -554,6 +554,11 @@ from the solar panels, the washing machine's state, anything another system know
 - On the card: the value with the item's decimals, its unit (the item's, else the one sent), *hace 5 min* under it, and
   grey once it is older than the item's *En gris pasados* (`staleAfterMin`, 0 = never). *Esperando datos* until the
   screen has asked, *Sin datos* when there is no value for the key.
+- The Value widget (`config.widgets` type `value`, `valueHooks`): `options.value = { items: [{ key, label, unit,
+  decimals, icon }], staleAfterMin }`, 1 to 6 keys, each with the Valor card's options. Placed in a corner, the side
+  column, the whole screen (the `widget` layout) or a Personalizado widget card: one key is drawn as the card is,
+  several as a list, one row each. A screen gets the keys of the Value widgets placed on it, as it does for its cards;
+  an unplaced widget sends nothing anywhere.
 
 In Home Assistant, one `rest_command` and one automation send every key together. *API & webhooks → Conectar desde
 Home Assistant* writes them for the keys and entities you pick:
@@ -636,9 +641,9 @@ never match a screen id; a saved id that does not follow this gets a new one.
 Images (and, on a server with `webWidgets`, web pages) the owner puts on screens. Saved with the config
 (`PUT /api/admin/config`), no endpoint of its own except the test.
 
-- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency', name, options: { url, refreshSec,
-  fit: 'contain' | 'cover', bust, prices?, currency? } }`, at most 20 (`prices`: [Electricity prices](#electricity-prices),
-  `currency`: [Exchange rates](#exchange-rates)). `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
+- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency' | 'value', name, options: { url, refreshSec,
+  fit: 'contain' | 'cover', bust, prices?, currency?, value? } }`, at most 20 (`prices`: [Electricity prices](#electricity-prices),
+  `currency`: [Exchange rates](#exchange-rates), `value`: [Pushed values](#pushed-values-valor)). `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
   angle brackets, backslashes or control characters) and is stored normalised. Image refresh: 1, 10, 30 s, 1, 5,
   15 min, 1, 6, 24 h (default 15 min); web: 0 (never reload, the default) or 30 s to 24 h. `bust` (images, default
   on) adds `_marco=<time>` to the address at every reload, for servers that send long cache times.

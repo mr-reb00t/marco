@@ -78,6 +78,7 @@ import { ScreenDecor } from './widgets/decor';
 import { Canvas, sidebarSide } from './widgets/canvas';
 import { HaFeed } from './haFeed';
 import { ValuesFeed } from './valuesFeed';
+import { setValueSource, valueWidgetsChanged } from './widgets/values';
 import { DataFeed } from './dataFeed';
 import { DEMO_NOW_PLAYING_ACCOUNT, demoNowPlaying, NowPlayingFeed } from './nowPlayingFeed';
 import { NowPlayingLine } from './widgets/nowPlayingLine';
@@ -166,9 +167,13 @@ const haFeed = new HaFeed(() => {
   syncHaTouch();
   canvasView.onData('ha');
 });
-// values pushed by POST /api/hooks/values for the Valor cards (valuesFeed.ts): the SSE `values` event, asked for on
-// changes and every 30 s on the poll channel
-const valuesFeed = new ValuesFeed(() => canvasView.onData('values'));
+// values pushed by POST /api/hooks/values for the Valor cards and the Value widgets (valuesFeed.ts): the SSE `values`
+// event, asked for on changes and every 30 s on the poll channel
+const valuesFeed = new ValuesFeed(() => {
+  canvasView.onData('values');
+  valueWidgetsChanged();
+});
+setValueSource(valuesFeed);
 // numbers of the data cards (market, sports, stocks; dataFeed.ts): asked of this server every minute while one shows
 const dataFeed = new DataFeed(() => canvasView.onData('data'));
 // what the linked Spotify accounts play (nowPlayingFeed.ts): the Sonando ahora cards and the line under the clock,

@@ -86,6 +86,28 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Hvor meget dem, der er slut, tones ned.',
     'Jak bardzo przygasają te, które już się skończyły.',
   ],
+  // the Value widget (#34)
+  ['Valor {n}', 'Value {n}', 'Valor {n}', 'Waarde {n}', 'Værdi {n}', 'Wartość {n}'],
+  ['Añadir otro valor', 'Add another value', 'Adicionar outro valor', 'Nog een waarde toevoegen', 'Tilføj en værdi mere', 'Dodaj kolejną wartość'],
+  ['Baterías de los coches', 'Car batteries', 'Baterias dos carros', 'Accu van de auto’s', 'Bilernes batterier', 'Baterie samochodów'],
+  ['Añade al menos un valor', 'Add at least one value', 'Adiciona pelo menos um valor', 'Voeg minstens één waarde toe', 'Tilføj mindst én værdi', 'Dodaj co najmniej jedną wartość'],
+  ['Escribe la clave de cada valor', 'Type the key of each value', 'Escreve a chave de cada valor', 'Vul de sleutel van elke waarde in', 'Skriv nøglen til hver værdi', 'Wpisz klucz każdej wartości'],
+  [
+    'Un valor que no se ha actualizado en ese tiempo sale en gris. 0: nunca.',
+    'A value not updated for that long is greyed out. 0: never.',
+    'Um valor que não é atualizado nesse tempo fica a cinzento. 0: nunca.',
+    'Een waarde die zo lang niet is bijgewerkt, wordt grijs. 0: nooit.',
+    'En værdi, der ikke er opdateret så længe, bliver grå. 0: aldrig.',
+    'Wartość, która tak długo się nie zmieniła, robi się szara. 0: nigdy.',
+  ],
+  [
+    'Números que Home Assistant u otro programa envía a Marco: la batería del coche, la producción solar. Uno en grande, o varios en lista.',
+    'Numbers Home Assistant or another program sends to Marco: the car battery, the solar output. One large, or several as a list.',
+    'Números que o Home Assistant ou outro programa envia ao Marco: a bateria do carro, a produção solar. Um em grande, ou vários em lista.',
+    'Getallen die Home Assistant of een ander programma naar Marco stuurt: de accu van de auto, de zonnepanelen. Eén groot, of meerdere in een lijst.',
+    'Tal, som Home Assistant eller et andet program sender til Marco: bilens batteri, solcellerne. Ét stort, eller flere i en liste.',
+    'Liczby, które Home Assistant lub inny program wysyła do Marco: bateria samochodu, produkcja z paneli. Jedna duża albo kilka na liście.',
+  ],
   // how much the events' background covers what is behind them (#32)
   ['Fondo de los eventos', 'Event background', 'Fundo dos eventos', 'Achtergrond van afspraken', 'Baggrund for begivenheder', 'Tło wydarzeń'],
   ['Suave', 'Soft', 'Suave', 'Zacht', 'Blød', 'Delikatne'],

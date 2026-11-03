@@ -35,7 +35,7 @@ export const NAV_ITEMS: NavMeta[] = [
   { id: 'countdowns', label: 'Cuentas atrás', icon: 'hourglass', group: 'Contenido', enabled: (c) => c.countdowns.enabled },
   { id: 'weather', label: 'Tiempo', icon: 'cloud', group: 'Contenido', enabled: (c) => c.weather.enabled },
   { id: 'news', label: 'Noticias', icon: 'news', group: 'Contenido', feature: 'news', enabled: (c) => c.news.enabled },
-  { id: 'widgets', label: 'Widgets', icon: 'widget', group: 'Contenido', feature: 'widgets', keywords: 'imagen image imagem iframe web embed incrustar tarjeta card cartão precios prices preços url dashboard' },
+  { id: 'widgets', label: 'Widgets', icon: 'widget', group: 'Contenido', feature: 'widgets', keywords: 'imagen image imagem iframe web embed incrustar tarjeta card cartão precios prices preços divisas currency valor value valores values batería battery url dashboard' },
   { id: 'todo', label: 'Tareas', icon: 'checklist', group: 'Contenido', enabled: (c) => c.todo.enabled },
   { id: 'family', label: 'Familia', icon: 'users', group: 'Contenido', feature: 'family', enabled: (c) => c.family?.enabled === true, keywords: 'niños kids rutinas routines tareas chores premios rewards puntos estrellas stars família crianças rotinas prémios estrelas' },
   { id: 'meals', label: 'Menús', icon: 'utensils', group: 'Contenido', feature: 'family', enabled: (c) => c.family?.enabled === true && c.family.meals.enabled, keywords: 'comidas meals menú semanal ementa refeições cena desayuno dinner breakfast lunch jantar almoço' },

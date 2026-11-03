@@ -730,8 +730,12 @@ export function demoValues(cfg: DisplayConfig | null): Record<string, DisplayVal
     co2: { v: 612, u: 'ppm', at: now - 2 * 60_000 },
     'grid.power': { v: -1.84, u: 'kW', l: 'Red eléctrica', at: now - 60_000 },
     'home.battery': { v: 76, u: '%', l: 'Batería de casa', at: now - 6 * 60_000 },
+    // two car batteries (the Value widget of ?vw=, #34): the second one not heard from for two hours
+    'car.one': { v: 43, u: '%', at: now - 3 * 60_000 },
+    'car.two': { v: 23, u: '%', at: now - 2 * 3600_000 },
   };
   const keys = new Set<string>();
+  for (const w of cfg?.widgets ?? []) if (w.type === 'value') for (const x of w.value?.items ?? []) keys.add(x.key);
   for (const it of canvasCards(cfg?.canvas?.items)) {
     const p = it.props as { key?: string; bind?: { value?: string }[] };
     if (it.kind === 'value' && p.key) keys.add(p.key);

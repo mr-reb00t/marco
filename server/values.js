@@ -77,7 +77,7 @@ export function screenValues(cfg, screen, only = null, hidden = hiddenItems(cfg,
   load();
   const out = {};
   if (!screen || screenPrivacy(cfg, screen).active) return out;
-  for (const k of screenValueKeys(screen, hidden)) {
+  for (const k of screenValueKeys(screen, hidden, cfg.widgets)) {
     if (only && !only.has(k)) continue;
     const rec = values.get(k);
     out[k] = rec ? displayValue(rec) : null;
@@ -99,7 +99,7 @@ onConditionChange((ids, src) => {
   const cfg = getConfig();
   for (const id of ids) {
     const screen = cfg.screens?.find((s) => s.id === id);
-    if (screen && (screenValueKeys(screen).size || conditionKeys(screen).size)) broadcast('values', valuesSnapshot(cfg, screen), { screenIds: [screen.id] });
+    if (screen && (screenValueKeys(screen, null, cfg.widgets).size || conditionKeys(screen).size)) broadcast('values', valuesSnapshot(cfg, screen), { screenIds: [screen.id] });
   }
 });
 
@@ -127,7 +127,7 @@ function flushEvents() {
       broadcast('values', valuesSnapshot(cfg, screen), { screenIds: [screen.id] });
       continue;
     }
-    const used = screenValueKeys(screen);
+    const used = screenValueKeys(screen, null, cfg.widgets);
     if (![...keys].some((k) => used.has(k))) continue;
     const vals = screenValues(cfg, screen, keys);
     if (!Object.keys(vals).length) continue;
@@ -144,7 +144,7 @@ export function valuesStreamHello(client) {
   const ids = client.memberIds?.length ? client.memberIds : [client.screenId];
   for (const id of ids) {
     const screen = cfg.screens.find((x) => x.id === id);
-    if (screen && (screenValueKeys(screen).size || hasConditions(screen))) send(client, 'values', valuesSnapshot(cfg, screen));
+    if (screen && (screenValueKeys(screen, null, cfg.widgets).size || hasConditions(screen))) send(client, 'values', valuesSnapshot(cfg, screen));
   }
 }
 
@@ -224,7 +224,7 @@ export function deleteValue(key) {
 export function listValues(cfg = getConfig()) {
   load();
   const used = new Map();
-  for (const s of cfg.screens ?? []) for (const k of screenValueKeys(s)) used.set(k, [...(used.get(k) ?? []), s.slug || s.id]);
+  for (const s of cfg.screens ?? []) for (const k of screenValueKeys(s, null, cfg.widgets)) used.set(k, [...(used.get(k) ?? []), s.slug || s.id]);
   return [...values.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, r]) => ({
     key, value: r.value, ...(r.unit ? { unit: r.unit } : {}), ...(r.label ? { label: r.label } : {}),
     updatedAt: new Date(r.at).toISOString(), screens: used.get(key) ?? [],
