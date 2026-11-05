@@ -27,7 +27,7 @@ import {
   authHeaders, clearDeviceToken, clientId, credential, credentialKind, getActiveScreen, isPreview, isWidgetOnly, screenKey, screenNs, setActiveScreen, storedDeviceToken, withScreen,
 } from './identity';
 import { CarouselController, emptyBundle, type Bundle, type BundlePart } from './carousel';
-import { NavIdle, planNav, swipeDir, type NavMemo } from './nav';
+import { CarouselGesture, carouselTouch, GESTURE_SKIP, HOLD_MS, NavIdle, PRESS_RING_DELAY_MS, planNav, type CarouselTouch, type NavMemo } from './nav';
 import type { NavProgress, NavSource } from './widgets/canvas/types';
 import { ScreenSwitcher, type SwitchGL } from './screenSwitch';
 import { isArmDesktop, isArmLinuxUA, isLowPower, isLowPowerGPU, planSwitch, type SwitchInfo, type SwitchPlan } from './switchPlan';
@@ -1026,6 +1026,7 @@ function setNightCommand(mode: NightCommand): void {
   overrideBase = mode === 'auto' ? null : autoNight(current());
   updateNight(current());
   carousel?.tick();
+  renderCarDots();
 }
 
 function updateNight(tick: Tick): void {
@@ -1535,7 +1536,11 @@ function syncCarousel(c: DisplayConfig): void {
     frozen: carouselFrozen,
     save: state.demo ? undefined : (id, part, v) => saveScreenCache(id, part, v),
   });
-  carousel.onChange = () => canvasView.onData('nav');
+  carousel.onChange = () => {
+    canvasView.onData('nav');
+    syncCarTouch();
+  };
+  syncCarTouch();
   setActiveScreen(c.screenId);
   document.documentElement.classList.add('has-carousel');
   // offline: what came from the cache is marked old (at = 0), so it is fetched again as soon as the server answers
@@ -1841,8 +1846,8 @@ function navLive(): boolean {
 }
 
 function syncNav(c: DisplayConfig): void {
-  // the swipe: only with touch on, on a carousel, never in the preview (styles: touch-action for the gesture)
-  document.documentElement.classList.toggle('nav-swipe', !isPreview && !!carousel && !!c.canvas?.swipe && !!c.canvas?.taps);
+  // the swipe and the hold of a carousel (the screen's own canvas.swipe counts too)
+  syncCarTouch(c.canvas);
   // (a config with no `target` comes from a server older than carousels: the screen itself)
   const kind = c.target?.kind ?? 'screen';
   if (navIdle || isPreview || !(c.target?.id || c.screenId)) return;
@@ -2003,26 +2008,131 @@ function navProgress(): NavProgress | null {
 
 // every touch pushes the "Volver solo tras" time forward
 document.addEventListener('pointerdown', () => navIdle?.touched(), { capture: true, passive: true });
-// the swipe: a quick sideways stroke of a finger (or a pen) that did not start on a control
-let swipeFrom: { x: number; y: number; t: number; id: number } | null = null;
-const SWIPE_SKIP = '[data-ctl], [data-slide], .cv-nav-btn, .k-chore, .kf-chore, input, select, textarea, button';
+// ---------------------------------------------------------------------------------------------
+// Touch on a carousel (#40, web/display/nav.ts carouselTouch and CarouselGesture): a sideways swipe moves to the next
+// or previous step (on every layout with the carousel's "Deslizar", on a Personalizado screen also with its own),
+// press and hold keeps the step while the finger is down, and the position dots. All of it on this device only: a
+// swipe is a jumpTo (this display's own offset), a hold is a pause that ends with the finger, nothing is saved.
+// ---------------------------------------------------------------------------------------------
+let carTouch: CarouselTouch = { swipe: false, hold: false, dots: false };
+/** What a hold did: paused the carousel ('press'), only woke a dimmed screen ('wake'), or nothing. */
+let heldBy: 'press' | 'wake' | null = null;
+/** Where the finger went down (the press ring shows there) and with what. */
+let pressAt = { x: 0, y: 0, type: '' };
+
+/** A touch screen on this device: decides the dots set to "Solo en pantallas táctiles". */
+function touchDevice(): boolean {
+  try {
+    return matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  } catch {
+    return false;
+  }
+}
+
+/** Recompute what is on (a new config, a switch, another step list). */
+function syncCarTouch(canvas = ctx.cfg?.canvas): void {
+  const off = { swipe: false, hold: false, dots: false };
+  carTouch = carousel && !accessDenied ? carouselTouch(carousel.carousel, canvas, { preview: isPreview, touchDevice: touchDevice() }) : off;
+  const html = document.documentElement;
+  // styles: touch-action for the swipe; no text selection or callout for the hold
+  html.classList.toggle('nav-swipe', carTouch.swipe);
+  html.classList.toggle('car-hold', carTouch.hold);
+  if (!carTouch.hold && heldBy) carGesture.cancel();
+  renderCarDots();
+}
+
+/** One dot per step, the one on screen lit; hidden outside the steps (a visit, the night hold, off schedule). */
+function renderCarDots(): void {
+  const el = document.getElementById('car-dots');
+  if (!el) return;
+  const w = carousel?.where();
+  const show = !!carousel && !!w && carTouch.dots && w.index >= 0 && carousel.rotates() && !accessDenied;
+  el.classList.toggle('show', show);
+  if (!show || !carousel || !w) {
+    if (el.firstChild) el.replaceChildren();
+    return;
+  }
+  el.classList.toggle('is-paused', w.paused);
+  const n = carousel.carousel.steps.length;
+  if (el.children.length !== n) el.replaceChildren(...Array.from({ length: n }, () => document.createElement('i')));
+  for (let i = 0; i < n; i++) el.children[i].classList.toggle('is-on', i === w.index);
+}
+
+function carPressRing(on: boolean): void {
+  const el = document.getElementById('car-press');
+  if (!el) return;
+  if (on) {
+    el.style.left = `${pressAt.x}px`;
+    el.style.top = `${pressAt.y}px`;
+    // it grows over what is left of the hold, so the finger sees it coming
+    el.style.setProperty('--car-press-ms', `${HOLD_MS - PRESS_RING_DELAY_MS}ms`);
+  }
+  el.classList.toggle('show', on);
+}
+
+function carHoldBadge(on: boolean): void {
+  const el = document.getElementById('car-hold');
+  if (!el) return;
+  if (on) el.title = ctx.t('navPaused');
+  el.classList.toggle('show', on);
+}
+
+const carGesture = new CarouselGesture({
+  now: () => Date.now(),
+  setTimer: (fn, ms) => setTimeout(fn, ms),
+  clearTimer: (t) => clearTimeout(t as ReturnType<typeof setTimeout>),
+  swipe: () => carTouch.swipe && !accessDenied,
+  hold: () => carTouch.hold && !accessDenied,
+  act: (a) => {
+    if (a.do === 'press') return carPressRing(true);
+    carPressRing(false);
+    if (a.do === 'release') {
+      // the step on screen starts its full time again
+      if (heldBy === 'press' && carousel?.paused) carousel.pause(false);
+      heldBy = null;
+      carHoldBadge(false);
+      return;
+    }
+    if (!carousel || accessDenied) return;
+    if (a.do === 'hold') {
+      heldBy = null;
+      // the first touch on a dimmed screen only wakes it
+      if (navWakes()) {
+        heldBy = 'wake';
+        return;
+      }
+      // a nav-card pause, a visit, the night hold or the off-schedule screen: nothing to hold
+      if (!carousel.where().rotating) return;
+      carousel.pause(true);
+      heldBy = 'press';
+      carHoldBadge(true);
+      return;
+    }
+    if (navWakes()) return;
+    // the night hold, outside the schedule, turned off, or an alert holding the step: the swipe does nothing
+    if (!carousel.rotates() || (carousel.carousel.holdOnAlert && (doorbell.active || announcements.expandedCount > 0))) return;
+    // a visit or a nav-card pause ends, as a tap on a step does
+    navIdle?.clear();
+    carousel.stepBy(a.dir);
+  },
+});
+
+const gestureSkip = (t: EventTarget | null): boolean => !!(t as Element | null)?.closest?.(GESTURE_SKIP);
 document.addEventListener('pointerdown', (e) => {
-  swipeFrom = null;
-  if (e.pointerType === 'mouse' || !document.documentElement.classList.contains('nav-swipe')) return;
-  if ((e.target as Element | null)?.closest?.(SWIPE_SKIP)) return;
-  swipeFrom = { x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+  pressAt = { x: e.clientX, y: e.clientY, type: e.pointerType };
+  carGesture.down({ id: e.pointerId, x: e.clientX, y: e.clientY, type: e.pointerType, skip: gestureSkip(e.target) });
 }, { capture: true, passive: true });
-document.addEventListener('pointercancel', () => (swipeFrom = null), { capture: true, passive: true });
-document.addEventListener('pointerup', (e) => {
-  const f = swipeFrom;
-  swipeFrom = null;
-  if (!f || f.id !== e.pointerId || !carousel || !navLive() || !ctx.cfg?.canvas?.swipe) return;
-  const dir = swipeDir(e.clientX - f.x, e.clientY - f.y, Date.now() - f.t, window.innerWidth);
-  if (!dir || navWakes()) return;
-  navIdle?.clear();
-  // to the left: the next screen; to the right: the one before
-  carousel.stepBy(dir === -1 ? 1 : -1);
-}, { capture: true, passive: true });
+document.addEventListener('pointermove', (e) => carGesture.move({ id: e.pointerId, x: e.clientX, y: e.clientY }), { capture: true, passive: true });
+document.addEventListener('pointerup', (e) => carGesture.up({ id: e.pointerId, x: e.clientX, y: e.clientY }, window.innerWidth), { capture: true, passive: true });
+// the browser took the stroke (a vertical scroll) or the finger left: no step, a hold ends
+document.addEventListener('pointercancel', () => carGesture.cancel(), { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) carGesture.cancel();
+});
+// a long press on Android opens a menu or selects text: not while it pauses the carousel
+document.addEventListener('contextmenu', (e) => {
+  if (document.documentElement.classList.contains('car-hold') && pressAt.type !== 'mouse') e.preventDefault();
+}, { capture: true });
 
 // ---------------------------------------------------------------------------------------------
 // Privacy mode: the server already filtered the events; the display shows a small lock and asks again when the
@@ -2125,6 +2235,7 @@ onTick((tick) => {
     updateNight(tick);
     fitSide();
     carousel?.tick(); // night mode may have started or ended
+    renderCarDots(); // the night hold hides the dots
     renderDecor(tick.dayKey); // a new day may start or end the overlay's dates or a season
   }
   if (tick.dayChanged) {

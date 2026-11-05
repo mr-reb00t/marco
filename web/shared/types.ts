@@ -396,6 +396,8 @@ export interface CarouselStep {
 export type CarouselTransition = 'fade' | 'slide' | 'zoom' | 'wipe' | 'dissolve' | 'random' | 'none';
 /** How long that animation lasts: fast 400 ms, normal 800 ms, slow 1400 ms. */
 export type CarouselSpeed = 'fast' | 'normal' | 'slow';
+/** Position dots at the bottom of a carousel: never, only on touch screens (decided by each device), always. */
+export type CarouselDots = 'off' | 'touch' | 'always';
 
 /**
  * A carousel (StoredConfig.carousels.items, server/core/carousels.js): screens shown one after another on the same
@@ -415,6 +417,12 @@ export interface Carousel {
   holdOnAlert: boolean;
   /** night mode: keep rotating (each screen with its own night settings) or hold `offScreenId` (false) */
   nightRotate: boolean;
+  /** touch screens: a horizontal swipe moves to the next or previous step (absent in configs saved before it = off) */
+  swipe?: boolean;
+  /** touch screens: pressing and holding keeps the current step while the finger is down (absent = off) */
+  holdPause?: boolean;
+  /** position dots at the bottom centre (absent = 'off') */
+  dots?: CarouselDots;
   /** shown outside the schedule and held at night; null = the first step's screen */
   offScreenId: string | null;
   /** when it rotates (same rule shape as privacy schedules); [] = always */
@@ -433,6 +441,10 @@ export interface CarouselBlock {
   transitionSpeed?: CarouselSpeed;
   holdOnAlert: boolean;
   nightRotate: boolean;
+  /** the touch settings of Carousel; absent from older servers (= off) */
+  swipe?: boolean;
+  holdPause?: boolean;
+  dots?: CarouselDots;
   offScreenId: string;
   schedule: PrivacyRule[];
   steps: (CarouselStep & { slug: string; name: string })[];

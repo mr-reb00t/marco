@@ -867,4 +867,3 @@ html.low-power #app.preset-canvas :is(.cv-prog-fill, .cv-prog-dot, .cv-prog-dot 
 }
 #nav-toast.show { opacity: 1; transform: translate(-50%, 0); }
 /* the swipe between screens of a carousel: sideways strokes are ours, not the browser's (main.ts) */
-html.nav-swipe body, html.nav-swipe #app { touch-action: pan-y pinch-zoom; }

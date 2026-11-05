@@ -3,6 +3,7 @@
 // WebGL, ?tr= forcing) and the selector rewrite that styles the still copy of the screen.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { defaultConfig, defaultScreenProfile } from '../core/defaults.js';
 import { validateConfig } from '../core/validate.js';
 import { carouselBlock, CAROUSEL_RANDOM_POOL, CAROUSEL_SPEEDS, CAROUSEL_TRANSITIONS } from '../core/carousels.js';
@@ -93,6 +94,27 @@ test('planSwitch: speeds, reduced motion and low power give a short fade, dissol
   assert.equal(planSwitch(info('random', 'normal', 7), env).effect, randomPick(7, 'v_a'));
   assert.deepEqual(planSwitch(info('fade'), { ...env, force: 'wipe', forceSpeed: 'fast' }), { effect: 'wipe', ms: 400 });
   assert.deepEqual(planSwitch(info('slide'), { ...env, force: 'nonsense' }), { effect: 'slide', ms: 800 });
+});
+
+test('planSwitch with a swipe: a fast slide its way whatever the carousel uses; reduced and low power fade', () => {
+  const env = { reduced: false, lowPower: false, gl: true };
+  const info = (transition, dir, speed = 'slow') => ({ transition, speed, n: 3, seed: 'v_a', dir });
+  assert.deepEqual(planSwitch(info('fade', -1), env), { effect: 'slide', ms: 400, dir: -1 });
+  assert.deepEqual(planSwitch(info('fade', 1), env), { effect: 'slide', ms: 400, dir: 1 });
+  // 'none' and 'random' too: the direction of a direct touch must show; ?tr= is for filming the automatic rotation
+  assert.deepEqual(planSwitch(info('none', 1), env), { effect: 'slide', ms: 400, dir: 1 });
+  assert.deepEqual(planSwitch(info('random', 1), env), { effect: 'slide', ms: 400, dir: 1 });
+  assert.deepEqual(planSwitch(info('zoom', -1), { ...env, force: 'wipe' }), { effect: 'slide', ms: 400, dir: -1 });
+  assert.deepEqual(planSwitch(info('slide', -1), { ...env, reduced: true }), { effect: 'fade', ms: SHORT_FADE_MS, light: true });
+  assert.deepEqual(planSwitch(info('none', 1), { ...env, lowPower: true }), { effect: 'fade', ms: SHORT_FADE_MS, light: true });
+  // automatic switches keep their plan (no dir)
+  assert.deepEqual(planSwitch(info('slide', undefined, 'fast'), env), { effect: 'slide', ms: 400 });
+});
+
+test('the slide runs both ways: a swipe back moves the old screen right and brings the new one from the left', () => {
+  const src = fs.readFileSync(new URL('../../web/display/screenSwitch.ts', import.meta.url), 'utf8');
+  assert.match(src, /plan\.dir === -1 \? -1 : 1/);
+  assert.match(src, /translate3d\(\$\{-100 \* s\}%,0,0\)/);
 });
 
 test('isLowPower: only very little memory or one core (a Raspberry Pi gets the real animation)', () => {

@@ -1,5 +1,5 @@
 // Types for carousels.js (imported by web/shared/carousels.ts, so the admin and the display share the server rules).
-import type { CarouselBlock, Carousel, CarouselSpeed, CarouselStep, CarouselTransition, PrivacyRule } from '../../web/shared/types';
+import type { CarouselBlock, Carousel, CarouselDots, CarouselSpeed, CarouselStep, CarouselTransition, PrivacyRule } from '../../web/shared/types';
 
 export declare const CAROUSEL_PREFIX: string;
 export declare const MAX_CAROUSELS: number;
@@ -13,6 +13,9 @@ export declare const CAROUSEL_SPEEDS: Readonly<Record<CarouselSpeed, number>>;
 export declare const DEFAULT_TRANSITION: CarouselTransition;
 export declare const DEFAULT_SPEED: CarouselSpeed;
 export declare function speedOf(v: unknown): CarouselSpeed;
+export declare const CAROUSEL_DOTS: readonly CarouselDots[];
+export declare const DEFAULT_DOTS: CarouselDots;
+export declare function dotsOf(v: unknown): CarouselDots;
 
 interface CfgLike {
   screens: { id: string; slug: string; name: string }[];

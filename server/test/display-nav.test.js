@@ -19,7 +19,7 @@ import { loadWebModules } from './webModules.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
 const [{ CarouselController }, nav] = await loadWebModules('/web/display/carousel.ts', '/web/display/nav.ts');
-const { planNav, NavIdle, readMemo, swipeDir, NAV_SAVE_EVERY } = nav;
+const { planNav, NavIdle, readMemo, swipeDir, NAV_SAVE_EVERY, carouselTouch, CarouselGesture, GESTURE_SKIP, HOLD_MS, HOLD_SLOP_PX, HOLD_MAX_MS, PRESS_RING_DELAY_MS } = nav;
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 
 const sink = () => {
@@ -323,7 +323,7 @@ function controller() {
     night: () => false,
     alertOn: () => false,
     fetch: async (id, parts) => ({ config: parts.includes('config') ? cfgOf(id) : undefined, events: { events: [], hash: id }, countdowns: { items: [] }, photos: { photos: [] } }),
-    show: (id) => shown.push([id, clock.now() - t0]),
+    show: (id, _b, sw) => shown.push([id, clock.now() - t0, sw]),
     setTimer: clock.setTimer,
     clearTimer: clock.clearTimer,
   });
@@ -424,6 +424,175 @@ test('pause holds the step until it goes on (its time starts again); a visit hol
   c.stop();
 });
 
+// ---------------------------------------------------------------- touch on a carousel (#40)
+
+test('a swipe slides its way: stepBy passes the direction to that switch only; the step gets its full time', async () => {
+  const { c, clock, shown } = controller();
+  c.start();
+  await clock.advance(30_000);
+  c.stepBy(1); // "b", 20 s
+  await clock.advance(50);
+  assert.equal(shown[0][0], 'b');
+  assert.equal(shown[0][2].dir, 1);
+  const w = c.where();
+  assert.equal(w.endsAt - (clock.now() - 50), 20_000, 'the swiped step starts its full time');
+  c.stepBy(-1); // back to "a"
+  await clock.advance(50);
+  assert.equal(shown[1][0], 'a');
+  assert.equal(shown[1][2].dir, -1);
+  // the clock's next switch has no direction (the carousel's own animation)
+  await clock.advance(60_000);
+  assert.equal(shown[2][0], 'b');
+  assert.equal('dir' in shown[2][2], false);
+  // a jump by a tap (no direction) and a pause leave no direction behind
+  c.jumpTo(2);
+  await clock.advance(50);
+  assert.equal('dir' in shown[3][2], false);
+  c.pause(true);
+  c.pause(false);
+  assert.equal(c.where().endsAt - clock.now(), 40_000, 'going on after a hold: the full time again');
+  c.stop();
+});
+
+test('a swipe to a step that shows the screen already on display: no switch, its time starts again', async () => {
+  const t0 = 110_000 * 20_000_000; // a loop of this block starts: the first "a"
+  const clock = fakeClock(t0);
+  const shown = [];
+  const block = { ...BLOCK, steps: [{ screenId: 'a', slug: 'aa', name: 'A', seconds: 60 }, { screenId: 'a', slug: 'aa', name: 'A', seconds: 30 }, { screenId: 'b', slug: 'bb', name: 'B', seconds: 20 }] };
+  const c = new CarouselController(block, 'UTC', 'a', {
+    now: clock.now, night: () => false, alertOn: () => false,
+    fetch: async (id) => ({ config: cfgOf(id), events: { events: [], hash: id }, countdowns: { items: [] }, photos: { photos: [] } }),
+    show: (id, _b, sw) => shown.push([id, sw]), setTimer: clock.setTimer, clearTimer: clock.clearTimer,
+  });
+  c.put('a', 'config', cfgOf('a'));
+  c.put('a', 'events', { events: [], hash: 'a' });
+  c.start();
+  await clock.advance(10_000);
+  c.stepBy(1);
+  await clock.advance(50);
+  assert.deepEqual(shown, []);
+  assert.equal(c.where().endsAt - clock.now(), 30_000 - 50);
+  // the next switch, by the clock, is not taken for the swipe
+  await clock.advance(30_000);
+  assert.equal(shown[0][0], 'b');
+  assert.equal('dir' in shown[0][1], false);
+  c.stop();
+});
+
+test('carouselTouch: off with fewer than 2 steps; the carousel switch or the screen\'s own; never in the preview; dots', () => {
+  const steps = [{ screenId: 'a' }, { screenId: 'b' }];
+  const env = { preview: false, touchDevice: true };
+  const off = { swipe: false, hold: false, dots: false };
+  assert.deepEqual(carouselTouch(null, null, env), off);
+  assert.deepEqual(carouselTouch({ swipe: true, holdPause: true, dots: 'always', steps: [steps[0]] }, null, env), off);
+  // older servers send no keys: all off
+  assert.deepEqual(carouselTouch({ steps }, null, env), off);
+  assert.deepEqual(carouselTouch({ swipe: true, holdPause: true, dots: 'always', steps }, null, env), { swipe: true, hold: true, dots: true });
+  assert.equal(carouselTouch({ steps }, { swipe: true, taps: true }, env).swipe, true, 'the Personalizado screen\'s own swipe');
+  assert.equal(carouselTouch({ steps }, { swipe: true, taps: false }, env).swipe, false, 'it needs the screen\'s taps');
+  assert.deepEqual(carouselTouch({ swipe: true, holdPause: true, dots: 'always', steps }, { swipe: true, taps: true }, { preview: true, touchDevice: false }), { swipe: false, hold: false, dots: true });
+  assert.equal(carouselTouch({ dots: 'touch', steps }, null, env).dots, true);
+  assert.equal(carouselTouch({ dots: 'touch', steps }, null, { preview: false, touchDevice: false }).dots, false, 'a TV with no touch');
+  assert.deepEqual(carouselTouch({ swipe: 'yes', holdPause: 1, dots: 'sparkle', steps }, { swipe: 'yes', taps: 1 }, env), off, 'junk is off');
+});
+
+function gesture({ swipe = true, hold = true } = {}) {
+  const clock = fakeClock(1_000_000);
+  const acts = [];
+  const g = new CarouselGesture({ now: clock.now, setTimer: clock.setTimer, clearTimer: clock.clearTimer, swipe: () => swipe, hold: () => hold, act: (a) => acts.push(a) });
+  return { g, clock, acts };
+}
+
+test('gesture: a quick stroke to the left is the next step, to the right the previous; mouse and controls never', async () => {
+  const { g, clock, acts } = gesture();
+  g.down({ id: 1, x: 1400, y: 500, type: 'touch' });
+  await clock.advance(100);
+  g.up({ id: 1, x: 1200, y: 510 }, 1920);
+  assert.deepEqual(acts, [{ do: 'step', dir: 1 }]);
+  g.down({ id: 2, x: 600, y: 500, type: 'pen' });
+  await clock.advance(100);
+  g.up({ id: 2, x: 800, y: 500 }, 1920);
+  assert.deepEqual(acts.at(-1), { do: 'step', dir: -1 });
+  acts.length = 0;
+  g.down({ id: 3, x: 1400, y: 500, type: 'mouse' });
+  g.up({ id: 3, x: 600, y: 500 }, 1920);
+  g.down({ id: 4, x: 1400, y: 500, type: 'touch', skip: true });
+  await clock.advance(HOLD_MS + 100);
+  g.up({ id: 4, x: 600, y: 500 }, 1920);
+  assert.deepEqual(acts, []);
+  assert.match(GESTURE_SKIP, /\[data-task\]/);
+  assert.match(GESTURE_SKIP, /\[data-chore\]/);
+  assert.match(GESTURE_SKIP, /\.cv-nav-btn/);
+  // swipe off: a stroke does nothing
+  const off = gesture({ swipe: false, hold: false });
+  off.g.down({ id: 1, x: 1400, y: 500, type: 'touch' });
+  off.g.up({ id: 1, x: 600, y: 500 }, 1920);
+  assert.deepEqual(off.acts, []);
+});
+
+test('gesture: hold still 500 ms (the ring at 150), it pauses until the lift; no step on the lift', async () => {
+  const { g, clock, acts } = gesture();
+  g.down({ id: 1, x: 900, y: 500, type: 'touch' });
+  await clock.advance(PRESS_RING_DELAY_MS - 10);
+  assert.deepEqual(acts, [], 'a quick tap never shows the ring');
+  await clock.advance(20);
+  assert.deepEqual(acts, [{ do: 'press' }]);
+  g.move({ id: 1, x: 900 + HOLD_SLOP_PX - 2, y: 500 });
+  await clock.advance(HOLD_MS);
+  assert.deepEqual(acts, [{ do: 'press' }, { do: 'hold' }]);
+  assert.equal(g.holding, true);
+  g.up({ id: 1, x: 100, y: 500 }, 1920);
+  assert.deepEqual(acts, [{ do: 'press' }, { do: 'hold' }, { do: 'release' }]);
+  assert.equal(g.holding, false);
+  // a quick tap: nothing at all
+  acts.length = 0;
+  g.down({ id: 2, x: 900, y: 500, type: 'touch' });
+  await clock.advance(80);
+  g.up({ id: 2, x: 900, y: 500 }, 1920);
+  g.cancel();
+  await clock.advance(HOLD_MS);
+  assert.deepEqual(acts, []);
+});
+
+test('gesture: moving cancels the hold and can still swipe; a second finger and HOLD_MAX_MS release', async () => {
+  const { g, clock, acts } = gesture();
+  g.down({ id: 1, x: 1400, y: 500, type: 'touch' });
+  await clock.advance(200);
+  g.move({ id: 1, x: 1370, y: 500 });
+  await clock.advance(HOLD_MS);
+  assert.deepEqual(acts, [{ do: 'press' }, { do: 'release' }], 'the ring went, no hold');
+  g.up({ id: 1, x: 1100, y: 500 }, 1920);
+  assert.deepEqual(acts.at(-1), { do: 'step', dir: 1 }, 'still a swipe (quick enough)');
+  // a pinch: the second finger cancels; with a hold on, it releases
+  acts.length = 0;
+  g.down({ id: 2, x: 900, y: 500, type: 'touch' });
+  await clock.advance(HOLD_MS + 10);
+  g.down({ id: 3, x: 1000, y: 500, type: 'touch' });
+  assert.deepEqual(acts, [{ do: 'press' }, { do: 'hold' }, { do: 'release' }]);
+  g.up({ id: 2, x: 100, y: 500 }, 1920);
+  g.up({ id: 3, x: 100, y: 500 }, 1920);
+  assert.equal(acts.length, 3, 'nothing after the pinch');
+  // a pinch before any hold: nothing happens, no hold later
+  acts.length = 0;
+  g.down({ id: 4, x: 900, y: 500, type: 'touch' });
+  g.down({ id: 5, x: 1000, y: 500, type: 'touch' });
+  await clock.advance(HOLD_MS + 10);
+  assert.deepEqual(acts, []);
+  // a lost lift: the hold ends by itself
+  g.down({ id: 6, x: 900, y: 500, type: 'touch' });
+  await clock.advance(HOLD_MS + 10);
+  assert.deepEqual(acts.at(-1), { do: 'hold' });
+  await clock.advance(HOLD_MAX_MS);
+  assert.deepEqual(acts.at(-1), { do: 'release' });
+  assert.equal(g.holding, false);
+  // cancel (pointercancel, the tab hidden) releases a hold
+  acts.length = 0;
+  g.down({ id: 7, x: 900, y: 500, type: 'touch' });
+  await clock.advance(HOLD_MS + 10);
+  g.cancel();
+  assert.deepEqual(acts, [{ do: 'press' }, { do: 'hold' }, { do: 'release' }]);
+});
+
 // ---------------------------------------------------------------- the editor
 
 test('the editor: why a button does not show without touch, the swipe switch, the ambient hint', () => {
@@ -519,6 +688,120 @@ describe('navigation cards in a browser', { skip: !chrome && 'no Chrome' }, () =
     assert.equal(value.swipeOn, true);
     assert.match(value.afterMouse, /preset-canvas/);
     assert.match(value.afterTouch, /preset-today/, 'the next step: Hoy');
+  });
+
+  const STROKE = `const stroke = (type, x0, x1, y = 700, hold = 0) => new Promise((done) => {
+    const at = (x) => ({ bubbles: true, pointerId: 9, pointerType: type, clientX: x, clientY: y, isPrimary: true });
+    const el = document.elementFromPoint(x0, y);
+    el.dispatchEvent(new PointerEvent('pointerdown', at(x0)));
+    setTimeout(() => {
+      el.dispatchEvent(new PointerEvent('pointerup', at(x1)));
+      done();
+    }, hold);
+  });
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const app = () => document.getElementById('app').className;
+  const dots = () => [...document.querySelectorAll('#car-dots i')].map((i) => i.classList.contains('is-on') ? 1 : 0);`;
+
+  test('the carousel Deslizar works on a Classic layout (not only Personalizado); a mouse drag does not', async () => {
+    const { value, errors } = await open('carousel=1&carSwipe=1&stepSec=600&fade=0', `(async () => {
+      ${STROKE}
+      const start = app();
+      const swipeOn = document.documentElement.classList.contains('nav-swipe');
+      await stroke('mouse', 1400, 600);
+      await wait(1500);
+      const afterMouse = app();
+      await stroke('touch', 1400, 600);
+      await wait(1800);
+      return { start, swipeOn, afterMouse, afterTouch: app() };
+    })()`);
+    assert.deepEqual(errors, []);
+    assert.match(value.start, /preset-bigCalendar/);
+    assert.equal(value.swipeOn, true);
+    assert.match(value.afterMouse, /preset-bigCalendar/);
+    assert.match(value.afterTouch, /preset-today/, 'the next step: Hoy');
+  });
+
+  test('position dots: one per step, the one on screen lit, following a swipe; off by default', async () => {
+    const { value } = await open('carousel=1&carDots=always&carSwipe=1&stepSec=600&fade=0', `(async () => {
+      ${STROKE}
+      const before = { shown: getComputedStyle(document.getElementById('car-dots')).display, dots: dots() };
+      await stroke('touch', 1400, 600);
+      await wait(1800);
+      return { before, after: dots() };
+    })()`);
+    assert.deepEqual(value.before, { shown: 'flex', dots: [1, 0, 0, 0] });
+    assert.deepEqual(value.after, [0, 1, 0, 0]);
+    const off = await open('carousel=1&stepSec=600', `(() => ({ n: document.querySelectorAll('#car-dots i').length, shown: getComputedStyle(document.getElementById('car-dots')).display }))()`);
+    assert.deepEqual(off.value, { n: 0, shown: 'none' });
+  });
+
+  test('press and hold pauses the step (a badge) until the lift; a press that moves never does', async () => {
+    const { value } = await open('carousel=1&carHold=1&carDots=always&stepSec=600&fade=0', `(async () => {
+      ${STROKE}
+      const badge = () => document.getElementById('car-hold').classList.contains('show');
+      const paused = () => document.getElementById('car-dots').classList.contains('is-paused');
+      const el = document.elementFromPoint(900, 700);
+      const at = (x) => ({ bubbles: true, pointerId: 11, pointerType: 'touch', clientX: x, clientY: 700, isPrimary: true });
+      el.dispatchEvent(new PointerEvent('pointerdown', at(900)));
+      await wait(250);
+      const ring = document.getElementById('car-press').classList.contains('show');
+      await wait(450);
+      const held = { badge: badge(), paused: paused(), ring: document.getElementById('car-press').classList.contains('show') };
+      el.dispatchEvent(new PointerEvent('pointerup', at(900)));
+      await wait(300);
+      const released = { badge: badge(), paused: paused(), app: app() };
+      el.dispatchEvent(new PointerEvent('pointerdown', at(900)));
+      el.dispatchEvent(new PointerEvent('pointermove', at(940)));
+      await wait(700);
+      const moved = { badge: badge(), paused: paused() };
+      el.dispatchEvent(new PointerEvent('pointerup', at(940)));
+      return { ring, held, released, moved, hold: document.documentElement.classList.contains('car-hold') };
+    })()`);
+    assert.equal(value.hold, true);
+    assert.equal(value.ring, true, 'the press ring shows the touch was seen');
+    assert.deepEqual(value.held, { badge: true, paused: true, ring: false });
+    assert.equal(value.released.badge, false);
+    assert.equal(value.released.paused, false);
+    assert.match(value.released.app, /preset-bigCalendar/, 'the same screen');
+    assert.deepEqual(value.moved, { badge: false, paused: false });
+  });
+
+  test('at night the first swipe only wakes the screen; the night hold keeps the screen', async () => {
+    const { value } = await open('carousel=1&carSwipe=1&night=1&stepSec=600&fade=0', `(async () => {
+      ${STROKE}
+      const dim = () => getComputedStyle(document.getElementById('night')).opacity;
+      const start = { app: app(), dim: dim() };
+      await stroke('touch', 1400, 600);
+      await wait(1500);
+      const woke = { app: app(), dim: document.getElementById('night').style.opacity };
+      await stroke('touch', 1400, 600);
+      await wait(1500);
+      return { start, woke, again: app() };
+    })()`);
+    assert.match(value.start.app, /preset-bigCalendar/);
+    assert.notEqual(value.start.dim, '0');
+    assert.deepEqual(value.woke, { app: value.start.app, dim: '0' });
+    assert.match(value.again, /preset-bigCalendar/, 'the night hold keeps the off screen');
+  });
+
+  test('a stroke that starts on a navigation card does not step; a tap on it still navigates', async () => {
+    const { value } = await open('carousel=1&nav=1&carSwipe=1&stepSec=600&fade=0', `(async () => {
+      ${STROKE}
+      const b = [...document.querySelectorAll('.cv-nav-go .cv-nav-btn')].find((x) => x.textContent.includes('Agenda'));
+      const r = b.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const at = (cx) => ({ bubbles: true, pointerId: 12, pointerType: 'touch', clientX: cx, clientY: y, isPrimary: true });
+      b.dispatchEvent(new PointerEvent('pointerdown', at(x)));
+      b.dispatchEvent(new PointerEvent('pointerup', at(x - 400)));
+      await wait(1500);
+      const afterStroke = app();
+      b.click();
+      await wait(1800);
+      return { afterStroke, afterTap: app() };
+    })()`);
+    assert.match(value.afterStroke, /preset-canvas/);
+    assert.match(value.afterTap, /preset-agenda/);
   });
 
   test('the admin preview: the buttons show, a tap only lights them up; no swipe', async () => {

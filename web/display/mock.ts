@@ -2,7 +2,7 @@
 // Everything is generated relative to "today" so screenshots always look populated.
 import { presetBands } from '../../server/core/tariffsCore.js';
 import type {
-  AlertStyle, Announcement, CalEvent, CarouselTransition, ChoreSlot, CountdownItem, CountdownsResponse, DisplayConfig, EventsResponse,
+  AlertStyle, Announcement, CalEvent, CarouselDots, CarouselTransition, ChoreSlot, CountdownItem, CountdownsResponse, DisplayConfig, EventsResponse,
   FamilyChoreView, FamilyDisplayState, FamilyMemberView, MealSlot, NewsResponse, PhotosResponse, PublicCalendarSource, SourceKind,
   WeatherResponse,
 } from '../shared/types';
@@ -391,7 +391,7 @@ export function mockCarouselConfigs(): DisplayConfig[] {
     id: 'v_demo', slug: 'demo-loop', name: L('Living room loop', 'Bucle del salón', 'Ciclo da sala'),
     // a different animation at each switch (&tr=<name> forces one, &fade=0 turns them off)
     enabled: true, transition: (q.get('fade') === '0' ? 'none' : 'random') as CarouselTransition, transitionSpeed: 'normal' as const,
-    holdOnAlert: true, nightRotate: false,
+    holdOnAlert: true, nightRotate: false, ...carouselTouchParams(q),
     offScreenId: 's_main', schedule: [],
     steps: screens.map(([screenId, slug, name]) => ({ screenId, slug, name, seconds: sec })),
   };
@@ -413,6 +413,12 @@ export function mockCarouselConfigs(): DisplayConfig[] {
     target: { id: carousel.id, kind: 'carousel' as const, slug: carousel.slug, name: carousel.name },
     carousel,
   }));
+}
+
+/** The carousel's touch settings from the URL: &carSwipe=1, &carHold=1, &carDots=off|touch|always (all off by default). */
+function carouselTouchParams(q: URLSearchParams): { swipe: boolean; holdPause: boolean; dots: CarouselDots } {
+  const dots = q.get('carDots');
+  return { swipe: q.get('carSwipe') === '1', holdPause: q.get('carHold') === '1', dots: dots === 'touch' || dots === 'always' ? dots : 'off' };
 }
 
 /** The demo household's screens: the carousel's and the kitchen (the names of the "Ir a pantalla" targets). */
@@ -450,7 +456,7 @@ function showcaseCarousel(q: URLSearchParams, sec: number): DisplayConfig[] {
   const carousel = {
     id: 'v_show', slug: 'showcase', name: 'Showcase',
     enabled: true, transition: (q.get('fade') === '0' ? 'none' : 'dissolve') as CarouselTransition, transitionSpeed: 'slow' as const,
-    holdOnAlert: true, nightRotate: false,
+    holdOnAlert: true, nightRotate: false, ...carouselTouchParams(q),
     offScreenId: SHOW_CAROUSEL_STEPS[0], schedule: [],
     steps: SHOW_CAROUSEL_STEPS.map((key) => ({ screenId: key, slug: key.slice(5), name: key.slice(5), seconds: Number(q.get('stepSec')) ? sec : 12 })),
   };

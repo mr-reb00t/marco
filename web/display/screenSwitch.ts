@@ -106,10 +106,13 @@ export class ScreenSwitcher {
       moving.push(gl.canvas);
     }
     switch (effect) {
-      case 'slide':
-        anims.push(shell.animate([{ transform: 'translate3d(0,0,0)' }, { transform: 'translate3d(-100%,0,0)' }], opts()));
-        for (const el of moving) anims.push(el.animate([{ transform: 'translate3d(100%,0,0)' }, { transform: 'translate3d(0,0,0)' }], opts()));
+      case 'slide': {
+        // a swipe back (dir -1) moves the other way: the previous screen comes in from the left
+        const s = plan.dir === -1 ? -1 : 1;
+        anims.push(shell.animate([{ transform: 'translate3d(0,0,0)' }, { transform: `translate3d(${-100 * s}%,0,0)` }], opts()));
+        for (const el of moving) anims.push(el.animate([{ transform: `translate3d(${100 * s}%,0,0)` }, { transform: 'translate3d(0,0,0)' }], opts()));
         break;
+      }
       case 'zoom':
         anims.push(shell.animate([{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(0.96)', opacity: 0 }], opts({ easing: 'ease-out' })));
         for (const el of moving) anims.push(el.animate([{ transform: 'scale(1.04)' }, { transform: 'scale(1)' }], opts({ easing: 'cubic-bezier(0.2, 0.6, 0.2, 1)' })));

@@ -3,6 +3,7 @@
 export {
   CAROUSEL_PREFIX, MAX_CAROUSELS, MAX_CAROUSEL_STEPS, MIN_STEP_SEC, MAX_STEP_SEC, DEFAULT_STEP_SEC, CAROUSEL_TRANSITIONS,
   CAROUSEL_RANDOM_POOL, CAROUSEL_SPEEDS, DEFAULT_TRANSITION, DEFAULT_SPEED, speedOf,
+  CAROUSEL_DOTS, DEFAULT_DOTS, dotsOf,
   isCarouselId, carouselList, carouselSteps, carouselMembers, carouselBlock, offScreenOf, cycleMs, carouselSlot,
   carouselPhase, pruneCarousels, targetInfo, isTargetId,
 } from '../../server/core/carousels.js';

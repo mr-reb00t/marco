@@ -25,6 +25,14 @@ export const DEFAULT_TRANSITION = 'fade';
 export const DEFAULT_SPEED = 'normal';
 /** A speed the server knows, else the default (configs saved before speeds existed have none). */
 export const speedOf = (v) => (Object.hasOwn(CAROUSEL_SPEEDS, v) ? v : DEFAULT_SPEED);
+/**
+ * Position dots at the bottom of a carousel's screens: never, only on devices with a touch screen (the display decides
+ * by its own pointer), or always.
+ */
+export const CAROUSEL_DOTS = Object.freeze(['off', 'touch', 'always']);
+export const DEFAULT_DOTS = 'off';
+/** A dots mode the server knows, else the default (carousels saved before dots existed have none). */
+export const dotsOf = (v) => (CAROUSEL_DOTS.includes(v) ? v : DEFAULT_DOTS);
 
 /** True for a carousel id ("v_…"); screen ids never use that prefix. */
 export const isCarouselId = (id) => typeof id === 'string' && id.startsWith(CAROUSEL_PREFIX);
@@ -102,6 +110,10 @@ export function carouselBlock(cfg, c) {
     transitionSpeed: speedOf(c.transitionSpeed),
     holdOnAlert: c.holdOnAlert !== false,
     nightRotate: c.nightRotate === true,
+    // touch: off unless saved as true, so carousels saved before these existed behave as before
+    swipe: c.swipe === true,
+    holdPause: c.holdPause === true,
+    dots: dotsOf(c.dots),
     offScreenId: offScreenOf(cfg, c),
     schedule: enabledWindows(c.schedule).map(({ id, days, from, to }) => ({ id, enabled: true, days: [...(days || [])], from, to })),
     steps: carouselSteps(cfg, c).map((st) => ({ screenId: st.screenId, seconds: st.seconds, ...named(st.screenId) })),

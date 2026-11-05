@@ -65,6 +65,25 @@ export const ROWS_CAROUSELS: [string, string, string][] = [
     'While the doorbell or a large alert is on screen, the screen does not change. Then it goes back to the step it should be on.',
     'Enquanto se vê a campainha ou um aviso grande, o ecrã não muda. Depois volta ao passo em que devia estar.',
   ],
+  ['Pantallas táctiles', 'Touch screens', 'Ecrãs táteis'],
+  ['Mantener pulsado para pausar', 'Press and hold to pause', 'Manter premido para pausar'],
+  ['Puntos de posición', 'Position dots', 'Pontos de posição'],
+  ['Solo en pantallas táctiles', 'Only on touch screens', 'Só em ecrãs táteis'],
+  [
+    'A la izquierda pasa a la pantalla siguiente y a la derecha a la anterior, que empieza su tiempo entero. Solo cambia la tele que tocas.',
+    'Left goes to the next screen and right to the previous one, which starts its full time. Only the TV you touch changes.',
+    'Para a esquerda passa ao ecrã seguinte e para a direita ao anterior, que começa o seu tempo inteiro. Só muda a TV em que toca.',
+  ],
+  [
+    'Mientras el dedo sigue en la pantalla no cambia; al soltar, la pantalla vuelve a contar su tiempo entero.',
+    'While your finger stays on the screen it does not change; when you let go, the screen counts its full time again.',
+    'Enquanto o dedo fica no ecrã, não muda; ao largar, o ecrã volta a contar o seu tempo inteiro.',
+  ],
+  [
+    'Puntos pequeños abajo en el centro: cuántas pantallas tiene el carrusel y cuál se ve.',
+    'Small dots at the bottom centre: how many screens the carousel has and which one is showing.',
+    'Pontos pequenos em baixo ao centro: quantos ecrãs tem o carrossel e qual se vê.',
+  ],
   ['Seguir rotando de noche', 'Keep rotating at night', 'Continuar a rodar à noite'],
   [
     'De noche sigue cambiando; cada pantalla usa su propio modo noche.',

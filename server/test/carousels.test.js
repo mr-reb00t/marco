@@ -11,7 +11,7 @@ import { defaultConfig, defaultScreenProfile } from '../core/defaults.js';
 import { validateConfig, mergeDefaults } from '../core/validate.js';
 import {
   carouselSlot, carouselPhase, carouselBlock, carouselMembers, findTarget, isTargetId, offScreenOf, pruneCarousels, cycleMs,
-  targetInfo,
+  targetInfo, CAROUSEL_DOTS, DEFAULT_DOTS, dotsOf,
 } from '../core/carousels.js';
 import { matches } from '../sse.js';
 import { alertsFilter } from '../core/announceCore.js';
@@ -68,6 +68,34 @@ test('validation: defaults, limits, seconds bounds, unknown screens pruned, empt
   // schedule rules use the privacy rule shape
   const sch = validateConfig(config([{ name: 'S', steps: [{ screenId: 's_main' }], schedule: [{ days: [1, 2], from: '08:00', to: '08:00' }] }]));
   assert.deepEqual(sch.errors.map((e) => e.path), ['carousels.items[0].schedule[0].to']);
+});
+
+test('touch settings (#40): off for carousels saved before them, kept when valid, junk is an error and off', () => {
+  const old = validateConfig(config([LOOP]));
+  assert.deepEqual(old.errors, []);
+  const o = old.value.carousels.items[0];
+  assert.equal(o.swipe, false);
+  assert.equal(o.holdPause, false);
+  assert.equal(o.dots, 'off');
+  assert.deepEqual(CAROUSEL_DOTS, ['off', 'touch', 'always']);
+  assert.equal(DEFAULT_DOTS, 'off');
+  for (const dots of CAROUSEL_DOTS) {
+    const r = validateConfig(config([{ ...LOOP, swipe: true, holdPause: true, dots }]));
+    assert.deepEqual(r.errors, []);
+    assert.deepEqual([r.value.carousels.items[0].swipe, r.value.carousels.items[0].holdPause, r.value.carousels.items[0].dots], [true, true, dots]);
+  }
+  const bad = validateConfig(config([{ ...LOOP, swipe: 'yes', holdPause: 1, dots: 'sparkle' }]));
+  assert.deepEqual(bad.errors.map((e) => e.path).sort(), ['carousels.items[0].dots', 'carousels.items[0].holdPause', 'carousels.items[0].swipe']);
+  assert.deepEqual([bad.value.carousels.items[0].swipe, bad.value.carousels.items[0].holdPause, bad.value.carousels.items[0].dots], [false, false, 'off']);
+  // the display block: strict true, dots normalized, defaults for a raw item with no keys
+  const cfg = config();
+  const raw = carouselBlock(cfg, LOOP);
+  assert.deepEqual([raw.swipe, raw.holdPause, raw.dots], [false, false, 'off']);
+  const on = carouselBlock(cfg, { ...LOOP, swipe: true, holdPause: true, dots: 'touch' });
+  assert.deepEqual([on.swipe, on.holdPause, on.dots], [true, true, 'touch']);
+  const junk = carouselBlock(cfg, { ...LOOP, swipe: 'true', holdPause: 1, dots: 'sparkle' });
+  assert.deepEqual([junk.swipe, junk.holdPause, junk.dots], [false, false, 'off']);
+  assert.equal(dotsOf(undefined), 'off');
 });
 
 test('slugs: a clash with a screen is an error, never a silent suffix; carousel clashes get -2', () => {

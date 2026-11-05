@@ -10,7 +10,7 @@
 // - A doorbell ring or an announcement on screen holds the current step (holdOnAlert); when it is gone the display
 //   jumps straight to the step the clock says.
 // - Touch (web/display/nav.ts): jumpTo() restarts a step on this display only (an offset on the shared clock, so the
-//   carousel goes on from there), visit() holds a screen outside the steps, pause() stops the rotation, home()
+//   carousel goes on from there; a swipe passes its direction for the animation), visit() holds a screen outside the steps, pause() stops the rotation, home()
 //   drops all three and follows the shared clock again.
 // The controller does no DOM work and no fetches itself: main.ts passes them in (CarouselDeps), so it is tested
 // with a fake clock (server/test/display-carousel.test.js).
@@ -96,6 +96,8 @@ export class CarouselController {
   private pausedLeft: number | null = null;
   /** a screen outside the steps shown by touch ("Ir a pantalla"), until home() */
   private visiting: string | null = null;
+  /** a swipe asked for this screen: its switch slides that way (only that one switch) */
+  private swiped: { screenId: string; dir: 1 | -1 } | null = null;
   /** told when the step, the pause or the visit changes (the progress card) */
   onChange: (() => void) | null = null;
 
@@ -189,11 +191,14 @@ export class CarouselController {
 
   /**
    * Show step `index` now and start its time from the beginning, on this display only: the carousel goes on from
-   * there (the steps after it, each for its time). A visit and a pause end.
+   * there (the steps after it, each for its time). A visit and a pause end. `dir`: a swipe brought it (the switch
+   * slides that way).
    */
-  jumpTo(index: number, nowMs = this.d.now()): void {
+  jumpTo(index: number, nowMs = this.d.now(), dir?: 1 | -1): void {
     const steps = this.block.steps;
     if (this.stopped || index < 0 || index >= steps.length) return;
+    // the same screen already on display (a screen may come back in the next step) has no switch to animate
+    this.swiped = dir && steps[index].screenId !== this.active ? { screenId: steps[index].screenId, dir } : null;
     const total = cycleMs(steps);
     let start = 0;
     for (let i = 0; i < index; i++) start += Math.max(1, Number(steps[i].seconds) || 0) * 1000;
@@ -214,7 +219,7 @@ export class CarouselController {
     if (n < 2) return;
     let i = this.where(nowMs).index;
     if (i < 0) i = Math.max(0, this.phase(nowMs).index);
-    this.jumpTo((((i + dir) % n) + n) % n, nowMs);
+    this.jumpTo((((i + dir) % n) + n) % n, nowMs, dir);
   }
 
   /** Show a screen that is not one of the steps and stay on it, until home() (or another touch). */
@@ -222,6 +227,7 @@ export class CarouselController {
     if (this.stopped || !screenId) return;
     this.visiting = screenId;
     this.pausedLeft = null;
+    this.swiped = null;
     this.tick();
     this.onChange?.();
   }
@@ -230,6 +236,7 @@ export class CarouselController {
   pause(on: boolean, nowMs = this.d.now()): void {
     if (this.stopped || on === this.paused) return;
     if (on) {
+      this.swiped = null;
       const w = this.where(nowMs);
       this.pausedLeft = w.endsAt !== null ? Math.max(0, w.endsAt - nowMs) : 0;
       this.tick();
@@ -250,6 +257,7 @@ export class CarouselController {
     const had = this.visiting !== null || this.pausedLeft !== null || this.offset !== 0 || this.manual !== null;
     this.visiting = null;
     this.pausedLeft = null;
+    this.swiped = null;
     this.offset = 0;
     this.manual = null;
     this.manualBase = null;
@@ -450,11 +458,15 @@ export class CarouselController {
   private show(screenId: string, b: Bundle): void {
     if (screenId === this.active) return;
     this.active = screenId;
+    // only the switch the swipe asked for slides its way; a later one by the clock or a tap has its own animation
+    const dir = this.swiped?.screenId === screenId ? this.swiped.dir : undefined;
+    this.swiped = null;
     this.d.show(screenId, b, {
       transition: this.block.transition || 'fade',
       speed: speedOf(this.block.transitionSpeed),
       n: this.manual && this.manualBase !== null ? this.manualBase + this.manualN : switchNumber(this.block.steps, this.d.now() + this.offset),
       seed: this.block.id,
+      ...(dir ? { dir } : {}),
     });
     this.onChange?.();
   }

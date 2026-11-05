@@ -1,7 +1,7 @@
 // Carousels ("Carruseles"): several screens shown one after another on the same TV, each for as long as you choose.
 // Global (not per screen). Every TV on the same carousel changes screen at the same moment (server/core/carousels.js).
 import { useEffect, useState } from 'preact/hooks';
-import type { Carousel, CarouselSpeed, CarouselTransition, StoredConfig } from '../../shared/types';
+import type { Carousel, CarouselDots, CarouselSpeed, CarouselTransition, StoredConfig } from '../../shared/types';
 import { slugify } from '../../shared/screens';
 import {
   carouselBlock, carouselPhase, cycleMs, DEFAULT_SPEED, DEFAULT_STEP_SEC, DEFAULT_TRANSITION, MAX_CAROUSEL_STEPS, MAX_STEP_SEC, MIN_STEP_SEC, speedOf,
@@ -71,6 +71,9 @@ function NewCarouselDialog({ full, onClose, onCreate }: { full: StoredConfig; on
       transitionSpeed: DEFAULT_SPEED,
       holdOnAlert: true,
       nightRotate: false,
+      swipe: false,
+      holdPause: false,
+      dots: 'off',
       offScreenId: null,
       schedule: [],
       steps: full.screens.slice(0, MAX_CAROUSEL_STEPS).map((s) => ({ screenId: s.id, seconds: DEFAULT_STEP_SEC })),
@@ -446,6 +449,33 @@ export function CarouselsSection({ full, setFull, saved, errors, go, dirty, save
                     checked={c.nightRotate}
                     onChange={(v) => upd(c.id, (x) => void (x.nightRotate = v))}
                   />
+
+                  {/* touch (#40): every layout of the carousel; a TV with no touch never sees a gesture */}
+                  <h4 class="privacy-sub">{t('Pantallas táctiles')}</h4>
+                  <ToggleRow
+                    label={t('Deslizar para cambiar de pantalla')}
+                    hint={t('A la izquierda pasa a la pantalla siguiente y a la derecha a la anterior, que empieza su tiempo entero. Solo cambia la tele que tocas.')}
+                    checked={!!c.swipe}
+                    onChange={(v) => upd(c.id, (x) => void (x.swipe = v))}
+                  />
+                  <ToggleRow
+                    label={t('Mantener pulsado para pausar')}
+                    hint={t('Mientras el dedo sigue en la pantalla no cambia; al soltar, la pantalla vuelve a contar su tiempo entero.')}
+                    checked={!!c.holdPause}
+                    onChange={(v) => upd(c.id, (x) => void (x.holdPause = v))}
+                  />
+                  <Field label={t('Puntos de posición')} hint={t('Puntos pequeños abajo en el centro: cuántas pantallas tiene el carrusel y cuál se ve.')}>
+                    <Segmented<CarouselDots>
+                      full
+                      value={c.dots ?? 'off'}
+                      options={[
+                        { value: 'off', label: t('No') },
+                        { value: 'touch', label: t('Solo en pantallas táctiles') },
+                        { value: 'always', label: t('Siempre') },
+                      ]}
+                      onChange={(v) => upd(c.id, (x) => void (x.dots = v))}
+                    />
+                  </Field>
 
                   <div>
                     <h4 class="privacy-sub">{t('Horario')}</h4>

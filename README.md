@@ -655,6 +655,10 @@ A few things worth knowing:
 - **Touch screens:** the *Navigation* cards are buttons to another screen of the house (*Go to screen*, or *Home*),
   *Pause carousel* and *Carousel progress*. With touch on, a swipe left or right moves the carousel to the next or
   the previous screen. After a few minutes without a touch the screen goes back to what it usually shows.
+  Every carousel also has its own *Touch screens* settings, for any layout: *Swipe to change screen* (the screen
+  you swipe to gets its full time, and only the TV you touch changes), *Press and hold to pause* (the screen stays
+  while your finger does) and *Position dots* at the bottom, always or only on touch screens. A TV with no touch is
+  not affected.
 - The clocks and the date card take their own *Time colour* and *Date colour*, and charts (a sensor's curve, crypto,
   electricity prices) sit *Below* the numbers or in the *Background* behind them.
 - Landscape and portrait: the portrait view is worked out from the landscape one until you change it yourself.

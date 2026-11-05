@@ -12,7 +12,7 @@ import { cleanPlace, configWeatherPlaces, countScreenPlaces, MAX_SCREEN_WEATHER_
 import { PRIVACY_MODES, MAX_PRIVACY_RULES, defaultSourcePrivacy } from './privacy.js';
 import { CAMERA_RE, DOORBELL_MIN_SEC, DOORBELL_MAX_SEC } from './doorbellCore.js';
 import {
-  CAROUSEL_PREFIX, MAX_CAROUSELS, MAX_CAROUSEL_STEPS, MIN_STEP_SEC, MAX_STEP_SEC, DEFAULT_STEP_SEC, CAROUSEL_TRANSITIONS, CAROUSEL_SPEEDS, DEFAULT_TRANSITION, DEFAULT_SPEED, pruneCarousels,
+  CAROUSEL_PREFIX, MAX_CAROUSELS, MAX_CAROUSEL_STEPS, MIN_STEP_SEC, MAX_STEP_SEC, DEFAULT_STEP_SEC, CAROUSEL_TRANSITIONS, CAROUSEL_SPEEDS, DEFAULT_TRANSITION, DEFAULT_SPEED, CAROUSEL_DOTS, DEFAULT_DOTS, pruneCarousels,
 } from './carousels.js';
 import { IMMICH_ID_RE, MAX_IMMICH_ALBUMS, PORTRAIT_FITS, normalizeImmichUrl } from './immichCore.js';
 import {
@@ -847,6 +847,13 @@ function sanitizeCarousel(ctx, p, x, seen, screenSlugs, seenSlugs) {
     holdOnAlert: bool(ctx, `${p}.holdOnAlert`, x.holdOnAlert, true),
     // night mode: keep rotating (true) or hold the off-schedule screen so the dimming does not change (false)
     nightRotate: bool(ctx, `${p}.nightRotate`, x.nightRotate, false),
+    // touch screens: a sideways swipe moves this TV to the next or previous step; off so a TV in reach of children
+    // or a casual brush does not leave the shared rotation
+    swipe: bool(ctx, `${p}.swipe`, x.swipe, false),
+    // touch screens: holding a finger down keeps the step (read a long screen); off so nothing changes for anyone
+    holdPause: bool(ctx, `${p}.holdPause`, x.holdPause, false),
+    // position dots at the bottom: 'off' keeps the screens exactly as they were before dots existed
+    dots: oneOf(ctx, `${p}.dots`, x.dots, DEFAULT_DOTS, CAROUSEL_DOTS),
     offScreenId: typeof off === 'string' && ID.test(off) ? off : null,
     // when it rotates (the rule shape of privacy schedules); [] = always
     schedule: list(ctx, `${p}.schedule`, x.schedule, [], MAX_PRIVACY_RULES, sanitizePrivacyRule),

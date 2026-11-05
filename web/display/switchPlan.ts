@@ -7,6 +7,7 @@
 // - Reduced motion (the system setting), ?lite=1 and browsers with very little memory get a short fade instead. A
 //   Raspberry Pi runs the chosen animation like any other screen.
 // - 'dissolve' needs the WebGL layer; without it the switch is a fade.
+// - A swipe (SwitchInfo.dir) always slides its way, fast, whatever the carousel's own animation.
 import type { CarouselSpeed, CarouselStep, CarouselTransition } from '../shared/types';
 import { CAROUSEL_RANDOM_POOL, CAROUSEL_SPEEDS, CAROUSEL_TRANSITIONS, carouselSlot, speedOf } from '../shared/carousels';
 
@@ -20,6 +21,8 @@ export interface SwitchInfo {
   n: number;
   /** the carousel id: two carousels do not share a random sequence */
   seed: string;
+  /** a swipe brought this screen: 1 = the next one (comes in from the right), -1 = the previous one (from the left) */
+  dir?: 1 | -1;
 }
 
 export interface SwitchEnv {
@@ -40,6 +43,8 @@ export interface SwitchPlan {
   ms: number;
   /** a plain fade of #app, with no copy of the page (reduced motion, lite mode, very little memory) */
   light?: boolean;
+  /** 'slide' only: -1 moves to the right (a swipe back); absent = to the left, as every automatic slide */
+  dir?: 1 | -1;
 }
 
 /** The fade used where motion is unwelcome or too heavy (reduced motion, lite mode, very little memory). */
@@ -106,6 +111,13 @@ export function randomPick(n: number, seed = ''): SwitchEffect {
 
 /** The animation and duration of one switch. */
 export function planSwitch(info: SwitchInfo, env: SwitchEnv): SwitchPlan {
+  if (info.dir === 1 || info.dir === -1) {
+    // a swipe is a direct manipulation: its direction must show whatever the carousel's own animation is ('none'
+    // and 'random' included), and ?tr= is left out since it is for filming the automatic rotation. Where motion is
+    // unwelcome or too heavy it is the same short fade as any other switch.
+    if (env.reduced || env.lowPower) return { effect: 'fade', ms: SHORT_FADE_MS, light: true };
+    return { effect: 'slide', ms: CAROUSEL_SPEEDS.fast, dir: info.dir };
+  }
   const forced = env.force && (CAROUSEL_TRANSITIONS as readonly string[]).includes(env.force) ? (env.force as CarouselTransition) : null;
   const name: CarouselTransition = forced ?? ((CAROUSEL_TRANSITIONS as readonly string[]).includes(info.transition) ? info.transition : 'fade');
   if (name === 'none') return { effect: 'none', ms: 0 };

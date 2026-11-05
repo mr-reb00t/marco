@@ -1106,6 +1106,76 @@ body {
 .is-private #status { right: 3.6rem; }
 .theme-light #privacy-lock { color: #1d1d1f; background: rgb(255 255 255 / 0.6); border-color: rgb(0 0 0 / 0.12); }
 
+/* touch on a carousel (#40, main.ts syncCarTouch): the swipe keeps vertical scroll and pinch to the browser and the
+   sideways stroke to the page, on every layout; the hold must not select text or open the long-press callout.
+   The dots, the pause badge and the press ring sit outside #app (the switch animation does not copy them) and
+   below #night (they dim at night), the alerts and the doorbell. */
+html.nav-swipe body, html.nav-swipe #app { touch-action: pan-y pinch-zoom; }
+html.car-hold body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#car-dots {
+  position: fixed;
+  left: 50%;
+  bottom: 1.2vh;
+  z-index: 45;
+  display: none;
+  gap: 0.5rem;
+  align-items: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+#car-dots.show { display: flex; }
+#car-dots i {
+  display: block;
+  width: calc(0.55rem * var(--fs, 1));
+  height: calc(0.55rem * var(--fs, 1));
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.45);
+  box-shadow: 0 0 0.3rem rgb(0 0 0 / 0.35);
+  transition: width 0.3s, background-color 0.3s;
+}
+#car-dots i.is-on { width: calc(1.1rem * var(--fs, 1)); background: rgb(255 255 255 / 0.9); }
+#car-dots.is-paused i.is-on { background: rgb(255 255 255 / 0.6); }
+.theme-light #car-dots i { background: rgb(0 0 0 / 0.3); box-shadow: 0 0 0.3rem rgb(255 255 255 / 0.5); }
+.theme-light #car-dots i.is-on { background: rgb(0 0 0 / 0.75); }
+.theme-light #car-dots.is-paused i.is-on { background: rgb(0 0 0 / 0.5); }
+#car-hold {
+  position: fixed;
+  left: 50%;
+  bottom: 3.2vh;
+  z-index: 45;
+  width: calc(1.6rem * var(--fs, 1));
+  height: calc(1.6rem * var(--fs, 1));
+  padding: 0.5rem 1.1rem;
+  box-sizing: content-box;
+  border-radius: 999px;
+  color: #fff;
+  background: rgb(0 0 0 / 0.45);
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#car-hold.show { opacity: 0.8; }
+.theme-light #car-hold { color: #1d1d1f; background: rgb(255 255 255 / 0.6); }
+/* "Marco saw your finger": a faint ring under the finger that grows until the hold starts */
+#car-press {
+  position: fixed;
+  z-index: 45;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: -1.75rem 0 0 -1.75rem;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.12);
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+}
+#car-press.show { opacity: 1; transform: scale(1); transition: opacity 0.12s, transform var(--car-press-ms, 350ms) ease-out; }
+.theme-light #car-press { border-color: rgb(0 0 0 / 0.4); background: rgb(0 0 0 / 0.08); }
+html.low-power #car-dots i, html.low-power #car-hold, html.low-power #car-press.show,
+.lite #car-dots i, .lite #car-hold, .lite #car-press.show { transition: none; }
+
 /* reduced work in lite mode */
 .lite .wx.anim * { animation: none !important; }
 .lite .hl-pill.live .hl-lead::before { animation: none; }
@@ -2066,7 +2136,7 @@ html.widget-only #identify,
 html.widget-only #access-code,
 html.widget-only #doorbell,
 html.widget-only #status,
-html.widget-only #privacy-lock { display: none !important; }
+html.widget-only #privacy-lock, html.widget-only #car-dots, html.widget-only #car-hold, html.widget-only #car-press { display: none !important; }
 html.widget-only #app::before,
 html.widget-only #app::after,
 html.widget-only .side::before,
