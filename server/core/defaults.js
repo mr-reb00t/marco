@@ -29,7 +29,7 @@ export const RESERVED_SOURCE_IDS = [LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID];
 
 /** Per-screen part of the keys that are split between global and per-screen ("merged sections"). */
 export const SCREEN_SPLIT_KEYS = {
-  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'pastEvents', 'eventFill', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
+  calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'weekdays', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'pastEvents', 'eventFill', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
   datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom', 'clockAlign', 'clockSize'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
@@ -107,6 +107,9 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       // startOn: 'week' (the grid starts on the first day of this week, weekStart) or 'today' (no past days: the first
       // cell is today and the rows run on from there)
       startOn: 'week',
+      // weekdays: the days of the week the month / week grid shows (0 = Sunday); the others take no column and their
+      // events are not drawn (#39)
+      weekdays: [0, 1, 2, 3, 4, 5, 6],
       showDayXofY: true, showLegend: true, hidePast: false, maxEventsPerDay: 4,
       // pastEvents: how faded the events that have ended are, 'dim' (the look it always had), 'soft' or 'full' (#32)
       pastEvents: 'dim',

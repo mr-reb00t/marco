@@ -22,6 +22,8 @@ export type Spec =
   /** the rows under an Entidad card (null: chosen for the entity) */
   | { k: 'features'; type: 'features'; label: string; hint?: string }
   | { k: 'sourceIds'; type: 'sources'; label: string }
+  /** the days of the week a month / week card shows (#39), at least one */
+  | { k: 'weekdays'; type: 'weekdays'; label: string; hint?: string }
   | { k: 'memberIds'; type: 'members'; label: string }
   | { k: 'memberId'; type: 'member'; label: string }
   | { k: 'widgetId'; type: 'widget'; label: string }
@@ -71,6 +73,10 @@ const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
 const GRID_LINES: Spec = {
   k: 'gridLines', type: 'seg', label: 'Líneas de la cuadrícula', hint: 'Su color, en la pestaña Estilo.',
   opts: [{ v: 'soft', l: 'Suaves' }, { v: 'clear', l: 'Marcadas' }, { v: 'strong', l: 'Fuertes' }],
+};
+const WEEKDAYS: Spec = {
+  k: 'weekdays', type: 'weekdays', label: 'Días que se muestran',
+  hint: 'Los días sin marcar no ocupan sitio y sus eventos no se ven. Un evento de varios días se muestra en los días marcados que toca.',
 };
 const HIDE_PAST: Spec = { k: 'hidePast', type: 'bool', label: 'Ocultar lo que ya ha pasado' };
 /** How faded the events that have ended are (#32). */
@@ -173,6 +179,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   'calendar.month': [
     SOURCES,
     { k: 'weeks', type: 'select', label: 'Semanas', opts: [{ v: 'auto', l: 'Automático' }, ...range(1, 6).map((n) => ({ v: n, l: String(n) }))] },
+    WEEKDAYS,
     { k: 'eventStyle', type: 'seg', label: 'Eventos', opts: [{ v: 'lines', l: 'Líneas' }, { v: 'cards', l: 'Tarjetas' }] },
     { k: 'maxEventsPerDay', type: 'num', label: 'Eventos por día como mucho', min: 1, max: 12, unit: 'n' },
     { k: 'showLegend', type: 'bool', label: 'Leyenda de calendarios' },
@@ -181,7 +188,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     HIDE_PAST,
     PAST_EVENTS,
   ],
-  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, GRID_LINES, EVENT_FILL, HIDE_PAST, PAST_EVENTS],
+  'calendar.week': [SOURCES, { k: 'start', type: 'seg', label: 'Empieza', opts: [{ v: 'today', l: 'Hoy' }, { v: 'monday', l: 'El lunes' }] }, WEEKDAYS, GRID_LINES, EVENT_FILL, HIDE_PAST, PAST_EVENTS],
   'calendar.agenda': [
     SOURCES,
     { k: 'days', type: 'num', label: 'Días', min: 1, max: 14, unit: 'days' },

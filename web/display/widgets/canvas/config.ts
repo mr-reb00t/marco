@@ -3,6 +3,7 @@
 // so a canvas item hands it one of these and the class needs no other change. Cached by the item's `v`.
 import type { CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig } from '../../../shared/types';
 import { SIDE_UNITS, portraitSide } from '../../../../server/core/canvasCore.js';
+import { normalizeWeekdays } from '../../defaults';
 
 const cache = new WeakMap<DisplayConfig, Map<string, DisplayConfig>>();
 
@@ -43,6 +44,8 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
       cfg.calendar.gridLines = p.gridLines === 'clear' || p.gridLines === 'strong' ? p.gridLines : 'soft';
       cfg.calendar.eventFill = p.eventFill === 'strong' || p.eventFill === 'solid' ? p.eventFill : 'soft';
       cfg.calendar.gridColor = typeof p.gridColor === 'string' ? p.gridColor : null;
+      // the card's own days (#39): a card saved without them shows all seven, whatever days the screen hides
+      cfg.calendar.weekdays = normalizeWeekdays(p.weekdays);
     }
   }
   if (item.kind.startsWith('clock.') || item.kind === 'date') {

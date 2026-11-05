@@ -302,6 +302,25 @@ const P = {
     const out = [...new Set(v.filter((x) => typeof x === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(x) && (!known || known.has(x))))].slice(0, max);
     return out.length ? out : null;
   },
+  /**
+   * The days a month / week card shows (#39): unique weekdays 0..6 (0 = Sunday) in order, at least one. Missing
+   * (cards saved before it) is every day; anything wrong is an error and every day.
+   */
+  weekdays: (c, path, v) => {
+    const all = [0, 1, 2, 3, 4, 5, 6];
+    if (v === undefined || v === null) return all;
+    if (!Array.isArray(v)) {
+      c.err(path, 'expected array');
+      return all;
+    }
+    const out = [...new Set(v.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort((a, b) => a - b);
+    if (out.length !== v.length) c.err(path, 'weekdays must be unique integers 0..6 (0 = Sunday)');
+    if (!out.length) {
+      if (!v.length) c.err(path, 'pick at least one day');
+      return all;
+    }
+    return out;
+  },
   /** One HA entity id of one of `domains` ('' = not chosen yet). */
   entity: (c, path, v, domains) => {
     if (v === undefined || v === null || v === '') return '';
@@ -567,10 +586,11 @@ export const CANVAS_KINDS = {
   // ---- Calendario
   'calendar.month': {
     cat: 'calendar', sizes: ['m', 'l', 'xl', 'full'], def: 'l', cells: [4, 3, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', weeks: 'auto', eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true, gridLines: 'soft', eventFill: 'soft' }),
+    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', weeks: 'auto', weekdays: [0, 1, 2, 3, 4, 5, 6], eventStyle: 'lines', maxEventsPerDay: 4, showLegend: true, gridLines: 'soft', eventFill: 'soft' }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       weeks: x.weeks === 'auto' || x.weeks === undefined || x.weeks === null ? 'auto' : P.num(c, `${p}.weeks`, x.weeks, 'auto', 1, 6),
+      weekdays: P.weekdays(c, `${p}.weekdays`, x.weekdays),
       eventStyle: P.oneOf(c, `${p}.eventStyle`, x.eventStyle, 'lines', ['lines', 'cards']),
       maxEventsPerDay: P.num(c, `${p}.maxEventsPerDay`, x.maxEventsPerDay, 4, 1, 12),
       showLegend: P.bool(c, `${p}.showLegend`, x.showLegend, true),
@@ -582,10 +602,11 @@ export const CANVAS_KINDS = {
   },
   'calendar.week': {
     cat: 'calendar', sizes: ['w', 'l', 'xl', 'full'], def: 'xl', cells: [6, 2, 12, 8], side: false, edition: 'all', events: true,
-    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', start: 'today', gridLines: 'soft', eventFill: 'soft' }),
+    defaults: () => ({ sourceIds: null, hidePast: false, pastEvents: 'dim', start: 'today', weekdays: [0, 1, 2, 3, 4, 5, 6], gridLines: 'soft', eventFill: 'soft' }),
     props: (c, p, x, refs) => ({
       ...calendarCommon(c, p, x, refs),
       start: P.oneOf(c, `${p}.start`, x.start, 'today', ['today', 'monday']),
+      weekdays: P.weekdays(c, `${p}.weekdays`, x.weekdays),
       gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
       eventFill: P.oneOf(c, `${p}.eventFill`, x.eventFill, 'soft', EVENT_FILLS),
       ...pastProps(c, p, x),
@@ -2965,6 +2986,8 @@ export function canvasFromDesign(screen, refs = {}, opts = {}) {
       if (cal.weeks === 'auto' || (Number.isInteger(cal.weeks) && cal.weeks >= 1 && cal.weeks <= 6)) p.weeks = id === 'design.twoWeeks' ? 2 : cal.weeks;
       if (cal.eventStyle === 'cards') p.eventStyle = 'cards';
       if (Number.isInteger(cal.maxEventsPerDay)) p.maxEventsPerDay = Math.min(12, Math.max(1, cal.maxEventsPerDay));
+      // the screen's days (#39); sanitizeCanvas below checks them like any saved card
+      if (Array.isArray(cal.weekdays)) p.weekdays = [...cal.weekdays];
     }
     if (it.kind === 'calendar.agenda' && Number.isInteger(cal.agendaDays) && id === 'design.agenda') p.days = Math.min(14, Math.max(1, cal.agendaDays));
     if (it.kind.startsWith('calendar.')) p.hidePast = !!cal.hidePast;

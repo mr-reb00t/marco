@@ -18,7 +18,7 @@ export const DEFAULT_CONFIG: DisplayConfig = {
     cover: true, transition: 'webgl', ambient: 'aurora', weatherFx: 'simple', portraitFit: 'auto', scope: 'side', calendarOpacity: CALENDAR_OPACITY_DEFAULT, calendarBlur: CALENDAR_BLUR_DEFAULT,
   },
   calendar: {
-    enabled: true, view: 'month', weeks: 5, weekStart: 1, startOn: 'week', showLocation: false, showEndTime: false, showDayXofY: true,
+    enabled: true, view: 'month', weeks: 5, weekStart: 1, startOn: 'week', weekdays: [0, 1, 2, 3, 4, 5, 6], showLocation: false, showEndTime: false, showDayXofY: true,
     showLegend: true, hidePast: false, pastEvents: 'dim', maxEventsPerDay: 4, marquee: true, rotateBusyDays: true, compactBusyDays: false, eventStyle: 'lines', gridLines: 'soft', gridColor: null, eventFill: 'soft', agendaDays: 'auto', sources: [], iconRules: DEFAULT_ICON_RULES,
   },
   datetime: {
@@ -75,6 +75,15 @@ export function normalizeAgendaDays(v: unknown): AgendaDays {
   return v === 7 || v === 14 || v === 30 ? v : 'auto';
 }
 
+/**
+ * calendar.weekdays (#39), the days the month / week grid shows: unique weekdays 0..6 (0 = Sunday) in order. Anything
+ * else (missing on older servers, empty, not a list) shows all seven, as before.
+ */
+export function normalizeWeekdays(v: unknown): number[] {
+  const out = Array.isArray(v) ? [...new Set(v.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6) as number[])].sort((a, b) => a - b) : [];
+  return out.length ? out : [0, 1, 2, 3, 4, 5, 6];
+}
+
 export function normalizeConfig(raw: unknown): DisplayConfig {
   const c = deepMerge(DEFAULT_CONFIG, raw);
   // weeks: a number of rows, or 'auto' (deepMerge keeps only values of the default's type, so look at the raw one)
@@ -91,6 +100,8 @@ export function normalizeConfig(raw: unknown): DisplayConfig {
   c.calendar.maxEventsPerDay = clampInt(c.calendar.maxEventsPerDay, 1, 12, 4);
   c.calendar.weekStart = clampInt(c.calendar.weekStart, 0, 6, 1);
   c.calendar.startOn = c.calendar.startOn === 'today' ? 'today' : 'week';
+  // deepMerge keeps any array as it came: check it here
+  c.calendar.weekdays = normalizeWeekdays(rawCal?.weekdays);
   c.layout.sideWidth = Math.min(0.6, Math.max(0.2, Number(c.layout.sideWidth) || 0.36));
   if (!['tl', 'tr', 'bl', 'br'].includes(c.layout.corner as string)) c.layout.corner = 'br';
   if (!['side', 'top', 'bottom'].includes(c.layout.plannerBar as string)) c.layout.plannerBar = 'side';

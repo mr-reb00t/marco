@@ -21,7 +21,7 @@ import { api, ApiError, paths, prefetchJSON } from './api';
 import { initTodoTaps, isListTask } from './todoTaps';
 import { parseColor, toHex } from './color';
 import { ctx, setCtxConfig } from './ctx';
-import { normalizeAgendaDays, normalizeConfig, pastOpacity } from './defaults';
+import { normalizeAgendaDays, normalizeConfig, normalizeWeekdays, pastOpacity } from './defaults';
 import { Heartbeat, noteError } from './heartbeat';
 import {
   authHeaders, clearDeviceToken, clientId, credential, credentialKind, getActiveScreen, isPreview, isWidgetOnly, screenKey, screenNs, setActiveScreen, storedDeviceToken, withScreen,
@@ -539,6 +539,8 @@ function applyConfig(raw: DisplayConfig): void {
   // ?startOn=week|today (the grid starts on the first day of this week, or on today with no past days)
   const pso = params.get('startOn');
   if (pso === 'week' || pso === 'today') cfg.calendar.startOn = pso;
+  // ?weekdays=1,2,3,4,5 (or 12345): the days the month / week grid shows, 0 = Sunday (#39)
+  if (params.has('weekdays')) cfg.calendar.weekdays = normalizeWeekdays((params.get('weekdays')!.match(/[0-6]/g) ?? []).map(Number));
   // ?pastEvents=dim|soft|full (how faded the events that have ended are, #32)
   const ppe = params.get('pastEvents');
   if (ppe === 'dim' || ppe === 'soft' || ppe === 'full') cfg.calendar.pastEvents = ppe;

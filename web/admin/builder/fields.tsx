@@ -18,6 +18,7 @@ import { CoinsField, FollowField, PairsField, StocksKeyField, SymbolsField } fro
 import { PlaceChoice, PlaceList } from '../components/PlaceSearch';
 import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
 import { TodoViewFields } from '../components/TodoViewFields';
+import { ShownDaysPicker } from '../components/ShownDaysField';
 import { SpotifyAccountSelect } from '../sections/Spotify';
 
 export interface FieldEnv {
@@ -455,6 +456,12 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
           return (
             <Field label={t(s.label)} hint={env.sources.length ? undefined : t('Esta pantalla no tiene calendarios. Elígelos en Calendarios.')}>
               <MultiPick all="Todos los de esta pantalla" items={env.sources.map((x) => ({ id: x.id, label: `${x.emoji ? `${x.emoji} ` : ''}${x.name}`, color: x.color }))} value={p.sourceIds ?? null} onChange={(v) => put('sourceIds', v)} />
+            </Field>
+          );
+        if (s.type === 'weekdays')
+          return (
+            <Field label={t(s.label)} hint={s.hint ? t(s.hint) : undefined}>
+              <ShownDaysPicker value={p.weekdays} onChange={(v) => put('weekdays', v)} />
             </Field>
           );
         if (s.type === 'members')

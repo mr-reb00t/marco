@@ -6,6 +6,7 @@ import { ctx } from '../ctx';
 import { esc, reconcile, setHTML, type Spec } from '../dom';
 import { type NEvent, sortForDay, timeLabel } from '../eventModel';
 import { refreshMarquee } from '../marquee';
+import { clipSpan, visibleCols } from '../weekdays';
 import { PAGE_MS, pageAt, pageLabel, planPages, wrapLineCap } from '../motion';
 import {
   COMPACT_FONT, COMPACT_GAP_U, COMPACT_LINE, COMPACT_PAD_U, type CompactDay, laneHeight, linesThatFit, shareRows, weekNeed,
@@ -43,7 +44,7 @@ interface Stack {
 
 interface Placed {
   e: NEvent;
-  /** 0-based half-day slots within the week [s, eSlot) (14 slots per week) */
+  /** 0-based half-day slots within the week [s, eSlot) (2 slots per shown column, 14 when every day shows) */
   s: number;
   eSlot: number;
   lane: number;
@@ -93,6 +94,12 @@ export class MonthCalendar {
   private dow: HTMLElement;
   private weeks: HTMLElement;
 
+  /**
+   * calendar.weekdays (#39): the day offsets (0..6 from a row's first day) that get a column, in order. Every row
+   * starts on the same weekday, so one list serves them all; all seven by default, which keeps every path as before.
+   */
+  private cols: number[] = [0, 1, 2, 3, 4, 5, 6];
+
   /** The settings this grid reads (the screen's, or a canvas item's merged over them). */
   private readonly cfg: () => DisplayConfig;
 
@@ -141,6 +148,17 @@ export class MonthCalendar {
     const rolling = c.startOn === 'today';
     const gridStart = gridStartOf(today, c.weekStart, c.startOn);
     const firstWd = weekdayOfKey(gridStart);
+    // hidden days take no column: the header and every row are laid out on the shown ones (styles.css --days / --slots,
+    // 7 / 14 when they are not set, so a grid showing every day is drawn exactly as before)
+    this.cols = visibleCols(firstWd, Array.isArray(c.weekdays) ? c.weekdays : []);
+    const nCols = this.cols.length;
+    if (nCols < 7) {
+      this.root.style.setProperty('--days', String(nCols));
+      this.root.style.setProperty('--slots', String(2 * nCols));
+    } else {
+      this.root.style.removeProperty('--days');
+      this.root.style.removeProperty('--slots');
+    }
     this.root.style.setProperty('--weeks', String(nWeeks));
     this.root.style.setProperty('--lanes', String(L));
 
@@ -160,12 +178,14 @@ export class MonthCalendar {
 
     // ---- weekday header: the columns follow the grid's first day (today's weekday first when it starts today)
     const names = weekdayNames(lang, firstWd, 'short');
-    const todayCol = diffDays(gridStart, today) % 7;
+    // -1 when today's weekday is hidden (startOn 'today' still starts the rows today): no header is marked
+    const todayCol = this.cols.indexOf(diffDays(gridStart, today) % 7);
     setHTML(
       this.dow,
-      names
-        .map((n, i) => {
-          const wd = (firstWd + i) % 7;
+      this.cols
+        .map((d, i) => {
+          const n = names[d];
+          const wd = (firstWd + d) % 7;
           return `<div class="${i === todayCol ? 'is-today' : ''}${wd === 0 || wd === 6 ? ' we' : ''}">${esc(n)}</div>`;
         })
         .join(''),
@@ -275,7 +295,12 @@ export class MonthCalendar {
     const raw = getComputedStyle(this.root).getPropertyValue('--chip-fs').trim();
     const n = parseFloat(raw);
     const chipPx = Number.isFinite(n) ? (raw.endsWith('px') ? n : n * rem) : 1.68 * rem;
-    return { colW: w / 7, rem, chipPx };
+    return { colW: w / this.cols.length, rem, chipPx };
+  }
+
+  /** The date of column `c` of the row starting `ws` (hidden days have no column, so it is not ws + c). */
+  private dayKey(ws: string, c: number): string {
+    return addDays(ws, this.cols[c]);
   }
 
   /**
@@ -322,7 +347,8 @@ export class MonthCalendar {
   private planWrap(segs: Placed[], hidden: Set<Placed>, L: number, labels: Map<Placed, { tm: string; extra: string }>): void {
     if (!this.geom) return;
     const isSingle = (sg: Placed) => sg.eSlot - sg.s === 2 && sg.s % 2 === 0 && !sg.e.airbnb;
-    const blocked: boolean[][] = Array.from({ length: L }, () => new Array(14).fill(false));
+    const n = this.cols.length;
+    const blocked: boolean[][] = Array.from({ length: L }, () => new Array(2 * n).fill(false));
     for (const sg of segs) {
       if (hidden.has(sg) || isSingle(sg) || sg.lane >= L) continue;
       for (let i = sg.s; i < sg.eSlot; i++) blocked[sg.lane][i] = true;
@@ -332,7 +358,7 @@ export class MonthCalendar {
     // span. Bars only ever move down into free space, so nothing overlaps and no new "+N" appears.
     const occupied = (lane: number, s0: number, s1: number, skip: Placed[]) =>
       segs.some((o) => !skip.includes(o) && !hidden.has(o) && o.lane <= lane && lane < o.lane + (o.span ?? 1) && o.s < s1 && s0 < o.eSlot);
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       const day = segs.filter((sg) => isSingle(sg) && sg.s === 2 * d && !hidden.has(sg));
       if (day.length !== 1) continue;
       const sg = day[0];
@@ -358,7 +384,7 @@ export class MonthCalendar {
         for (let i = b.s; i < b.eSlot; i++) blocked[t][i] = true;
       }
     }
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       const day = segs.filter((sg) => isSingle(sg) && sg.s === 2 * d);
       if (!day.length || day.some((sg) => hidden.has(sg))) continue;
       const free: number[] = [];
@@ -401,9 +427,9 @@ export class MonthCalendar {
    */
   private planBusyDays(ws: string, segs: Placed[], hidden: Set<Placed>, moreCount: number[], L: number, skip: Set<number>): Placed[] {
     const pieces: Placed[] = [];
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       if (!moreCount[d] || skip.has(d)) continue;
-      const key = addDays(ws, d);
+      const key = this.dayKey(ws, d);
       const a = 2 * d, b = 2 * d + 2;
       const inDay = (sg: Placed) => sg.s < b && a < sg.eSlot;
       const local = (sg: Placed) => sg.s >= a && sg.eSlot <= b;
@@ -492,12 +518,16 @@ export class MonthCalendar {
     const segs: Placed[] = [];
     for (const e of events) {
       if (e.spanLast < ws || e.spanFirst > we) continue;
-      const contL = e.spanFirst < ws;
-      const contR = e.spanLast > we;
-      const d0 = contL ? 0 : diffDays(ws, e.spanFirst);
-      const d1 = contR ? 6 : diffDays(ws, e.spanLast);
-      let s = d0 * 2;
-      let eSlot = d1 * 2 + 2;
+      const d0 = e.spanFirst < ws ? 0 : diffDays(ws, e.spanFirst);
+      const d1 = e.spanLast > we ? 6 : diffDays(ws, e.spanLast);
+      // onto the shown columns (calendar.weekdays): an event only on hidden days is not drawn in this row; one that
+      // runs into a hidden day is cut there and continues (cont-l / cont-r), so its half-day end is not shown
+      const k = clipSpan(d0, d1, this.cols);
+      if (!k) continue;
+      const contL = e.spanFirst < ws || k.clipL;
+      const contR = e.spanLast > we || k.clipR;
+      let s = k.c0 * 2;
+      let eSlot = k.c1 * 2 + 2;
       if (e.halfStart && !contL) s += 1;
       if (e.halfEnd && !contR) eSlot -= 1;
       segs.push({ e, s, eSlot, lane: -1, contL, contR });
@@ -515,7 +545,7 @@ export class MonthCalendar {
     for (const sg of segs) {
       let lane = 0;
       for (;; lane++) {
-        const row = (occ[lane] ||= new Array(14).fill(false));
+        const row = (occ[lane] ||= new Array(2 * this.cols.length).fill(false));
         let free = true;
         for (let i = sg.s; i < sg.eSlot; i++) if (row[i]) { free = false; break; }
         if (free) {
@@ -535,7 +565,7 @@ export class MonthCalendar {
   private daySummary(segs: Placed[], L: number): { days: CompactDay[]; normal: number[] } {
     const days: CompactDay[] = [];
     const normal: number[] = [];
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       const a = 2 * d, b = 2 * d + 2;
       let top = 0, items = 0, lanes = 0, locals = 0;
       for (const sg of segs) {
@@ -562,7 +592,7 @@ export class MonthCalendar {
     const stacks: Stack[] = [];
     const rotate = this.cfg().calendar.rotateBusyDays !== false;
     const lane = laneHeight(rowH, m.numH, L, m.laneH, m.laneMin, m.gap);
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       const a = 2 * d, b = 2 * d + 2;
       const inDay = (sg: Placed) => sg.s < b && a < sg.eSlot;
       const local = (sg: Placed) => sg.s >= a && sg.eSlot <= b;
@@ -576,7 +606,7 @@ export class MonthCalendar {
       const space = rowH - m.numH - m.gap - top * (lane + m.gap) - m.pad;
       const fit = linesThatFit(space, m.lineH, m.lineGap);
       if (!fit || fit < L - top) continue; // small entries would show fewer events than the lanes do
-      const key = addDays(ws, d);
+      const key = this.dayKey(ws, d);
       const cut: Placed[] = segs.filter((sg) => hidden.has(sg) && inDay(sg) && !local(sg)).map((sg) => ({
         e: sg.e, s: Math.max(sg.s, a), eSlot: Math.min(sg.eSlot, b), lane: -1,
         contL: sg.contL || sg.s < a, contR: sg.contR || sg.eSlot > b, piece: true, day: key,
@@ -614,8 +644,8 @@ export class MonthCalendar {
   private dayCells(ws: string, today: string, isWeek: boolean): Spec[] {
     const { lang } = ctx;
     const specs: Spec[] = [];
-    for (let d = 0; d < 7; d++) {
-      const key = addDays(ws, d);
+    for (let d = 0; d < this.cols.length; d++) {
+      const key = this.dayKey(ws, d);
       const wd = weekdayOfKey(key);
       const dayNum = +key.slice(8, 10);
       const past = key < today;
@@ -730,7 +760,7 @@ export class MonthCalendar {
     for (const sg of bars) {
       let lane = 0;
       for (;; lane++) {
-        const row = (occ[lane] ||= new Array(14).fill(false));
+        const row = (occ[lane] ||= new Array(2 * this.cols.length).fill(false));
         let free = true;
         for (let i = sg.s; i < sg.eSlot; i++) if (row[i]) { free = false; break; }
         if (free) {
@@ -768,7 +798,7 @@ export class MonthCalendar {
       else html += `<span class="tt">${esc(e.title)}</span>`;
       if (c.showLocation && e.ev.location) html += `<span class="loc">${esc(e.ev.location)}</span>`;
       if (c.showDayXofY && sg.contL && e.days > 1 && !short) {
-        const x = diffDays(e.spanFirst, addDays(ws, dayOf(sg))) + 1;
+        const x = diffDays(e.spanFirst, this.dayKey(ws, dayOf(sg))) + 1;
         html += `<span class="dx">${esc(t('dayXofY', { x, y: airbnb ? e.days + 1 : e.days }))}</span>`;
       }
       if (airbnb && !sg.contR && !short && sg.eSlot - sg.s >= 3) html += `<span class="co">🚪</span>`;
@@ -781,9 +811,9 @@ export class MonthCalendar {
     }
 
     if (!rotate) this.busyPages.clear();
-    for (let d = 0; d < 7; d++) this.busyPages.delete(addDays(ws, d));
-    for (let d = 0; d < 7; d++) {
-      const key = addDays(ws, d);
+    for (let d = 0; d < this.cols.length; d++) this.busyPages.delete(this.dayKey(ws, d));
+    for (let d = 0; d < this.cols.length; d++) {
+      const key = this.dayKey(ws, d);
       const a = 2 * d, b = 2 * d + 2;
       const top = shown.filter((sg) => sg.s < b && a < sg.eSlot).reduce((n, sg) => Math.max(n, sg.lane + 1), 0);
       // a bar without a lane shows as a one-day card on each of its days
@@ -840,7 +870,7 @@ export class MonthCalendar {
     };
     // "+N" lives in the day-number row, so it never steals a lane.
     const hidden = new Set<Placed>(segs.filter((s) => s.lane >= L));
-    const moreCount = new Array(7).fill(0);
+    const moreCount = new Array(this.cols.length).fill(0);
     for (const h of hidden) for (const d of days(h)) moreCount[d]++;
 
     const f24 = cfg.datetime.format24;
@@ -858,7 +888,7 @@ export class MonthCalendar {
     // Rotation off (it can be turned off while the screen runs): forget the pages, or the "+N" cells would keep a
     // stale page indicator.
     if (c.rotateBusyDays === false) this.busyPages.clear();
-    for (let d = 0; d < 7; d++) this.busyPages.delete(addDays(ws, d));
+    for (let d = 0; d < this.cols.length; d++) this.busyPages.delete(this.dayKey(ws, d));
     const done = new Set<number>();
     const stacks = compact && rowH > 0 ? this.planCompact(ws, segs, hidden, moreCount, L, compact, rowH, done) : [];
     const pieces = c.rotateBusyDays === false ? [] : this.planBusyDays(ws, segs, hidden, moreCount, L, done);
@@ -886,7 +916,7 @@ export class MonthCalendar {
       else html += `<span class="tt">${esc(e.title)}</span>`;
       if (c.showLocation && e.ev.location) html += `<span class="loc">${esc(e.ev.location)}</span>`;
       if (c.showDayXofY && e.bar && sg.contL && e.days > 1 && !short) {
-        const x = diffDays(e.spanFirst, addDays(ws, Math.floor(sg.s / 2))) + 1; // a part after a busy day starts later
+        const x = diffDays(e.spanFirst, this.dayKey(ws, Math.floor(sg.s / 2))) + 1; // a part after a busy day starts later
         html += `<span class="dx">${esc(t('dayXofY', { x, y: (e.airbnb && !e.checkoutMarker) ? e.days + 1 : e.days }))}</span>`;
       }
       if ((e.airbnb && !e.checkoutMarker) && !sg.contR && !short && sg.eSlot - sg.s >= 3) html += `<span class="co">🚪</span>`;
@@ -911,7 +941,7 @@ export class MonthCalendar {
       });
     }
     for (const st of stacks) {
-      const key = addDays(ws, st.d);
+      const key = this.dayKey(ws, st.d);
       const n = st.pages.length;
       const lines = (items: Placed[]) => items.map((sg) => this.lineHtml(sg, today, nowMs, tz)).join('');
       // pages are stacked in the same place; applyPages() shows one at a time, like the busy days' chips
@@ -922,9 +952,9 @@ export class MonthCalendar {
         ...this.pagedHtml(key, st.pages.map(lines)),
       });
     }
-    for (let d = 0; d < 7; d++) {
+    for (let d = 0; d < this.cols.length; d++) {
       if (!moreCount[d]) continue;
-      const key = addDays(ws, d);
+      const key = this.dayKey(ws, d);
       const pages = this.busyPages.get(key);
       specs.push({
         key: `m${key}`,

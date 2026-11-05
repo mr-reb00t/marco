@@ -673,6 +673,24 @@ h1 .scope {
 }
 
 /* weekday picker */
+/* the days a calendar grid shows (#39): quick picks above the seven toggles, across the whole row so they fit on a phone */
+.field--days {
+  grid-column: 1 / -1;
+}
+.shown-days {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shown-days .wd-picker {
+  flex-wrap: nowrap;
+  max-width: 460px;
+}
+.shown-days .wd-picker button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 2px;
+}
 .wd-picker {
   display: flex;
   gap: 6px;

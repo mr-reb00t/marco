@@ -623,7 +623,7 @@ body {
 
 .cal-dow {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--days, 7), minmax(0, 1fr));
   padding-bottom: 0.9rem;
   border-bottom: var(--grid-w, 1px) solid var(--line);
 }
@@ -647,7 +647,7 @@ body {
 .wk {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--slots, 14), minmax(0, 1fr));
   grid-template-rows: var(--num-h) repeat(var(--lanes, 4), minmax(var(--lane-min), var(--lane-h))) minmax(0, 1fr);
   row-gap: var(--lane-gap);
   border-bottom: var(--grid-w, 1px) solid var(--line);

@@ -1012,8 +1012,9 @@ export function Modal(props: {
 }
 
 /** Weekday toggles (0 = Sunday … 6), shown starting on Monday. */
-export function WeekdayPicker({ value, onChange, labels }: { value: number[]; onChange: (v: number[]) => void; labels: string[] }) {
-  const order = [1, 2, 3, 4, 5, 6, 0];
+export function WeekdayPicker({
+  value, onChange, labels, order = [1, 2, 3, 4, 5, 6, 0],
+}: { value: number[]; onChange: (v: number[]) => void; labels: string[]; order?: number[] }) {
   return (
     <div class="wd-picker" role="group">
       {order.map((d) => {

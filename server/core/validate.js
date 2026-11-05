@@ -233,6 +233,19 @@ function weekdays(ctx, path, v) {
   if (out.length !== list.length) ctx.err(path, 'weekdays must be unique integers 0..6 (0 = Sunday)');
   return out;
 }
+/**
+ * calendar.weekdays (#39): the days the month / week grid shows, at least one. Missing (screens saved before it) is
+ * every day; anything wrong is an error and every day.
+ */
+function shownWeekdays(ctx, path, v, d) {
+  if (v === undefined || v === null) return [...d];
+  const out = weekdays(ctx, path, v);
+  if (!out.length) {
+    if (Array.isArray(v) && !v.length) ctx.err(path, 'pick at least one day');
+    return [...d];
+  }
+  return out;
+}
 function requiredStr(ctx, path, v, d, max) {
   const s = str(ctx, path, v, d, max).trim();
   if (!s) ctx.err(path, 'required');
@@ -365,6 +378,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     // 'today': the grid has no past days, its first cell is today and the rows run on 7 days at a time (screens saved
     // before the option keep 'week')
     startOn: oneOf(ctx, `${p}.calendar.startOn`, ca.startOn, D.calendar.startOn, CALENDAR_START_ON),
+    // the days the grid shows (screens saved before it show every day)
+    weekdays: shownWeekdays(ctx, `${p}.calendar.weekdays`, ca.weekdays, D.calendar.weekdays),
     showLocation: bool(ctx, `${p}.calendar.showLocation`, ca.showLocation, D.calendar.showLocation),
     showEndTime: bool(ctx, `${p}.calendar.showEndTime`, ca.showEndTime, D.calendar.showEndTime),
     showDayXofY: bool(ctx, `${p}.calendar.showDayXofY`, ca.showDayXofY, D.calendar.showDayXofY),

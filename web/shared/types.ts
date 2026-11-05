@@ -547,6 +547,11 @@ export interface CalendarConfig<S = CalendarSource> {
    * the first cell is today and the rows run on 7 days at a time (the column headers follow).
    */
   startOn: CalendarStartOn;
+  /**
+   * Month / week grid (#39): the days of the week it shows (0 = Sunday, unique, ascending; all seven by default). The
+   * others take no column and their events are not drawn; the columns keep the grid's own order.
+   */
+  weekdays: number[];
   showLocation: boolean;
   showEndTime: boolean;
   showDayXofY: boolean;
@@ -2571,7 +2576,7 @@ export interface ScreenProfile {
   screen: Omit<ScreenConfig, 'name'>;
   layout: LayoutConfig;
   background: BackgroundConfig;
-  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'pastEvents' | 'eventFill' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'gridLines' | 'gridColor' | 'agendaDays'> & { sourceIds: string[] | null };
+  calendar: Pick<CalendarConfig, 'enabled' | 'view' | 'weeks' | 'weekStart' | 'startOn' | 'weekdays' | 'showLocation' | 'showEndTime' | 'showDayXofY' | 'showLegend' | 'hidePast' | 'pastEvents' | 'eventFill' | 'maxEventsPerDay' | 'marquee' | 'rotateBusyDays' | 'compactBusyDays' | 'eventStyle' | 'gridLines' | 'gridColor' | 'agendaDays'> & { sourceIds: string[] | null };
   datetime: Omit<DateTimeConfig, 'timezone'>;
   weather: Pick<WeatherConfig, 'enabled' | 'forecastDays' | 'showHourly' | 'showPrecipChance' | 'place'>;
   news: { enabled: boolean; rotateSec: number };

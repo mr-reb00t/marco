@@ -27,6 +27,7 @@ import { atLimit, has, offers } from '../caps';
 import { defaultPrivacyOf, privacyModeOptions } from './Privacy';
 import { LimitNote } from '../components/LimitNote';
 import { AgendaDaysField, EventStyleField, WeeksField } from '../components/PlannerFields';
+import { WeekdaysField } from '../components/ShownDaysField';
 import { t } from '../i18n';
 import { allSourceOptions, builtinNameClashes, guessKind, HOLIDAY_PRESETS, isHttpUrl, KIND_EMOJI, moveItem, SWATCHES, uid } from '../util';
 import type { SectionProps } from './common';
@@ -792,6 +793,9 @@ export function CalendarsSection(props: SectionProps) {
               />
             </Field>
             <WeeksField cfg={props.cfg} set={set} error={errors['calendar.weeks']} />
+            {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && (
+              <WeekdaysField cfg={props.cfg} set={set} error={errors['calendar.weekdays']} />
+            )}
             <EventStyleField cfg={props.cfg} set={set} />
             {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <GridLinesField cfg={props.cfg} set={set} />}
             {c.view !== 'agenda' && props.cfg.layout.preset !== 'agenda' && <EventFillField cfg={props.cfg} set={set} />}

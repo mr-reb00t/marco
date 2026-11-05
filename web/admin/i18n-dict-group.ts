@@ -1,4 +1,4 @@
-// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32) and manual calendar downloads (#37). Admin text keyed by the
+// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32), manual calendar downloads (#37) and the days a calendar grid shows (#39). Admin text keyed by the
 // Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
 const ROWS: [string, string, string, string, string, string][] = [
@@ -199,6 +199,17 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Het is net opgehaald. Probeer het over {secs} s opnieuw.',
     'Den blev hentet for et øjeblik siden. Prøv igen om {secs} s.',
     'Pobrano przed chwilą. Spróbuj ponownie za {secs} s.',
+  ],
+  // the days the month / week grid shows (#39)
+  ['Días que se muestran', 'Days shown', 'Dias mostrados', 'Getoonde dagen', 'Viste dage', 'Wyświetlane dni'],
+  ['Fin de semana', 'Weekend', 'Fim de semana', 'Weekend', 'Weekend', 'Weekend'],
+  [
+    'Los días sin marcar no ocupan sitio y sus eventos no se ven. Un evento de varios días se muestra en los días marcados que toca.',
+    'Unticked days take no space and their events are not shown. An event over several days shows on the ticked days it covers.',
+    'Os dias não marcados não ocupam espaço e os seus eventos não se veem. Um evento de vários dias aparece nos dias marcados que abrange.',
+    'Niet aangevinkte dagen nemen geen ruimte in en hun afspraken zijn niet te zien. Een afspraak van meerdere dagen staat op de aangevinkte dagen die ze raakt.',
+    'Dage uden flueben fylder ikke og deres begivenheder vises ikke. En begivenhed over flere dage vises på de afkrydsede dage, den dækker.',
+    'Nieodznaczone dni nie zajmują miejsca, a ich wydarzenia nie są widoczne. Wydarzenie wielodniowe widać w zaznaczonych dniach, które obejmuje.',
   ],
 ];
 
