@@ -125,7 +125,7 @@ export const AWAY_NOTE = 'Solo en la versión instalada en casa';
 export const outOfEdition = (k: CanvasKind, env: { cloud: boolean }): boolean => env.cloud && CANVAS_KINDS[k]?.edition === 'local';
 
 /** Why a kind cannot be added here (null: it can). Spanish t() keys. */
-export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean }): string | null {
+export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean; photoBg?: boolean }): string | null {
   const d = CANVAS_KINDS[k];
   if (!d) return 'No disponible en este servidor';
   if (env.cloud && d.edition === 'local') return 'Solo en Marco instalado en casa';
@@ -135,6 +135,8 @@ export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly s
   // Sonando ahora reads Spotify accounts linked on this server (feature spotify)
   if (k === 'nowplaying' && env.spotify === false) return 'No disponible en este servidor';
   if (KIND_META[k]?.soon) return 'Llega en una próxima versión';
+  // a photo card over the page's photo makes no sense (photoBg: the page's Fondo is Foto)
+  if (k === 'photo' && env.photoBg) return 'Con el Fondo en Foto no se puede añadir. Cambia el Fondo de la pantalla a Animado o Color.';
   return null;
 }
 

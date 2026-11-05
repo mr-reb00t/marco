@@ -5,6 +5,7 @@ import { Icon } from '../components/icons';
 import { Button, Callout, Card, Field, PageHeader, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { has } from '../caps';
 import { t } from '../i18n';
+import { effectiveBackground, setCanvasPhoto } from '../../shared/glass';
 import type { SectionProps } from './common';
 import { AlbumCover, immichErrorText } from './Immich';
 import { BackgroundRulesCard } from './BackgroundRules';
@@ -20,6 +21,9 @@ function intervalLabel(s: number) {
 
 export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
   const b = cfg.background;
+  // a Personalizado screen shows the photo after its own Fondo in the editor: the switch follows it and sets it there
+  const canvas = cfg.layout.preset === 'canvas' && cfg.canvas ? cfg.canvas : null;
+  const shown = canvas ? !!effectiveBackground(b, canvas).enabled : b.enabled;
   const fx = b.weatherFx ?? 'simple';
   const fit: PortraitFit = b.portraitFit ?? 'auto';
   const galleryOn = has('gallery');
@@ -36,8 +40,18 @@ export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
     <>
       <PageHeader scope="screen" title={t('Fondo')} desc={t('Fotos de fondo, transiciones y efectos ambientales animados.')} />
       <Card id="bg-photos" scope="screen" title={t('Fotos de fondo')} icon="image">
-        <ToggleRow label={t('Mostrar fotos de fondo')} checked={b.enabled} onChange={(v) => set((d) => void (d.background.enabled = v))} />
-        <div class={`stack ${b.enabled ? '' : 'is-disabled'}`}>
+        <ToggleRow
+          label={t('Mostrar fotos de fondo')}
+          hint={canvas ? t('En una pantalla Personalizado también se elige en el editor, en Fondo: Foto, Animado o Color.') : undefined}
+          checked={shown}
+          onChange={(v) =>
+            set((d) => {
+              if (d.layout.preset === 'canvas' && d.canvas) setCanvasPhoto(d.canvas, v);
+              else d.background.enabled = v;
+            })
+          }
+        />
+        <div class={`stack ${shown ? '' : 'is-disabled'}`}>
           {(galleryOn || immichOn || b.source !== 'stock') && (
             <Field label={t('Origen')}>
               <Segmented

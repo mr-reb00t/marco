@@ -168,3 +168,18 @@ export function effectiveBackground<B extends { enabled?: boolean; scope?: strin
   const side = !photo && canvas.sidebar?.side !== 'none' && canvas.sidebar?.fill === 'photo';
   return { ...bg, enabled: photo || side, scope: photo ? 'screen' : 'side' };
 }
+
+/**
+ * "Mostrar fotos de fondo" on a Personalizado screen: turned off, the photo leaves the whole screen and the sidebar
+ * (Animado and a glass sidebar instead); turned on with none, it goes behind the whole screen. The canvas is changed in
+ * place, the saved screen.background is not (effectiveBackground).
+ */
+export function setCanvasPhoto(canvas: Pick<CanvasConfig, 'background' | 'sidebar'>, on: boolean): void {
+  if (!on) {
+    if (canvas.background === 'photo') canvas.background = 'ambient';
+    if (canvas.sidebar.fill === 'photo') canvas.sidebar.fill = 'glass';
+  } else if (!effectiveBackground({ enabled: false }, canvas).enabled) {
+    canvas.background = 'photo';
+    if (canvas.sidebar.fill === 'photo') canvas.sidebar.fill = 'glass';
+  }
+}

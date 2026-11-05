@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.34.1] - 2026-11-05
+
+### Fixed
+- *Mostrar fotos de fondo* (Fondo) on a Personalizado screen now does what it says. The screen follows the editor's
+  own *Fondo* (Foto, Animado or Color), so turning the switch off left the photo on. The switch now shows and changes
+  that setting: off takes the photo off the screen and out of the sidebar, on puts it behind the whole screen.
+- The editor's *Fotos* card no longer disappears from the list and the search when the page's Fondo is Foto. It is
+  shown locked, with what to change.
+
 ## [0.34.0] - 2026-11-05
 
 ### Added

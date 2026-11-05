@@ -101,10 +101,8 @@ export function Palette(props: {
   const tiles = useMemo<Tile[]>(() => {
     const out: Tile[] = [];
     for (const k of PALETTE_KINDS) {
-      // a photo card over a photo background makes no sense
-      if (k === 'photo' && photoBg) continue;
       const m = KIND_META[k]!;
-      out.push({ key: k, spec: { kind: k, label: m.name }, name: m.name, help: m.help, icon: m.icon, group: groupOf(k), lock: lockOf(k, props), away: outOfEdition(k, props) });
+      out.push({ key: k, spec: { kind: k, label: m.name }, name: m.name, help: m.help, icon: m.icon, group: groupOf(k), lock: lockOf(k, { ...props, photoBg }), away: outOfEdition(k, props) });
     }
     {
       const name = 'Cambiar según Casa';

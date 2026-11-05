@@ -148,6 +148,23 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De andre kort kan placeres oven på fotoet. Kun i hovedområdet, ikke i sidebjælken.',
     'Pozostałe karty można umieścić na zdjęciu. Tylko w obszarze głównym, nie na pasku bocznym.',
   ],
+  // a Personalizado screen's photo: the Fondo section's switch and the editor's Fondo go together
+  [
+    'En una pantalla Personalizado también se elige en el editor, en Fondo: Foto, Animado o Color.',
+    'On a Custom screen it is also chosen in the editor, under Background: Photo, Animated or Colour.',
+    'Num ecrã Personalizado também se escolhe no editor, em Fundo: Foto, Animado ou Cor.',
+    'Op een Aangepast scherm kies je dit ook in de editor, bij Achtergrond: Foto, Bewegend of Kleur.',
+    'På en Tilpasset skærm vælges det også i editoren under Baggrund: Foto, Animeret eller Farve.',
+    'Na ekranie Własny wybiera się to też w edytorze, w sekcji Tło: Zdjęcie, Animowane lub Kolor.',
+  ],
+  [
+    'Con el Fondo en Foto no se puede añadir. Cambia el Fondo de la pantalla a Animado o Color.',
+    'It cannot be added while the Background is Photo. Change the screen\'s Background to Animated or Colour.',
+    'Não se pode adicionar com o Fundo em Foto. Muda o Fundo do ecrã para Animado ou Cor.',
+    'Kan niet worden toegevoegd zolang de Achtergrond Foto is. Zet de Achtergrond van het scherm op Bewegend of Kleur.',
+    'Kan ikke tilføjes, mens Baggrund er Foto. Skift skærmens Baggrund til Animeret eller Farve.',
+    'Nie można dodać, gdy Tło to Zdjęcie. Zmień Tło ekranu na Animowane lub Kolor.',
+  ],
   // ... out to the edges of the screen
   ['Hasta el borde de la pantalla', 'Out to the screen edge', 'Até à borda do ecrã', 'Tot aan de rand van het scherm', 'Helt ud til skærmkanten', 'Do krawędzi ekranu'],
   [
