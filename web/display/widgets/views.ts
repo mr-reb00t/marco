@@ -479,6 +479,8 @@ export class Views {
   /**
    * The screen's calendar settings for the night agenda or weeks: calm (no sliding titles, no busy days paging, no
    * legend), one-line events, the agenda as long as it fits. Made again only when the screen's config changes.
+   * The event fill and the grid lines go back to their defaults: the grid's data-fill, data-grid and own --line beat
+   * the dim bedside palette (styles-views.css), so a solid fill or a bright grid colour would light the room up.
    */
   private bedsideCfg(v: BedsideVariant): DisplayConfig {
     const from = ctx.cfg;
@@ -488,7 +490,8 @@ export class Views {
       calendar: {
         ...from.calendar,
         view: v.view === 'agenda' ? 'agenda' : 'month', weeks: v.weeks, agendaDays: 'auto', eventStyle: 'lines',
-        compactBusyDays: false, showLegend: false, marquee: false, rotateBusyDays: false,
+        compactBusyDays: false, showLegend: false, marquee: false, rotateBusyDays: false, eventFill: 'soft', gridLines: 'soft',
+        gridColor: null,
       },
     };
     this.bsCfg = { from, cfg };

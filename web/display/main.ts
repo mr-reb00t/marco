@@ -565,6 +565,11 @@ function applyConfig(raw: DisplayConfig): void {
   // ?eventFill=soft|strong|solid (how much the events' background covers what is behind them, #32)
   const pef = params.get('eventFill');
   if (pef === 'soft' || pef === 'strong' || pef === 'solid') cfg.calendar.eventFill = pef;
+  // ?gridLines=soft|clear|strong&gridColor=rrggbb (how much the month / week grid's lines show, and their colour, #29)
+  const pgl = params.get('gridLines');
+  if (pgl === 'soft' || pgl === 'clear' || pgl === 'strong') cfg.calendar.gridLines = pgl;
+  const pgc = params.get('gridColor');
+  if (pgc && /^[0-9a-f]{6}$/i.test(pgc)) cfg.calendar.gridColor = `#${pgc}`;
   // ?clockAlign=auto|left|center|right&clockSize=0.6…1.6 (where the layouts put the clock, and how large, #36)
   const pca = params.get('clockAlign');
   if (pca === 'auto' || pca === 'left' || pca === 'center' || pca === 'right') cfg.datetime.clockAlign = pca;

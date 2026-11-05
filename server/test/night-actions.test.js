@@ -158,6 +158,28 @@ describe('night mode in a browser', { skip: !findChrome() && 'no Chrome' }, () =
       return { weeks: cal && getComputedStyle(cal).getPropertyValue('--weeks').trim(), rows: cal ? cal.querySelectorAll('.wk').length : 0 };
     }`);
     assert.deepEqual(weeks, { weeks: '3', rows: 3 });
+    // the screen's solid event fill and bright, strong grid stay for the day: at night the weeks keep the dim palette
+    const loud = 'eventFill=solid&gridLines=strong&gridColor=ffffff';
+    const probe = `() => {
+      const cal = document.querySelector('#view .bs-cal .cal');
+      const day = document.querySelector('#calendar.cal');
+      const evs = cal ? [...cal.querySelectorAll('.ev.timed, .ev.bar')] : [];
+      return {
+        evs: evs.length,
+        filled: evs.filter((e) => getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').length,
+        fill: cal?.dataset.fill ?? null, grid: cal?.dataset.grid ?? null, gridC: !!cal?.classList.contains('has-grid-c'),
+        line: cal && getComputedStyle(cal).getPropertyValue('--line').trim(),
+        bsLine: cal && getComputedStyle(cal.parentElement).getPropertyValue('--line').trim(),
+        dayFill: day?.dataset.fill ?? null,
+      };
+    }`;
+    const night = await look(`nightAction=bedside&nightView=weeks&${loud}`, probe);
+    assert.ok(night.evs > 0, JSON.stringify(night));
+    assert.deepEqual({ filled: night.filled, fill: night.fill, grid: night.grid, gridC: night.gridC }, { filled: 0, fill: null, grid: null, gridC: false });
+    assert.equal(night.line, night.bsLine);
+    // by day the same screen keeps them
+    const noon = await look(`nightAction=bedside&nightView=weeks&${loud}`, probe, { day: true });
+    assert.equal(noon.dayFill, 'solid');
   });
 
   test('black hides the screen and what glows on it; dim is as before', { timeout: 120_000 }, async () => {
