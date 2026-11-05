@@ -499,11 +499,19 @@ function pruneManual(cfg) {
   for (const id of manualAt.keys()) if (!ids.has(id)) manualAt.delete(id);
 }
 
-/** When the next manual refresh is allowed: { sources: { id: ISO }, all: ISO | null } (only ones still cooling). */
+/**
+ * When the next manual refresh is allowed, only for ones still cooling: { sources: { id: { at: ISO, secs } },
+ * all: { at: ISO, secs } | null }. `secs` is what the admin counts down from, so a device whose clock differs
+ * from the server's still waits the right time.
+ */
 export function manualRefreshCooldowns(now = Date.now()) {
   const sources = {};
-  for (const [id, at] of manualAt) if (secsLeft(at, MANUAL_SOURCE_COOLDOWN_MS, now) > 0) sources[id] = new Date(at + MANUAL_SOURCE_COOLDOWN_MS).toISOString();
-  const all = secsLeft(manualAllAt, MANUAL_ALL_COOLDOWN_MS, now) > 0 ? new Date(manualAllAt + MANUAL_ALL_COOLDOWN_MS).toISOString() : null;
+  for (const [id, at] of manualAt) {
+    const secs = secsLeft(at, MANUAL_SOURCE_COOLDOWN_MS, now);
+    if (secs > 0) sources[id] = { at: new Date(at + MANUAL_SOURCE_COOLDOWN_MS).toISOString(), secs };
+  }
+  const allSecs = secsLeft(manualAllAt, MANUAL_ALL_COOLDOWN_MS, now);
+  const all = allSecs > 0 ? { at: new Date(manualAllAt + MANUAL_ALL_COOLDOWN_MS).toISOString(), secs: allSecs } : null;
   return { sources, all };
 }
 
@@ -534,10 +542,14 @@ export async function refreshNow({ sourceId = null, now = Date.now() } = {}) {
   }
   const leftAll = secsLeft(manualAllAt, MANUAL_ALL_COOLDOWN_MS, now);
   if (leftAll > 0) return { retryAfter: leftAll };
-  manualAllAt = now;
   const sources = cfg.calendar.sources.filter((s) => s.enabled !== false && isRemote(s));
-  const results = await Promise.all(sources.map(async (s) => {
-    const left = secsLeft(manualAt.get(s.id), MANUAL_SOURCE_COOLDOWN_MS, now);
+  const lefts = sources.map((s) => secsLeft(manualAt.get(s.id), MANUAL_SOURCE_COOLDOWN_MS, now));
+  // Every source still in its own wait: nothing would be fetched, so refuse like a cooldown (the soonest one)
+  // instead of answering an empty run and locking "all" for 120 s.
+  if (lefts.length && lefts.every((l) => l > 0)) return { retryAfter: Math.min(...lefts) };
+  manualAllAt = now;
+  const results = await Promise.all(sources.map(async (s, i) => {
+    const left = lefts[i];
     if (left > 0) return { id: s.id, result: 'cooldown', retryAfter: left };
     manualAt.set(s.id, now);
     const [settled] = await Promise.allSettled([capRefresh(refreshSource(s, { force: true }))]);

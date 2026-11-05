@@ -389,8 +389,13 @@ export function adminRouter({ onConfigSaved } = {}) {
   const statusSources = () => {
     const cool = manualRefreshCooldowns();
     return {
-      sources: sourceStatus().map((s) => (s.id === LOCAL_SOURCE_ID || s.id === BIRTHDAYS_SOURCE_ID ? s : { ...s, refreshAfter: cool.sources[s.id] || null })),
-      refreshAllAfter: cool.all,
+      sources: sourceStatus().map((s) => {
+        if (s.id === LOCAL_SOURCE_ID || s.id === BIRTHDAYS_SOURCE_ID) return s;
+        const c = cool.sources[s.id];
+        return { ...s, refreshAfter: c?.at || null, refreshAfterSecs: c?.secs || 0 };
+      }),
+      refreshAllAfter: cool.all?.at || null,
+      refreshAllAfterSecs: cool.all?.secs || 0,
     };
   };
 
@@ -418,10 +423,11 @@ export function adminRouter({ onConfigSaved } = {}) {
   }));
 
   r.get('/status', (req, res) => {
-    const { sources, refreshAllAfter } = statusSources();
+    const { sources, refreshAllAfter, refreshAllAfterSecs } = statusSources();
     res.json({
       sources,
       refreshAllAfter,
+      refreshAllAfterSecs,
       weather: { ...weatherStatus },
       news: { ...newsStatus },
       displays: connectedCount(),

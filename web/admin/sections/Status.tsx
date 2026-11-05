@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { AdminStatus, SourceRefreshResponse } from '../../shared/types';
-import { BIRTHDAYS_SOURCE_ID, LOCAL_SOURCE_ID } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { Icon } from '../components/icons';
 import { Button, Card, Empty, PageHeader, StatusDot } from '../components/ui';
@@ -11,17 +10,7 @@ import { fetchErrorText } from '../apiErrors';
 import { sourceRowName } from '../util';
 import { UpdatesCard } from '../components/Updates';
 import { toast } from '../components/feedback';
-
-/** Epoch ms of an ISO time, or 0 when absent or unreadable. */
-const msOf = (iso: string | null | undefined) => (iso ? Date.parse(iso) || 0 : 0);
-
-/** Cooldowns (epoch ms when allowed again; '*' = Descargar todos) carried by a status or refresh answer. */
-function coolOf(st: Pick<AdminStatus, 'sources' | 'refreshAllAfter'>): Record<string, number> {
-  const out: Record<string, number> = {};
-  for (const s of st.sources) if (msOf(s.refreshAfter) > 0) out[s.id] = msOf(s.refreshAfter);
-  if (msOf(st.refreshAllAfter) > 0) out['*'] = msOf(st.refreshAllAfter);
-  return out;
-}
+import { allCoolingSecs, coolOf, refreshErrorText, rowRefreshable, waitSecs } from '../sourceRefresh';
 
 export function StatusSection({ cfg }: SectionProps) {
   const newsOn = has('news');
@@ -69,21 +58,21 @@ export function StatusSection({ cfg }: SectionProps) {
   }, [cooling]);
 
   const srcMeta = (id: string) => cfg.calendar.sources.find((s) => s.id === id);
-  const refreshable = (id: string) => {
-    const m = srcMeta(id);
-    return Boolean(m) && m!.enabled !== false && id !== LOCAL_SOURCE_ID && id !== BIRTHDAYS_SOURCE_ID;
-  };
-  const hasRemoteEnabled = cfg.calendar.sources.some((s) => s.enabled !== false);
+  // From the server's rows, not the unsaved draft in cfg, so a button shows only where the server accepts it.
+  const hasRemoteEnabled = Boolean(st?.sources.some(rowRefreshable));
   const allLeft = leftOf('*');
 
   const download = async (sourceId?: string) => {
     setBusy(sourceId || '*');
     try {
       const r: SourceRefreshResponse = await api.refreshSources(sourceId);
-      setSt((p) => p && { ...p, sources: r.sources, refreshAllAfter: r.refreshAllAfter });
+      setSt((p) => p && { ...p, sources: r.sources, refreshAllAfter: r.refreshAllAfter, refreshAllAfterSecs: r.refreshAllAfterSecs });
       setCool(coolOf(r));
       const failed = r.results.some((x) => x.result === 'error');
-      if (sourceId) {
+      // A server that still answers an "all" run in which every source was cooling (nothing fetched).
+      const waiting = sourceId ? 0 : allCoolingSecs(r.results);
+      if (waiting) toast(t('Ya se descargó hace un momento. Inténtalo de nuevo en {secs} s.', { secs: waiting }), 'info');
+      else if (sourceId) {
         if (failed) toast(t('No se pudo descargar el calendario.'), 'error');
         else toast(t('Calendario descargado'));
       } else if (failed) toast(t('Algunos calendarios no se pudieron descargar.'), 'error');
@@ -91,11 +80,14 @@ export function StatusSection({ cfg }: SectionProps) {
     } catch (e) {
       const err = e as ApiError;
       if (err.status === 429) {
-        const raw = Number((err.body as { retryAfter?: unknown } | undefined)?.retryAfter);
-        const secs = Number.isInteger(raw) && raw >= 1 && raw <= 3600 ? raw : 60;
+        const secs = waitSecs((err.body as { retryAfter?: unknown } | undefined)?.retryAfter) || 60;
         setCool((c) => ({ ...c, [sourceId || '*']: Date.now() + secs * 1000 }));
         toast(t('Ya se descargó hace un momento. Inténtalo de nuevo en {secs} s.', { secs }), 'info');
-      } else toast(err.message, 'error');
+      } else {
+        toast(sourceId ? refreshErrorText(err) : err.message, 'error');
+        // A 404 / 409 means the saved calendars changed since the last load: show the server's rows again.
+        if (err.status === 404 || err.status === 409) load();
+      }
     } finally {
       setBusy('');
     }
@@ -238,7 +230,7 @@ export function StatusSection({ cfg }: SectionProps) {
                           </td>
                           {canRefresh && (
                             <td class="num">
-                              {refreshable(s.id) && (
+                              {rowRefreshable(s) && (
                                 <>
                                   {leftOf(s.id) > 0 && <span class="muted">{t('Espera {secs} s', { secs: leftOf(s.id) })} </span>}
                                   <Button

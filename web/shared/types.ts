@@ -2529,6 +2529,8 @@ export interface SourceStatus {
   error?: string | null;
   /** ISO time when a manual refresh is allowed again; null or absent = now (absent on Marco Cloud). */
   refreshAfter?: string | null;
+  /** Seconds until then (0 = now), counted from the server's clock so a device with another time waits right. */
+  refreshAfterSecs?: number;
 }
 
 export type WeatherErrorCode = 'key_missing' | 'key_invalid' | 'rate_limited' | 'http' | 'bad_response';
@@ -2542,6 +2544,8 @@ export interface AdminStatus {
   uptime: number | null;
   /** ISO time when "Descargar todos" is allowed again; null or absent = now. */
   refreshAllAfter?: string | null;
+  /** Seconds until then (0 = now). */
+  refreshAllAfterSecs?: number;
 }
 
 /** Outcome of one source in POST /api/admin/status/refresh. */
@@ -2565,6 +2569,7 @@ export interface SourceRefreshResponse {
   results: SourceRefreshResult[];
   sources: SourceStatus[];
   refreshAllAfter: string | null;
+  refreshAllAfterSecs?: number;
 }
 
 // =================================================================================================

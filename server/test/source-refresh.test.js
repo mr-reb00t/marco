@@ -13,6 +13,7 @@ import { sessionMiddleware, csrfGuard, ensurePassword, loginHandler, hashPasswor
 import { adminRouter } from '../routes/admin.js';
 import { refreshNow, _resetManualRefresh } from '../calendars.js';
 import { closeAll } from '../sse.js';
+import { loadWebModules } from './webModules.js';
 
 const ICS = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//test//EN', 'BEGIN:VEVENT', 'UID:r-1', 'DTSTAMP:20261001T000000Z',
   'DTSTART:20261012T100000Z', 'DTEND:20261012T110000Z', 'SUMMARY:Fetched', 'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
@@ -98,6 +99,7 @@ test('one source: forced fetch, fresh status rows, then a per-source cooldown', 
   assert.equal(row.ok, true);
   assert.equal(row.count, 1);
   assert.ok(row.refreshAfter, 'the answer already carries the cooldown');
+  assert.ok(row.refreshAfterSecs > 55 && row.refreshAfterSecs <= 60, 'and the seconds left, for admins with another clock');
 
   const again = await refresh({ sourceId: 'c_ok' });
   assert.equal(again.status, 429);
@@ -110,6 +112,8 @@ test('one source: forced fetch, fresh status rows, then a per-source cooldown', 
   assert.ok(st.sources.find((s) => s.id === 'c_ok').refreshAfter);
   assert.equal(st.sources.find((s) => s.id === 'c_bad').refreshAfter, null);
   assert.equal(st.refreshAllAfter, null);
+  assert.equal(st.refreshAllAfterSecs, 0);
+  assert.equal(st.sources.find((s) => s.id === 'c_bad').refreshAfterSecs, 0);
   assert.equal(st.sources.find((s) => s.id === 'local').refreshAfter, undefined, 'pseudo-sources have no button');
 });
 
@@ -135,11 +139,61 @@ test('all: sources still cooling are skipped, disabled ones are never fetched, t
   assert.equal(hits.ok, okHits, 'no extra fetch of the cooling source');
   assert.equal(hits.off, 0);
   assert.ok(r.json.refreshAllAfter);
+  assert.ok(r.json.refreshAllAfterSecs > 115 && r.json.refreshAllAfterSecs <= 120);
 
   const again = await refresh({ sourceId: null });
   assert.equal(again.status, 429);
   assert.equal(again.json.error, 'rate_limited');
   assert.ok((await call('GET', '/api/admin/status')).json.refreshAllAfter);
+});
+
+test('all: when every source is still cooling nothing is fetched and "all" is not locked', async () => {
+  assert.equal((await refresh({ sourceId: 'c_ok' })).status, 200);
+  assert.equal((await refresh({ sourceId: 'c_bad' })).status, 200);
+  const before = { ...hits };
+  const r = await refresh({});
+  assert.equal(r.status, 429, JSON.stringify(r.json));
+  assert.equal(r.json.error, 'rate_limited');
+  assert.ok(r.json.retryAfter >= 1 && r.json.retryAfter <= 60, String(r.json.retryAfter));
+  assert.deepEqual(hits, before);
+  const st = (await call('GET', '/api/admin/status')).json;
+  assert.equal(st.refreshAllAfter, null, 'a refused run does not start the 120 s wait');
+});
+
+test('refreshNow: "all" while every source cools answers the soonest wait', async () => {
+  const t0 = Date.now();
+  assert.equal((await refreshNow({ sourceId: 'c_ok', now: t0 })).results[0].result, 'ok');
+  assert.equal((await refreshNow({ sourceId: 'c_bad', now: t0 + 20_000 })).results[0].result, 'error');
+  assert.deepEqual(await refreshNow({ now: t0 + 30_000 }), { retryAfter: 30 });
+  // c_ok is free again: the run goes ahead, skips c_bad and starts the "all" wait
+  const run = await refreshNow({ now: t0 + 60_000 });
+  assert.deepEqual(run.results.map((x) => x.result), ['ok', 'cooldown']);
+  assert.equal((await refreshNow({ now: t0 + 61_000 })).retryAfter, 119);
+});
+
+test('admin helpers: server seconds win over the ISO time, server rows decide the buttons', async () => {
+  const [m] = await loadWebModules('/web/admin/sourceRefresh.ts');
+  const now = 1_000_000;
+  // a server 5 minutes ahead: its ISO time is far off, the seconds are not
+  const ahead = new Date(now + 360_000).toISOString();
+  assert.deepEqual(m.coolOf({ sources: [{ id: 'a', refreshAfter: ahead, refreshAfterSecs: 60 }], refreshAllAfter: ahead, refreshAllAfterSecs: 120 }, now), { a: now + 60_000, '*': now + 120_000 });
+  assert.deepEqual(m.coolOf({ sources: [{ id: 'a', refreshAfter: ahead, refreshAfterSecs: 0 }], refreshAllAfter: null, refreshAllAfterSecs: 0 }, now), {});
+  // older or other servers send only the ISO time
+  assert.deepEqual(m.coolOf({ sources: [{ id: 'a', refreshAfter: ahead }], refreshAllAfter: null }, now), { a: now + 360_000 });
+  assert.deepEqual(m.coolOf({ sources: [{ id: 'a', refreshAfter: ahead, refreshAfterSecs: 'x' }, { id: 'b', refreshAfterSecs: -5 }] }, now), { a: now + 360_000 });
+  assert.equal(m.rowRefreshable({ id: 'c_ok', enabled: true }), true);
+  assert.equal(m.rowRefreshable({ id: 'c_ok' }), true);
+  assert.equal(m.rowRefreshable({ id: 'c_off', enabled: false }), false);
+  assert.equal(m.rowRefreshable({ id: 'local', enabled: true }), false);
+  assert.equal(m.rowRefreshable({ id: 'birthdays', enabled: true }), false);
+  assert.equal(m.allCoolingSecs([]), 0);
+  assert.equal(m.allCoolingSecs([{ id: 'a', result: 'cooldown', retryAfter: 40 }, { id: 'b', result: 'ok' }]), 0);
+  assert.equal(m.allCoolingSecs([{ id: 'a', result: 'cooldown', retryAfter: 40 }, { id: 'b', result: 'cooldown', retryAfter: 12 }]), 12);
+  assert.equal(m.allCoolingSecs([{ id: 'a', result: 'cooldown' }]), 60);
+  assert.equal(m.refreshErrorText({ code: 'rate_limited', message: 'Translated' }), 'Translated');
+  const generic = m.refreshErrorText({ code: '', message: 'source_disabled' });
+  assert.notEqual(generic, 'source_disabled');
+  assert.ok(generic.length > 0);
 });
 
 test('validation: types, length, pseudo-sources, unknown and disabled sources', async () => {

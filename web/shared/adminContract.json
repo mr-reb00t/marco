@@ -2000,7 +2000,8 @@
         "news",
         "displays",
         "uptime",
-        "refreshAllAfter?"
+        "refreshAllAfter?",
+        "refreshAllAfterSecs?"
       ]
     },
     {
@@ -2017,7 +2018,8 @@
       "responseKeys": [
         "results",
         "sources",
-        "refreshAllAfter"
+        "refreshAllAfter",
+        "refreshAllAfterSecs?"
       ]
     },
     {
