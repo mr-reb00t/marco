@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.34.0] - 2026-11-05
+
+### Added
+- *Oscurecer foto* for photo cards on Personalizado screens (#36): a shade over the photo, from 0 to 60 %, so the cards
+  placed over a bright photo stay easy to read.
+- *Hasta el borde de la pantalla* for photo cards (#36): square corners, and the photo reaches the edge of the screen
+  on the sides where its box touches it, like the photo of the Modern design. Only in the main area.
+
 ## [0.33.0] - 2026-11-05
 
 ### Added

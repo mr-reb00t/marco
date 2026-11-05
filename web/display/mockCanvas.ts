@@ -573,6 +573,16 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', behind: true } },
     ],
   },
+  // ... darkened, square and out to the edges of the screen on the three sides it touches (#36)
+  behindEdge: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: B(1, 1, 8, 4) },
+      { kind: 'weather.now', pos: M(1, 11, 's') },
+      { kind: 'calendar.agenda', pos: M(16, 0, 't'), props: { days: 7 } },
+      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', behind: true, dim: 0.35, edge: true } },
+    ],
+  },
   // Sonando ahora (?np=idle: nothing plays, every card is hidden): the wide card, a big one, one line, one without a
   // cover, one in the sidebar, and one with no account chosen (never drawn on a TV)
   nowplaying: {

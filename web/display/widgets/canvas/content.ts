@@ -210,11 +210,17 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     img.src = mediaUrl(p.url);
     timer = setTimeout(show, Math.min(600, Math.max(10, Number(props.intervalSec) || 60)) * 1000);
   };
+  // its "Oscurecer foto" (0 to 0.6, styles-canvas.css)
+  const shade = () => {
+    const d = Number((env.item().props as Props).dim);
+    root.style.setProperty('--ph-dim', String(Number.isFinite(d) ? Math.min(0.6, Math.max(0, d)) : 0));
+  };
   return {
     mount(r, e) {
       root = r;
       env = e;
       root.classList.add('cv-photo');
+      shade();
       const cap = document.createElement('div');
       cap.className = 'cv-ph-cap';
       root.appendChild(cap);
@@ -222,6 +228,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       show();
     },
     update() {
+      shade();
       idx = Math.max(-1, idx - 1);
       show();
     },

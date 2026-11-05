@@ -16,7 +16,7 @@ export type Spec =
   | { k: 'icon'; type: 'navIcon'; label: string }
   /** a Home Assistant icon (canvasCore HA_ICONS) or '' for the automatic one */
   | { k: 'icon'; type: 'haIcon'; label: string }
-  | { k: string; type: 'num'; label: string; min: number; max: number; step?: number; unit?: 'days' | 'sec' | 'n' | 'min' }
+  | { k: string; type: 'num'; label: string; min: number; max: number; step?: number; unit?: 'days' | 'sec' | 'n' | 'min' | 'pct' }
   /** any number, typed (the ends of a bar); `show`: only while it applies */
   | { k: string; type: 'number'; label: string; step?: number; hint?: string; show?: (p: Record<string, any>) => boolean }
   /** the rows under an Entidad card (null: chosen for the entity) */
@@ -240,6 +240,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'fit', type: 'seg', label: 'Encaje', opts: [{ v: 'cover', l: 'Llenar la tarjeta' }, { v: 'contain', l: 'Foto entera' }] },
     { k: 'caption', type: 'bool', label: 'Pie de foto' },
     { k: 'behind', type: 'bool', label: 'Detrás de las otras tarjetas', hint: 'Las demás tarjetas se pueden poner encima de la foto. Solo en la zona principal, no en la barra lateral.' },
+    { k: 'dim', type: 'num', label: 'Oscurecer foto', min: 0, max: 0.6, step: 0.05, unit: 'pct' },
+    { k: 'edge', type: 'bool', label: 'Hasta el borde de la pantalla', hint: 'Esquinas rectas, y la foto llega al borde de la pantalla por los lados donde lo toca, como la foto del diseño Moderno. Solo en la zona principal.' },
   ],
   widget: [
     { k: 'widgetId', type: 'widget', label: 'Widget' },

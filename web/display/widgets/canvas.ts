@@ -11,7 +11,7 @@
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
 import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, isEdge, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -736,10 +736,18 @@ export class Canvas {
       e.el.dataset.cells = `${w}x${h}`;
       // a photo behind the other cards (#36): drawn under the cards placed over it (styles-canvas.css)
       e.el.classList.toggle('is-behind', isBehind(e.item));
+      // a photo out to the edges of the screen: over the grid's padding on each side its box touches
+      const grid = gridDims(this.portrait ? 'portrait' : 'landscape');
+      const edge = isEdge(e.item);
+      e.el.classList.toggle('is-edge', edge);
+      const sides = edge ? [pos.x === 0 && 'l', pos.y === 0 && 't', pos.x + w >= grid.cols && 'r', pos.y + h >= grid.rows && 'b'].filter(Boolean).join('') : '';
+      if (sides) e.el.dataset.edge = sides;
+      else delete e.el.dataset.edge;
       e.el.hidden = false;
       return;
     }
-    e.el.classList.remove('is-behind');
+    e.el.classList.remove('is-behind', 'is-edge');
+    delete e.el.dataset.edge;
     e.zone = 'side';
     e.el.dataset.size = 'side';
     delete e.el.dataset.cells;
@@ -758,7 +766,8 @@ export class Canvas {
     const inherit = e.zone === 'side' && cv.sidebar.fill !== 'photo' ? 'none' : cv.defaults.surface;
     let surface = st?.surface && st.surface !== 'inherit' ? st.surface : inherit;
     if (e.kind === 'spacer') surface = 'none';
-    const radius = st?.radius && st.radius !== 'inherit' ? st.radius : cv.defaults.radius;
+    // a photo out to the edges has square corners, as the Modern design's photo
+    const radius = e.zone === 'main' && isEdge(e.item) ? 'sq' : st?.radius && st.radius !== 'inherit' ? st.radius : cv.defaults.radius;
     e.surface = surface;
     const keep = ['is-ink-dark', 'is-thin', 'no-edge', 'no-blur', 'has-own', 'has-color'].filter((k) => e.card.classList.contains(k));
     e.card.className = [`cv-card is-${surface} r-${radius}`, ...keep].join(' ');

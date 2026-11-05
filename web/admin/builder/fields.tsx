@@ -51,7 +51,7 @@ export interface FieldEnv {
 }
 
 const fmt = (unit: string | undefined, v: number) =>
-  unit === 'min' ? (v === 0 ? t('Nunca') : t('{n} min', { n: v })) : unit === 'days' ? t('{n} días', { n: v }) : unit === 'sec' ? (v >= 60 && v % 60 === 0 ? t('{n} min', { n: v / 60 }) : t('{n} s', { n: v })) : String(v);
+  unit === 'pct' ? `${Math.round(v * 100)}%` : unit === 'min' ? (v === 0 ? t('Nunca') : t('{n} min', { n: v })) : unit === 'days' ? t('{n} días', { n: v }) : unit === 'sec' ? (v >= 60 && v % 60 === 0 ? t('{n} min', { n: v / 60 }) : t('{n} s', { n: v })) : String(v);
 
 /** The built-in icons of the navigation cards (the display draws the same paths: widgets/canvas/nav.ts). */
 const NAV_ICON_PATHS: Record<string, string> = {

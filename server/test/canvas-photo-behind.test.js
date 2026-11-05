@@ -1,12 +1,13 @@
 // A photo behind the other cards on Personalizado (#36): with "Detrás de las otras tarjetas" a photo card takes no
 // cells of the grid, so the server keeps the cards placed over it, the portrait arrangement keeps it under them, the
 // builder lets cards be dropped on it (and finds the photo a free spot when it comes back among them), and the display
-// draws it under them (headless Chrome, skipped without a browser).
+// draws it under them (headless Chrome, skipped without a browser). Its "Oscurecer foto" and "Hasta el borde de la
+// pantalla" (the follow-up on #36): a shade over the photo, and square corners out to the screen's edges.
 // The builder modules load through Node's TypeScript type stripping (skipped before Node 22.18).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import * as nodeModule from 'node:module';
-import { defaultCanvas, deriveCanvasPortrait, isBehind, sanitizeCanvas } from '../core/canvasCore.js';
+import { defaultCanvas, deriveCanvasPortrait, isBehind, isEdge, sanitizeCanvas } from '../core/canvasCore.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
 nodeModule.registerHooks?.({
@@ -60,6 +61,24 @@ test('the server keeps the cards placed over a photo behind them; without it the
   assert.equal(plain.items[0].props.behind, false);
   assert.equal(isBehind({ kind: 'clock.digital', props: { behind: true } }), false);
   assert.equal(isBehind({ kind: 'photo', props: { behind: 'yes' } }), false);
+});
+
+test("a photo's shade (0 to 0.6) and its edge: off by default, checked, and only a photo has them", () => {
+  const c = collect();
+  const out = sanitizeCanvas(c, 'canvas', { ...defaultCanvas(), items: [item('cv_photo001', 'photo', box(0, 0, 8, 8), { dim: 0.353, edge: true })] });
+  assert.deepEqual(c.errors, []);
+  assert.deepEqual([out.items[0].props.dim, out.items[0].props.edge], [0.35, true]);
+  assert.equal(isEdge(out.items[0]), true);
+  const c2 = collect();
+  const plain = sanitizeCanvas(c2, 'canvas', { ...defaultCanvas(), items: [item('cv_photo001', 'photo', box(0, 0, 8, 8))] });
+  assert.deepEqual([plain.items[0].props.dim, plain.items[0].props.edge], [0, false]);
+  const c3 = collect();
+  const over = sanitizeCanvas(c3, 'canvas', { ...defaultCanvas(), items: [item('cv_photo001', 'photo', box(0, 0, 8, 8), { dim: 5 })] });
+  assert.equal(over.items[0].props.dim, 0.6);
+  const c4 = collect();
+  sanitizeCanvas(c4, 'canvas', { ...defaultCanvas(), items: [item('cv_photo001', 'photo', box(0, 0, 8, 8), { dim: 'dark', edge: 'yes' })] });
+  assert.deepEqual(c4.errors.map((e) => e[0]).sort(), ['canvas.items[0].props.dim', 'canvas.items[0].props.edge']);
+  assert.equal(isEdge({ kind: 'clock.digital', props: { edge: true } }), false);
 });
 
 test('portrait: the photo behind keeps its place under the others, which are placed as if it were not there', () => {
@@ -130,6 +149,39 @@ describe('photo behind the cards in a browser', { skip: !findChrome() && 'no Chr
         assert.equal(r.clockOnPhoto, true, `${o}: ${JSON.stringify(r)}`);
         assert.equal(r.top, 'clock.digital', o);
         assert.equal(r.photoBig, true, o);
+      } finally {
+        await p.close();
+      }
+    }
+  });
+
+  test('darkened, square and out to the edges it touches, still under the cards, on both orientations', { timeout: 90_000 }, async () => {
+    for (const [o, size] of [['landscape', { width: 1920, height: 1080 }], ['portrait', { width: 1080, height: 1920 }]]) {
+      const p = await browser.page(`${web.url}/?demo=1&lite=1&lang=en&now=2026-11-05T10:00&preset=canvas&shot=behindEdge&orientation=${o}`, size);
+      try {
+        const r = await p.eval(`(async () => {
+          for (let i = 0; i < 60 && !document.querySelector('.cv-item[data-kind="clock.digital"] .clock .d'); i++) await new Promise((r) => setTimeout(r, 100));
+          const el = (k) => document.querySelector('.cv-item[data-kind="' + k + '"]');
+          const ph = el('photo').getBoundingClientRect(), ck = el('clock.digital').getBoundingClientRect();
+          const grid = document.getElementById('canvas').getBoundingClientRect();
+          const card = el('photo').querySelector('.cv-card');
+          const top = document.elementFromPoint(ck.left + ck.width / 2, ck.top + ck.height / 2)?.closest('.cv-item')?.dataset.kind;
+          return {
+            edge: el('photo').dataset.edge, l: ph.left, t: ph.top, r: grid.right - ph.right, b: grid.bottom - ph.bottom,
+            radius: getComputedStyle(card).borderTopLeftRadius, shade: getComputedStyle(el('photo').querySelector('.cv-photo'), '::after').backgroundColor,
+            agendaRadius: getComputedStyle(el('calendar.agenda').querySelector('.cv-card')).borderTopLeftRadius, top,
+          };
+        })()`);
+        // a box of 16 x 16 cells from the top left: the left, top and bottom edges of the 24 x 16 grid, the left, top and
+        // right ones of the 16 x 24 grid
+        assert.equal(r.edge, o === 'landscape' ? 'ltb' : 'ltr', `${o}: ${JSON.stringify(r)}`);
+        assert.ok(Math.abs(r.l) < 1 && Math.abs(r.t) < 1, `${o}: ${JSON.stringify(r)}`);
+        if (o === 'landscape') assert.ok(Math.abs(r.b) < 1 && r.r > 100, `${o}: ${JSON.stringify(r)}`);
+        else assert.ok(Math.abs(r.r) < 1 && r.b > 100, `${o}: ${JSON.stringify(r)}`);
+        assert.equal(r.radius, '0px', o);
+        assert.notEqual(r.agendaRadius, '0px', o);
+        assert.equal(r.shade, 'rgba(0, 0, 0, 0.35)', o);
+        assert.equal(r.top, 'clock.digital', o);
       } finally {
         await p.close();
       }

@@ -148,6 +148,16 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De andre kort kan placeres oven på fotoet. Kun i hovedområdet, ikke i sidebjælken.',
     'Pozostałe karty można umieścić na zdjęciu. Tylko w obszarze głównym, nie na pasku bocznym.',
   ],
+  // ... out to the edges of the screen
+  ['Hasta el borde de la pantalla', 'Out to the screen edge', 'Até à borda do ecrã', 'Tot aan de rand van het scherm', 'Helt ud til skærmkanten', 'Do krawędzi ekranu'],
+  [
+    'Esquinas rectas, y la foto llega al borde de la pantalla por los lados donde lo toca, como la foto del diseño Moderno. Solo en la zona principal.',
+    'Square corners, and the photo reaches the edge of the screen on the sides where it touches it, like the photo of the Modern design. Only in the main area.',
+    'Cantos retos, e a foto chega à borda do ecrã nos lados onde lhe toca, como a foto do design Moderno. Só na zona principal.',
+    'Rechte hoeken, en de foto loopt door tot de rand van het scherm aan de kanten waar hij die raakt, zoals de foto van het ontwerp Modern. Alleen in het hoofdgedeelte.',
+    'Lige hjørner, og fotoet går helt ud til skærmkanten på de sider, hvor det rører den, som fotoet i designet Moderne. Kun i hovedområdet.',
+    'Proste rogi, a zdjęcie sięga krawędzi ekranu po stronach, gdzie jej dotyka, jak zdjęcie w projekcie Nowoczesny. Tylko w obszarze głównym.',
+  ],
   [
     'Delante de las otras tarjetas no hay sitio libre para la foto, así que sigue detrás. Haz sitio o hazla más pequeña.',
     'There is no free room for the photo in front of the other cards, so it stays behind them. Make room or make it smaller.',

@@ -1123,7 +1123,11 @@ tries the named sizes. The display config carries `w` and `h` as they are; sideb
 `fill`). Cards never share cells, except a photo card with `props.behind: true` ("Detrás de las otras tarjetas", #36,
 `isBehind(item)`): on the main grid it takes no cells, so saving never moves the cards placed over it, and the display
 draws it under them (`.cv-item.is-behind`). The portrait view drawn from the landscape one keeps it where it was
-(inside the grid) and places the other cards as if it were not there. In the sidebar it is an ordinary card. A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
+(inside the grid) and places the other cards as if it were not there. In the sidebar it is an ordinary card. Any
+photo card also has `props.dim` (0 to 0.6, default 0: a shade over the photo, "Oscurecer foto") and `props.edge`
+(default `false`, "Hasta el borde de la pantalla", `isEdge(item)`): on the main grid it gets square corners and, on each
+side its box touches the grid's edge, covers the grid's padding up to the screen's edge (`.cv-item.is-edge`,
+`data-edge` of `l`, `t`, `r`, `b`). A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
 kind's own cap comes on top).
 
 **Grid and density.** Every canvas is on the 24×16 grid, and a saved one carries `grid: "fine"`. `grid` is deprecated:

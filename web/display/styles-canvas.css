@@ -108,6 +108,14 @@
 /* a photo behind the other cards (#36): they may share its cells, and are drawn over it */
 #app.preset-canvas .cv-item:not(.is-behind) { z-index: 1; }
 #app.preset-canvas .cv-item.is-behind { z-index: 0; }
+/* a photo out to the edges of the screen (its "Hasta el borde de la pantalla"): over the grid's padding on each side
+   its box touches (data-edge: l, t, r, b), with no rim or shadow, as the Modern design's photo */
+.style-modern #app.preset-canvas .cv-item.is-edge[data-edge*='l'] { margin-left: calc(-1 * var(--cv-edge, 2.4rem)); }
+.style-modern #app.preset-canvas .cv-item.is-edge[data-edge*='r'] { margin-right: calc(-1 * var(--cv-edge, 2.4rem)); }
+.style-modern #app.preset-canvas .cv-item.is-edge[data-edge*='t'] { margin-top: calc(-1 * var(--cv-edge, 2.4rem)); }
+.style-modern #app.preset-canvas .cv-item.is-edge[data-edge*='b'] { margin-bottom: calc(-1 * var(--cv-edge, 2.4rem)); }
+#app#app.preset-canvas .cv-item.is-edge > .cv-card { border: 0; box-shadow: none; }
+#app#app.preset-canvas .cv-item.is-edge > .cv-card::before { display: none; }
 #app.preset-canvas .cv-item.is-empty, #app.preset-canvas .cv-item.is-cond-off { visibility: hidden; }
 #app.preset-canvas .cv-card {
   position: relative;
@@ -502,6 +510,8 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-photo { padding: 0; }
 #app.preset-canvas .cv-ph { position: absolute; inset: 0; background-size: cover; background-position: center; }
 #app.preset-canvas .cv-ph.contain { background-size: contain; background-repeat: no-repeat; }
+/* the card's "Oscurecer foto": a shade over the slideshow, under the caption */
+#app.preset-canvas .cv-photo::after { content: ''; position: absolute; inset: 0; background: rgb(0 0 0 / var(--ph-dim, 0)); pointer-events: none; }
 #app.preset-canvas .cv-ph-cap { position: absolute; left: 1.6rem; right: 1.6rem; bottom: 1.2rem; z-index: 1; font-size: 1.4rem; color: rgb(255 255 255 / 0.85); text-shadow: 0 0.1rem 0.6rem rgb(0 0 0 / 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-ph-cap:empty { display: none; }
 #app.preset-canvas .cv-widget { padding: 0; }

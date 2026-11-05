@@ -698,13 +698,17 @@ export const CANVAS_KINDS = {
   },
   photo: {
     cat: 'content', sizes: ['s', 'm', 't', 'l', 'xl'], def: 'm', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 2,
-    // behind: under the other cards (#36): it takes no cells of the grid, so they can be placed over it (isBehind)
-    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, behind: false }),
+    // behind: under the other cards (#36): it takes no cells of the grid, so they can be placed over it (isBehind).
+    // dim: how much the photo is darkened (0 to 0.6), so the cards over it read well; edge: square corners, and out to
+    // the edges of the screen on the sides where it touches them (the main area only)
+    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, behind: false, dim: 0, edge: false }),
     props: (c, p, x) => ({
       intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 600),
       fit: P.oneOf(c, `${p}.fit`, x.fit, 'cover', ['cover', 'contain']),
       caption: P.bool(c, `${p}.caption`, x.caption, false),
       behind: P.bool(c, `${p}.behind`, x.behind, false),
+      dim: Math.round(P.num(c, `${p}.dim`, x.dim, 0, 0, 0.6, false) * 100) / 100,
+      edge: P.bool(c, `${p}.edge`, x.edge, false),
     }),
   },
   widget: {
@@ -1390,6 +1394,11 @@ function rotatorCardRange(cd, grid) {
  */
 export function isBehind(item) {
   return item?.kind === 'photo' && item.props?.behind === true;
+}
+
+/** A photo card with "Hasta el borde de la pantalla": square corners, over the main area's padding where it touches it. */
+export function isEdge(item) {
+  return item?.kind === 'photo' && item.props?.edge === true;
 }
 
 export function kindFor(item) {
