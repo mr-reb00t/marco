@@ -121,7 +121,8 @@ The admin and the display read these fields to decide which sections, actions an
   `screenBuilder`, `valueHooks` (`/api/hooks/values`, the Valor card and the Value widget), `tokenScopes` (scopes on API tokens),
   `stockQuotes` (the Bolsa card can get quotes; Marco Cloud only when the service has a Finnhub key), `familyAccess`
   (each person's own phone dashboard, see "Family access"), `spotify` ("now playing" with the household's own Spotify
-  app, see [Now playing](#now-playing)). A self-hosted server turns all of them on, except
+  app, see [Now playing](#now-playing)), `sourceRefresh` (the manual download buttons on *Estado*,
+  `POST /api/admin/status/refresh`; the admin hides them when a server leaves it out). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -392,7 +393,8 @@ Rules for the mutating setup endpoints:
 | `GET /api/admin/countdowns?screen=` | Same answer as `GET /api/countdowns` for the screen with that id or slug (unknown → default screen); used by the Countdowns page |
 | `POST /api/admin/birthdays/parse-csv` | `{ text }`: one `name;dd/mm[/yyyy]` per line (`;`, `,` or tab) → parsed rows, duplicates, errors with line numbers |
 | `GET /api/admin/dashboard` | Next events, weather now, active schedules, recent activity, warnings |
-| `GET /api/admin/status` | Per-source last fetch / errors, weather (`ok`, `updatedAt`, `error`, `errorCode`: `key_missing`, `key_invalid`, `rate_limited`, `http`, `bad_response`, `provider`) and news status, display count, uptime |
+| `GET /api/admin/status` | Per-source last fetch / errors, weather (`ok`, `updatedAt`, `error`, `errorCode`: `key_missing`, `key_invalid`, `rate_limited`, `http`, `bad_response`, `provider`) and news status, display count, uptime. Each remote source row also has `refreshAfter` (ISO time when a manual download is allowed again, `null` = now) and the body has `refreshAllAfter` (the same for "all"); both are optional, Marco Cloud leaves them out |
+| `POST /api/admin/status/refresh` | Feature `sourceRefresh`. Body `{ sourceId? }`: download that calendar now (ICS, Google or Microsoft), or every enabled remote source when `sourceId` is absent or `null`, ignoring `refreshMin`. Cooldowns kept in memory (a restart forgets them): 60 s per source (an "all" run starts each fetched source's cooldown too) and 120 s for "all". → `{ results: [{ id, result: 'ok'\|'error'\|'cooldown', error?, retryAfter? }], sources: SourceStatus[], refreshAllAfter }`; in an "all" run a source still cooling down is skipped as `cooldown` with its `retryAfter` seconds. Displays get the live `events` message when the merged events changed, as after a timed fetch. Errors: `400` (`sourceId must be a string` of 1..100 chars, a body that is not an object, `not_refreshable` for `local` / `birthdays`), `404` unknown source, `409 source_disabled`, `429 rate_limited` with `retryAfter` seconds and a `Retry-After` header |
 
 **Sources and integrations**
 

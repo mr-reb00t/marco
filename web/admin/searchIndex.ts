@@ -115,6 +115,6 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Entrar con Google', route: 'security', anchor: 'acc-google', keywords: 'google sign in login desconectar disconnect', feature: 'accountSettings' },
   { label: 'Descargar mis datos', route: 'security', anchor: 'acc-data', keywords: 'export data datos dados gdpr rgpd download descargar', feature: 'accountSettings' },
   { label: 'Eliminar cuenta', route: 'security', anchor: 'acc-delete', keywords: 'delete account borrar eliminar cuenta conta remove', feature: 'accountSettings' },
-  { label: 'Estado de las fuentes', route: 'status', keywords: 'status health salud errores' },
+  { label: 'Estado de las fuentes', route: 'status', keywords: 'status health salud errores descargar download fetch sync sincronizar' },
   { label: 'Actualizaciones', route: 'status', anchor: 'updates', keywords: 'update updates actualizar actualización atualizar atualização version versión versão upgrade nueva new nova automático automatic', feature: 'updates' },
 ];

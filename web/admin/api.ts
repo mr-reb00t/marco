@@ -14,6 +14,7 @@ import type {
   PhotoNameCheck,
   PhotoUploadResult,
   AdminStatus,
+  SourceRefreshResponse,
   AnnounceRequest,
   AnnounceResponse,
   AnnouncementsResponse,
@@ -289,6 +290,8 @@ export const api = {
     request<{ ok: boolean; updated: string[]; missing: string[]; total: number; inRotation: number }>('POST', '/api/admin/photos/visibility', { files, hidden }),
   refreshDisplays: (screens?: string[]) => request<unknown>('POST', '/api/admin/refresh-displays', screens?.length ? { screens } : {}),
   status: () => request<AdminStatus>('GET', '/api/admin/status'),
+  refreshSources: (sourceId?: string) =>
+    request<SourceRefreshResponse>('POST', '/api/admin/status/refresh', sourceId ? { sourceId } : {}),
 
   // ---- v2 (docs/ARCHITECTURE.md) ----
   dashboard: () => request<DashboardResponse>('GET', '/api/admin/dashboard'),

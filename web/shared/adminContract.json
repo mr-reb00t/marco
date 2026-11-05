@@ -1999,7 +1999,25 @@
         "weather",
         "news",
         "displays",
-        "uptime"
+        "uptime",
+        "refreshAllAfter?"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/status/refresh",
+      "query": [],
+      "feature": "sourceRefresh",
+      "callers": [
+        "refreshSources"
+      ],
+      "request": "{sourceId?}",
+      "response": "SourceRefreshResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "results",
+        "sources",
+        "refreshAllAfter"
       ]
     },
     {

@@ -8,7 +8,9 @@ import * as ha from '../homeassistant.js';
 import { homeAssistantTokenChanged } from '../haService.js';
 import * as immich from '../immich.js';
 import { IMMICH_KEY_RE, immichKeyStatus } from '../core/immichCore.js';
-import { testIcs, sourceStatus } from '../calendars.js';
+import { testIcs, sourceStatus, refreshNow, manualRefreshCooldowns } from '../calendars.js';
+import { runRefresh } from '../refresher.js';
+import { LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from '../core/defaults.js';
 import { testFeed, status as newsStatus } from '../news.js';
 import { status as weatherStatus, weatherKey, checkWeatherKey, previewWeather } from '../weather.js';
 import { previewPlacesOf } from '../core/weatherPlaces.js';
@@ -382,9 +384,44 @@ export function adminRouter({ onConfigSaved } = {}) {
     res.status(status).json(body);
   });
 
+  // Source rows of the status page, with when a manual refresh is allowed again (#37). Kept out of sourceStatus()
+  // itself so /dashboard does not change.
+  const statusSources = () => {
+    const cool = manualRefreshCooldowns();
+    return {
+      sources: sourceStatus().map((s) => (s.id === LOCAL_SOURCE_ID || s.id === BIRTHDAYS_SOURCE_ID ? s : { ...s, refreshAfter: cool.sources[s.id] || null })),
+      refreshAllAfter: cool.all,
+    };
+  };
+
+  // Manual "Descargar ahora" / "Descargar todos" on Admin > Estado (#37): force-fetches a remote source (or every
+  // enabled one) behind server-side cooldowns, then lets the refresher tell the displays when events changed.
+  r.post('/status/refresh', wrap(async (req, res) => {
+    const body = req.body ?? {};
+    if (typeof body !== 'object' || Array.isArray(body)) return res.status(400).json({ error: 'body must be an object' });
+    const sourceId = body.sourceId ?? null;
+    if (sourceId !== null) {
+      if (typeof sourceId !== 'string' || !sourceId || sourceId.length > 100) return res.status(400).json({ error: 'sourceId must be a string' });
+      if (sourceId === LOCAL_SOURCE_ID || sourceId === BIRTHDAYS_SOURCE_ID) return res.status(400).json({ error: 'not_refreshable' });
+      const src = getConfig().calendar.sources.find((s) => s.id === sourceId);
+      if (!src) return res.status(404).json({ error: 'not found' });
+      if (src.enabled === false) return res.status(409).json({ error: 'source_disabled' });
+    }
+    const out = await refreshNow({ sourceId });
+    if (out.retryAfter) {
+      res.set('retry-after', String(out.retryAfter));
+      return res.status(429).json({ error: 'rate_limited', retryAfter: out.retryAfter });
+    }
+    // Not awaited: displays get SSE `events` when the merged events changed, exactly as after a timed fetch.
+    runRefresh().catch(() => {});
+    res.json({ results: out.results, ...statusSources() });
+  }));
+
   r.get('/status', (req, res) => {
+    const { sources, refreshAllAfter } = statusSources();
     res.json({
-      sources: sourceStatus(),
+      sources,
+      refreshAllAfter,
       weather: { ...weatherStatus },
       news: { ...newsStatus },
       displays: connectedCount(),

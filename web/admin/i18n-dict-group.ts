@@ -1,4 +1,4 @@
-// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29) and past events (#32). Admin text keyed by the
+// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32) and manual calendar downloads (#37). Admin text keyed by the
 // Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
 const ROWS: [string, string, string, string, string, string][] = [
@@ -182,6 +182,23 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Voor de andere kaarten is geen vrije plek voor de foto, dus blijft hij erachter. Maak ruimte of maak hem kleiner.',
     'Der er ikke plads til fotoet foran de andre kort, så det bliver bagved. Gør plads eller gør det mindre.',
     'Przed innymi kartami nie ma wolnego miejsca na zdjęcie, więc zostaje za nimi. Zrób miejsce lub je zmniejsz.',
+  ],
+  // manual calendar downloads on Estado (#37); {secs}, not {n}, so t() never picks plural forms for these short labels
+  ['Descargar ahora', 'Fetch now', 'Transferir agora', 'Nu ophalen', 'Hent nu', 'Pobierz teraz'],
+  ['Descargar todos', 'Fetch all', 'Transferir todos', 'Alles ophalen', 'Hent alle', 'Pobierz wszystkie'],
+  ['Descarga ahora todos los calendarios activos', 'Fetch every active calendar now', 'Transfere agora todos os calendários ativos', "Haal alle actieve agenda's nu op", 'Henter alle aktive kalendere nu', 'Pobiera teraz wszystkie aktywne kalendarze'],
+  ['Espera {secs} s', 'Wait {secs} s', 'Aguarde {secs} s', 'Wacht {secs} s', 'Vent {secs} s', 'Poczekaj {secs} s'],
+  ['Calendario descargado', 'Calendar fetched', 'Calendário transferido', 'Agenda opgehaald', 'Kalender hentet', 'Kalendarz pobrany'],
+  ['Calendarios descargados', 'Calendars fetched', 'Calendários transferidos', "Agenda's opgehaald", 'Kalendere hentet', 'Kalendarze pobrane'],
+  ['No se pudo descargar el calendario.', 'The calendar could not be fetched.', 'Não foi possível transferir o calendário.', 'De agenda kon niet worden opgehaald.', 'Kalenderen kunne ikke hentes.', 'Nie udało się pobrać kalendarza.'],
+  ['Algunos calendarios no se pudieron descargar.', 'Some calendars could not be fetched.', 'Alguns calendários não puderam ser transferidos.', "Sommige agenda's konden niet worden opgehaald.", 'Nogle kalendere kunne ikke hentes.', 'Niektórych kalendarzy nie udało się pobrać.'],
+  [
+    'Ya se descargó hace un momento. Inténtalo de nuevo en {secs} s.',
+    'It was fetched a moment ago. Try again in {secs} s.',
+    'Foi transferido há pouco. Tente de novo dentro de {secs} s.',
+    'Het is net opgehaald. Probeer het over {secs} s opnieuw.',
+    'Den blev hentet for et øjeblik siden. Prøv igen om {secs} s.',
+    'Pobrano przed chwilą. Spróbuj ponownie za {secs} s.',
   ],
 ];
 

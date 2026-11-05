@@ -465,13 +465,14 @@ function collectErrors(sources) {
   return errs;
 }
 
+// Safety net: one hung source must never stall the whole refresher (or a manual refresh request).
+const capRefresh = (p) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('refresh timeout')), 90_000).unref())]);
+
 /** Refresh every stale enabled source (used by the background refresher). */
 export async function refreshAll({ force = false } = {}) {
   const cfg = getConfig();
   const sources = cfg.calendar.sources.filter((s) => s.enabled);
-  // Safety net: one hung source must never stall the whole refresher.
-  const cap = (p) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('refresh timeout')), 90_000).unref())]);
-  await Promise.allSettled(sources.map((s) => cap(refreshSource(s, { force }))));
+  await Promise.allSettled(sources.map((s) => capRefresh(refreshSource(s, { force }))));
   // drop cache entries of removed sources
   const ids = new Set(cfg.calendar.sources.map((s) => s.id));
   for (const id of cache.keys()) if (!ids.has(id)) cache.delete(id);
@@ -481,6 +482,74 @@ export async function refreshAll({ force = false } = {}) {
       if (m && !cfg.calendar.sources.some((s) => cacheFile(s.id).endsWith(f))) fs.unlinkSync(path.join(paths.cache, f));
     }
   } catch { /* ignore */ }
+}
+
+// Manual refreshes from Admin > Estado (#37): the owner may fetch a calendar now, but never often enough to
+// hammer its server. In memory only: a restart forgets them, which is fine for a 1-2 minute wait.
+export const MANUAL_SOURCE_COOLDOWN_MS = 60_000;
+export const MANUAL_ALL_COOLDOWN_MS = 120_000;
+const manualAt = new Map(); // sourceId -> ms of the last manual fetch (single or "all")
+let manualAllAt = 0;
+const secsLeft = (at, ms, now) => (at ? Math.max(0, Math.ceil((at + ms - now) / 1000)) : 0);
+const isRemote = (s) => s.id !== LOCAL_SOURCE_ID && s.id !== BIRTHDAYS_SOURCE_ID;
+
+/** Forget cooldowns of sources that no longer exist, so the map cannot grow with removed ids. */
+function pruneManual(cfg) {
+  const ids = new Set(cfg.calendar.sources.map((s) => s.id));
+  for (const id of manualAt.keys()) if (!ids.has(id)) manualAt.delete(id);
+}
+
+/** When the next manual refresh is allowed: { sources: { id: ISO }, all: ISO | null } (only ones still cooling). */
+export function manualRefreshCooldowns(now = Date.now()) {
+  const sources = {};
+  for (const [id, at] of manualAt) if (secsLeft(at, MANUAL_SOURCE_COOLDOWN_MS, now) > 0) sources[id] = new Date(at + MANUAL_SOURCE_COOLDOWN_MS).toISOString();
+  const all = secsLeft(manualAllAt, MANUAL_ALL_COOLDOWN_MS, now) > 0 ? new Date(manualAllAt + MANUAL_ALL_COOLDOWN_MS).toISOString() : null;
+  return { sources, all };
+}
+
+const resultOf = (id, settled) => {
+  if (settled.status === 'rejected') return { id, result: 'error', error: settled.reason?.message || String(settled.reason) };
+  const entry = settled.value;
+  return { id, result: entry && entry.ok === false ? 'error' : 'ok', error: entry?.error || null };
+};
+
+/**
+ * Force-fetch one source (`sourceId`) or every enabled remote source (null). Returns
+ * { retryAfter } (seconds) when refused by a cooldown, else { results: [{ id, result, error?, retryAfter? }] }.
+ * Cooldowns are stamped before fetching, so a double click cannot start two fetches. A forced call while the
+ * background refresher is already fetching that source shares its in-flight request (refreshSource).
+ */
+export async function refreshNow({ sourceId = null, now = Date.now() } = {}) {
+  const cfg = getConfig();
+  pruneManual(cfg);
+  if (sourceId != null) {
+    const s = cfg.calendar.sources.find((x) => x.id === sourceId);
+    // The route checks these first; kept here so a direct caller cannot fetch a disabled or missing source.
+    if (!s || s.enabled === false) return { results: [] };
+    const left = secsLeft(manualAt.get(s.id), MANUAL_SOURCE_COOLDOWN_MS, now);
+    if (left > 0) return { retryAfter: left };
+    manualAt.set(s.id, now);
+    const [settled] = await Promise.allSettled([capRefresh(refreshSource(s, { force: true }))]);
+    return { results: [resultOf(s.id, settled)] };
+  }
+  const leftAll = secsLeft(manualAllAt, MANUAL_ALL_COOLDOWN_MS, now);
+  if (leftAll > 0) return { retryAfter: leftAll };
+  manualAllAt = now;
+  const sources = cfg.calendar.sources.filter((s) => s.enabled !== false && isRemote(s));
+  const results = await Promise.all(sources.map(async (s) => {
+    const left = secsLeft(manualAt.get(s.id), MANUAL_SOURCE_COOLDOWN_MS, now);
+    if (left > 0) return { id: s.id, result: 'cooldown', retryAfter: left };
+    manualAt.set(s.id, now);
+    const [settled] = await Promise.allSettled([capRefresh(refreshSource(s, { force: true }))]);
+    return resultOf(s.id, settled);
+  }));
+  return { results };
+}
+
+/** Tests only: forget every manual refresh cooldown. */
+export function _resetManualRefresh() {
+  manualAt.clear();
+  manualAllAt = 0;
 }
 
 /** Default window used for change detection: a bit before the current month to ~4 months ahead. */

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { AdminStatus } from '../../shared/types';
+import type { AdminStatus, SourceRefreshResponse } from '../../shared/types';
+import { BIRTHDAYS_SOURCE_ID, LOCAL_SOURCE_ID } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { Icon } from '../components/icons';
 import { Button, Card, Empty, PageHeader, StatusDot } from '../components/ui';
@@ -9,6 +10,18 @@ import type { SectionProps } from './common';
 import { fetchErrorText } from '../apiErrors';
 import { sourceRowName } from '../util';
 import { UpdatesCard } from '../components/Updates';
+import { toast } from '../components/feedback';
+
+/** Epoch ms of an ISO time, or 0 when absent or unreadable. */
+const msOf = (iso: string | null | undefined) => (iso ? Date.parse(iso) || 0 : 0);
+
+/** Cooldowns (epoch ms when allowed again; '*' = Descargar todos) carried by a status or refresh answer. */
+function coolOf(st: Pick<AdminStatus, 'sources' | 'refreshAllAfter'>): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of st.sources) if (msOf(s.refreshAfter) > 0) out[s.id] = msOf(s.refreshAfter);
+  if (msOf(st.refreshAllAfter) > 0) out['*'] = msOf(st.refreshAllAfter);
+  return out;
+}
 
 export function StatusSection({ cfg }: SectionProps) {
   const newsOn = has('news');
@@ -17,11 +30,17 @@ export function StatusSection({ cfg }: SectionProps) {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const [, tick] = useState(0);
+  // Manual downloads (#37): busy is '' (idle), '*' (all) or a source id; cool keeps when each may run again.
+  const canRefresh = has('sourceRefresh');
+  const [busy, setBusy] = useState('');
+  const [cool, setCool] = useState<Record<string, number>>({});
 
   const load = async () => {
     setLoading(true);
     try {
-      setSt(await api.status());
+      const next = await api.status();
+      setSt(next);
+      setCool(coolOf(next));
       setErr('');
     } catch (e) {
       setErr((e as ApiError).message);
@@ -39,12 +58,64 @@ export function StatusSection({ cfg }: SectionProps) {
     };
   }, []);
 
+  const now = Date.now();
+  const leftOf = (key: string) => Math.max(0, Math.ceil(((cool[key] || 0) - now) / 1000));
+  const cooling = Object.values(cool).some((at) => at > now);
+  // A 1 s tick only while a wait is counting down, so the "Espera" texts stay exact.
+  useEffect(() => {
+    if (!cooling) return;
+    const c = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(c);
+  }, [cooling]);
+
   const srcMeta = (id: string) => cfg.calendar.sources.find((s) => s.id === id);
+  const refreshable = (id: string) => {
+    const m = srcMeta(id);
+    return Boolean(m) && m!.enabled !== false && id !== LOCAL_SOURCE_ID && id !== BIRTHDAYS_SOURCE_ID;
+  };
+  const hasRemoteEnabled = cfg.calendar.sources.some((s) => s.enabled !== false);
+  const allLeft = leftOf('*');
+
+  const download = async (sourceId?: string) => {
+    setBusy(sourceId || '*');
+    try {
+      const r: SourceRefreshResponse = await api.refreshSources(sourceId);
+      setSt((p) => p && { ...p, sources: r.sources, refreshAllAfter: r.refreshAllAfter });
+      setCool(coolOf(r));
+      const failed = r.results.some((x) => x.result === 'error');
+      if (sourceId) {
+        if (failed) toast(t('No se pudo descargar el calendario.'), 'error');
+        else toast(t('Calendario descargado'));
+      } else if (failed) toast(t('Algunos calendarios no se pudieron descargar.'), 'error');
+      else if (r.results.some((x) => x.result === 'ok')) toast(t('Calendarios descargados'));
+    } catch (e) {
+      const err = e as ApiError;
+      if (err.status === 429) {
+        const raw = Number((err.body as { retryAfter?: unknown } | undefined)?.retryAfter);
+        const secs = Number.isInteger(raw) && raw >= 1 && raw <= 3600 ? raw : 60;
+        setCool((c) => ({ ...c, [sourceId || '*']: Date.now() + secs * 1000 }));
+        toast(t('Ya se descargó hace un momento. Inténtalo de nuevo en {secs} s.', { secs }), 'info');
+      } else toast(err.message, 'error');
+    } finally {
+      setBusy('');
+    }
+  };
   const okCount = st?.sources.filter((s) => s.ok).length ?? 0;
 
   return (
     <>
       <PageHeader title={t('Estado')} desc={t('Salud de las fuentes y pantallas conectadas. Se actualiza cada 15 s.')}>
+        {canRefresh && (
+          <Button
+            icon="download"
+            loading={busy === '*'}
+            disabled={!!busy || allLeft > 0 || !hasRemoteEnabled}
+            title={allLeft > 0 ? t('Espera {secs} s', { secs: allLeft }) : t('Descarga ahora todos los calendarios activos')}
+            onClick={() => download()}
+          >
+            {t('Descargar todos')}
+          </Button>
+        )}
         <Button icon="refresh" loading={loading} onClick={load}>
           {t('Actualizar')}
         </Button>
@@ -139,6 +210,7 @@ export function StatusSection({ cfg }: SectionProps) {
                       <th>{t('Estado')}</th>
                       <th class="num">{t('Eventos')}</th>
                       <th>{t('Última descarga')}</th>
+                      {canRefresh && <th class="num" aria-label={t('Descargar ahora')} />}
                     </tr>
                   </thead>
                   <tbody>
@@ -164,6 +236,26 @@ export function StatusSection({ cfg }: SectionProps) {
                           <td class="muted" title={s.lastFetch ?? ''}>
                             {relTime(s.lastFetch)}
                           </td>
+                          {canRefresh && (
+                            <td class="num">
+                              {refreshable(s.id) && (
+                                <>
+                                  {leftOf(s.id) > 0 && <span class="muted">{t('Espera {secs} s', { secs: leftOf(s.id) })} </span>}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    icon="refresh"
+                                    iconOnly
+                                    aria-label={t('Descargar ahora')}
+                                    title={t('Descargar ahora')}
+                                    loading={busy === s.id}
+                                    disabled={!!busy || leftOf(s.id) > 0}
+                                    onClick={() => download(s.id)}
+                                  />
+                                </>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}

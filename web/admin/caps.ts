@@ -86,8 +86,9 @@ export function capsFrom(health: Partial<HealthResponse> | null | undefined): Ca
  *  accountSettings: the account settings on the admin's account page (Marco Cloud); screenBuilder: Personalizado, the
  *  screen builder (servers that validate layout 'canvas'); familyAccess: each person's own phone dashboard (servers
  *  with /api/admin/family-access); spotify: "now playing" with Spotify (servers that link the household's own
- *  Spotify app). */
-const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify'];
+ *  Spotify app); sourceRefresh: the manual download buttons on Estado (servers that answer
+ *  POST /api/admin/status/refresh). */
+const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh'];
 
 export function hasFeature(caps: Caps, feature: FeatureName): boolean {
   if (!caps.features) return !OPT_IN.includes(feature);

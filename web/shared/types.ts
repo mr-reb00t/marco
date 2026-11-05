@@ -1984,6 +1984,8 @@ export interface Features {
   /** "Sonando ahora": Spotify accounts linked with the household's own Spotify app, the Sonando ahora card and the
    *  line under the clock (/api/admin/spotify*, GET /api/display/nowplaying). Absent = off. */
   spotify: boolean;
+  /** Manual "Descargar ahora" / "Descargar todos" on Admin > Estado (POST /api/admin/status/refresh). Absent = off. */
+  sourceRefresh: boolean;
 }
 
 export type FeatureName = keyof Features;
@@ -2493,6 +2495,8 @@ export interface SourceStatus {
   ok: boolean;
   count: number;
   error?: string | null;
+  /** ISO time when a manual refresh is allowed again; null or absent = now (absent on Marco Cloud). */
+  refreshAfter?: string | null;
 }
 
 export type WeatherErrorCode = 'key_missing' | 'key_invalid' | 'rate_limited' | 'http' | 'bad_response';
@@ -2504,6 +2508,31 @@ export interface AdminStatus {
   displays: number;
   /** seconds; null where there is no long-running process (Marco Cloud) */
   uptime: number | null;
+  /** ISO time when "Descargar todos" is allowed again; null or absent = now. */
+  refreshAllAfter?: string | null;
+}
+
+/** Outcome of one source in POST /api/admin/status/refresh. */
+export type SourceRefreshOutcome = 'ok' | 'error' | 'cooldown';
+
+export interface SourceRefreshResult {
+  id: string;
+  result: SourceRefreshOutcome;
+  /** the source's error text when result is 'error' */
+  error?: string | null;
+  /** seconds left of the source's own cooldown when result is 'cooldown' */
+  retryAfter?: number;
+}
+
+/** POST /api/admin/status/refresh body: one source, or every enabled remote source when sourceId is absent or null. */
+export interface SourceRefreshRequest {
+  sourceId?: string | null;
+}
+
+export interface SourceRefreshResponse {
+  results: SourceRefreshResult[];
+  sources: SourceStatus[];
+  refreshAllAfter: string | null;
 }
 
 // =================================================================================================

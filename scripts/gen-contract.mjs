@@ -37,6 +37,7 @@ const FEATURE_RULES = [
   [/^\/api\/admin\/backups/, 'backups'],
   [/^\/api\/admin\/(export|import\/)/, 'importExport'],
   [/^\/api\/admin\/activity$/, 'activity'],
+  [/^\/api\/admin\/status\/refresh$/, 'sourceRefresh'],
   [/^\/api\/admin\/status$/, 'status'],
   [/^\/api\/admin\/(announce|announcements)/, 'announcements'],
   [/^\/api\/admin\/(displays\/command|refresh-displays)$/, 'displayCommands'],
