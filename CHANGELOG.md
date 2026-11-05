@@ -3,6 +3,32 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.35.0] - 2026-11-05
+
+### Added
+- *Descargar ahora* on each calendar row of *Estado*, and *Descargar todos* in its header (#37). They download iCal,
+  Google and Microsoft calendars right away instead of waiting for the next automatic fetch, and the table shows the
+  result at once. To protect calendar servers, each calendar can be downloaded by hand once a minute and *Descargar
+  todos* once every two minutes; the server enforces it, and the wait shows next to the button. Displays get the
+  changed events straight away.
+- *Días que se muestran* in *Calendarios > Vista del calendario* (#39): choose which weekdays the month and week grids
+  show, with quick buttons *Todos los días*, *Lunes a viernes* and *Fin de semana*. Hidden days take no column, so the
+  other days get wider. A multi-day event that crosses a hidden day is one bar over the shown days it touches. It also
+  works in the layouts built on the month grid, and the Personalizado month and week cards have their own setting.
+  Display URL parameter: `?weekdays=1,2,3,4,5`. All seven days stay the default.
+- *Pantallas táctiles* on carousels (#40): *Deslizar para cambiar de pantalla* on every layout (Classic, Modern, Kids,
+  Personalizado), *Mantener pulsado para pausar* while a finger is held down, and *Puntos de posición* at the bottom,
+  only on touch screens or always. All off by default. The first touch on a dimmed screen only wakes it.
+- *Durante el modo noche* per screen (#38): *Atenuar* (as before, the default), *Vista de mesilla* (the clock alone,
+  the agenda, or one to four weeks, in dim bedside colours, whatever the screen's layout) or *En negro*. A black screen
+  still shows a doorbell ring or an announcement at low brightness with *Despertar con el timbre y los avisos* on.
+  The *Mesilla* layout stays in the list.
+
+### Fixed
+- A swipe that starts on a To Do task or a chore no longer also ticks it.
+- The *Mesilla* layout uses its late-night colours when night mode is turned on by command, so the screen is not
+  dimmed twice.
+
 ## [0.34.1] - 2026-11-05
 
 ### Fixed
