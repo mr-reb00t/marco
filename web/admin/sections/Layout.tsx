@@ -1102,6 +1102,15 @@ export function LayoutSection(props: SectionProps) {
           </button>
         ))}
       </div>
+      {/* the bedside view can also be just the night of another layout (#38): say where */}
+      {l.preset === 'bedside' && (
+        <Callout>
+          {t('Para verla solo de noche, deja otro diseño y elige Vista de mesilla en Pantalla, Modo noche.')}{' '}
+          <button type="button" class="link-btn" onClick={() => props.go('screen')}>
+            {t('Modo noche')}
+          </button>
+        </Callout>
+      )}
       <PresetOptions {...props} />
       {has('widgets') && <ScreenWidgetsCard cfg={cfg} set={set} full={props.full} go={props.go} />}
       <Card

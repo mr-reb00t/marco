@@ -70,7 +70,6 @@ const ROWS: [string, string, string][] = [
   ['Arrastra fotos aquí o haz clic para elegir', 'Drag photos here or click to choose', 'Arrasta fotos para aqui ou clica para escolher'],
   ['Arrastra para reordenar', 'Drag to reorder', 'Arrasta para reordenar'],
   ['Arriba / Abajo', 'Top / Bottom', 'Cima / Baixo'],
-  ['Atenúa la pantalla durante la noche.', 'Dims the screen at night.', 'Escurece o ecrã durante a noite.'],
   ['Aurora', 'Aurora', 'Aurora'],
   ['Auto', 'Auto', 'Auto'],
   ['Añade al menos una palabra clave', 'Add at least one keyword', 'Adiciona pelo menos uma palavra-chave'],

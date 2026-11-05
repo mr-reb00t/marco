@@ -34,7 +34,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Tamaño de letra', route: 'screen', anchor: 'scr-general', keywords: 'font size escala texto grande' },
   { label: 'Tema claro / oscuro', route: 'layout', anchor: 'layout-look', keywords: 'theme dark light tema' },
   { label: 'Color de acento', route: 'layout', anchor: 'layout-look', keywords: 'accent color cor' },
-  { label: 'Modo noche (horario y brillo)', route: 'screen', anchor: 'scr-night', keywords: 'night dim noche noturno brillo atenuar' },
+  { label: 'Modo noche (horario y brillo)', route: 'screen', anchor: 'scr-night', keywords: 'night dim noche noturno brillo atenuar bedside mesilla cabeceira negro black apagar off agenda semanas weeks' },
   { label: 'Decoración de temporada', route: 'screen', anchor: 'scr-decor', keywords: 'decoration decoración decoração seasonal temporada navidad christmas natal luces lights luzes nieve snow neve halloween murciélagos bats año nuevo new year ano novo confeti confetti kerst jul święta' },
   { label: 'HTML sobre la pantalla', route: 'screen', anchor: 'scr-overlay', keywords: 'html overlay superposición sobreposição capa layer custom personalizado luces lights christmas navidad home assistant', feature: 'htmlOverlay' },
   { label: 'CSS personalizado', route: 'screen', anchor: 'scr-css', keywords: 'custom css estilos avanzado', feature: 'customCss' },

@@ -45,7 +45,6 @@ export const PL: Record<string, string> = {
   'Arrastra fotos aquí o haz clic para elegir': 'Przeciągnij tu zdjęcia lub kliknij, aby wybrać',
   'Arrastra para reordenar': 'Przeciągnij, aby zmienić kolejność',
   'Arriba / Abajo': 'Góra / dół',
-  'Atenúa la pantalla durante la noche.': 'Przyciemnia ekran w nocy.',
   'Aurora': 'Zorza',
   'Auto': 'Auto',
   'Añade al menos una palabra clave': 'Dodaj co najmniej jedno słowo kluczowe',

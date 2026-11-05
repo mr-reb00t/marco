@@ -60,7 +60,6 @@ export const NL: Record<string, string> = {
   'Arrastra fotos aquí o haz clic para elegir': 'Sleep foto\'s hierheen of klik om te kiezen',
   'Arrastra para reordenar': 'Sleep om te ordenen',
   'Arriba / Abajo': 'Boven / Onder',
-  'Atenúa la pantalla durante la noche.': 'Dimt het scherm \'s nachts.',
   'Aurora': 'Noorderlicht',
   'Auto': 'Auto',
   'Añade al menos una palabra clave': 'Voeg minstens één trefwoord toe',

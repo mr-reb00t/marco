@@ -3,6 +3,7 @@
 import {
   defaultConfig, defaultScreenProfile, CONFIG_VERSION, RESERVED_SOURCE_IDS, SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS,
   CLOCK_ALIGNS, WIDGET_TYPES, MAX_VALUE_WIDGET_KEYS, WIDGET_REFRESH_SEC, WEB_WIDGET_REFRESH_SEC, MAX_WIDGETS, MAX_SCREEN_WIDGETS, WIDGET_PLACES, WIDGET_SIZES, WIDGET_FITS, WIDGET_PREFIX,
+  NIGHT_ACTIONS, NIGHT_VIEWS,
 } from './defaults.js';
 import { isValidTimeZone } from './lib/tz.js';
 import { randomId, fold } from './lib/text.js';
@@ -303,6 +304,11 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
       from: hhmm(ctx, `${p}.screen.nightMode.from`, nm.from, D.screen.nightMode.from),
       to: hhmm(ctx, `${p}.screen.nightMode.to`, nm.to, D.screen.nightMode.to),
       dim: num(ctx, `${p}.screen.nightMode.dim`, nm.dim, D.screen.nightMode.dim, 0, 1),
+      // what the night does (#38); configs saved before it have none and keep dimming
+      action: oneOf(ctx, `${p}.screen.nightMode.action`, nm.action, D.screen.nightMode.action, NIGHT_ACTIONS),
+      view: oneOf(ctx, `${p}.screen.nightMode.view`, nm.view, D.screen.nightMode.view, NIGHT_VIEWS),
+      weeks: num(ctx, `${p}.screen.nightMode.weeks`, nm.weeks, D.screen.nightMode.weeks, 1, 4, true),
+      wake: bool(ctx, `${p}.screen.nightMode.wake`, nm.wake, D.screen.nightMode.wake),
     },
     // glass material of the Modern style: appearance, transparency (0 = see-through, 1 = solid), blur, tint, light edge
     glass: {

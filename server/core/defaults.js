@@ -58,6 +58,10 @@ export const WIDGET_PLACES = ['corner', 'side'];
 export const WIDGET_SIZES = ['s', 'm', 'l'];
 export const WIDGET_FITS = ['contain', 'cover'];
 export const WIDGET_PREFIX = 'w_';
+/** What night mode does on a screen (#38): dim it (the original behaviour), show the bedside view, or go black. */
+export const NIGHT_ACTIONS = ['dim', 'bedside', 'black'];
+/** What the night bedside view shows under its clock: nothing more, the agenda, or 1 to 4 weeks. */
+export const NIGHT_VIEWS = ['clock', 'agenda', 'weeks'];
 
 /** A complete screen profile with default values (screen.name lives in profile.name). */
 export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name = 'Living room' } = {}) {
@@ -65,7 +69,10 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
     id, slug, name,
     screen: {
       language: 'en', fontScale: 1.0, theme: 'dark', style: 'modern', accent: '#ff5a4e', orientation: 'auto', customCss: '',
-      nightMode: { enabled: false, from: '23:00', to: '07:00', dim: 0.35 },
+      // night mode (#38): action 'dim' darkens the whole screen to `dim`; 'bedside' switches to the bedside view
+      // (`view`, `weeks` when it is 'weeks') shown at `dim`; 'black' turns the screen black and, with `wake`, shows a
+      // doorbell ring or an announcement at `dim`. One brightness key serves the three, so nothing extra to keep.
+      nightMode: { enabled: false, from: '23:00', to: '07:00', dim: 0.35, action: 'dim', view: 'clock', weeks: 2, wake: true },
       // Modern style glass material (ignored by Classic). The defaults reproduce the original Modern look.
       glass: { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true },
       // the pills under the date of the usual designs (next event, happening now, birthdays, check-in/out)

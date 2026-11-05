@@ -1106,6 +1106,14 @@ body {
 .is-private #status { right: 3.6rem; }
 .theme-light #privacy-lock { color: #1d1d1f; background: rgb(255 255 255 / 0.6); border-color: rgb(0 0 0 / 0.12); }
 
+/* night mode "En negro" (#38, main.ts updateNight): the offline dot and the lock sit above #night and would glow on
+   the black screen. A doorbell ring or an announcement still wakes it, as dim as the night's brightness setting
+   (--night-wake), or not at all when the screen should stay black (night-nowake). Identify and the access code are
+   the owner's own actions and keep their full brightness. */
+html.night-black #status, html.night-black #privacy-lock { visibility: hidden; }
+html.night-black #alerts, html.night-black #doorbell { filter: brightness(var(--night-wake, 0.35)); }
+html.night-black.night-nowake #alerts, html.night-black.night-nowake #doorbell { visibility: hidden !important; }
+
 /* touch on a carousel (#40, main.ts syncCarTouch): the swipe keeps vertical scroll and pinch to the browser and the
    sideways stroke to the page, on every layout; the hold must not select text or open the long-press callout.
    The dots, the pause badge and the press ring sit outside #app (the switch animation does not copy them) and

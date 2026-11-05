@@ -60,7 +60,6 @@ export const DA: Record<string, string> = {
   'Arrastra fotos aquí o haz clic para elegir': 'Træk billeder hertil, eller klik for at vælge',
   'Arrastra para reordenar': 'Træk for at ændre rækkefølgen',
   'Arriba / Abajo': 'Øverst og nederst',
-  'Atenúa la pantalla durante la noche.': 'Dæmper skærmen om natten.',
   'Aurora': 'Nordlys',
   'Auto': 'Auto',
   'Añade al menos una palabra clave': 'Tilføj mindst ét nøgleord',

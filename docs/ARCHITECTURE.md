@@ -106,8 +106,13 @@ The stored config has **global** sections shared by every screen and a list of *
 ```jsonc
 { "id": "s_main", "slug": "living-room", "name": "Living room",
   "screen":     { "language": "en", "fontScale": 1, "theme": "dark", "style": "classic", "accent": "#ff5a4e", "orientation": "auto",
-                  "customCss": "", "nightMode": { "enabled": false, "from": "23:00", "to": "07:00", "dim": 0.35 } },
+                  "customCss": "", "nightMode": { "enabled": false, "from": "23:00", "to": "07:00", "dim": 0.35,
+                  "action": "dim", "view": "clock", "weeks": 2, "wake": true } },
                   // style: classic | modern, independent of the layout. Missing (older configs) = classic.
+                  // nightMode (see "Night mode" under Display behaviour): action dim | bedside | black (missing = dim, as
+                  //   before); view clock | agenda | weeks and weeks 1..4 for bedside; wake (black: a ring or an
+                  //   announcement still shows). dim is the brightness of the dimmed screen, of the bedside view, or of
+                  //   what wakes a black one.
                   // glass (Modern only): { "appearance": "auto", "opacity": 0.5, "blur": 18, "tint": "dark", "edge": true }
                   //   appearance auto | clear | tinted, opacity 0..1 (see-through to solid), blur 0..40, tint dark | light | photo.
                   //   web/shared/glass.ts turns it (plus the current photo) into --g-* CSS variables on <html>.
@@ -328,6 +333,19 @@ flagged by a local event or a style rule (nearest occurrence per title), sorted 
   `config.privacy`. The `privacy` live event refetches config, events, countdowns and photos; a timer at
   `privacy.next` / `privacy.until` does the same in case the event was missed. `server/privacy.js` keeps a timer for
   the next change of any screen (period ended, schedule rule started or ended) and publishes the event then.
+- Night mode (`screen.nightMode`, per screen; `main.ts` updateNight): on in its from / to window, or by the `night`
+  command (on / off / auto, which hands back to the window when it next changes by itself). What it does is
+  `action`: `dim` puts the `#night` layer over everything at `1 - dim` (the original behaviour, and what a config
+  without `action` gets); `bedside` swaps the layout for the bedside view while the night lasts (any layout,
+  `?preset=` too: `effectivePreset` returns `bedside` from a flag set once per `applyConfig`, and the edge of the
+  night applies the config again), showing the clock alone (`view: clock`, the Bedside layout), the agenda or 1 to 4
+  weeks (`views.ts` embeds `Agenda` / `MonthCalendar` with calm settings: no sliding titles, no paging), still under
+  the night layer at `dim` with the late bedside palette; `black` makes the layer opaque, hides the offline dot and
+  the privacy lock and drops WebGL to 2 fps, and with `wake` a doorbell ring or an announcement shows at `dim`
+  (`html.night-black`, `--night-wake`), without it they stay hidden (their sound has its own settings). A tap that
+  wakes a dimmed screen (Personalizado controls, *Ir a pantalla*) lifts any of them for a minute. The events window
+  (`server/core/bootstrap.js` `eventsWindow`, `night`) includes the night view's days all day, so the switch needs no
+  new request. Testing: `?night=1&nightAction=dim|bedside|black&nightView=clock|agenda|weeks&nightWeeks=1..4&nightWake=0|1`.
 - Announcements: animated cards (info / success / warning / urgent, ≤ 3 stacked), WebAudio chime (no audio files),
   remaining time corrected with the server clock. Scheduled messages show as a banner while their window is active.
 - Doorbell (`web/display/widgets/doorbell.ts`): the `doorbell` event puts the camera full screen (z-index above the

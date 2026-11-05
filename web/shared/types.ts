@@ -25,7 +25,22 @@ export interface NightMode {
   from: string; // "HH:MM"
   to: string; // "HH:MM"
   dim: number; // 0..1 (brightness multiplier applied at night)
+  /** What night mode does (#38): 'dim' the whole screen to `dim` (default), switch to the 'bedside' view shown at
+   *  `dim`, or go 'black'. Older servers: absent (= 'dim'). */
+  action?: NightAction;
+  /** The bedside view at night (action 'bedside'): the clock (default), the agenda, or `weeks` weeks. Older: absent. */
+  view?: NightView;
+  /** Weeks of the night bedside calendar when `view` is 'weeks', 1..4 (default 2). Older servers: absent. */
+  weeks?: number;
+  /** Black at night: a doorbell ring or an announcement still shows, at `dim` (default true). Older servers: absent. */
+  wake?: boolean;
 }
+
+/** Same lists as server/core/defaults.js NIGHT_ACTIONS / NIGHT_VIEWS. */
+export const NIGHT_ACTIONS = ['dim', 'bedside', 'black'] as const;
+export type NightAction = (typeof NIGHT_ACTIONS)[number];
+export const NIGHT_VIEWS = ['clock', 'agenda', 'weeks'] as const;
+export type NightView = (typeof NIGHT_VIEWS)[number];
 
 export type DisplayStyle = 'classic' | 'modern';
 

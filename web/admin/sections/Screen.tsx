@@ -13,7 +13,7 @@ import type { SectionProps } from './common';
 import { PrivacyCard } from './Privacy';
 import { TwoFactorCard } from '../components/TwoFactor';
 import { MonthDay } from './BackgroundRules';
-import type { DecorMode, ScreenOverlay } from '../../shared/types';
+import type { DecorMode, NightAction as NightActionKind, ScreenOverlay } from '../../shared/types';
 import { defaultSeasons, OVERLAY_MAX, OVERLAY_NAME_MAX, OVERLAYS_MAX, SEASONS } from '../../../server/core/decorCore.js';
 
 const kb = (n: number) => (Math.round((n / 1024) * 10) / 10).toLocaleString(locale());
@@ -55,19 +55,17 @@ export function ScreenSection({ cfg, set, errors, screenId, saved, go }: Section
         </div>
       </Card>
       <PrivateLinkCard screenId={screenId} saved={saved} mode={saved.security?.displayAccess ?? 'open'} go={go} />
-      <Card id="scr-night" scope="screen" title={t('Modo noche')} icon="moon" desc={t('Atenúa la pantalla durante la noche.')}>
+      <Card id="scr-night" scope="screen" title={t('Modo noche')} icon="moon" desc={t('Atenúa la pantalla, muestra la vista de mesilla o la deja en negro durante la noche.')}>
         <ToggleRow label={t('Activar modo noche')} checked={nm.enabled} onChange={(v) => set((d) => void (d.screen.nightMode.enabled = v))} />
-        <div class={`grid grid--3 ${nm.enabled ? '' : 'is-disabled'}`}>
+        <div class={`grid grid--2 ${nm.enabled ? '' : 'is-disabled'}`}>
           <Field label={t('Desde')} error={errors['screen.nightMode.from']}>
             <input class={`input ${errors['screen.nightMode.from'] ? 'is-invalid' : ''}`} type="time" value={nm.from} onInput={(e) => set((d) => void (d.screen.nightMode.from = e.currentTarget.value))} />
           </Field>
           <Field label={t('Hasta')} error={errors['screen.nightMode.to']}>
             <input class={`input ${errors['screen.nightMode.to'] ? 'is-invalid' : ''}`} type="time" value={nm.to} onInput={(e) => set((d) => void (d.screen.nightMode.to = e.currentTarget.value))} />
           </Field>
-          <Field label={t('Brillo nocturno')}>
-            <Slider value={nm.dim} min={0.05} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set((d) => void (d.screen.nightMode.dim = v))} />
-          </Field>
         </div>
+        <NightAction cfg={cfg} set={set} />
       </Card>
       {has('privacy') && <PrivacyCard cfg={cfg} set={set} errors={errors} go={go} />}
       <DecorationCard cfg={cfg} set={set} errors={errors} />
@@ -90,6 +88,71 @@ const SEASON_ROWS = [
 ] as const;
 
 /** "Decoración de temporada" (#24): Marco's own lights, snow and confetti, by the date or always one of them. */
+/**
+ * What night mode does on this screen (#38): dim it, show the bedside view, or turn it black. One brightness serves
+ * the three (nightMode.dim), so its slider says what it is the brightness of.
+ */
+function NightAction({ cfg, set }: Pick<SectionProps, 'cfg' | 'set'>) {
+  const nm = cfg.screen.nightMode;
+  const action: NightActionKind = nm.action ?? 'dim';
+  const wake = nm.wake !== false;
+  const view = nm.view === 'weeks' ? `weeks${nm.weeks ?? 2}` : nm.view ?? 'clock';
+  // the bedside view as one choice: the clock, the agenda, or 1 to 4 weeks (nightMode.view + weeks)
+  const viewOpts = [
+    { value: 'clock', label: t('Reloj') },
+    { value: 'agenda', label: t('Agenda') },
+    { value: 'weeks1', label: t('Una semana') },
+    { value: 'weeks2', label: t('Dos semanas') },
+    { value: 'weeks3', label: t('Tres semanas') },
+    { value: 'weeks4', label: t('Cuatro semanas') },
+  ];
+  const dimLabel = action === 'bedside' ? t('Brillo de la vista de mesilla') : action === 'black' ? t('Brillo de los avisos') : t('Brillo nocturno');
+  return (
+    <div class={nm.enabled ? '' : 'is-disabled'}>
+      <Field label={t('Durante el modo noche')}>
+        <Segmented
+          full
+          value={action}
+          options={[
+            { value: 'dim' as NightActionKind, label: t('Atenuar') },
+            { value: 'bedside' as NightActionKind, label: t('Vista de mesilla') },
+            { value: 'black' as NightActionKind, label: t('En negro') },
+          ]}
+          onChange={(v) => set((d) => void (d.screen.nightMode.action = v))}
+        />
+      </Field>
+      {action === 'black' && (
+        <ToggleRow
+          label={has('doorbell') ? t('Despertar con el timbre y los avisos') : t('Despertar con los avisos')}
+          hint={t('La pantalla sigue en negro y solo enseña el timbre o el aviso mientras dura, con poco brillo.')}
+          checked={wake}
+          onChange={(v) => set((d) => void (d.screen.nightMode.wake = v))}
+        />
+      )}
+      <div class="grid grid--2">
+        {action === 'bedside' && (
+          <Field label={t('Vista de mesilla')} hint={cfg.calendar.enabled ? undefined : t('El calendario está apagado en esta pantalla: se verá el reloj.')}>
+            <Select
+              value={view}
+              options={viewOpts}
+              onChange={(v) => set((d) => {
+                const m = /^weeks([1-4])$/.exec(v);
+                d.screen.nightMode.view = m ? 'weeks' : v === 'agenda' ? 'agenda' : 'clock';
+                if (m) d.screen.nightMode.weeks = Number(m[1]);
+              })}
+            />
+          </Field>
+        )}
+        {!(action === 'black' && !wake) && (
+          <Field label={dimLabel}>
+            <Slider value={nm.dim} min={0.05} max={1} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set((d) => void (d.screen.nightMode.dim = v))} />
+          </Field>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DecorationCard({ cfg, set, errors }: Pick<SectionProps, 'cfg' | 'set' | 'errors'>) {
   const dec = cfg.screen.decoration ?? { mode: 'none' as DecorMode, snow: true };
   const seasons = { ...defaultSeasons(), ...dec.seasons };

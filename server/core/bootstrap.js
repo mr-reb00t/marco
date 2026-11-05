@@ -31,10 +31,12 @@ function startOfWeek(day, weekStart) {
  * its weeks, its agenda or its Personalizado calendars look. The display (web/display/main.ts eventsRange) and the
  * page bootstrap both use this, so they ask for the same window.
  * @param {string} today YYYY-MM-DD in the screen's time zone
- * @param {{ weekStart?: number, startOn?: string, weeks?: number | 'auto', agenda?: boolean, agendaDays?: number | 'auto', canvas?: object | null }} o
+ * `night`: the agenda or weeks the screen shows as its night bedside view (nightViewOf), asked for all day so the
+ * night switch needs no new request.
+ * @param {{ weekStart?: number, startOn?: string, weeks?: number | 'auto', agenda?: boolean, agendaDays?: number | 'auto', canvas?: object | null, night?: { view: string, weeks: number } | null }} o
  * @returns {[string, string]}
  */
-export function eventsWindow(today, { weekStart = 1, startOn = 'week', weeks = 5, agenda = false, agendaDays = 14, canvas = null } = {}) {
+export function eventsWindow(today, { weekStart = 1, startOn = 'week', weeks = 5, agenda = false, agendaDays = 14, canvas = null, night = null } = {}) {
   const from = startOn === 'today' ? today : startOfWeek(today, weekStart);
   const w = weeks === 'auto' ? AUTO_WEEKS_MAX : weeks;
   let to = addDays(from, Math.max(w * 7, 21) + 1);
@@ -46,7 +48,24 @@ export function eventsWindow(today, { weekStart = 1, startOn = 'week', weeks = 5
     const canvasTo = addDays(today, canvasEventsNeed(canvas));
     if (canvasTo > to) to = canvasTo;
   }
+  if (night) {
+    const nightTo = night.view === 'agenda' ? addDays(today, AGENDA_AUTO_MAX_DAYS + 1) : addDays(from, night.weeks * 7 + 1);
+    if (nightTo > to) to = nightTo;
+  }
   return [from, to];
+}
+
+/**
+ * The agenda or weeks a screen shows as its night bedside view (screen.nightMode, #38), or null (the clock alone,
+ * another night action, no calendar).
+ * @returns {{ view: string, weeks: number } | null}
+ */
+export function nightViewOf(config) {
+  const nm = config?.screen?.nightMode;
+  if (!nm || nm.action !== 'bedside' || config.calendar?.enabled === false) return null;
+  if (nm.view !== 'agenda' && nm.view !== 'weeks') return null;
+  const weeks = Math.min(4, Math.max(1, Math.round(Number(nm.weeks)) || 2));
+  return { view: nm.view, weeks };
 }
 
 const KIDS = new Set(['kids', 'kidsWeek', 'kidsDay']);
@@ -74,6 +93,7 @@ export function bootEventWindows(config, now = new Date()) {
   const o = {
     weekStart: cal.weekStart ?? 1, startOn: cal.startOn, agenda: preset === 'agenda' || view === 'agenda', agendaDays: cal.agendaDays ?? 14,
     canvas: preset === 'canvas' ? config.canvas : null,
+    night: nightViewOf(config),
   };
   const out = [eventsWindow(today, { ...o, weeks })];
   if (typeof weeks === 'number' && weeks > 4) {

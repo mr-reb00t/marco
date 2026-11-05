@@ -5,8 +5,9 @@ export const AUTO_WEEKS_MAX: number;
 export const AGENDA_AUTO_MAX_DAYS: number;
 export function eventsWindow(
   today: string,
-  o?: { weekStart?: number; startOn?: string; weeks?: number | 'auto'; agenda?: boolean; agendaDays?: number | 'auto'; canvas?: unknown },
+  o?: { weekStart?: number; startOn?: string; weeks?: number | 'auto'; agenda?: boolean; agendaDays?: number | 'auto'; canvas?: unknown; night?: { view: string; weeks: number } | null },
 ): [string, string];
+export function nightViewOf(config: unknown): { view: string; weeks: number } | null;
 export function bootEventWindows(config: unknown, now?: Date): [string, string][];
 export function eventsPath(range: [string, string]): string;
 export function bootDataPaths(config: unknown, now?: Date): string[];

@@ -1,6 +1,6 @@
 // Default display config (mirrors server/core/defaults.js) + a defensive deep merge so a partial / older
 // config from the server never breaks the screen.
-import { CLOCK_ALIGNS, type AgendaDays, type DisplayConfig } from '../shared/types';
+import { CLOCK_ALIGNS, NIGHT_ACTIONS, NIGHT_VIEWS, type AgendaDays, type DisplayConfig } from '../shared/types';
 import { DEFAULT_ICON_RULES } from '../shared/emoji';
 import { CALENDAR_BLUR_DEFAULT, CALENDAR_OPACITY_DEFAULT, GLASS_DEFAULTS, normalizeGlass } from '../shared/glass';
 
@@ -8,7 +8,7 @@ export const DEFAULT_CONFIG: DisplayConfig = {
   revision: 0,
   screen: {
     name: 'Living room', language: 'en', fontScale: 1, theme: 'dark', style: 'classic', accent: '#ff5a4e', orientation: 'auto', customCss: '',
-    nightMode: { enabled: false, from: '23:00', to: '07:00', dim: 0.35 },
+    nightMode: { enabled: false, from: '23:00', to: '07:00', dim: 0.35, action: 'dim', view: 'clock', weeks: 2, wake: true },
     glass: { ...GLASS_DEFAULTS },
     highlights: true,
   },
@@ -106,6 +106,13 @@ export function normalizeConfig(raw: unknown): DisplayConfig {
   if (!['tl', 'tr', 'bl', 'br'].includes(c.layout.corner as string)) c.layout.corner = 'br';
   if (!['side', 'top', 'bottom'].includes(c.layout.plannerBar as string)) c.layout.plannerBar = 'side';
   c.layout.people = Array.isArray(c.layout.people) ? c.layout.people.filter((x) => typeof x === 'string').slice(0, 5) : null;
+  // night mode (#38): an older server sends no action, which dims as it always did
+  const nm = c.screen.nightMode;
+  nm.action = (NIGHT_ACTIONS as readonly string[]).includes(nm.action as string) ? nm.action : 'dim';
+  nm.view = (NIGHT_VIEWS as readonly string[]).includes(nm.view as string) ? nm.view : 'clock';
+  nm.weeks = clampInt(nm.weeks, 1, 4, 2);
+  nm.wake = nm.wake !== false;
+  nm.dim = Math.min(1, Math.max(0, Number.isFinite(Number(nm.dim)) ? Number(nm.dim) : 0.35));
   c.screen.fontScale = Math.min(2, Math.max(0.5, Number(c.screen.fontScale) || 1));
   c.background.intervalSec = Math.max(10, Number(c.background.intervalSec) || 120);
   c.background.brightness = Math.min(1.2, Math.max(0.1, Number(c.background.brightness) || 0.85));

@@ -1,9 +1,9 @@
 // Layouts with their own content area (#view inside .main): Today (hour-by-hour timeline), Per person (one column
 // per calendar), Photo frame (small clock card in a corner), Board (family organisation cards) and Bedside (huge
-// dim clock). The other layouts (and Two weeks, which is the month grid with two rows) leave #view empty.
+// dim clock, also the night view of any screen whose night mode is set to it, #38). The other layouts (and Two weeks, which is the month grid with two rows) leave #view empty.
 // Everything is plain HTML strings + setHTML (patched only when it changes) and one fitting pass that drops whole
 // rows that do not fit, so nothing is ever cut in half.
-import type { CountdownsResponse, DisplayConfig, PublicCalendarSource, WeatherResponse } from '../../shared/types';
+import type { CountdownsResponse, DisplayConfig, NightView, PublicCalendarSource, WeatherResponse } from '../../shared/types';
 import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, keyToUTC, monthName, relativeDayLabel } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
@@ -12,6 +12,8 @@ import { type NEvent, sortForDay } from '../eventModel';
 import { weatherIcon } from '../icons';
 import { sourceCredit } from './weather';
 import type { Tick } from '../time';
+import { Agenda } from './agenda';
+import { MonthCalendar } from './calendar';
 import { Clock } from './clock';
 import { upcomingCountdowns } from './countdowns';
 import { todoHeadOf, todoItemsOf, todoMetaHtml } from './extras';
@@ -33,7 +35,15 @@ export const SKELETON: Record<string, string> = {
   photoFrame: `<div class="pf-card"><div class="v-clock"></div><div class="pf-wx"></div><div class="pf-next"></div></div>`,
   board: `<div class="bd-cols"></div>`,
   bedside: `<div class="bs"><div class="v-clock"></div><div class="bs-info"><div class="bs-wx"></div><div class="bs-next"></div></div></div>`,
+  // the night bedside view with the agenda or a few weeks under a smaller clock (#38): the calendar fills the rest
+  bedsideList: `<div class="bs bs-list"><div class="bs-head"><div class="v-clock"></div><div class="bs-info"><div class="bs-wx"></div></div></div><div class="bs-cal"></div></div>`,
 };
+
+/** What the bedside view shows under its clock: nothing more (the Bedside layout), the agenda, or 1 to 4 weeks. */
+export interface BedsideVariant {
+  view: NightView;
+  weeks: number;
+}
 
 const colStyle = (hex: string) => {
   const c = chipColors(hex);
@@ -376,19 +386,42 @@ export function renderMiniPeople(root: HTMLElement, d: ViewData, tick: Tick, cfg
 
 export class Views {
   private kind = '';
+  private key = '';
   private clock: Clock | null = null;
   private lastTick: Tick | null = null;
+  /** The agenda or the weeks of the night bedside view (null on the clock view and every other layout). */
+  private bsCal: Agenda | MonthCalendar | null = null;
+  private bsCfg: { from: DisplayConfig; cfg: DisplayConfig } | null = null;
 
   constructor(private root: HTMLElement) {}
 
-  /** Build the skeleton of a layout (no-op when it is not one of VIEW_PRESETS or did not change). */
-  setPreset(preset: string): void {
+  /**
+   * Build the skeleton of a layout (no-op when it is not one of VIEW_PRESETS or did not change). `variant`: what the
+   * bedside view shows under its clock (the night bedside view of #38); the plain clock is the Bedside layout.
+   */
+  setPreset(preset: string, variant: BedsideVariant = { view: 'clock', weeks: 2 }): void {
     const kind = VIEW_PRESETS.includes(preset) ? preset : '';
-    if (kind === this.kind) return;
+    const list = kind === 'bedside' && variant.view !== 'clock';
+    const key = list ? `${kind}|${variant.view}|${variant.weeks}` : kind;
+    if (key === this.key) return;
+    this.key = key;
     this.kind = kind;
     this.clock = null;
-    this.root.className = kind ? `view view-${kind}` : 'view';
-    this.root.innerHTML = SKELETON[kind] ?? '';
+    if (this.bsCal instanceof MonthCalendar) this.bsCal.destroy();
+    this.bsCal = null;
+    this.bsCfg = null;
+    this.root.className = kind ? `view view-${kind}${list ? ` bs-v-${variant.view}` : ''}` : 'view';
+    this.root.innerHTML = (list ? SKELETON.bedsideList : SKELETON[kind]) ?? '';
+    if (list) {
+      const host = this.root.querySelector<HTMLElement>('.bs-cal')!.appendChild(document.createElement('div'));
+      if (variant.view === 'agenda') this.bsCal = new Agenda(host, { legend: false, cfg: () => this.bedsideCfg(variant) });
+      else {
+        const mc = new MonthCalendar(host, { cfg: () => this.bedsideCfg(variant) });
+        // no rows fading in and out in a dark room
+        mc.still = true;
+        this.bsCal = mc;
+      }
+    }
     const ck = this.root.querySelector<HTMLElement>('.v-clock');
     if (ck) this.clock = new Clock(ck, { seconds: false });
     if (this.lastTick) this.clock?.update(this.lastTick);
@@ -443,8 +476,28 @@ export class Views {
   }
 
   // ------------------------------------------------------------------------------------------------ Bedside
+  /**
+   * The screen's calendar settings for the night agenda or weeks: calm (no sliding titles, no busy days paging, no
+   * legend), one-line events, the agenda as long as it fits. Made again only when the screen's config changes.
+   */
+  private bedsideCfg(v: BedsideVariant): DisplayConfig {
+    const from = ctx.cfg;
+    if (this.bsCfg?.from === from) return this.bsCfg.cfg;
+    const cfg: DisplayConfig = {
+      ...from,
+      calendar: {
+        ...from.calendar,
+        view: v.view === 'agenda' ? 'agenda' : 'month', weeks: v.weeks, agendaDays: 'auto', eventStyle: 'lines',
+        compactBusyDays: false, showLegend: false, marquee: false, rotateBusyDays: false,
+      },
+    };
+    this.bsCfg = { from, cfg };
+    return cfg;
+  }
+
   private bedside(d: ViewData, tick: Tick): void {
     setHTML(this.root.querySelector('.bs-wx')!, weatherLine(d.weather, false));
+    this.bsCal?.render(d.events, tick);
     const nx = nextOf(d.events, tick);
     let next = '';
     if (nx) {
@@ -452,7 +505,8 @@ export class Views {
       const when = nx.kind === 'now' ? ctx.t('happeningNow') : nx.kind === 'tomorrow' ? `${ctx.t('tomorrow')} ${hm(e.startMs)}` : hm(e.startMs);
       next = `<span class="bs-when">${esc(when)}</span><span class="bs-tt">${e.emoji ? `<i class="bs-em">${esc(e.emoji)}</i> ` : ''}${esc(e.title)}</span>`;
     }
-    setHTML(this.root.querySelector('.bs-next')!, next);
+    const nextEl = this.root.querySelector<HTMLElement>('.bs-next');
+    if (nextEl) setHTML(nextEl, next);
     // a bit dimmer again during the night window (the configured one, else 22:00–07:00)
     const nm = ctx.cfg.screen.nightMode;
     const toMin = (s: string) => {
@@ -462,7 +516,10 @@ export class Views {
     const [f, to] = nm.enabled ? [toMin(nm.from), toMin(nm.to)] : [22 * 60, 7 * 60];
     const n = tick.parts.hour * 60 + tick.parts.minute;
     const late = f >= 0 && to >= 0 && f !== to && (f < to ? n >= f && n < to : n >= f || n < to);
-    document.getElementById('app')?.classList.toggle('bedside-late', late || ctx.params.get('night') === '1');
+    // a night turned on by command (html.night, also outside the window) is dimmed by its overlay already: the late
+    // palette makes up for it, as it does in the window
+    const night = document.documentElement.classList.contains('night');
+    document.getElementById('app')?.classList.toggle('bedside-late', late || night || ctx.params.get('night') === '1');
   }
 
   // ------------------------------------------------------------------------------------------------ Board

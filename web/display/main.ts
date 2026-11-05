@@ -64,7 +64,7 @@ import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, pho
 import { Weather } from './widgets/weather';
 import { screenWeather, weatherSig } from './weatherPlaces';
 import { weatherPlacesOf } from '../../server/core/weatherPlaces.js';
-import { VIEW_PRESETS, Views } from './widgets/views';
+import { type BedsideVariant, VIEW_PRESETS, Views } from './widgets/views';
 import { checkSetup, showWelcome, waitForSetup } from './widgets/welcome';
 import { afterPairUrl, pairHealth, pairingLang, showPairing } from './widgets/pairing';
 import { showScreenMissing } from './widgets/screenMissing';
@@ -86,7 +86,7 @@ import { demoData } from './mockData';
 import { demoValues } from './mockCanvas';
 import { HaTouch } from './widgets/canvas/touch';
 import { CANVAS_KINDS, canvasCards, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
-import { eventsWindow } from '../../server/core/bootstrap.js';
+import { eventsWindow, nightViewOf } from '../../server/core/bootstrap.js';
 import { rotatorPins } from './widgets/canvas/rotator';
 
 const params = ctx.params;
@@ -394,7 +394,18 @@ function plannerBar(cfg: DisplayConfig, preset: string, portrait: boolean): Plan
   return q === 'top' || q === 'bottom' ? q : 'side';
 }
 
+/**
+ * The layout on display. A screen whose night mode shows the bedside view (#38) draws it while the night is on, over
+ * any layout, ?preset= included: decided once per applyConfig (nightBedside), so a minute boundary never splits one
+ * layout pass.
+ */
 function effectivePreset(cfg: DisplayConfig): string {
+  if (nightBedside) return 'bedside';
+  return dayPreset(cfg);
+}
+
+/** The layout of the screen as saved (and ?preset=), whatever the night does. */
+function dayPreset(cfg: DisplayConfig): string {
   const p = params.get('preset') || cfg.layout.preset;
   if (!PRESETS.includes(p)) return 'bigCalendar';
   // the kids layouts are drawn with the Modern style only: Classic shows the big calendar
@@ -403,6 +414,13 @@ function effectivePreset(cfg: DisplayConfig): string {
   // nothing to lay out
   if (p === 'canvas' && (cfg.screen.style !== 'modern' || !cfg.canvas)) return 'bigCalendar';
   return p;
+}
+
+/** What the night bedside view shows under its clock; the clock alone when the screen has no calendar. */
+function bedsideVariant(cfg: DisplayConfig): BedsideVariant {
+  const nm = cfg.screen.nightMode;
+  const view = cfg.calendar.enabled ? nm.view ?? 'clock' : 'clock';
+  return { view, weeks: nm.weeks ?? 2 };
 }
 
 function isPortrait(cfg: DisplayConfig): boolean {
@@ -450,7 +468,7 @@ function applyLayout(): void {
   } else for (const k of ['--cv-side', '--cv-dim', '--cv-bg']) app.style.removeProperty(k);
   app.classList.toggle('has-view', VIEW_PRESETS.includes(preset));
   app.classList.toggle('is-kids', isKidsPreset(preset));
-  views.setPreset(preset);
+  views.setPreset(preset, nightBedside ? bedsideVariant(cfg) : undefined);
   kids.setPreset(preset);
   const view = params.get('view') || cfg.calendar.view;
   const showAgendaMain = preset === 'agenda' || view === 'agenda';
@@ -554,6 +572,19 @@ function applyConfig(raw: DisplayConfig): void {
   if (params.has('clockSize') && pcs >= 0.6 && pcs <= 1.6) cfg.datetime.clockSize = pcs;
   const pcd = params.get('cards');
   if (pcd === '0' || pcd === '1') cfg.calendar.eventStyle = pcd === '1' ? 'cards' : 'lines';
+  // ?nightAction=dim|bedside|black&nightView=clock|agenda|weeks&nightWeeks=1..4&nightWake=0|1 (what night mode does,
+  // #38; with ?night=1 to see it by day)
+  const nm = cfg.screen.nightMode;
+  const pna = params.get('nightAction');
+  if (pna === 'dim' || pna === 'bedside' || pna === 'black') nm.action = pna;
+  const pnv = params.get('nightView');
+  if (pnv === 'clock' || pnv === 'agenda' || pnv === 'weeks') nm.view = pnv;
+  const pnw = Number(params.get('nightWeeks'));
+  if (Number.isInteger(pnw) && pnw >= 1 && pnw <= 4) nm.weeks = pnw;
+  const pnk = params.get('nightWake');
+  if (pnk === '0' || pnk === '1') nm.wake = pnk === '1';
+  // the bedside view as this screen's night: every effectivePreset of this pass (and until the next one) follows it
+  nightBedside = nm.action === 'bedside' && nightWith(cfg) && Date.now() >= wakeUntil;
   // automatic weeks: at most 6 rows, fewer where a layout caps the rows below
   let autoMax = AUTO_WEEKS_MAX;
   const capWeeks = (n: number) => {
@@ -984,6 +1015,9 @@ function hmToMin(s: string): number {
 let nightOverride: NightCommand = 'auto';
 let overrideBase: boolean | null = null;
 let nightNow = false;
+/** The layout applied is this screen's night bedside view (nightMode.action 'bedside' while the night is on, #38). */
+let nightBedside = false;
+let nightReapplying = false;
 // a tap on a dimmed Personalizado screen with controls lifts the dimming for a minute (each tap while lifted starts the
 // minute again); the first tap only wakes it (widgets/canvas/touch.ts)
 const WAKE_MS = 60_000;
@@ -1038,12 +1072,34 @@ function updateNight(tick: Tick): void {
     heartbeat.soon();
   }
   const on = (nightOverride === 'on' ? true : nightOverride === 'off' ? false : auto) && Date.now() >= wakeUntil;
+  // night mode set to the bedside view (#38): the layout changes, so the whole config is applied again (it decides
+  // nightBedside as this does, so its own updateNight finds them equal)
+  if ((on && nm.action === 'bedside') !== nightBedside && state.config && !nightReapplying) {
+    // (guarded: a minute that turns between the two looks must not apply it over and over)
+    nightReapplying = true;
+    try {
+      applyConfig(state.config);
+    } finally {
+      nightReapplying = false;
+    }
+    return;
+  }
+  const was = nightNow;
   nightNow = on;
+  // black (#38): the night layer fully opaque; what may still wake it (doorbell, announcement) shows at `dim`
+  const black = on && nm.action === 'black';
   const dim = Number.isFinite(nm.dim) ? nm.dim : 0.35;
-  night.style.opacity = on ? String(Math.min(0.95, Math.max(0, 1 - dim))) : '0';
-  document.documentElement.classList.toggle('night', on);
-  if (engine) engine.fps = on ? 15 : 30;
+  night.style.opacity = !on ? '0' : black ? '1' : String(Math.min(0.95, Math.max(0, 1 - dim)));
+  const root = document.documentElement;
+  root.classList.toggle('night', on);
+  root.classList.toggle('night-black', black);
+  root.classList.toggle('night-nowake', black && nm.wake === false);
+  root.style.setProperty('--night-wake', String(Math.min(1, Math.max(0.05, dim))));
+  // nothing to see on a black screen: the photo and the animated background barely move
+  if (engine) engine.fps = black ? 2 : on ? 15 : 30;
   if (wxfx) wxfx.night = on;
+  // the bedside palette follows the night (views.ts bedside-late), a commanded one too
+  if (was !== on && app.classList.contains('preset-bedside')) renderView(tick);
 }
 
 function setOnline(ok: boolean): void {
@@ -1168,11 +1224,13 @@ function eventsRange(cfg: DisplayConfig = ctx.cfg): [string, string] {
   // Personalizado as far as its calendars look ahead (canvasCore.js canvasEventsNeed, at most 6 weeks). The window is
   // worked out in server/core/bootstrap.js, so the page bootstrap asks for the same one.
   const view = params.get('view') || cfg.calendar.view;
-  const preset = effectivePreset(cfg);
+  // the day's layout: the night bedside view (#38) adds its own days (night), all day long
+  const preset = dayPreset(cfg);
   return eventsWindow(current().dayKey, {
     weekStart: cfg.calendar.weekStart ?? 1, startOn: cfg.calendar.startOn, weeks: cfg.calendar.weeks ?? 5,
     agenda: preset === 'agenda' || view === 'agenda', agendaDays: cfg.calendar.agendaDays,
     canvas: preset === 'canvas' && cfg.canvas ? cfg.canvas : null,
+    night: nightViewOf(cfg),
   });
 }
 

@@ -830,6 +830,8 @@
 .style-modern .bs .date { margin: 0 0 1.6rem; font-size: 3.6rem; font-weight: 600; color: var(--bs-ink-2); }
 .style-modern .bs-info { font-weight: 500; }
 .style-modern .bs-wx .v-temp { font-weight: 400; }
+/* the night bedside view with the agenda or weeks (#38, styles-views.css): its smaller clock on portrait too */
+.style-modern #app.portrait .bs-list .clock.digital { font-size: calc(12rem * var(--clock-k, 1)); }
 
 /* ------------------------------------------------------------------------------- announcements */
 .style-modern .an-dim { background: rgb(0 0 0 / 0.38); }
