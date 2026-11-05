@@ -19,7 +19,7 @@ import { loadWebModules } from './webModules.js';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
 const [{ CarouselController }, nav] = await loadWebModules('/web/display/carousel.ts', '/web/display/nav.ts');
-const { planNav, NavIdle, readMemo, swipeDir, NAV_SAVE_EVERY, carouselTouch, CarouselGesture, GESTURE_SKIP, HOLD_MS, HOLD_SLOP_PX, HOLD_MAX_MS, PRESS_RING_DELAY_MS } = nav;
+const { planNav, NavIdle, readMemo, swipeDir, NAV_SAVE_EVERY, carouselTouch, CarouselGesture, GESTURE_SKIP, HOLD_MS, HOLD_SLOP_PX, HOLD_MAX_MS, PRESS_RING_DELAY_MS, TapTracker } = nav;
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 
 const sink = () => {
@@ -609,6 +609,32 @@ test('the editor: why a button does not show without touch, the swipe switch, th
   for (const k of ['navHome', 'navPause', 'navResume', 'navPaused', 'navUnavailable']) assert.equal(shared.split(`  ${k}: `).length - 1, 6, k);
 });
 
+test('TapTracker: a lift within the slop of its down is a tap, a stroke is not; the To Do and routine taps use it', () => {
+  const t = new TapTracker();
+  t.down({ id: 1, x: 500, y: 400 });
+  assert.equal(t.isTap({ id: 1, x: 500 + HOLD_SLOP_PX - 1, y: 400 }), true);
+  assert.equal(t.isTap({ id: 1, x: 200, y: 400 }), false, 'a swipe that started on the row');
+  assert.equal(t.isTap({ id: 1, x: 500, y: 400 + HOLD_SLOP_PX + 4 }), false);
+  // a lift with no down seen (a synthetic tap) is a tap; another finger has its own down
+  assert.equal(t.isTap({ id: 2, x: 0, y: 0 }), true);
+  t.down({ id: 2, x: 10, y: 10 });
+  assert.equal(t.isTap({ id: 2, x: 12, y: 11 }), true);
+  assert.equal(t.isTap({ id: 1, x: 200, y: 400 }), false);
+  // a new down of the same pointer starts again
+  t.down({ id: 1, x: 200, y: 400 });
+  assert.equal(t.isTap({ id: 1, x: 200, y: 400 }), true);
+  // only the last few pointers are kept (every new finger has a new id)
+  for (let i = 100; i < 140; i++) t.down({ id: i, x: 0, y: 0 });
+  assert.equal(t.isTap({ id: 1, x: 900, y: 900 }), true, 'forgotten');
+  assert.equal(t.isTap({ id: 139, x: 900, y: 900 }), false);
+  assert.match(read('web/display/todoTaps.ts'), /!isTap\(e\)/);
+  assert.match(read('web/display/widgets/kids.ts'), /!isTap\(e\)/);
+  // the docs: the announcement hold stays with the visit and the pause, the tap guard with the touch settings
+  const arch = read('docs/ARCHITECTURE.md');
+  assert.match(arch, /Nothing is written to the server\. An announcement holds it/);
+  assert.match(arch, /`TapTracker`, `web\/display\/taps\.ts`/);
+});
+
 // ---------------------------------------------------------------- in a browser
 
 const chrome = findChrome();
@@ -704,7 +730,7 @@ describe('navigation cards in a browser', { skip: !chrome && 'no Chrome' }, () =
   const dots = () => [...document.querySelectorAll('#car-dots i')].map((i) => i.classList.contains('is-on') ? 1 : 0);`;
 
   test('the carousel Deslizar works on a Classic layout (not only Personalizado); a mouse drag does not', async () => {
-    const { value, errors } = await open('carousel=1&carSwipe=1&stepSec=600&fade=0', `(async () => {
+    const { value, errors } = await open('carousel=1&carStart=0&carSwipe=1&stepSec=600&fade=0', `(async () => {
       ${STROKE}
       const start = app();
       const swipeOn = document.documentElement.classList.contains('nav-swipe');
@@ -723,22 +749,24 @@ describe('navigation cards in a browser', { skip: !chrome && 'no Chrome' }, () =
   });
 
   test('position dots: one per step, the one on screen lit, following a swipe; off by default', async () => {
-    const { value } = await open('carousel=1&carDots=always&carSwipe=1&stepSec=600&fade=0', `(async () => {
+    const { value } = await open('carousel=1&carStart=2&carDots=always&carSwipe=1&stepSec=600&fade=0', `(async () => {
       ${STROKE}
       const before = { shown: getComputedStyle(document.getElementById('car-dots')).display, dots: dots() };
       await stroke('touch', 1400, 600);
       await wait(1800);
       return { before, after: dots() };
     })()`);
-    assert.deepEqual(value.before, { shown: 'flex', dots: [1, 0, 0, 0] });
-    assert.deepEqual(value.after, [0, 1, 0, 0]);
+    // &carStart=2 pins the first step (the wall clock would pick any of the four)
+    assert.deepEqual(value.before, { shown: 'flex', dots: [0, 0, 1, 0] });
+    assert.deepEqual(value.after, [0, 0, 0, 1]);
     const off = await open('carousel=1&stepSec=600', `(() => ({ n: document.querySelectorAll('#car-dots i').length, shown: getComputedStyle(document.getElementById('car-dots')).display }))()`);
     assert.deepEqual(off.value, { n: 0, shown: 'none' });
   });
 
   test('press and hold pauses the step (a badge) until the lift; a press that moves never does', async () => {
-    const { value } = await open('carousel=1&carHold=1&carDots=always&stepSec=600&fade=0', `(async () => {
+    const { value } = await open('carousel=1&carStart=0&carHold=1&carDots=always&stepSec=600&fade=0', `(async () => {
       ${STROKE}
+      const start = app();
       const badge = () => document.getElementById('car-hold').classList.contains('show');
       const paused = () => document.getElementById('car-dots').classList.contains('is-paused');
       const el = document.elementFromPoint(900, 700);
@@ -756,14 +784,15 @@ describe('navigation cards in a browser', { skip: !chrome && 'no Chrome' }, () =
       await wait(700);
       const moved = { badge: badge(), paused: paused() };
       el.dispatchEvent(new PointerEvent('pointerup', at(940)));
-      return { ring, held, released, moved, hold: document.documentElement.classList.contains('car-hold') };
+      return { start, ring, held, released, moved, hold: document.documentElement.classList.contains('car-hold') };
     })()`);
     assert.equal(value.hold, true);
     assert.equal(value.ring, true, 'the press ring shows the touch was seen');
     assert.deepEqual(value.held, { badge: true, paused: true, ring: false });
     assert.equal(value.released.badge, false);
     assert.equal(value.released.paused, false);
-    assert.match(value.released.app, /preset-bigCalendar/, 'the same screen');
+    assert.match(value.start, /preset-bigCalendar/);
+    assert.equal(value.released.app, value.start, 'the same screen');
     assert.deepEqual(value.moved, { badge: false, paused: false });
   });
 

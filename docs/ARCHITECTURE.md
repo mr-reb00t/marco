@@ -461,7 +461,7 @@ goes (link keys, `device.screenId`, the display registry); the `v_` prefix tells
   the step on screen, and `home` drops all three and follows the shared clock again. A display bound to one screen
   shows another one with the same bundle fetch and `showScreen`. The visit or the pause is kept only in the device's
   localStorage with its end; every touch pushes the end forward (`NavIdle`), and when it passes the device goes back
-  to its own screen or carousel. Nothing is written to the server.
+  to its own screen or carousel. Nothing is written to the server. An announcement holds it for at most a minute after it was sent (at least 15 s on screen), urgent ones too.
   The carousel's own touch settings (`swipe`, `holdPause`, `dots`; `carouselTouch` re-checks them and turns them off
   with fewer than 2 steps or in the admin preview, where only the dots show) work on every layout. `CarouselGesture`
   reads touch and pen pointers only (never a mouse, never a press that starts on a control, `GESTURE_SKIP`): a quick
@@ -472,7 +472,8 @@ goes (link keys, `device.screenId`, the display registry); the `v_` prefix tells
   gesture on a dimmed screen only wakes it; nothing moves during the night hold, outside the schedule or while an
   alert holds the step. The per-screen `canvas.swipe` is ORed in. The dots (`#car-dots`), the badge and the press
   ring live outside `#app`, so the switch snapshot never copies them. A device with no touch never sends a touch
-  pointer, which is why the setting can live on the carousel. An announcement holds it for at most a minute after it was sent (at least 15 s on screen), urgent ones too.
+  pointer, which is why the setting can live on the carousel. The To Do and routine taps skip a lift that moved
+  (`TapTracker`, `web/display/taps.ts`), so a swipe that starts on a row steps without ticking it.
   Offline, the cached member bundles keep it looping; the plain caches always hold the screen on display, and an
   offline boot reads the first screen's own copy. A display bound to a plain screen never creates the
   controller and sends the same requests as before.

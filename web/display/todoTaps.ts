@@ -3,9 +3,11 @@
 // renderTodo (widgets/extras.ts) in the side card and in the Personalizado to-do card. A tap shows at once (the task
 // is struck through), goes to the server, and is put back with a short note when the server says no. One tap per task
 // every 700 ms, as for routines (widgets/kids.ts ChoreTaps): a finger that bounces must not tick and untick. A second
-// tap while the task is still on screen puts it back (it leaves the list when the server reads the list again).
+// tap while the task is still on screen puts it back (it leaves the list when the server reads the list again). A
+// finger that moves away before it lifts (a swipe, taps.ts) ticks nothing.
 // While night mode dims the screen a tap does nothing here: main.ts wakes the screen.
 import type { DisplayConfig, TodoItem } from '../shared/types';
+import { isTap } from './taps';
 
 const TAP_LOCK_MS = 700;
 /** How long the "did not work" note stays on a task. */
@@ -59,7 +61,8 @@ export function todoFailed(id: string): boolean {
 
 function onTap(e: PointerEvent): void {
   const row = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-task]');
-  if (!row || !host || !host.allowed() || document.documentElement.classList.contains('night')) return;
+  // a stroke that starts on the row (a swipe of the carousel) is not a tap
+  if (!row || !host || !host.allowed() || !isTap(e) || document.documentElement.classList.contains('night')) return;
   const id = row.dataset.task || '';
   const now = Date.now();
   if (!id || now - (locks.get(id) ?? 0) < TAP_LOCK_MS) return;

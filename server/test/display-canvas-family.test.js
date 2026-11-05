@@ -194,6 +194,28 @@ describe('family cards in a browser', { skip: !chrome && 'no Chrome' }, () => {
     assert.ok(value.after.every((d) => d === '1'), JSON.stringify(value));
     assert.deepEqual(value.bounce, value.after);
     assert.ok(parseFloat(value.big) >= 71.9, `touch targets of at least 7.2rem (${value.big})`);
+    // a swipe that starts on a routine (touch pointers keep their target, so the lift lands on it too) ticks nothing;
+    // a still tap with the same finger still does
+    const swipe = await open('preset=canvas&shot=family', `(async () => {
+      const chores = document.querySelector('.cv-item[data-kind="family.chores"]');
+      const btn = chores.querySelector('[data-chore][data-done="0"]');
+      const id = btn.dataset.chore;
+      const r = btn.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      const at = (cx) => ({ bubbles: true, pointerId: 21, pointerType: 'touch', clientX: cx, clientY: y, isPrimary: true });
+      const state = () => [...document.querySelectorAll('#canvas [data-chore="' + id + '"]')].map((b) => b.dataset.done);
+      btn.dispatchEvent(new PointerEvent('pointerdown', at(x)));
+      btn.dispatchEvent(new PointerEvent('pointerup', at(x - 300)));
+      await new Promise((r) => setTimeout(r, 300));
+      const stroked = state();
+      const again = chores.querySelector('[data-chore="' + id + '"]');
+      again.dispatchEvent(new PointerEvent('pointerdown', at(x)));
+      again.dispatchEvent(new PointerEvent('pointerup', at(x + 6)));
+      await new Promise((r) => setTimeout(r, 300));
+      return { stroked, tapped: state() };
+    })()`);
+    assert.ok(swipe.value.stroked.length >= 1 && swipe.value.stroked.every((d) => d === '0'), JSON.stringify(swipe.value));
+    assert.ok(swipe.value.tapped.every((d) => d === '1'), JSON.stringify(swipe.value));
     const preview = await open('preset=canvas&shot=family&preview=1', `document.querySelectorAll('#canvas [data-chore]').length`);
     assert.equal(preview.value, 0);
     const off = await open('preset=canvas&shot=family&touch=0', `document.querySelectorAll('#canvas [data-chore]').length`);

@@ -1621,8 +1621,12 @@ function syncCarousel(c: DisplayConfig): void {
     }
   }
   carousel.start();
-  // the demo of the navigation cards (&carousel=1&nav=1) starts on its first step, the screen with the cards
-  if (state.demo && params.get('nav') === '1') carousel.jumpTo(0);
+  // the demo of the navigation cards (&carousel=1&nav=1) starts on its first step, the screen with the cards;
+  // &carStart=N starts any demo carousel on step N (otherwise the wall clock picks it, which tests cannot pin)
+  if (state.demo) {
+    const first = params.get('nav') === '1' ? '0' : params.get('carStart');
+    if (first !== null && /^\d{1,2}$/.test(first)) carousel.jumpTo(Number(first));
+  }
   // ?try=1 (the admin's "Probar" in the preview): a switch every few seconds, so the animation can be seen
   if (params.get('try') === '1' && !tryTimer) {
     tryTimer = setInterval(() => {

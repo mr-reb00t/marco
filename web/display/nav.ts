@@ -235,7 +235,8 @@ export const HOLD_MAX_MS = 10 * 60_000;
 export const PRESS_RING_DELAY_MS = 150;
 /**
  * Presses that start on these never become a gesture: the controls do their own thing (Home Assistant cards,
- * sliders, the navigation cards, chores, To Do rows that tick a task, links and form fields).
+ * sliders, the navigation cards, chores, To Do rows that tick a task, links and form fields). Those handlers skip a
+ * lift that moved (TapTracker, taps.ts), so a stroke there does nothing at all.
  */
 export const GESTURE_SKIP = '[data-ctl], [data-slide], [data-task], [data-chore], .cv-nav-btn, .k-chore, .kf-chore, a[href], input, select, textarea, button';
 
@@ -348,5 +349,29 @@ export class CarouselGesture {
     const had = this.pressed;
     this.pressed = false;
     return had;
+  }
+}
+
+/** Pointers remembered at once by TapTracker (a touch screen gives every new finger a new id). */
+const TAP_TRACK_MAX = 16;
+
+/**
+ * Where each pointer went down, so a tap handler can tell a tap from a stroke. A finger that lands on a To Do row or a
+ * routine and moves away is a swipe (or a scroll), not a tick: touch pointers are captured by the element they start
+ * on, so the lift still lands on that row. A pointer seen only at the lift counts as a tap (no down to compare with).
+ */
+export class TapTracker {
+  private downs = new Map<number, { x: number; y: number }>();
+
+  down(e: GesturePointer): void {
+    this.downs.delete(e.id);
+    this.downs.set(e.id, { x: e.x, y: e.y });
+    if (this.downs.size > TAP_TRACK_MAX) this.downs.delete(this.downs.keys().next().value as number);
+  }
+
+  /** The lift `e` is a tap: it is within HOLD_SLOP_PX of where it went down. */
+  isTap(e: GesturePointer): boolean {
+    const d = this.downs.get(e.id);
+    return !d || Math.hypot(e.x - d.x, e.y - d.y) <= HOLD_SLOP_PX;
   }
 }

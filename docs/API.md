@@ -628,7 +628,8 @@ previous step on this display only, on every layout), `holdPause` (boolean, defa
 finger is held on the screen) and `dots` (`off` (default), `touch` (only on a device with a touch screen) or `always`:
 position dots at the bottom centre). A wrong type is a `400` at `carousels.items[i].swipe` / `.holdPause` / `.dots`;
 carousels saved without them read as off. None of them reaches the server at run time: a swipe or a hold only
-changes this display. The demo takes `&carSwipe=1`, `&carHold=1` and `&carDots=touch|always`.
+changes this display. The demo takes `&carSwipe=1`, `&carHold=1` and `&carDots=touch|always`, and `&carStart=<n>`
+starts it on step `n` (otherwise the clock picks the step).
 Everything that binds a display takes a carousel id where it takes a screen id:
 
 - `GET /api/admin/display-links`: one link per screen, then one per carousel, each with `kind: "screen" | "carousel"`

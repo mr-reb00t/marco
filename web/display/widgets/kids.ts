@@ -12,6 +12,7 @@ import { chipColors } from '../color';
 import { todoHeadOf, todoItemsOf, todoMetaHtml } from './extras';
 import { ctx } from '../ctx';
 import { esc, setHTML } from '../dom';
+import { isTap } from '../taps';
 import { isPreview, mediaUrl, withScreen } from '../identity';
 import type { NEvent } from '../eventModel';
 import { weatherIcon } from '../icons';
@@ -146,7 +147,8 @@ export class ChoreTaps {
 
   private onTap = (e: PointerEvent): void => {
     const btn = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-chore]');
-    if (!btn || !this.on || !this.root.contains(btn)) return;
+    // a stroke that starts on the routine (a swipe of the carousel) is not a tap
+    if (!btn || !this.on || !this.root.contains(btn) || !isTap(e)) return;
     const id = btn.dataset.chore || '';
     const now = Date.now();
     if (!id || now - (this.locks.get(id) ?? 0) < 700) return;
