@@ -39,7 +39,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'HTML sobre la pantalla', route: 'screen', anchor: 'scr-overlay', keywords: 'html overlay superposición sobreposição capa layer custom personalizado luces lights christmas navidad home assistant', feature: 'htmlOverlay' },
   { label: 'CSS personalizado', route: 'screen', anchor: 'scr-css', keywords: 'custom css estilos avanzado', feature: 'customCss' },
   { label: 'Enlace privado', route: 'screen', anchor: 'scr-link', keywords: 'private link url qr kiosk raspberry enlace privado ligação privada key clave' },
-  { label: 'Reloj (digital / analógico, segundos, 24 h)', route: 'datetime', anchor: 'dt-clock', keywords: 'clock seconds segundos 12h 24h ampm reloj' },
+  { label: 'Reloj (digital / analógico, segundos, 24 h)', route: 'datetime', anchor: 'dt-clock', keywords: 'clock seconds segundos 12h 24h ampm reloj posición position posição tamaño size tamanho grande big centro center izquierda left derecha right' },
   { label: 'Zona horaria', route: 'datetime', anchor: 'dt-clock', keywords: 'timezone fuso horario lisboa madrid' },
   { label: 'Formato de fecha', route: 'datetime', anchor: 'dt-format', keywords: 'date format fecha data' },
   // Contenido

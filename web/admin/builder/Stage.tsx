@@ -7,7 +7,7 @@ import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { HaPreview } from './haPreview';
 import type { CanvasConfig, CanvasKind, CanvasSize, DataItemData, DisplayConfig, DisplayValue } from '../../shared/types';
-import { CANVAS_KINDS, canvasDefaults } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, canvasDefaults, isBehind } from '../../../server/core/canvasCore.js';
 import { Icon } from '../components/icons';
 import { t } from '../i18n';
 import { gesture } from './dnd';
@@ -616,7 +616,7 @@ export function Stage(props: {
                   type="button"
                   key={id}
                   data-id={id}
-                  class={`bld-it ${sel === id ? 'is-sel' : ''} ${it.hidden ? 'is-hidden' : ''} ${isVoid ? 'is-void' : ''} ${props.url ? '' : 'is-bare'}`}
+                  class={`bld-it ${sel === id ? 'is-sel' : ''} ${it.hidden ? 'is-hidden' : ''} ${isBehind(it) ? 'is-behind' : ''} ${isVoid ? 'is-void' : ''} ${props.url ? '' : 'is-bare'}`}
                   style={px(b)}
                   title={vd === 'empty' ? t('No tiene nada que mostrar ahora, así que en la pantalla no se ve, pero ocupa su sitio. Suelta otra tarjeta encima para usar el hueco.') : vd === 'space' ? t('Un hueco vacío. Suelta otra tarjeta encima para usar el sitio.') : undefined}
                   aria-label={`${name} · ${sizeTag(id)}${vtext ? ` · ${vtext}` : ''}${why ? ` · ${t(HIDDEN_TEXT[why].badge)}` : ''}`}

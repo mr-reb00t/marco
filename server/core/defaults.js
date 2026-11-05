@@ -22,12 +22,15 @@ export const CONFIG_VERSION = 2;
 /** Built-in pseudo-source ids (F2). User sources can never take these ids. */
 export const LOCAL_SOURCE_ID = 'local';
 export const BIRTHDAYS_SOURCE_ID = 'birthdays';
+/** datetime.clockAlign: the layout's own place, or left, centre or right (#36). */
+export const CLOCK_ALIGNS = ['auto', 'left', 'center', 'right'];
+
 export const RESERVED_SOURCE_IDS = [LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID];
 
 /** Per-screen part of the keys that are split between global and per-screen ("merged sections"). */
 export const SCREEN_SPLIT_KEYS = {
   calendar: ['enabled', 'view', 'weeks', 'weekStart', 'startOn', 'showLocation', 'showEndTime', 'showDayXofY', 'showLegend', 'hidePast', 'pastEvents', 'eventFill', 'maxEventsPerDay', 'marquee', 'rotateBusyDays', 'compactBusyDays', 'eventStyle', 'gridLines', 'gridColor', 'agendaDays', 'sourceIds'],
-  datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom'],
+  datetime: ['enabled', 'clock', 'format24', 'showSeconds', 'showAmPm', 'dateFormat', 'dateCustom', 'clockAlign', 'clockSize'],
   weather: ['enabled', 'forecastDays', 'showHourly', 'showPrecipChance', 'place'],
   news: ['enabled', 'rotateSec'],
   // the to-do part of the screen (#15, core/todoCore.js): its lists, title, icon and which tasks
@@ -126,7 +129,9 @@ export function defaultScreenProfile({ id = 's_main', slug = 'living-room', name
       agendaDays: 'auto',
       sourceIds: null, // null = every enabled source (incl. local + birthdays); array = only these ids
     },
-    datetime: { enabled: true, clock: 'digital', format24: true, showSeconds: true, showAmPm: false, dateFormat: 'weekday_d_month', dateCustom: '{dddd}, {d} {mmmm} {yyyy}' },
+    // clockAlign: where the layouts put the clock and the date, 'auto' (the layout's own place) | 'left' | 'center' |
+    // 'right'; clockSize: how large they draw it, 0.6 to 1.6 times the layout's size (#36)
+    datetime: { enabled: true, clock: 'digital', format24: true, showSeconds: true, showAmPm: false, dateFormat: 'weekday_d_month', dateCustom: '{dddd}, {d} {mmmm} {yyyy}', clockAlign: 'auto', clockSize: 1 },
     // place: null = the household's place (config.weather), or { name, lat, lon } for this screen only
     // (core/weatherPlaces.js): every layout of the screen and its carousel steps show the weather of that place
     weather: { enabled: true, forecastDays: 5, showHourly: true, showPrecipChance: true, place: null },

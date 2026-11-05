@@ -239,6 +239,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'intervalSec', type: 'num', label: 'Cambiar de foto cada', min: 10, max: 600, step: 10, unit: 'sec' },
     { k: 'fit', type: 'seg', label: 'Encaje', opts: [{ v: 'cover', l: 'Llenar la tarjeta' }, { v: 'contain', l: 'Foto entera' }] },
     { k: 'caption', type: 'bool', label: 'Pie de foto' },
+    { k: 'behind', type: 'bool', label: 'Detrás de las otras tarjetas', hint: 'Las demás tarjetas se pueden poner encima de la foto. Solo en la zona principal, no en la barra lateral.' },
   ],
   widget: [
     { k: 'widgetId', type: 'widget', label: 'Widget' },

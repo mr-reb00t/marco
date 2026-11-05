@@ -133,7 +133,7 @@
 /* ====================================================================================== Per person */
 #app.preset-people { grid-template-rows: 25% minmax(0, 1fr); }
 #app.portrait.preset-people { grid-template-rows: 17% minmax(0, 1fr); }
-.preset-people .clock.digital { font-size: 12.5rem; }
+.preset-people .clock.digital { font-size: calc(12.5rem * var(--clock-k, 1)); }
 .preset-people .side { padding: 2.6rem 4rem 2.4rem; }
 .preset-people .hl-pill:nth-child(n + 2) { display: none; }
 /* portrait: clock on the left, the current weather on the right, in a low band */
@@ -147,7 +147,7 @@
 }
 #app.portrait.preset-people .side-top, #app.portrait.preset-board .side-top { align-items: flex-start; text-align: left; align-self: center; }
 #app.portrait.preset-people .side-bottom, #app.portrait.preset-board .side-bottom { justify-self: end; align-self: center; }
-#app.portrait.preset-people .clock.digital, #app.portrait.preset-board .clock.digital { font-size: 11.5rem; }
+#app.portrait.preset-people .clock.digital, #app.portrait.preset-board .clock.digital { font-size: calc(11.5rem * var(--clock-k, 1)); }
 #app.portrait.preset-people .highlights, #app.portrait.preset-board .highlights,
 #app.portrait.preset-people .side-mid, #app.portrait.preset-board .side-mid,
 #app.portrait.preset-people .wx-days, #app.portrait.preset-board .wx-days { display: none; }
@@ -219,7 +219,7 @@
 #app.portrait.preset-board { grid-template-rows: 17% minmax(0, 1fr); }
 #app.preset-board .photo-area { grid-row: 1 / -1; }
 .preset-board .main { background: transparent; color: #fff; padding: 0 4rem 3.6rem; }
-.preset-board .clock.digital { font-size: 12.5rem; }
+.preset-board .clock.digital { font-size: calc(12.5rem * var(--clock-k, 1)); }
 .preset-board .side { padding: 2.6rem 4rem 2.4rem; }
 .preset-board .hl-pill:nth-child(n + 2) { display: none; }
 .preset-board #news, .preset-board .main-strip { display: none !important; }
@@ -299,13 +299,13 @@
 .corner-bl .view-photoFrame { align-items: flex-start; text-align: left; }
 /* no photo to frame: the card moves to the middle and grows, like a desk clock */
 #app.no-photo .view-photoFrame { justify-content: center; align-items: center; text-align: center; }
-#app.no-photo .pf-card .clock.digital { font-size: 18rem; }
+#app.no-photo .pf-card .clock.digital { font-size: calc(18rem * var(--clock-k, 1)); }
 #app.no-photo .pf-card .date { font-size: 3.4rem; }
 #app.no-photo .pf-wx { justify-content: center; }
 .pf-card { display: flex; flex-direction: column; align-items: inherit; gap: 1.6rem; max-width: min(64rem, 100%); text-shadow: 0 0.2rem 2.4rem rgb(0 0 0 / 0.45); }
 .pf-card .clock-wrap { align-items: inherit; }
-.pf-card .clock.digital { font-size: 11.5rem; }
-.pf-card .clock.analog svg { width: 15rem; height: 15rem; }
+.pf-card .clock.digital { font-size: calc(11.5rem * var(--clock-k, 1)); }
+.pf-card .clock.analog svg { width: calc(15rem * var(--clock-k, 1)); height: calc(15rem * var(--clock-k, 1)); }
 .pf-card .date { margin-top: 1rem; font-size: 2.8rem; }
 .pf-wx, .bs-wx { display: flex; align-items: center; gap: 1.2rem; text-align: left; }
 .pf-wx:empty, .pf-next:empty { display: none; }
@@ -345,9 +345,9 @@
 .view-bedside { justify-content: center; align-items: center; }
 .bs { display: flex; flex-direction: column; align-items: center; gap: 4rem; }
 .bs .clock-wrap { align-items: center; }
-.bs .clock.digital { font-size: 34rem; color: var(--bs-ink); transition: color 4s ease; }
-#app.portrait .bs .clock.digital { font-size: 30rem; }
-.bs .clock.analog svg { width: 46rem; height: 46rem; filter: none; }
+.bs .clock.digital { font-size: calc(34rem * var(--clock-k, 1)); color: var(--bs-ink); transition: color 4s ease; }
+#app.portrait .bs .clock.digital { font-size: calc(30rem * var(--clock-k, 1)); }
+.bs .clock.analog svg { width: calc(46rem * var(--clock-k, 1)); height: calc(46rem * var(--clock-k, 1)); filter: none; }
 .bs .clock.analog .rim { fill: none; stroke: var(--bs-ink-2); }
 .bs .clock.analog .tk { stroke: var(--bs-ink-2); }
 .bs .clock.analog .tk.big, .bs .clock.analog .hh, .bs .clock.analog .mh { stroke: var(--bs-ink); }

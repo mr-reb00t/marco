@@ -15,7 +15,7 @@ import { ScheduleField } from './ScheduleField';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { PICK_TEXT } from './picks';
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, GROUP_HELP, isLoneGroup, itemIcon, itemKindName } from './kinds';
-import { boxCells, cellsOf, fitSpan, grid, growToCards, itemOf, placements, rangeOf, readOnly, resize, setCells, sideOf, sizesOf, sizingOf, type Orient, type Refusal, type Result } from './model';
+import { boxCells, cellsOf, fitSpan, grid, growToCards, itemOf, placements, rangeOf, readOnly, resize, setBehind, setCells, sideOf, sizesOf, sizingOf, type Orient, type Refusal, type Result } from './model';
 
 /** The corners the editor offers; a screen saved with the old soft corners ('m') shows the nearest, Redondeadas. */
 const RADIUS_OPTS = [
@@ -461,6 +461,12 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
     p.edit(g.cv, merge);
     if (g.stuck.length) p.refuse('cardsNoRoom');
   };
+  /** A photo sent behind the other cards or put back among them (#36): back among them it needs free cells. */
+  const putBehind = (v: boolean) => {
+    const r = setBehind(cv, item.id, v);
+    p.edit(r.cv);
+    if (r.stuck.length) p.refuse('behindNoRoom');
+  };
   const style = (k: keyof CanvasItemStyle, v: unknown, merge?: string) => upd((x) => void ((x.style as unknown as Record<string, unknown>)[k] = v), merge);
   const sideOn = sideOf(cv, orient) !== 'none';
   const why = p.why.get(item.id) ?? null;
@@ -534,7 +540,7 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
               </Button>
             </Callout>
           )}
-          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates, haRaw: p.haRaw }} put={(k, v, merge) => (item.kind === 'rotator' && k === 'cards' ? putCards(v, merge) : upd((x) => void (x.props[k] = v), merge))} />
+          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates, haRaw: p.haRaw }} put={(k, v, merge) => (item.kind === 'rotator' && k === 'cards' ? putCards(v, merge) : item.kind === 'photo' && k === 'behind' ? putBehind(v === true) : upd((x) => void (x.props[k] = v), merge))} />
           {p.env.ha && <HaControlsPanel item={item} cv={cv} states={p.haStates} openMode={p.openMode} upd={upd} />}
           <ConditionField item={item} ha={p.env.ha} values={p.env.values ?? []} raw={p.haRaw} upd={upd} />
           <ScheduleField item={item} upd={upd} />

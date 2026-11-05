@@ -121,6 +121,41 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Mere dækkende eller Fyldt er lettere at læse oven på et foto.',
     'Mocniejsze lub Pełne lepiej czytać na zdjęciu.',
   ],
+  // where the layouts put the clock, and how large (#36)
+  [
+    'Automática: donde lo pone el diseño. Con la fecha y los avisos de debajo.',
+    'Automatic: where the layout puts it. The date and the notes under it move with it.',
+    'Automática: onde o design o coloca. Com a data e os avisos por baixo.',
+    'Automatisch: waar de indeling hem zet. De datum en de meldingen eronder gaan mee.',
+    'Automatisk: hvor layoutet placerer det. Datoen og beskederne under følger med.',
+    'Automatycznie: tam, gdzie umieszcza go układ. Data i powiadomienia pod nim przesuwają się razem z nim.',
+  ],
+  [
+    'Nunca pasa del ancho de su panel: para un reloj más grande, ensancha el panel o quita los segundos.',
+    'It never gets wider than its panel: for a larger clock, widen the panel or hide the seconds.',
+    'Nunca passa da largura do seu painel: para um relógio maior, alarga o painel ou tira os segundos.',
+    'Hij wordt nooit breder dan zijn paneel: voor een grotere klok maak je het paneel breder of verberg je de seconden.',
+    'Det bliver aldrig bredere end sit panel: vil du have et større ur, så gør panelet bredere eller skjul sekunderne.',
+    'Nigdy nie jest szerszy niż jego panel: aby zegar był większy, poszerz panel lub ukryj sekundy.',
+  ],
+  // a photo card behind the other cards on Personalizado (#36)
+  ['Detrás de las otras tarjetas', 'Behind the other cards', 'Atrás dos outros cartões', 'Achter de andere kaarten', 'Bag de andre kort', 'Za innymi kartami'],
+  [
+    'Las demás tarjetas se pueden poner encima de la foto. Solo en la zona principal, no en la barra lateral.',
+    'The other cards can be placed over the photo. Only in the main area, not in the sidebar.',
+    'Os outros cartões podem ser colocados por cima da foto. Só na zona principal, não na barra lateral.',
+    'De andere kaarten kunnen op de foto worden gezet. Alleen in het hoofdgedeelte, niet in de zijbalk.',
+    'De andre kort kan placeres oven på fotoet. Kun i hovedområdet, ikke i sidebjælken.',
+    'Pozostałe karty można umieścić na zdjęciu. Tylko w obszarze głównym, nie na pasku bocznym.',
+  ],
+  [
+    'Delante de las otras tarjetas no hay sitio libre para la foto, así que sigue detrás. Haz sitio o hazla más pequeña.',
+    'There is no free room for the photo in front of the other cards, so it stays behind them. Make room or make it smaller.',
+    'À frente dos outros cartões não há espaço livre para a foto, por isso fica atrás. Abre espaço ou torna-a mais pequena.',
+    'Voor de andere kaarten is geen vrije plek voor de foto, dus blijft hij erachter. Maak ruimte of maak hem kleiner.',
+    'Der er ikke plads til fotoet foran de andre kort, så det bliver bagved. Gør plads eller gør det mindre.',
+    'Przed innymi kartami nie ma wolnego miejsca na zdjęcie, więc zostaje za nimi. Zrób miejsce lub je zmniejsz.',
+  ],
 ];
 
 // the Bolsa card's currencies (fieldSpecs.ts): an ISO code reads the same in every language

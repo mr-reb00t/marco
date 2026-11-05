@@ -178,7 +178,13 @@ The stored config has **global** sections shared by every screen and a list of *
                   //   fewer than 14 days would show; it measures again when the agenda's size or the events change.
                   //   Events are fetched up to 61 days ahead while the agenda view is on. The side agenda shows 3 days.
                   //   Pure helpers: web/display/agendaFill.ts (tested in server/test/display-agenda.test.js).
-  "datetime":   { "enabled": true, "clock": "digital", "format24": true, "showSeconds": true, "showAmPm": false, "dateFormat": "weekday_d_month" },
+  "datetime":   { "enabled": true, "clock": "digital", "format24": true, "showSeconds": true, "showAmPm": false, "dateFormat": "weekday_d_month",
+                  "dateCustom": "{dddd}, {d} {mmmm} {yyyy}", "clockAlign": "auto", "clockSize": 1 },
+                  // clockAlign: where the layouts put the clock, the date and the pills under them, "auto" (default,
+                  //   also for older screens: the layout's own place), "left", "center" or "right" (root data-clock-align,
+                  //   styles.css "clock place"; not the planner's strip). clockSize: 0.6 to 1.6 times the layout's clock
+                  //   (--clock-k); it still shrinks to the width of its panel (widgets/clock.ts). Personalizado's clock
+                  //   cards have their own sizes (#36).
   "weather":    { "enabled": true, "forecastDays": 5, "showHourly": true, "showPrecipChance": true },
   "news":       { "enabled": true, "rotateSec": 15 },
   "todo":       { "enabled": false },

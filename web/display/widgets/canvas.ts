@@ -11,7 +11,7 @@
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
 import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, fullLookMin, gridDims, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -734,9 +734,12 @@ export class Canvas {
       // the named size it is drawn like, and its cells (a box of its own is any w×h within the kind's range)
       e.el.dataset.size = pos.size;
       e.el.dataset.cells = `${w}x${h}`;
+      // a photo behind the other cards (#36): drawn under the cards placed over it (styles-canvas.css)
+      e.el.classList.toggle('is-behind', isBehind(e.item));
       e.el.hidden = false;
       return;
     }
+    e.el.classList.remove('is-behind');
     e.zone = 'side';
     e.el.dataset.size = 'side';
     delete e.el.dataset.cells;

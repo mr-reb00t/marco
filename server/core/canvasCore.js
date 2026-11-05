@@ -698,11 +698,13 @@ export const CANVAS_KINDS = {
   },
   photo: {
     cat: 'content', sizes: ['s', 'm', 't', 'l', 'xl'], def: 'm', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 2,
-    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false }),
+    // behind: under the other cards (#36): it takes no cells of the grid, so they can be placed over it (isBehind)
+    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, behind: false }),
     props: (c, p, x) => ({
       intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 600),
       fit: P.oneOf(c, `${p}.fit`, x.fit, 'cover', ['cover', 'contain']),
       caption: P.bool(c, `${p}.caption`, x.caption, false),
+      behind: P.bool(c, `${p}.behind`, x.behind, false),
     }),
   },
   widget: {
@@ -1382,6 +1384,14 @@ function rotatorCardRange(cd, grid) {
  * A group counts as one card whose box its cards share (rotatorCardRange). Takes the place of the kind wherever a
  * box is worked out (cellRange, boxOf, lookSize accept it).
  */
+/**
+ * A card drawn under the others (a photo with "Detrás de las otras tarjetas", #36): in the main area it takes no
+ * cells, so it never moves another card and any card can be placed over it.
+ */
+export function isBehind(item) {
+  return item?.kind === 'photo' && item.props?.behind === true;
+}
+
 export function kindFor(item) {
   const k = CANVAS_KINDS[item?.kind];
   const cards = item?.kind === 'rotator' && Array.isArray(item.props?.cards) ? item.props.cards.filter((cd) => CANVAS_KINDS[cd?.kind] || (isRotatorGroup(cd) && rotatorLeaves([cd]).some((m) => CANVAS_KINDS[m.kind]))) : [];
@@ -1778,6 +1788,8 @@ function placeMain(c, list, orientation, key, grid = 'fine') {
     const [w, h] = posCells(pos, orientation, grid);
     pos.x = Math.min(Math.max(0, pos.x), occ.cols - w);
     pos.y = Math.min(Math.max(0, pos.y), occ.rows - h);
+    // under the other cards: anywhere on the grid, taking no cells
+    if (isBehind(item)) continue;
     if (!fitsAt(occ, pos.x, pos.y, w, h)) {
       const spot = nearestFree(occ, pos.x, pos.y, w, h);
       if (!spot) {
@@ -2293,6 +2305,14 @@ export function deriveCanvasPortrait(items, _sidebar, grid = 'fine') {
     let done = false;
     for (const box of tries) {
       const [w, h] = posCells(box, 'portrait', g);
+      // under the other cards: where it was, inside the grid, taking no cells
+      if (isBehind(it)) {
+        const { cols, rows } = gridDims('portrait', g);
+        if (w > cols || h > rows) continue;
+        placed.push({ id: it.id, pos: { zone: 'main', x: Math.min(it.pos.x, cols - w), y: Math.min(it.pos.y, rows - h), ...box } });
+        done = true;
+        break;
+      }
       const spot = firstFree(occ, w, h);
       if (!spot) continue;
       occupy(occ, it.id, spot.x, spot.y, w, h);

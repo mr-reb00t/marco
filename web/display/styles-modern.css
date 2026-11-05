@@ -808,7 +808,7 @@
 
 /* photo frame: one small glass widget in the corner */
 .style-modern .pf-card { gap: 1.4rem; padding: 2.6rem 3rem 2.8rem; border-radius: 3.2rem; color: var(--m-ink); text-shadow: none; }
-.style-modern .pf-card .clock.digital { font-size: 10rem; }
+.style-modern .pf-card .clock.digital { font-size: calc(10rem * var(--clock-k, 1)); }
 .style-modern .pf-card .date { margin: 0 0 0.4rem; font-size: 2.6rem; color: var(--m-ink); }
 .style-modern .pf-card .clock .colon { color: inherit; }
 .style-modern .pf-wx { padding-top: 1.4rem; border-top: 1px solid var(--m-sep); align-self: stretch; }
@@ -825,8 +825,8 @@
 .style-modern .preset-photoFrame .scrim { background: radial-gradient(60% 55% at var(--sx) var(--sy), rgb(0 0 0 / 0.26), transparent 75%); }
 
 /* bedside: StandBy-like, the big digits stay medium weight */
-.style-modern .bs .clock.digital { font-size: 32rem; font-weight: 500; letter-spacing: -0.04em; }
-.style-modern #app.portrait .bs .clock.digital { font-size: 28rem; }
+.style-modern .bs .clock.digital { font-size: calc(32rem * var(--clock-k, 1)); font-weight: 500; letter-spacing: -0.04em; }
+.style-modern #app.portrait .bs .clock.digital { font-size: calc(28rem * var(--clock-k, 1)); }
 .style-modern .bs .date { margin: 0 0 1.6rem; font-size: 3.6rem; font-weight: 600; color: var(--bs-ink-2); }
 .style-modern .bs-info { font-weight: 500; }
 .style-modern .bs-wx .v-temp { font-weight: 400; }

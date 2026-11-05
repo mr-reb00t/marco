@@ -196,7 +196,7 @@ export function haEntitiesOf(item: Pick<CanvasItem, 'kind' | 'props'>): string[]
 export function itemNames(item: Pick<CanvasItem, 'kind' | 'props'>): { entity: string; name: string }[];
 export function needsConfirm(domain: string, attrs?: Record<string, unknown> | null, entityId?: string, name?: string): boolean;
 export function itemAliases(item: Pick<CanvasItem, 'id' | 'kind' | 'props'>): { alias: string; entity: string; slot: number }[];
-export function deriveCanvasPortrait(items: Pick<CanvasItem, 'id' | 'kind' | 'pos'>[], sidebar?: CanvasConfig['sidebar'], grid?: GridArg): { placed: { id: string; pos: CanvasPos }[]; omitted: string[] };
+export function deriveCanvasPortrait(items: (Pick<CanvasItem, 'id' | 'kind' | 'pos'> & { props?: Record<string, unknown> })[], sidebar?: CanvasConfig['sidebar'], grid?: GridArg): { placed: { id: string; pos: CanvasPos }[]; omitted: string[] };
 export function projectCanvas(
   screen: { layout?: { preset?: string }; screen?: { orientation?: string }; canvas?: CanvasConfig } | null | undefined,
   opts?: { isPrivate?: boolean; canvasKinds?: readonly string[]; haControls?: boolean; members?: { id: string; calendarId: string | null }[]; screens?: { id: string; name: string }[]; trusted?: boolean; now?: Date; tz?: string },
@@ -246,6 +246,7 @@ export function readCanvasFile(
   | { ok: true; canvas: CanvasConfig; picks: Record<string, CanvasPick[]>; dropped: number; conditions: number; theme: 'light' | 'dark' | null; glass: unknown }
   | { ok: false; error: string; path?: string };
 /** The kind an item is sized as (a Rotativa: the range its cards allow too). */
+export function isBehind(item: { kind: string; props?: Record<string, unknown> } | null | undefined): boolean;
 export function kindFor(item: { kind: string; props?: Record<string, unknown> } | null | undefined): CanvasKindDef;
 /** "Tiempo en varias ciudades": a new card's places, and its layouts. */
 export const CITIES_DEFAULT: { name: string; lat: number; lon: number }[];

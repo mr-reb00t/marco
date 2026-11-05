@@ -1120,7 +1120,10 @@ Saving also stores a box that is
 exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell (an error; the
 named size is used). The portrait view drawn from the landscape one keeps a box of its own (at most 16 wide) before it
 tries the named sizes. The display config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or
-`fill`). A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
+`fill`). Cards never share cells, except a photo card with `props.behind: true` ("Detrás de las otras tarjetas", #36,
+`isBehind(item)`): on the main grid it takes no cells, so saving never moves the cards placed over it, and the display
+draws it under them (`.cv-item.is-behind`). The portrait view drawn from the landscape one keeps it where it was
+(inside the grid) and places the other cards as if it were not there. In the sidebar it is an ordinary card. A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
 kind's own cap comes on top).
 
 **Grid and density.** Every canvas is on the 24×16 grid, and a saved one carries `grid: "fine"`. `grid` is deprecated:

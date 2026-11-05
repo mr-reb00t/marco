@@ -1,6 +1,6 @@
 // Default display config (mirrors server/core/defaults.js) + a defensive deep merge so a partial / older
 // config from the server never breaks the screen.
-import type { AgendaDays, DisplayConfig } from '../shared/types';
+import { CLOCK_ALIGNS, type AgendaDays, type DisplayConfig } from '../shared/types';
 import { DEFAULT_ICON_RULES } from '../shared/emoji';
 import { CALENDAR_BLUR_DEFAULT, CALENDAR_OPACITY_DEFAULT, GLASS_DEFAULTS, normalizeGlass } from '../shared/glass';
 
@@ -25,6 +25,7 @@ export const DEFAULT_CONFIG: DisplayConfig = {
     enabled: true, timezone: 'Europe/Lisbon', clock: 'digital', format24: true, showSeconds: true, showAmPm: false,
     dateFormat: 'weekday_d_month',
     dateCustom: '{dddd}, {d} {mmmm} {yyyy}',
+    clockAlign: 'auto', clockSize: 1,
   },
   weather: {
     enabled: true, provider: 'open-meteo', model: 'best_match', locationName: 'Lisbon, Portugal', lat: 38.7223, lon: -9.1393, units: 'metric',
@@ -82,6 +83,8 @@ export function normalizeConfig(raw: unknown): DisplayConfig {
   c.calendar.eventStyle = c.calendar.eventStyle === 'cards' ? 'cards' : 'lines';
   c.calendar.gridLines = c.calendar.gridLines === 'clear' || c.calendar.gridLines === 'strong' ? c.calendar.gridLines : 'soft';
   c.calendar.eventFill = c.calendar.eventFill === 'strong' || c.calendar.eventFill === 'solid' ? c.calendar.eventFill : 'soft';
+  c.datetime.clockAlign = (CLOCK_ALIGNS as readonly string[]).includes(c.datetime.clockAlign) ? c.datetime.clockAlign : 'auto';
+  c.datetime.clockSize = Math.min(1.6, Math.max(0.6, Number(c.datetime.clockSize) || 1));
   c.calendar.pastEvents = c.calendar.pastEvents === 'soft' || c.calendar.pastEvents === 'full' ? c.calendar.pastEvents : 'dim';
   c.calendar.gridColor = typeof rawCal?.gridColor === 'string' && /^#[0-9a-f]{6}$/i.test(rawCal.gridColor) ? rawCal.gridColor : null;
   c.calendar.agendaDays = normalizeAgendaDays(rawCal?.agendaDays);

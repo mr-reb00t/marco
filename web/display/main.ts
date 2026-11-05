@@ -545,6 +545,11 @@ function applyConfig(raw: DisplayConfig): void {
   // ?eventFill=soft|strong|solid (how much the events' background covers what is behind them, #32)
   const pef = params.get('eventFill');
   if (pef === 'soft' || pef === 'strong' || pef === 'solid') cfg.calendar.eventFill = pef;
+  // ?clockAlign=auto|left|center|right&clockSize=0.6…1.6 (where the layouts put the clock, and how large, #36)
+  const pca = params.get('clockAlign');
+  if (pca === 'auto' || pca === 'left' || pca === 'center' || pca === 'right') cfg.datetime.clockAlign = pca;
+  const pcs = Number(params.get('clockSize'));
+  if (params.has('clockSize') && pcs >= 0.6 && pcs <= 1.6) cfg.datetime.clockSize = pcs;
   const pcd = params.get('cards');
   if (pcd === '0' || pcd === '1') cfg.calendar.eventStyle = pcd === '1' ? 'cards' : 'lines';
   // automatic weeks: at most 6 rows, fewer where a layout caps the rows below
@@ -612,6 +617,11 @@ function applyConfig(raw: DisplayConfig): void {
   root.style.setProperty('--panel-blur', String(cfg.background.panelBlur ?? 18));
   root.style.setProperty('--panel-shade', String((cfg.background.panelShade ?? 0.5) * 2));
   root.style.setProperty('--side-w', `${(cfg.layout.sideWidth * 100).toFixed(2)}%`);
+  // datetime.clockAlign / clockSize (#36): where the layouts put the clock and the date, and how large (styles.css,
+  // "clock place"); the clock still shrinks to the width it has (widgets/clock.ts fit)
+  if (cfg.datetime.clockAlign === 'auto') delete root.dataset.clockAlign;
+  else root.dataset.clockAlign = cfg.datetime.clockAlign;
+  root.style.setProperty('--clock-k', String(cfg.datetime.clockSize ?? 1));
   // the calendar glass over a full-screen photo (styles.css, .bg-screen); a thin one gives its text a soft shadow
   const sheetA = calendarSheetAlpha(cfg.background.calendarOpacity, { light, lite });
   root.style.setProperty('--sheet-a', String(sheetA));

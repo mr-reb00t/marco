@@ -164,8 +164,8 @@ test('migration v1 → v2 keeps every value (global vs screens[0])', async () =>
   // privacy mode did not exist yet: every source gets the default for its kind
   assert.deepEqual(v.calendar, { sources: sources.map((x) => ({ ...x, privacy: 'busy' })), iconRules });
   const { timezone, ...dtView } = V1.datetime;
-  // v1 had no custom date pattern: it is back-filled with the default
-  assert.deepEqual(s.datetime, { ...dtView, dateCustom: '{dddd}, {d} {mmmm} {yyyy}' });
+  // v1 had no custom date pattern, nor the clock's place and size: they are back-filled with the defaults
+  assert.deepEqual(s.datetime, { ...dtView, dateCustom: '{dddd}, {d} {mmmm} {yyyy}', clockAlign: 'auto', clockSize: 1 });
   assert.deepEqual(v.datetime, { timezone });
   assert.deepEqual(s.weather, { enabled: false, forecastDays: 3, showHourly: false, showPrecipChance: false, place: null });
   assert.equal(v.weather.locationName, 'Madrid');

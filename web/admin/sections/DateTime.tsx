@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { DATE_FORMATS, type DateFormat, type Lang } from '../../shared/types';
 import { formatDateLine } from '../../shared/i18n';
-import { Card, Field, PageHeader, Segmented, TextInput, ToggleRow } from '../components/ui';
+import { Card, Field, PageHeader, Segmented, Slider, TextInput, ToggleRow } from '../components/ui';
 import { ScopeBadge } from '../components/ui';
 import { t } from '../i18n';
 import type { SectionProps } from './common';
@@ -126,6 +126,22 @@ export function DateTimeSection({ cfg, set, errors }: SectionProps) {
             />
           </Field>
         </div>
+        <Field label={t('Posición')} hint={t('Automática: donde lo pone el diseño. Con la fecha y los avisos de debajo.')}>
+          <Segmented
+            full
+            value={d.clockAlign ?? 'auto'}
+            options={[
+              { value: 'auto', label: t('Automática') },
+              { value: 'left', label: t('Izquierda') },
+              { value: 'center', label: t('Centro') },
+              { value: 'right', label: t('Derecha') },
+            ]}
+            onChange={(v) => set((c) => void (c.datetime.clockAlign = v))}
+          />
+        </Field>
+        <Field label={t('Tamaño')} hint={t('Nunca pasa del ancho de su panel: para un reloj más grande, ensancha el panel o quita los segundos.')}>
+          <Slider value={Math.round((d.clockSize ?? 1) * 100)} min={60} max={160} step={5} format={(v) => `${v} %`} onChange={(v) => set((c) => void (c.datetime.clockSize = v / 100))} />
+        </Field>
         <ToggleRow label={t('Mostrar segundos')} checked={d.showSeconds} onChange={(v) => set((c) => void (c.datetime.showSeconds = v))} />
         <ToggleRow label={t('Mostrar AM/PM')} hint={d.format24 ? t('Solo con formato de 12 horas') : undefined} disabled={d.format24} checked={d.showAmPm} onChange={(v) => set((c) => void (c.datetime.showAmPm = v))} />
         <Field label={<>{t('Zona horaria')} <ScopeBadge scope="global" /></>} error={errors['datetime.timezone']}>

@@ -2,7 +2,7 @@
 // invalid values produce errors (PUT /api/admin/config answers 400 with the list).
 import {
   defaultConfig, defaultScreenProfile, CONFIG_VERSION, RESERVED_SOURCE_IDS, SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS,
-  WIDGET_TYPES, MAX_VALUE_WIDGET_KEYS, WIDGET_REFRESH_SEC, WEB_WIDGET_REFRESH_SEC, MAX_WIDGETS, MAX_SCREEN_WIDGETS, WIDGET_PLACES, WIDGET_SIZES, WIDGET_FITS, WIDGET_PREFIX,
+  CLOCK_ALIGNS, WIDGET_TYPES, MAX_VALUE_WIDGET_KEYS, WIDGET_REFRESH_SEC, WEB_WIDGET_REFRESH_SEC, MAX_WIDGETS, MAX_SCREEN_WIDGETS, WIDGET_PLACES, WIDGET_SIZES, WIDGET_FITS, WIDGET_PREFIX,
 } from './defaults.js';
 import { isValidTimeZone } from './lib/tz.js';
 import { randomId, fold } from './lib/text.js';
@@ -399,6 +399,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     showAmPm: bool(ctx, `${p}.datetime.showAmPm`, dt.showAmPm, D.datetime.showAmPm),
     dateFormat: oneOf(ctx, `${p}.datetime.dateFormat`, dt.dateFormat, D.datetime.dateFormat, ['weekday_month_d', 'weekday_d_month', 'weekday_d_dot_month', 'weekday_month_d_y', 'weekday_mdy', 'weekday_dmy', 'weekday_iso', 'custom']),
     dateCustom: str(ctx, `${p}.datetime.dateCustom`, dt.dateCustom, D.datetime.dateCustom, 60).replace(/[<>]/g, ''),
+    clockAlign: oneOf(ctx, `${p}.datetime.clockAlign`, dt.clockAlign, D.datetime.clockAlign, CLOCK_ALIGNS),
+    clockSize: num(ctx, `${p}.datetime.clockSize`, dt.clockSize, D.datetime.clockSize, 0.6, 1.6),
   };
 
   const we = obj(ctx, `${p}.weather`, x.weather);

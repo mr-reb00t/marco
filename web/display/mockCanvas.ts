@@ -562,6 +562,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'widget', pos: M(8, 12, 's'), props: { widgetId: DEMO_WIDGET } },
     ],
   },
+  // a photo behind the other cards (#36): it fills two thirds of the screen, with the clock and the weather over it
+  behind: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'clock.digital', pos: B(1, 1, 8, 4) },
+      { kind: 'weather.now', pos: M(1, 11, 's') },
+      { kind: 'calendar.agenda', pos: M(16, 0, 't'), props: { days: 7 } },
+      // last in the list, so the display draws it under the others by its layer, not by its order
+      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', behind: true } },
+    ],
+  },
   // Sonando ahora (?np=idle: nothing plays, every card is hidden): the wide card, a big one, one line, one without a
   // cover, one in the sidebar, and one with no account chosen (never drawn on a TV)
   nowplaying: {

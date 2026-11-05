@@ -599,7 +599,14 @@ export interface DateTimeConfig {
   dateFormat: DateFormat;
   /** pattern for dateFormat 'custom': {dddd} {ddd} {d} {dd} {mmmm} {mmm} {m} {mm} {yyyy} {yy} plus any text */
   dateCustom?: string;
+  /** where the layouts put the clock and the date: their own place ('auto'), or left, centre or right (#36) */
+  clockAlign: ClockAlign;
+  /** how large the layouts draw the clock: 0.6 to 1.6 times their own size (#36) */
+  clockSize: number;
 }
+
+export const CLOCK_ALIGNS = ['auto', 'left', 'center', 'right'] as const;
+export type ClockAlign = (typeof CLOCK_ALIGNS)[number];
 
 /** Weather data sources (server/core/weather.js). 'homeassistant' = Open-Meteo plus a Home Assistant entity (self-hosted). */
 export type WeatherProvider = 'open-meteo' | 'met-norway' | 'pirate-weather' | 'homeassistant';

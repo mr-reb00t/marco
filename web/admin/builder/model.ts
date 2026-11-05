@@ -4,7 +4,7 @@
 // size table and validation live in server/core/canvasCore.js; this file only moves items around within them.
 import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, RotatorEntry, SideSpan } from '../../shared/types';
 import {
-  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt,
+  CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt, isBehind,
   firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, rotatorNodes, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
@@ -14,7 +14,7 @@ export type PosKey = 'pos' | 'portrait';
 export type MainPos = Extract<CanvasPos, { zone: 'main' }>;
 export type SidePos = Extract<CanvasPos, { zone: 'side' }>;
 /** Why an operation changed nothing. */
-export type Refusal = 'noRoom' | 'noBigger' | 'cardsNoRoom' | 'sideFull' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
+export type Refusal = 'noRoom' | 'noBigger' | 'cardsNoRoom' | 'behindNoRoom' | 'sideFull' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
 export type Result = { ok: true; cv: CanvasConfig; id?: string } | { ok: false; why: Refusal };
 
 const ok = (cv: CanvasConfig, id?: string): Result => ({ ok: true, cv, id });
@@ -79,12 +79,16 @@ export function omittedInPortrait(cv: CanvasConfig): string[] {
   return cv.items.filter((it) => !placed.has(it.id)).map((it) => it.id);
 }
 
-/** The cells taken on `o`, leaving out `except`. */
+/**
+ * The cells taken on `o`, leaving out `except`. A photo behind the other cards (#36) takes none, and has none in its
+ * way: placing it, every cell is free.
+ */
 export function occupancy(cv: CanvasConfig, o: Orient, except?: string | string[]) {
   const skip = new Set(Array.isArray(except) ? except : except ? [except] : []);
   const occ = makeOccupancy(o);
+  if (typeof except === 'string' && isBehind(itemOf(cv, except))) return occ;
   for (const [id, p] of placements(cv, o)) {
-    if (p.zone !== 'main' || skip.has(id)) continue;
+    if (p.zone !== 'main' || skip.has(id) || isBehind(itemOf(cv, id))) continue;
     const [w, h] = boxCells(p, o);
     occupy(occ, id, p.x, p.y, w, h);
   }
@@ -782,6 +786,29 @@ export function growToCards(cv0: CanvasConfig, id: string): { cv: CanvasConfig; 
   return { cv, grown, stuck };
 }
 
+/**
+ * A photo behind the other cards (#36) put back among them, or sent behind them. Back among them it must not cover
+ * another card: it stays where it is when the cells are free, else it moves to the nearest free spot of its size.
+ * `stuck`: the orientations with no room at all (it stays behind then).
+ */
+export function setBehind(cv0: CanvasConfig, id: string, behind: boolean): { cv: CanvasConfig; stuck: Orient[] } {
+  let cv = updateItem(cv0, id, (it) => void (it.props.behind = behind));
+  if (behind) return { cv, stuck: [] };
+  const stuck: Orient[] = [];
+  for (const o of ['landscape', 'portrait'] as Orient[]) {
+    if (readOnly(cv, o)) continue;
+    const p = placements(cv, o).get(id);
+    if (p?.zone !== 'main') continue;
+    const [w, h] = boxCells(p, o);
+    if (fitsAt(occupancy(cv, o, id), p.x, p.y, w, h)) continue;
+    const drop = resolveMain(cv, o, asBox(p), p.x, p.y, { id });
+    const r = drop ? applyMain(cv, o, id, { ...drop, swap: undefined }) : no('noRoom');
+    if (r.ok) cv = r.cv;
+    else stuck.push(o);
+  }
+  return stuck.length ? { cv: updateItem(cv0, id, (it) => void (it.props.behind = true)), stuck } : { cv, stuck };
+}
+
 /** Change an item's props or style (the inspector). */
 export function updateItem(cv0: CanvasConfig, id: string, fn: (it: CanvasItem) => void): CanvasConfig {
   const cv = clone(cv0);
@@ -796,7 +823,9 @@ export const itemOf = (cv: CanvasConfig, id: string | null | undefined): CanvasI
 export function tabOrder(cv: CanvasConfig, o: Orient): string[] {
   const pl = placements(cv, o);
   const side = sideStack(cv, o).map((x) => x.id);
-  const main = [...pl.entries()].filter(([, p]) => p.zone === 'main').sort(([, a], [, b]) => (a as MainPos).y - (b as MainPos).y || (a as MainPos).x - (b as MainPos).x).map(([id]) => id);
+  // a photo behind the other cards (#36) comes first, so the overlay draws it under them
+  const back = (id: string) => (isBehind(itemOf(cv, id)) ? 0 : 1);
+  const main = [...pl.entries()].filter(([, p]) => p.zone === 'main').sort(([ia, a], [ib, b]) => back(ia) - back(ib) || (a as MainPos).y - (b as MainPos).y || (a as MainPos).x - (b as MainPos).x).map(([id]) => id);
   const s = sideOf(cv, o);
   return s === 'left' || s === 'top' ? [...side, ...main] : [...main, ...side];
 }
@@ -806,7 +835,7 @@ export function noOverlap(cv: CanvasConfig): boolean {
   for (const o of ['landscape', 'portrait'] as Orient[]) {
     const occ = makeOccupancy(o);
     for (const [id, p] of placements(cv, o)) {
-      if (p.zone !== 'main') continue;
+      if (p.zone !== 'main' || isBehind(itemOf(cv, id))) continue;
       const [w, h] = boxCells(p, o);
       if (!fitsAt(occ, p.x, p.y, w, h)) return false;
       occupy(occ, id, p.x, p.y, w, h);

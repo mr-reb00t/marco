@@ -88,8 +88,8 @@
 .preset-planner.portrait .side { padding: 2.4rem 3.6rem 1.8rem; gap: 2rem; align-items: center; }
 .preset-planner.portrait .side-top { align-self: center; }
 .preset-planner.portrait .side-bottom { align-self: center; }
-#app.preset-planner.portrait .clock.digital { font-size: 11.5rem; }
-.style-modern #app.preset-planner.portrait .clock.digital { font-size: 14rem; }
+#app.preset-planner.portrait .clock.digital { font-size: calc(11.5rem * var(--clock-k, 1)); }
+.style-modern #app.preset-planner.portrait .clock.digital { font-size: calc(14rem * var(--clock-k, 1)); }
 /* Classic: the next days side by side as small columns (the row form of the taller band does not fit here) */
 #app.preset-planner.portrait .dp { flex-direction: column; gap: 0.3rem; padding: 0.6rem 0.4rem; }
 #app.preset-planner.portrait .dp svg { width: 3.8rem; height: 4rem; }
@@ -127,9 +127,9 @@
 }
 .preset-planner.pbar #clock { display: contents; }
 .preset-planner.pbar .clock { grid-column: 1; grid-row: 1 / 3; }
-.preset-planner.pbar .clock.digital { font-size: 12rem; }
-.style-modern #app.preset-planner.pbar .clock.digital { font-size: 13rem; }
-.preset-planner.pbar .clock.analog svg { width: 14rem; height: 14rem; }
+.preset-planner.pbar .clock.digital { font-size: calc(12rem * var(--clock-k, 1)); }
+.style-modern #app.preset-planner.pbar .clock.digital { font-size: calc(13rem * var(--clock-k, 1)); }
+.preset-planner.pbar .clock.analog svg { width: calc(14rem * var(--clock-k, 1)); height: calc(14rem * var(--clock-k, 1)); }
 .preset-planner.pbar .side-top .date { grid-column: 2; grid-row: 1; align-self: end; margin: 0; white-space: nowrap; }
 /* the next-event pill sits under the date and is never wider than it (see .preset-topBottom .highlights) */
 .preset-planner.pbar .highlights { grid-column: 2; grid-row: 2; align-self: start; margin-top: 1.2rem; }

@@ -282,7 +282,7 @@ body {
 }
 #app.portrait .side-mid { display: none; }
 #app.portrait .side { gap: 1.6rem; }
-#app.portrait .clock.digital { font-size: 16.5rem; }
+#app.portrait .clock.digital { font-size: calc(16.5rem * var(--clock-k, 1)); }
 #app.portrait .highlights { margin-top: 1.8rem; gap: 0.7rem; }
 #app.portrait .hl-pill:nth-child(n + 4) { display: none; }
 #app.portrait .weather { gap: 1.4rem; }
@@ -308,7 +308,7 @@ body {
 .preset-topBottom .side-bottom { align-self: end; max-width: 62rem; }
 .preset-topBottom .wx-hourly { display: none; }
 .preset-topBottom .hl-pill:nth-child(n + 3) { display: none; }
-.preset-topBottom .clock.digital { font-size: 15rem; }
+.preset-topBottom .clock.digital { font-size: calc(15rem * var(--clock-k, 1)); }
 .preset-topBottom .cal { --num-h: 4.4rem; }
 .preset-topBottom .num { font-size: 3.3rem; padding-top: 0.5rem; }
 .preset-topBottom .more { margin-top: 0.7rem; }
@@ -368,7 +368,7 @@ body {
 .preset-bigTime .photo-area { grid-column: 1 !important; grid-row: 1 / -1; }
 .preset-bigTime .side { grid-column: 1 !important; grid-row: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr auto; padding: 4rem 5rem 2rem; }
 .preset-bigTime .side-top { grid-column: 1 / -1; align-items: center; text-align: center; justify-content: center; }
-.preset-bigTime .clock.digital { font-size: 27rem; }
+.preset-bigTime .clock.digital { font-size: calc(27rem * var(--clock-k, 1)); }
 .preset-bigTime .date { font-size: 4.6rem; }
 .preset-bigTime .highlights { align-items: center; }
 .preset-bigTime .side-mid { grid-column: 1; grid-row: 2; justify-content: flex-start; max-height: 34vh; align-self: end; width: min(100%, 64rem); -webkit-mask-image: linear-gradient(to bottom, #000 85%, transparent); mask-image: linear-gradient(to bottom, #000 85%, transparent); }
@@ -382,7 +382,7 @@ body {
 .preset-bigTime.portrait .side { grid-template-columns: 1fr; grid-template-rows: 1fr auto auto; }
 .preset-bigTime.portrait .side-mid { grid-row: 2; }
 .preset-bigTime.portrait .side-bottom { grid-column: 1; grid-row: 3; justify-self: stretch; width: auto; }
-.preset-bigTime.portrait .clock.digital { font-size: 24rem; }
+.preset-bigTime.portrait .clock.digital { font-size: calc(24rem * var(--clock-k, 1)); }
 
 /* progressive fitting of the side panel (set by fitSide() in main.ts) */
 .fit-1 .wx-hourly { display: none; }
@@ -398,13 +398,22 @@ body {
   align-items: flex-start;
   font-family: var(--font-num);
   font-weight: 200;
-  font-size: 18.5rem;
+  font-size: calc(18.5rem * var(--clock-k, 1));
   line-height: 0.86;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   margin-right: -0.06em;
 }
 .clock .hm { white-space: nowrap; }
+
+/* clock place (datetime.clockAlign, #36): the clock, the date and the pills under them on the left, in the centre or on
+   the right of the layout's panel, over the layout's own place ('auto': no attribute). Not the planner's strip, whose
+   clock and date sit side by side. */
+/* (Personalizado's clock cards have sizes of their own) */
+#app.preset-canvas { --clock-k: 1; }
+:root[data-clock-align='left'] #app:not(.preset-canvas):not(.pbar) :is(.side-top, .side-top .highlights) { align-items: flex-start; text-align: left; }
+:root[data-clock-align='center'] #app:not(.preset-canvas):not(.pbar) :is(.side-top, .side-top .highlights) { align-items: center; text-align: center; }
+:root[data-clock-align='right'] #app:not(.preset-canvas):not(.pbar) :is(.side-top, .side-top .highlights) { align-items: flex-end; text-align: right; }
 .clock.digital { flex-wrap: nowrap; white-space: nowrap; }
 .clock .d { display: inline-block; width: 0.555em; text-align: center; will-change: transform; }
 .clock .d.blank { width: 0.3em; }
@@ -420,7 +429,7 @@ body {
 .clock .sec .d { width: 0.6em; }
 .clock .ampm { font-size: 0.16em; font-weight: 400; align-self: flex-end; margin: 0 0 0.3em 0.2em; letter-spacing: 0.04em; }
 .clock .ampm:empty { display: none; }
-.clock.analog svg { width: 21rem; height: 21rem; filter: drop-shadow(0 0.4rem 2rem rgb(0 0 0 / 0.35)); }
+.clock.analog svg { width: calc(21rem * var(--clock-k, 1)); height: calc(21rem * var(--clock-k, 1)); filter: drop-shadow(0 0.4rem 2rem rgb(0 0 0 / 0.35)); }
 .clock.analog .rim { fill: rgb(0 0 0 / 0.25); stroke: rgb(255 255 255 / 0.25); stroke-width: 1.2; }
 .clock.analog .tk { stroke: rgb(255 255 255 / 0.35); stroke-width: 1; }
 .clock.analog .tk.big { stroke: #fff; stroke-width: 2.6; stroke-linecap: round; }

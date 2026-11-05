@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.33.0] - 2026-11-05
+
+### Added
+- *Detrás de las otras tarjetas* for photo cards on Personalizado screens (#36): the photo takes no room on the grid,
+  so the clock, the weather or any other card can be placed over it. Turned off again, the photo moves to the nearest
+  free spot, or stays behind when there is none.
+- The clock's *Posición* and *Tamaño* in Fecha y hora (#36): on the left, in the centre or on the right of the panel,
+  with the date and the notes under it, and from 60 % to 160 % of the layout's size. It never gets wider than its
+  panel. *Automática* and 100 % keep the look it always had.
+
+### Fixed
+- A custom date pattern (Fecha y hora, *Personalizado*) is now saved. The admin sent it with the household's
+  settings, where the server dropped it, so the screen kept the default pattern.
+
 ## [0.32.0] - 2026-11-03
 
 ### Added
