@@ -6,7 +6,7 @@ import { ctx } from '../ctx';
 import { esc, reconcile, setHTML, type Spec } from '../dom';
 import { type NEvent, sortForDay, timeLabel } from '../eventModel';
 import { refreshMarquee } from '../marquee';
-import { clipSpan, visibleCols } from '../weekdays';
+import { clipSpan, daysSincePrevCol, visibleCols } from '../weekdays';
 import { PAGE_MS, pageAt, pageLabel, planPages, wrapLineCap } from '../motion';
 import {
   COMPACT_FONT, COMPACT_GAP_U, COMPACT_LINE, COMPACT_PAD_U, type CompactDay, laneHeight, linesThatFit, shareRows, weekNeed,
@@ -650,7 +650,8 @@ export class MonthCalendar {
       const dayNum = +key.slice(8, 10);
       const past = key < today;
       const isToday = key === today;
-      const first = dayNum === 1;
+      // the first shown day of a month carries its name (the 1st itself, or the day after a hidden 1st)
+      const first = dayNum <= daysSincePrevCol(this.cols, d);
       const col = `grid-column:${2 * d + 1} / span 2`;
       const cls = `${past ? ' past' : ''}${isToday ? ' today' : ''}${wd === 0 || wd === 6 ? ' we' : ''}${first ? ' m1' : ''}`;
       specs.push({ key: `b${key}`, className: `cell${cls}`, style: col, html: '' });

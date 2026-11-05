@@ -111,6 +111,18 @@ test('layout helpers: shown columns of a row and an event clipped to them', asyn
   assert.deepEqual(clipSpan(2, 4, ALL), { c0: 2, c1: 4, clipL: false, clipR: false });
 });
 
+test('month start: the first shown day of a month is marked even when the 1st is hidden', async () => {
+  const [{ visibleCols, daysSincePrevCol }] = await loadWebModules('/web/display/weekdays.ts');
+  // all seven: always 1, so only the 1st is marked, exactly as before
+  for (let c = 0; c < 7; c++) assert.equal(daysSincePrevCol(ALL, c), 1);
+  const mf = visibleCols(1, [1, 2, 3, 4, 5]);
+  assert.equal(daysSincePrevCol(mf, 0), 3, 'Monday after a hidden weekend: 1 to 3 August 2026 marks Monday the 3rd');
+  assert.equal(daysSincePrevCol(mf, 1), 1);
+  assert.equal(daysSincePrevCol([0, 3], 1), 3, 'Monday and Thursday');
+  assert.equal(daysSincePrevCol([0, 3], 0), 4);
+  assert.equal(daysSincePrevCol([2], 0), 7, 'a single day: every first one of a month is marked');
+});
+
 describe('days shown in a browser', { skip: !findChrome() && 'no Chrome' }, () => {
   let web, browser;
   before(async () => {
@@ -137,6 +149,7 @@ describe('days shown in a browser', { skip: !findChrome() && 'no Chrome' }, () =
             tracks: getComputedStyle(wk).gridTemplateColumns.split(' ').length,
             we: wk.querySelectorAll('.cell.we').length,
             ends: [...wk.querySelectorAll(':scope > .ev')].map((e) => parseInt(getComputedStyle(e).gridColumnEnd, 10)),
+            m1: [...wk.querySelectorAll('.num.m1')].map((n) => n.textContent),
           })),
         };
       })()`);
@@ -157,6 +170,15 @@ describe('days shown in a browser', { skip: !findChrome() && 'no Chrome' }, () =
       assert.equal(row.we, 0);
       assert.ok(row.ends.every((e) => e <= 11), JSON.stringify(row.ends));
     }
+  });
+
+  test('Monday to Friday: a month whose 1st is on the weekend is still marked', { timeout: 60_000 }, async () => {
+    // 1 August 2026 is a Saturday: the rows read 27 28 29 30 31 | 3 4 5 6 7, and the 3rd carries the month name
+    const r = await grid('preset=bigCalendar&weeks=2&weekdays=1,2,3,4,5&now=2026-07-27T10:00');
+    assert.deepEqual(r.rows.map((row) => row.m1), [[], [r.rows[1].m1[0]]], JSON.stringify(r.rows.map((row) => row.m1)));
+    assert.match(r.rows[1].m1[0], /^ago/i);
+    const all = await grid('preset=bigCalendar&weeks=2&now=2026-07-27T10:00');
+    assert.deepEqual(all.rows.map((row) => row.m1.length), [1, 0], 'all seven: the 1st itself (Saturday, first row)');
   });
 
   test('without the setting: seven columns as before', { timeout: 60_000 }, async () => {

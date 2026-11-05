@@ -23,3 +23,12 @@ export function clipSpan(d0: number, d1: number, cols: number[]): { c0: number; 
   if (c0 < 0 || c1 < 0 || c0 > c1) return null;
   return { c0, c1, clipL: cols[c0] > d0, clipR: cols[c1] < d1 };
 }
+
+/**
+ * Days from the shown column before column `c` (the last one of the previous row for the first) up to column `c`:
+ * 1 when no day is hidden in between. A column starts a new month when its day of the month is at most this, so the
+ * month label still shows when the 1st itself falls on a hidden day.
+ */
+export function daysSincePrevCol(cols: number[], c: number): number {
+  return c > 0 ? cols[c] - cols[c - 1] : cols[0] + 7 - cols[cols.length - 1];
+}
