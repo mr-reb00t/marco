@@ -13,7 +13,7 @@ export const FEATURE_KEYS = Object.freeze([
   'webhooks', 'backups', 'importExport', 'includeSecrets', 'activity', 'setupWizard', 'status', 'accountMenu',
   'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich',
   'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder',
-  'valueHooks', 'tokenScopes', 'stockQuotes', 'familyAccess', 'spotify', 'sourceRefresh',
+  'valueHooks', 'tokenScopes', 'stockQuotes', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources',
 ]);
 
 /** Feature flags of a self-hosted server: all on (`updates` too: the update banner and settings), Google and
@@ -34,7 +34,9 @@ export const FEATURE_KEYS = Object.freeze([
  *  key, saved from the card). `familyAccess`: each person's own dashboard on the phone (/my) with the controls the
  *  admin allows (server/familyAccess.js). `spotify`: "now playing" with the household's own Spotify app
  *  (server/nowPlaying.js). `htmlOverlay`: the owner's HTML drawn over a whole screen (screen.overlays, core/decorCore.js). `sourceRefresh`: manual calendar
- *  downloads on Admin > Estado with server-side cooldowns (POST /api/admin/status/refresh, calendars.js refreshNow). */
+ *  downloads on Admin > Estado with server-side cooldowns (POST /api/admin/status/refresh, calendars.js refreshNow).
+ *  `photoSources`: a Personalizado photo card or sidebar photo may have its own photos (GET /api/photos?for=,
+ *  core/photoSource.js). */
 export function selfHostedFeatures() {
   const google = googleConfigured();
   const out = {};

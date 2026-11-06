@@ -1,5 +1,6 @@
 // Contracts between the Personalizado controller (widgets/canvas.ts) and its widget adapters (widgets/canvas/*.ts).
-import type { Announcement, DisplayCanvasItem, DisplayConfig, FamilyDisplayState } from '../../../shared/types';
+import type { Announcement, DisplayCanvasItem, DisplayConfig, DisplayPhotoSource, FamilyDisplayState, PhotosResponse } from '../../../shared/types';
+import type { WeatherFxPlan } from '../../icons';
 import type { NEvent } from '../../eventModel';
 import type { Tick } from '../../time';
 import type { HaSource } from '../../haFeed';
@@ -91,6 +92,16 @@ export interface AdapterEnv {
    * would, and the card went round the same twenty photos (main.ts morePhotos).
    */
   morePhotos(after: string): void;
+  /**
+   * A Foto card with photos of its own (#41, props.photoSource mode 'own'): its list, asked for once per distinct
+   * setting (ownPhotos.ts), or null while it loads. `releasePhotos` when it shows the screen's photos again or goes.
+   */
+  wantPhotos(block: DisplayPhotoSource): PhotosResponse | null;
+  releasePhotos(): void;
+  /** that card's next batch, after the photo it showed last */
+  moreOwnPhotos(after: string): void;
+  /** the weather effect the screen's current weather calls for (null: weather off or not known yet) */
+  weatherFx(): WeatherFxPlan | null;
 }
 
 /** The room an item has, in px (its card body), and where it is. */

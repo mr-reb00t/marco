@@ -1,0 +1,292 @@
+{
+ "id": "s_custom",
+ "slug": "custom",
+ "name": "Custom",
+ "screen": {
+  "language": "en",
+  "fontScale": 1,
+  "theme": "dark",
+  "style": "modern",
+  "accent": "#ff5a4e",
+  "orientation": "auto",
+  "customCss": "",
+  "overlays": [],
+  "decoration": {
+   "mode": "none",
+   "snow": true,
+   "seasons": {
+    "newyear": {
+     "from": "12-31",
+     "to": "01-01"
+    },
+    "christmas": {
+     "from": "12-01",
+     "to": "01-06"
+    },
+    "halloween": {
+     "from": "10-24",
+     "to": "10-31"
+    }
+   }
+  },
+  "nightMode": {
+   "enabled": false,
+   "from": "23:00",
+   "to": "07:00",
+   "dim": 0.35,
+   "action": "dim",
+   "view": "clock",
+   "weeks": 2,
+   "wake": true
+  },
+  "glass": {
+   "appearance": "auto",
+   "opacity": 0.5,
+   "blur": 18,
+   "tint": "dark",
+   "edge": true
+  },
+  "highlights": true
+ },
+ "layout": {
+  "preset": "canvas",
+  "sidePanel": "left",
+  "sideWidth": 0.36,
+  "people": null,
+  "corner": "br",
+  "plannerBar": "side",
+  "widgetId": null
+ },
+ "background": {
+  "enabled": true,
+  "source": "gallery",
+  "stockTopic": "sea",
+  "order": "name",
+  "intervalSec": 120,
+  "brightness": 0.85,
+  "showMeta": false,
+  "cover": true,
+  "transition": "webgl",
+  "ambient": "aurora",
+  "panelBlur": 18,
+  "panelShade": 0.5,
+  "weatherFx": "rich",
+  "portraitFit": "auto",
+  "immich": {
+   "albumIds": [],
+   "favoritesOnly": false
+  },
+  "scope": "side",
+  "calendarOpacity": 0.5,
+  "calendarBlur": 18,
+  "rules": [
+   {
+    "id": "bg_xmas",
+    "when": {
+     "type": "range",
+     "from": "12-01",
+     "to": "12-31"
+    },
+    "photos": {
+     "source": "gallery",
+     "files": [
+      "xmas.jpg"
+     ]
+    }
+   }
+  ]
+ },
+ "calendar": {
+  "enabled": true,
+  "view": "month",
+  "weeks": 5,
+  "weekStart": 1,
+  "startOn": "week",
+  "weekdays": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6
+  ],
+  "showLocation": false,
+  "showEndTime": false,
+  "showDayXofY": true,
+  "showLegend": true,
+  "hidePast": false,
+  "pastEvents": "dim",
+  "maxEventsPerDay": 4,
+  "marquee": true,
+  "rotateBusyDays": true,
+  "compactBusyDays": true,
+  "eventStyle": "lines",
+  "gridLines": "soft",
+  "gridColor": null,
+  "eventFill": "soft",
+  "agendaDays": "auto",
+  "sourceIds": null
+ },
+ "datetime": {
+  "enabled": true,
+  "clock": "digital",
+  "format24": true,
+  "showSeconds": true,
+  "showAmPm": false,
+  "dateFormat": "weekday_d_month",
+  "dateCustom": "{dddd}, {d} {mmmm} {yyyy}",
+  "clockAlign": "auto",
+  "clockSize": 1
+ },
+ "weather": {
+  "enabled": true,
+  "forecastDays": 5,
+  "showHourly": true,
+  "showPrecipChance": true,
+  "place": null
+ },
+ "news": {
+  "enabled": true,
+  "rotateSec": 15
+ },
+ "todo": {
+  "enabled": false,
+  "listIds": null,
+  "title": "",
+  "icon": "",
+  "filter": "all"
+ },
+ "message": {
+  "enabled": false,
+  "text": "",
+  "emoji": "💬"
+ },
+ "countdowns": {
+  "enabled": true,
+  "max": 4
+ },
+ "alerts": {
+  "enabled": true,
+  "sound": true,
+  "volume": 0.6
+ },
+ "privacy": {
+  "hidePhotos": false,
+  "showLock": true,
+  "schedule": []
+ },
+ "family": {
+  "memberIds": null,
+  "touch": false,
+  "showQr": true
+ },
+ "widgets": [],
+ "canvas": {
+  "v": 1,
+  "background": "ambient",
+  "dim": 0.15,
+  "scrim": "uniform",
+  "color": null,
+  "sidebar": {
+   "side": "left",
+   "size": "wide",
+   "fill": "photo",
+   "intervalSec": 300,
+   "dim": 0.2
+  },
+  "defaults": {
+   "surface": "glass",
+   "radius": "l"
+  },
+  "touch": false,
+  "swipe": false,
+  "perf": "auto",
+  "portraitAuto": true,
+  "grid": "fine",
+  "items": [
+   {
+    "id": "cv_photo001",
+    "kind": "photo",
+    "pos": {
+     "zone": "main",
+     "x": 0,
+     "y": 0,
+     "size": "m",
+     "w": 8,
+     "h": 8
+    },
+    "style": {
+     "surface": "inherit",
+     "glass": null,
+     "color": null,
+     "accent": null,
+     "radius": "inherit",
+     "title": "",
+     "icon": "",
+     "showTitle": false,
+     "scale": 1
+    },
+    "props": {
+     "intervalSec": 600,
+     "fit": "cover",
+     "caption": false,
+     "dim": 0.3,
+     "edge": true
+    }
+   },
+   {
+    "id": "cv_rot00001",
+    "kind": "rotator",
+    "pos": {
+     "zone": "main",
+     "x": 8,
+     "y": 0,
+     "size": "m",
+     "w": 8,
+     "h": 8
+    },
+    "style": {
+     "surface": "inherit",
+     "glass": null,
+     "color": null,
+     "accent": null,
+     "radius": "inherit",
+     "title": "",
+     "icon": "",
+     "showTitle": false,
+     "scale": 1
+    },
+    "props": {
+     "cards": [
+      {
+       "id": "cv_photo002",
+       "kind": "photo",
+       "props": {
+        "intervalSec": 60,
+        "fit": "cover",
+        "caption": false,
+        "dim": 0,
+        "edge": false
+       }
+      },
+      {
+       "id": "cv_clock001",
+       "kind": "clock.digital",
+       "props": {
+        "seconds": false,
+        "showDate": true,
+        "datePos": "below",
+        "dateFormat": "long",
+        "weight": "regular"
+       }
+      }
+     ],
+     "everySec": 10,
+     "dots": true,
+     "transition": "fade"
+    }
+   }
+  ]
+ }
+}

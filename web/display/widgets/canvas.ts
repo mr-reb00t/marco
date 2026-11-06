@@ -10,7 +10,8 @@
 // - A card with nothing to show (no message, no countdowns) keeps its cell but is not drawn (.is-empty).
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
-import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig } from '../../shared/types';
+import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayPhotoSource, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig, PhotosResponse } from '../../shared/types';
+import type { WeatherFxPlan } from '../icons';
 import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, isEdge, lookSize, photoInsets, posCells, sideBackdropId, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
@@ -58,6 +59,14 @@ export interface CanvasDeps {
   nav: NavSource;
   /** the next batch of the screen's photos, after `after` (AdapterEnv.morePhotos) */
   morePhotos(after: string): void;
+  /** the lists of the photo cards with photos of their own, by card id (ownPhotos.ts) */
+  ownPhotos: {
+    want(id: string, block: DisplayPhotoSource): PhotosResponse | null;
+    release(id: string): void;
+    more(id: string, after: string): void;
+  };
+  /** the weather effect the screen's weather calls for (AdapterEnv.weatherFx) */
+  weatherFx(): WeatherFxPlan | null;
 }
 
 /** Canvas.layoutInfo(): boxes in CSS pixels of this page. */
@@ -716,6 +725,10 @@ export class Canvas {
       toggleChore: (id, done) => this.deps.toggleChore(id, done),
       announcement: () => this.deps.announcement(),
       morePhotos: (after) => this.deps.morePhotos(after),
+      wantPhotos: (block) => this.deps.ownPhotos.want(e.id, block),
+      releasePhotos: () => this.deps.ownPhotos.release(e.id),
+      moreOwnPhotos: (after) => this.deps.ownPhotos.more(e.id, after),
+      weatherFx: () => this.deps.weatherFx(),
       ha: this.deps.ha,
       values: this.deps.values,
       data: this.deps.data,

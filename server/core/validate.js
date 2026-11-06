@@ -15,13 +15,13 @@ import { CAMERA_RE, DOORBELL_MIN_SEC, DOORBELL_MAX_SEC } from './doorbellCore.js
 import {
   CAROUSEL_PREFIX, MAX_CAROUSELS, MAX_CAROUSEL_STEPS, MIN_STEP_SEC, MAX_STEP_SEC, DEFAULT_STEP_SEC, CAROUSEL_TRANSITIONS, CAROUSEL_SPEEDS, DEFAULT_TRANSITION, DEFAULT_SPEED, CAROUSEL_DOTS, DEFAULT_DOTS, pruneCarousels,
 } from './carousels.js';
-import { IMMICH_ID_RE, MAX_IMMICH_ALBUMS, PORTRAIT_FITS, normalizeImmichUrl } from './immichCore.js';
+import { PORTRAIT_FITS, normalizeImmichUrl } from './immichCore.js';
 import {
   BAND_NAME_MAX, BAND_PRESET_IDS, GRID_IDS, gridCompany, HOLIDAY_SETS, MAX_BAND_PRICE, MAX_BANDS, MIN_BAND_PRICE, TARIFF_MODES,
 } from './tariffsCore.js';
 import { sanitizeFamily, sanitizeScreenFamily, KIDS_PRESETS } from './familyCore.js';
 import { CANVAS_KINDS, currencyProps, EVENT_FILLS, GRID_LINES, nowPlayingAccountOf, PAST_EVENTS, sanitizeCanvas } from './canvasCore.js';
-import { sanitizeBackgroundRules } from './bgRules.js';
+import { sanitizePhotoPick } from './photoSource.js';
 import { migrateOverlay, overlaysBytes, sanitizeDecoration, sanitizeOverlays } from './decorCore.js';
 import { sanitizeTodoView, todoListIds } from './todoCore.js';
 import {
@@ -341,14 +341,17 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
   };
 
   const bg = obj(ctx, `${p}.background`, x.background);
-  const im = obj(ctx, `${p}.background.immich`, bg.immich);
-  const albumIds = arr(ctx, `${p}.background.immich.albumIds`, im.albumIds, [], MAX_IMMICH_ALBUMS);
-  if (albumIds.some((a) => typeof a !== 'string' || !IMMICH_ID_RE.test(a))) ctx.err(`${p}.background.immich.albumIds`, 'invalid album id');
+  // the photo keys a Personalizado photo card or sidebar may have too (core/photoSource.js): source, topic, order,
+  // Immich albums and "Fondos especiales" (#14, core/bgRules.js, the first rule that matches wins)
+  const pick = sanitizePhotoPick(bg, D.background, {
+    err: (path, m) => ctx.err(path, m), path: `${p}.background`, sourceIds: canvasRefs.sourceIds ? [...canvasRefs.sourceIds] : null,
+    immichAvailable: opts.immichAvailable !== false,
+  });
   const background = {
     enabled: bool(ctx, `${p}.background.enabled`, bg.enabled, D.background.enabled),
-    source: oneOf(ctx, `${p}.background.source`, bg.source, D.background.source, ['stock', 'gallery', 'mixed', 'immich']),
-    stockTopic: str(ctx, `${p}.background.stockTopic`, bg.stockTopic, D.background.stockTopic, 60),
-    order: oneOf(ctx, `${p}.background.order`, bg.order, D.background.order, ['random', 'newest', 'name']),
+    source: pick.source,
+    stockTopic: pick.stockTopic,
+    order: pick.order,
     intervalSec: num(ctx, `${p}.background.intervalSec`, bg.intervalSec, D.background.intervalSec, 10, 86400, true),
     brightness: num(ctx, `${p}.background.brightness`, bg.brightness, D.background.brightness, 0.1, 1),
     showMeta: bool(ctx, `${p}.background.showMeta`, bg.showMeta, D.background.showMeta),
@@ -359,19 +362,13 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     panelShade: num(ctx, `${p}.background.panelShade`, bg.panelShade, D.background.panelShade, 0, 1),
     weatherFx: oneOf(ctx, `${p}.background.weatherFx`, bg.weatherFx, D.background.weatherFx, ['off', 'simple', 'rich']),
     portraitFit: oneOf(ctx, `${p}.background.portraitFit`, bg.portraitFit, D.background.portraitFit, PORTRAIT_FITS),
-    immich: {
-      albumIds: [...new Set(albumIds.filter((a) => typeof a === 'string' && IMMICH_ID_RE.test(a)).map((a) => a.toLowerCase()))],
-      favoritesOnly: bool(ctx, `${p}.background.immich.favoritesOnly`, im.favoritesOnly, D.background.immich.favoritesOnly),
-    },
+    immich: pick.immich,
     // the photo in the side area or behind the whole screen (the calendar then drawn over it as glass)
     scope: oneOf(ctx, `${p}.background.scope`, bg.scope, D.background.scope, ['side', 'screen']),
     calendarOpacity: num(ctx, `${p}.background.calendarOpacity`, bg.calendarOpacity, D.background.calendarOpacity, 0, 1),
     calendarBlur: num(ctx, `${p}.background.calendarBlur`, bg.calendarBlur, D.background.calendarBlur, 0, 40, true),
     // "Fondos especiales" (#14, core/bgRules.js): other photos on some days; the first rule that matches wins
-    rules: sanitizeBackgroundRules(bg.rules, {
-      err: (path, m) => ctx.err(path, m), path: `${p}.background.rules`, sourceIds: canvasRefs.sourceIds ? [...canvasRefs.sourceIds] : null,
-      immichAvailable: opts.immichAvailable !== false,
-    }),
+    rules: pick.rules,
   };
 
   const ca = obj(ctx, `${p}.calendar`, x.calendar);
@@ -478,6 +475,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
   const canvas = sanitizeCanvas(ctx, `${p}.canvas`, x.canvas, {
     sourceIds: pool ? new Set(pool) : null, widgets: canvasRefs.widgets ?? new Map(), memberIds: new Set(familyMemberIds),
     todoListIds: canvasRefs.todoListIds ?? null,
+    // the calendars a photo card's own special backgrounds may name: every calendar, as the screen's Fondo rules
+    ruleSourceIds: canvasRefs.sourceIds ?? null,
   }, opts);
   // the Personalizado layout is a Modern design (there is no Classic one)
   if (layout.preset === 'canvas') screen.style = 'modern';
@@ -1110,9 +1109,6 @@ export function validateConfig(input, opts = {}) {
   const seenIds = new Set();
   const seenSlugs = new Set();
   const screens = rawScreens.map((s, i) => sanitizeScreenProfile(ctx, `screens[${i}]`, s, seenIds, seenSlugs, familyMemberIds, widgetIds, canvasRefs, opts));
-  if (opts.immichAvailable === false) {
-    screens.forEach((s, i) => { if (s.background.source === 'immich') ctx.err(`screens[${i}].background.source`, 'Immich is not available'); });
-  }
   // Drop references to sources / screens that no longer exist (silently: deleting a source is legit).
   const knownSources = new Set([...RESERVED_SOURCE_IDS, ...calendar.sources.map((s) => s.id)]);
   for (const s of screens) if (s.calendar.sourceIds) s.calendar.sourceIds = s.calendar.sourceIds.filter((x) => knownSources.has(x));

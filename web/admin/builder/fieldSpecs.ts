@@ -68,7 +68,9 @@ export type Spec =
   /** a to-do card's lists, title, icon and which tasks (components/TodoViewFields.tsx, core todoCore.js) */
   | { type: 'todoView' }
   /** the Spotify account a Sonando ahora card shows (sections/Spotify.tsx SpotifyAccountSelect) */
-  | { k: 'account'; type: 'spotifyAccount'; label: string };
+  | { k: 'account'; type: 'spotifyAccount'; label: string }
+  /** a photo card's photos: the screen's Fondo, or its own (#41, PhotoSourceFields.tsx, core/photoSource.js) */
+  | { type: 'photoSource' };
 
 /** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
 const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
@@ -247,6 +249,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   news: [{ k: 'rotateSec', type: 'num', label: 'Cambiar de titular cada', min: 5, max: 60, unit: 'sec' }],
   photo: [
     { type: 'note', text: 'La foto va siempre detrás de las otras tarjetas, así que puedes poner tarjetas encima. En la barra lateral llena toda la barra.', top: true },
+    { type: 'photoSource' },
     { k: 'intervalSec', type: 'interval', label: 'Cambiar de foto cada' },
     { k: 'fit', type: 'seg', label: 'Encaje', opts: [{ v: 'cover', l: 'Llenar la tarjeta' }, { v: 'contain', l: 'Foto entera' }] },
     { k: 'caption', type: 'bool', label: 'Pie de foto' },

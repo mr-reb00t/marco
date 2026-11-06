@@ -527,6 +527,30 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-photo::after { content: ''; position: absolute; inset: 0; background: rgb(0 0 0 / var(--ph-dim, 0)); pointer-events: none; }
 #app.preset-canvas .cv-ph-cap { position: absolute; left: 1.6rem; right: 1.6rem; bottom: 1.2rem; z-index: 1; font-size: 1.4rem; color: rgb(255 255 255 / 0.85); text-shadow: 0 0.1rem 0.6rem rgb(0 0 0 / 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-ph-cap:empty { display: none; }
+/* "Efecto del tiempo" over a photo card with photos of its own (#41, cardWeather.ts): one layer per card, over the
+   darkening and under the caption (which comes later with the same z-index), clipped by the card; moved with
+   transforms only (the compositor), so it costs no JavaScript */
+#app.preset-canvas .cv-phfx { position: absolute; inset: 0; z-index: 1; overflow: hidden; pointer-events: none; contain: strict; opacity: calc(0.35 + 0.65 * var(--wx-level, 0.6)); }
+#app.preset-canvas .cv-phfx__l { position: absolute; left: 0; right: 0; top: -200px; bottom: 0; will-change: transform; }
+#app.preset-canvas .cv-phfx[data-wx='rain'] .cv-phfx__l { background-size: 200px 200px, 100px 100px; background-position: 0 0, 37px 61px; animation: cv-phfx-fall 0.55s linear infinite; }
+#app.preset-canvas .cv-phfx[data-wx='snow'] .cv-phfx__l { background-size: 200px 200px, 100px 100px; background-position: 0 0, 53px 29px; animation: cv-phfx-fall 9s linear infinite; }
+#app.preset-canvas .cv-phfx[data-wx='fog'] .cv-phfx__l {
+  top: 0; left: -100%; right: auto; width: 300%;
+  background: linear-gradient(90deg, rgb(225 230 240 / 0) 0%, rgb(225 230 240 / 0.35) 18%, rgb(225 230 240 / 0.12) 33%, rgb(225 230 240 / 0.38) 52%, rgb(225 230 240 / 0.1) 68%, rgb(225 230 240 / 0.32) 84%, rgb(225 230 240 / 0) 100%);
+  animation: cv-phfx-drift 40s ease-in-out infinite alternate;
+}
+#app.preset-canvas .cv-phfx[data-wx='sun'] .cv-phfx__l {
+  top: -30%; left: auto; right: -30%; bottom: auto; width: 90%; height: 90%;
+  background: radial-gradient(circle at 70% 30%, rgb(255 236 180 / 0.55), rgb(255 214 140 / 0.18) 40%, rgb(255 214 140 / 0) 70%);
+  animation: cv-phfx-glow 7s ease-in-out infinite alternate;
+}
+/* a thunderstorm: now and then a short flash */
+#app.preset-canvas .cv-phfx[data-storm]::after { content: ''; position: absolute; inset: 0; background: rgb(235 240 255 / 0.5); opacity: 0; animation: cv-phfx-flash 9s linear infinite; }
+@keyframes cv-phfx-fall { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 200px, 0); } }
+@keyframes cv-phfx-drift { from { transform: translate3d(-12%, 0, 0); } to { transform: translate3d(12%, 0, 0); } }
+@keyframes cv-phfx-glow { from { opacity: 0.6; transform: scale(0.96); } to { opacity: 1; transform: scale(1.04); } }
+@keyframes cv-phfx-flash { 0%, 90%, 93%, 100% { opacity: 0; } 91% { opacity: 1; } 92% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { #app.preset-canvas .cv-phfx { display: none; } }
 #app.preset-canvas .cv-widget { padding: 0; }
 #app.preset-canvas .cv-media { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 #app.preset-canvas .cv-media > .uw { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }

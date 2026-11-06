@@ -94,6 +94,47 @@ function PhotoPicker({ gallery, value, onClose }: { gallery: AdminPhoto[]; value
 
 export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProps, 'cfg' | 'set' | 'errors' | 'full'>) {
   const rules = cfg.background.rules ?? [];
+  if (!has('gallery') && !has('immich') && !rules.length) return null;
+  const write = (fn: (list: BackgroundRule[]) => BackgroundRule[]) => set((d: AppConfig) => void (d.background.rules = fn(d.background.rules ?? [])));
+  const sources = allSourceOptions(full).filter((o) => !Array.isArray(cfg.calendar.sourceIds) || cfg.calendar.sourceIds.includes(o.id));
+  return (
+    <Card
+      id="bg-rules"
+      scope="screen"
+      title={t('Fondos especiales')}
+      icon="calendar"
+      desc={t('Otras fotos en fechas señaladas o cuando hay cierto evento. Gana la primera regla que coincide; si ninguna coincide, se usa el fondo normal.')}
+      actions={
+        <Button size="sm" icon="plus" disabled={rules.length >= MAX_BG_RULES} onClick={() => write((list) => [...list, newRule()])}>
+          {t('Añadir regla')}
+        </Button>
+      }
+    >
+      <RuleList rules={rules} write={write} errors={errors} errPrefix="background" sources={sources} privacy={!!cfg.privacy?.hidePhotos} />
+    </Card>
+  );
+}
+
+/** A new rule: an event rule with no words yet, with gallery photos (Immich where there is no gallery). */
+export function newRule(): BackgroundRule {
+  return { id: uid('bg'), when: { type: 'event', text: '', calendars: [] }, photos: has('gallery') ? { source: 'gallery', files: [] } : { source: 'immich', albumId: '' } };
+}
+
+/**
+ * The rules of a list (the screen's Fondo, or a photo card's or the sidebar's own photos, #41), each with its "when"
+ * and its photos, in the order they are checked. `write` replaces the list; `errors` with `errPrefix` ('background';
+ * none in the builder); `sources` = the calendars an event rule may pick; `inline`: an add button under the list
+ * (the builder; the Fondo card has it in its header).
+ */
+export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, privacy = false, inline = false }: {
+  rules: BackgroundRule[];
+  write: (fn: (list: BackgroundRule[]) => BackgroundRule[]) => void;
+  errors?: Record<string, string>;
+  errPrefix?: string;
+  sources: { id: string; name: string; color: string; emoji: string }[];
+  privacy?: boolean;
+  inline?: boolean;
+}) {
   const galleryOn = has('gallery');
   const immichOn = has('immich');
   const [gallery, setGallery] = useState<AdminPhoto[] | null>(null);
@@ -106,7 +147,6 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
   useEffect(() => {
     if (immichOn && albums === null && usesImmich) api.immichAlbums().then(setAlbums, () => setAlbums([]));
   }, [usesImmich]);
-  const write = (fn: (list: BackgroundRule[]) => BackgroundRule[]) => set((d: AppConfig) => void (d.background.rules = fn(d.background.rules ?? [])));
   const upd = (id: string, fn: (r: BackgroundRule) => void) =>
     write((list) =>
       list.map((r) => {
@@ -118,26 +158,11 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
     );
   const move = (from: number, to: number) => write((list) => moveItem(list, from, to));
   const reorder = useReorder(move);
-  if (!galleryOn && !immichOn && !rules.length) return null;
-  const add = () =>
-    write((list) => [...list, { id: uid('bg'), when: { type: 'event', text: '', calendars: [] }, photos: galleryOn ? { source: 'gallery', files: [] } : { source: 'immich', albumId: '' } }]);
-  const sources = allSourceOptions(full).filter((o) => !Array.isArray(cfg.calendar.sourceIds) || cfg.calendar.sourceIds.includes(o.id));
   const byFile = new Map((gallery ?? []).map((p) => [p.file, p]));
   const pickingRule = rules.find((r) => r.id === picking);
 
   return (
-    <Card
-      id="bg-rules"
-      scope="screen"
-      title={t('Fondos especiales')}
-      icon="calendar"
-      desc={t('Otras fotos en fechas señaladas o cuando hay cierto evento. Gana la primera regla que coincide; si ninguna coincide, se usa el fondo normal.')}
-      actions={
-        <Button size="sm" icon="plus" disabled={rules.length >= MAX_BG_RULES} onClick={add}>
-          {t('Añadir regla')}
-        </Button>
-      }
-    >
+    <>
       {rules.length === 0 ? (
         <p class="muted small">{t('Por ejemplo, fotos de Navidad del 1 al 31 de diciembre, o de la playa los días con un evento «Vacaciones».')}</p>
       ) : (
@@ -145,7 +170,7 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
           {rules.map((r, i) => {
             const w = r.when;
             const ph = r.photos;
-            const err = (k: string) => errors[`background.rules.${r.id}.${k}`];
+            const err = (k: string) => (errPrefix ? errors[`${errPrefix}.rules.${r.id}.${k}`] : undefined);
             const files = ph.source === 'gallery' ? ph.files : [];
             return (
               <div key={r.id} class="rule bg-rule" {...(reorder.rowProps(i) as any)}>
@@ -236,7 +261,7 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
                   </div>
                   {(err('text') || err('photos')) && (
                     <div class="field__error">
-                      <Icon name="alert" size={13} /> {t(err('text') || err('photos'))}
+                      <Icon name="alert" size={13} /> {t(err('text') || err('photos') || '')}
                     </div>
                   )}
                 </div>
@@ -249,7 +274,12 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
           })}
         </div>
       )}
-      {rules.length > 0 && cfg.privacy?.hidePhotos && <p class="muted small">{t('En modo privado se usan fotos de stock')}</p>}
+      {rules.length > 0 && privacy && <p class="muted small">{t('En modo privado se usan fotos de stock')}</p>}
+      {inline && (galleryOn || immichOn) && (
+        <Button size="sm" icon="plus" disabled={rules.length >= MAX_BG_RULES} onClick={() => write((list) => [...list, newRule()])}>
+          {t('Añadir regla')}
+        </Button>
+      )}
       {pickingRule && pickingRule.photos.source === 'gallery' && gallery && (
         <PhotoPicker
           gallery={gallery}
@@ -260,6 +290,6 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
           }}
         />
       )}
-    </Card>
+    </>
   );
 }

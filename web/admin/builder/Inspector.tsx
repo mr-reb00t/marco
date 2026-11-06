@@ -1,14 +1,17 @@
 // The builder's inspector (right pane, a bottom sheet on a phone). With nothing selected it shows the page: the
 // background, the sidebar, the default look of the cards, portrait and templates. With a widget selected it shows
 // three tabs: Contenido (its own options and its title), Tamaño (the sizes it allows, the text size) and Estilo.
-import type { CanvasConfig, CanvasGlass, CanvasItem, CanvasItemStyle, CanvasSize, GlassConfig, HaState, SideSpan } from '../../shared/types';
+import type { CanvasConfig, CanvasGlass, CanvasItem, CanvasItemStyle, CanvasSize, GlassConfig, HaState, PhotoSource, SideSpan } from '../../shared/types';
 import { CANVAS_KINDS, INK_PROPS, NAV_TAP_KINDS, defaultItemStyle, type CanvasPick } from '../../../server/core/canvasCore.js';
 import { normalizeGlass, sidebarFillOf } from '../../shared/glass';
 import { Icon } from '../components/icons';
 import { Button, Callout, ColorPicker, Field, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { t } from '../i18n';
+import { has } from '../caps';
 import { GlassPreview } from '../sections/Layout';
 import { ContentFields, type FieldEnv } from './fields';
+import { photoSourceText } from './photoText';
+import { PhotoSourceFields } from './PhotoSourceFields';
 import { HaControlsPanel } from './HaControlsPanel';
 import { ConditionField } from './ConditionField';
 import { ScheduleField } from './ScheduleField';
@@ -177,14 +180,7 @@ export function Inspector(p: InspectorProps) {
   return <div class="bld-inspector">{it ? <ItemPanel {...p} item={it} /> : <PagePanel {...p} />}</div>;
 }
 
-/** The photos a Foto page shows, as the screen's Fondo section has them (an empty gallery or Immich falls back to stock). */
-export function photoSourceText(b: InspectorProps['photoSource']): string {
-  if (b.source === 'gallery') return t('Fotos de tu galería.');
-  if (b.source === 'mixed') return t('Fotos de tu galería y de stock.');
-  if (b.source === 'immich') return t('Fotos de tus álbumes de Immich.');
-  const topic = b.stockTopic.trim();
-  return topic ? t('Fotos de stock ({topic}).', { topic }) : t('Fotos de stock.');
-}
+export { photoSourceText };
 
 function PagePanel(p: InspectorProps) {
   const cv = p.cv;
@@ -327,7 +323,8 @@ function PagePanel(p: InspectorProps) {
           {/* the sidebar's own photo (#41): how often it changes and how dark, from the screen's Fondo until set here */}
           {cv.sidebar.fill === 'photo' && !backdrop && cv.background !== 'photo' && (
             <>
-              <Field label={t('Cambiar foto cada')} hint={`${photoSourceText(p.photoSource)} ${t('Se cambian en la sección Fondo de esta pantalla.')}`}>
+              {p.env.photos && <PhotoSourceFields card={false} value={cv.sidebar.photoSource as PhotoSource | undefined} env={p.env.photos} put={(v) => set((c) => void (c.sidebar.photoSource = v))} />}
+              <Field label={t('Cambiar foto cada')} hint={p.env.photos && (cv.sidebar.photoSource?.mode === 'own' || has('photoSources')) ? undefined : `${photoSourceText(p.photoSource)} ${t('Se cambian en la sección Fondo de esta pantalla.')}`}>
                 <Select
                   value={cv.sidebar.intervalSec ?? p.photoInterval}
                   options={intervalsWith(cv.sidebar.intervalSec ?? p.photoInterval).map((v) => ({ value: v, label: intervalLabel(v) }))}

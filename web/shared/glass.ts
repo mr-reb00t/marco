@@ -1,6 +1,6 @@
 // Glass material of the Modern display style (screen.glass), shared by the display and the admin preview.
 // Everything ends up as a handful of CSS custom properties on <html>: no extra layers, no extra backdrop-filters.
-import type { CanvasConfig, CanvasPos, GlassConfig } from './types';
+import type { CanvasConfig, CanvasPos, DisplayPhotoSource, GlassConfig, PhotoSource } from './types';
 import { sideBackdropId } from '../../server/core/canvasCore.js';
 
 export const GLASS_DEFAULTS: GlassConfig = { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true };
@@ -190,7 +190,22 @@ export function effectiveBackground<B extends { enabled?: boolean; scope?: strin
   const photo = canvas.background === 'photo';
   const side = !photo && canvas.sidebar?.side !== 'none' && canvas.sidebar?.fill === 'photo' && !sidebarBackdropOf(canvas, portrait);
   const every = side && typeof canvas.sidebar.intervalSec === 'number' ? { intervalSec: canvas.sidebar.intervalSec } : {};
-  return { ...bg, enabled: photo || side, scope: photo ? 'screen' : 'side', ...every };
+  // its own photos (#41): the sidebar's source, order, special backgrounds and weather effect, over the Fondo's
+  const own = side ? sidebarOwnPhotos(canvas) : null;
+  const mine = own
+    ? { source: own.source, stockTopic: own.stockTopic, order: own.order, immich: own.immich, weatherFx: own.weatherFx, special: 'special' in own ? own.special : (own.rules?.length ?? 0) > 0, own: 'sidebar' as const }
+    : {};
+  return { ...bg, enabled: photo || side, scope: photo ? 'screen' : 'side', ...every, ...mine };
+}
+
+/**
+ * The sidebar's own photo options (#41) when it shows a photo of its own (fill 'photo', not under a photo behind the
+ * whole screen, mode 'own'), else null: the screen's Fondo then.
+ */
+export function sidebarOwnPhotos(canvas: Pick<CanvasConfig, 'background' | 'sidebar'> | null | undefined): PhotoSource | DisplayPhotoSource | null {
+  const sb = canvas?.sidebar;
+  if (!canvas || !sb || canvas.background === 'photo' || sb.side === 'none' || sb.fill !== 'photo') return null;
+  return sb.photoSource?.mode === 'own' ? sb.photoSource : null;
 }
 
 /**

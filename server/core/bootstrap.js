@@ -114,8 +114,11 @@ export const eventsPath = ([from, to]) => `/api/events?from=${encodeURIComponent
 export function bootDataPaths(config, now = new Date()) {
   const screen = config?.target?.kind === 'carousel' && typeof config.screenId === 'string' ? config.screenId : '';
   const own = (p) => (screen ? `${p}${p.includes('?') ? '&' : '?'}screen=${encodeURIComponent(screen)}` : p);
+  // a Personalizado sidebar photo with photos of its own (#41) asks for those (web/shared/glass.ts sidebarOwnPhotos)
+  const cv = config?.layout?.preset === 'canvas' ? config.canvas : null;
+  const side = cv && cv.background !== 'photo' && cv.sidebar?.side !== 'none' && cv.sidebar?.fill === 'photo' && cv.sidebar?.photoSource?.mode === 'own';
   return [
-    own('/api/weather'), own('/api/countdowns'), own('/api/photos?count=20'), '/api/news',
+    own('/api/weather'), own('/api/countdowns'), own(`/api/photos?count=20${side ? '&for=sidebar' : ''}`), '/api/news',
     ...bootEventWindows(config, now).map((w) => own(eventsPath(w))),
   ];
 }

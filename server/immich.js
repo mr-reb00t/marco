@@ -10,7 +10,8 @@ import { requestBuffer } from './lib/http.js';
 import { events, getConfig, getSecrets, paths, writeFileAtomic } from './store.js';
 import { publish } from './pollHub.js';
 import { mediaScreens } from './displayAccess.js';
-import { ruleAlbumIds } from './core/bgRules.js';
+import { screenPhotoBlocks } from './core/screens.js';
+import { rulesAlbumIds } from './core/photoSource.js';
 import {
   IMMICH_ID_RE, IMMICH_IMAGE_TYPES, MAX_IMMICH_ALBUMS, compactAsset, errorCodeFor, mapAlbum, mergeItems, missingScopes,
   normalizeImmichUrl, parseVersion, showableAsset, sniffImageType, usesSearch, versionText,
@@ -278,14 +279,18 @@ export async function immichItems(sel) {
   return mergeItems(await Promise.all(ids.map((id) => albumItems(s, id, fav))));
 }
 
-/** Selections in use: [{ albumId, fav, screenId }]; the albums of special background rules count too (all photos). */
+/**
+ * Selections in use: [{ albumId, fav, screenId }]; the albums of special background rules count too (all photos), and
+ * those of the photo cards and sidebars with photos of their own (core/screens.js screenPhotoBlocks).
+ */
 function selections(cfg = getConfig()) {
   const out = [];
   for (const sc of cfg?.screens || []) {
-    const b = sc.background;
-    for (const albumId of ruleAlbumIds(sc)) out.push({ albumId, fav: false, screenId: sc.id });
-    if (b?.source !== 'immich') continue;
-    for (const albumId of b.immich?.albumIds || []) out.push({ albumId, fav: b.immich.favoritesOnly === true, screenId: sc.id });
+    for (const { block: b } of screenPhotoBlocks(sc)) {
+      for (const albumId of rulesAlbumIds(b?.rules)) out.push({ albumId, fav: false, screenId: sc.id });
+      if (b?.source !== 'immich') continue;
+      for (const albumId of b.immich?.albumIds || []) out.push({ albumId, fav: b.immich.favoritesOnly === true, screenId: sc.id });
+    }
   }
   return out;
 }

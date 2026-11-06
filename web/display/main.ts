@@ -60,7 +60,8 @@ import { renderMessage, renderTodo } from './widgets/extras';
 import { Highlights } from './widgets/highlights';
 import { News } from './widgets/news';
 import { Photos, photoStats, type SlideshowPosition } from './widgets/photos';
-import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, photoOnWholeScreen, sidebarFillOf } from '../shared/glass';
+import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, photoOnWholeScreen, sidebarFillOf, sidebarOwnPhotos } from '../shared/glass';
+import { OwnPhotos } from './ownPhotos';
 import { Weather } from './widgets/weather';
 import { screenWeather, weatherSig } from './weatherPlaces';
 import { weatherPlacesOf } from '../../server/core/weatherPlaces.js';
@@ -197,6 +198,14 @@ const haTouch = new HaTouch([$('#canvas'), $('#canvas-side')], haFeed, {
 function syncHaTouch(): void {
   haTouch.set(canvasView.active && haFeed.touch());
 }
+// the photo cards with photos of their own (#41): one list per distinct setting, refreshed with the screen's photos
+const ownPhotos = new OwnPhotos({
+  screen: () => getActiveScreen() || state.config?.screenId || '',
+  demo: () => state.demo,
+  mock: (topic) => mockPhotos(topic),
+  fallback: () => state.photos,
+  changed: () => canvasView.onData('photos'),
+});
 // Personalizado (layout 'canvas'): the owner's widgets on a grid (widgets/canvas.ts)
 const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   events: () => eventsNormalized(),
@@ -209,6 +218,16 @@ const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   toggleChore: (id, done) => toggleChore(id, done),
   announcement: () => announcements.newest(),
   morePhotos: (after) => morePhotos(after),
+  ownPhotos: {
+    want: (id, block) => ownPhotos.want(id, block),
+    release: (id) => ownPhotos.release(id),
+    more: (id, after) => ownPhotos.more(id, after),
+  },
+  // what the screen's weather calls for, as the photo's effect has it (renderWeather)
+  weatherFx: () => {
+    const cur = state.config && ctx.cfg.weather.enabled ? screenWeather()?.current : undefined;
+    return cur ? weatherFxOf(cur.code, cur.isDay) : null;
+  },
   ha: haFeed,
   values: valuesFeed,
   data: dataFeed,
@@ -1318,8 +1337,9 @@ let ruleRev: number | null = null;
  * photo at once when the rule changed.
  */
 function checkBgRule(): void {
-  if (state.demo || !ctx.cfg?.background?.special || !photosAt || Date.now() - photosAt < 10_000) return;
+  if (state.demo || !(ctx.cfg?.background?.special || ownPhotos.anySpecial()) || !photosAt || Date.now() - photosAt < 10_000) return;
   void fetchPhotos();
+  ownPhotos.refresh();
 }
 
 /** When a Foto card last asked for the next batch (morePhotos): at most one every 30 s, whatever the cards' intervals. */
@@ -1336,7 +1356,8 @@ async function fetchPhotos(after = photos.lastKey): Promise<void> {
   if (state.demo) return set('photos', mockPhotos(ctx.cfg.background.stockTopic));
   try {
     const sid = getActiveScreen();
-    const r = await api.photos(20, after);
+    // the Personalizado sidebar's photo with photos of its own (#41): its list, not the Fondo's
+    const r = await api.photos(20, after, undefined, ctx.cfg.background.own);
     photosAt = Date.now();
     if (sid) carousel?.put(sid, 'photos', r);
     if (sid !== getActiveScreen()) return;
@@ -1505,8 +1526,16 @@ let privateSig = '';
  * What decides the photo list of a screen (a carousel keeps the list when the next screen has the same): its photo
  * settings and the special background that holds on it (`rule`, the signature /api/photos answers with).
  */
-const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean } }, rule = '') =>
-  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}|${rule}`;
+const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean }; own?: string }, rule = '') =>
+  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}|${rule}${b.own ? `|${b.own}` : ''}`;
+/**
+ * A screen's photo settings as its slideshow uses them: the Fondo, or the Personalizado sidebar's own photos (#41).
+ * ctx.cfg.background already is this for the screen on display (applyConfig); a carousel's other screens need it too.
+ */
+function slideBgOf(cfg: DisplayConfig): DisplayConfig['background'] {
+  const own = effectivePreset(cfg) === 'canvas' ? sidebarOwnPhotos(cfg.canvas) : null;
+  return own ? { ...cfg.background, source: own.source, stockTopic: own.stockTopic, order: own.order, immich: own.immich, own: 'sidebar' } : cfg.background;
+}
 on('config', (s) => {
   if (!s.config) return;
   // before the cards are drawn, so a new Home Assistant card asks for its states with this screen's config
@@ -1531,6 +1560,8 @@ on('config', (s) => {
   ruleRev = s.config.revision;
   if (photoSig && sig !== photoSig) void fetchPhotos().then(() => (privChanged ? photos.next() : undefined));
   photoSig = sig;
+  // the photo cards with photos of their own: stock photos while private with "hide photos", theirs again after
+  if (privChanged) ownPhotos.refresh();
   syncCarousel(s.config);
   syncNav(s.config);
   syncFamily(s.config);
@@ -1671,7 +1702,7 @@ async function fetchBundle(id: string, parts: BundlePart[], known: DisplayConfig
   const [events, countdowns, ph] = await Promise.all([
     parts.includes('events') ? one(() => api.events(from, to, id)) : null,
     parts.includes('countdowns') ? one(() => api.countdowns(id)) : null,
-    parts.includes('photos') ? one(() => api.photos(20, '', id)) : null,
+    parts.includes('photos') ? one(() => api.photos(20, '', id, slideBgOf(cfg).own)) : null,
   ]);
   if (events) out.events = events;
   if (countdowns) out.countdowns = countdowns;
@@ -1816,7 +1847,7 @@ const PHOTO_WAIT_MS = 1500;
 function photoStart(b: Bundle): { list: Photo[]; idx: number } | null {
   const bg = b.config?.background;
   if (!bg?.enabled || !photoSig) return null;
-  const sig = photoSigOf(bg, b.photos?.rule);
+  const sig = photoSigOf(slideBgOf(b.config!), b.photos?.rule);
   if (sig === photoSig) return null;
   const spot = photoSpots.get(sig);
   const list = spot ? spot.at.list : b.photos?.photos ?? [];
@@ -1841,7 +1872,7 @@ function showScreen(id: string, b: Bundle, sw: SwitchInfo): void {
     state.events = b.events;
     state.countdowns = b.countdowns;
     // the photo list only changes when the photo settings differ (same source: the slideshow just goes on)
-    const sig = photoSigOf(b.config.background, b.photos?.rule);
+    const sig = photoSigOf(slideBgOf(b.config), b.photos?.rule);
     const newPhotos = !!photoSig && sig !== photoSig;
     // the slideshow of the screen that leaves is kept where it is, so it goes on from there when that screen is back
     if (newPhotos && state.photos) photoSpots.set(photoSig, { photos: state.photos, at: photos.position() });
@@ -2284,7 +2315,10 @@ function startPolling(): void {
   intervals.push(setInterval(fetchEvents, 60_000));
   intervals.push(setInterval(fetchWeather, 10 * 60_000));
   intervals.push(setInterval(fetchNews, 15 * 60_000));
-  intervals.push(setInterval(fetchPhotos, 60 * 60_000));
+  intervals.push(setInterval(() => {
+    void fetchPhotos();
+    ownPhotos.refresh();
+  }, 60 * 60_000));
   intervals.push(setInterval(fetchCountdowns, 30 * 60_000));
   intervals.push(setInterval(fetchFamily, 5 * 60_000));
 }
@@ -2388,6 +2422,8 @@ window.addEventListener('resize', () => {
 function enterDemo(): void {
   state.demo = true;
   haFeed.demo = true;
+  // the photo cards' own lists, for the tests (display-canvas-photo-source.test.js)
+  (window as unknown as { __ownPhotos: OwnPhotos }).__ownPhotos = ownPhotos;
   valuesFeed.demo = () => demoValues(state.config);
   dataFeed.demo = (cfg) => demoData(cfg);
   nowPlayingFeed.demo = (accounts) => demoNowPlaying(accounts, params.get('np') === 'idle');
@@ -2535,6 +2571,7 @@ async function goLive(): Promise<void> {
   void fetchWeather();
   void fetchNews();
   void fetchPhotos();
+  ownPhotos.refresh();
   void fetchCountdowns();
   void fetchFamily();
   if (streamStarted) return;
@@ -2621,10 +2658,12 @@ const liveHandlers: StreamHandlers = {
   },
   // gallery changed in the admin (upload, replace, delete, focal point, shown / hidden) → fresh list;
   // a photo taken out of the rotation while on screen is replaced right away
-  photos: (d) =>
+  photos: (d) => {
+    ownPhotos.refresh();
     void (carousel?.invalidate(null, ['photos']), fetchPhotos()).then(() => {
       if (photos.currentFile && d.hidden?.includes(photos.currentFile)) void photos.next();
-    }),
+    });
+  },
   events: (d) => {
     carousel?.invalidate(null, ['events', 'countdowns']);
     if (!state.events || d.hash !== state.events.hash) void fetchEvents();

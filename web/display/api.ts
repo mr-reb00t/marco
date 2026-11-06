@@ -72,8 +72,9 @@ export const paths = {
     withScreen(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, screen),
   weather: (screen?: string) => withScreen('/api/weather', screen),
   news: () => '/api/news',
-  photos: (count = 20, after = '', screen?: string) =>
-    withScreen(`/api/photos?count=${count}${after ? `&after=${encodeURIComponent(after)}` : ''}`, screen),
+  /** `forId`: a Personalizado photo card's id or 'sidebar', for the photos it has of its own (#41) */
+  photos: (count = 20, after = '', screen?: string, forId?: string) =>
+    withScreen(`/api/photos?count=${count}${after ? `&after=${encodeURIComponent(after)}` : ''}${forId ? `&for=${encodeURIComponent(forId)}` : ''}`, screen),
   countdowns: (screen?: string) => withScreen('/api/countdowns', screen),
 };
 
@@ -85,7 +86,7 @@ export const api = {
   weather: (screen?: string) => getJSON<WeatherResponse>(paths.weather(screen)),
   news: () => getJSON<NewsResponse>(paths.news()),
   /** `after` = gallery file shown last, so sequential orders continue from there and random avoids repeating it. */
-  photos: (count = 20, after = '', screen?: string) => getJSON<PhotosResponse>(paths.photos(count, after, screen)),
+  photos: (count = 20, after = '', screen?: string, forId?: string) => getJSON<PhotosResponse>(paths.photos(count, after, screen, forId)),
   countdowns: (screen?: string) => getJSON<CountdownsResponse>(paths.countdowns(screen)),
   /** Familia of a screen (kids layouts): today's routines, stars and the meals of the week. */
   family: (screen?: string) => getJSON<FamilyDisplayState>(withScreen('/api/display/family', screen)),

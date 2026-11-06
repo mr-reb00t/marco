@@ -33,6 +33,7 @@ const nl = await load('../../web/admin/i18n-dict-nl.ts');
 const da = await load('../../web/admin/i18n-dict-da.ts');
 const fam = await load('../../web/admin/i18n-dict-family.ts');
 const HS = await load('../../web/admin/haSearch.ts');
+const PC = await load('../../web/admin/photoChoices.ts');
 const ts = { skip: M && H && D && G && K && F && dict && nl && da && fam && HS ? false : 'TypeScript imports need Node >= 22.18' };
 
 const clean = () => {
@@ -752,4 +753,32 @@ test('marginBox: an edge photo reaches over the padding, a card centred on it ge
   assert.deepEqual(G.marginBox(b, g, 'lt'), { x: 90, y: 90, w: 210, h: 110 });
   assert.deepEqual(G.marginBox(b, g, '', 'r'), { x: 100, y: 100, w: 190, h: 100 });
   assert.deepEqual(G.marginBox(b, { ...g, edge: 0 }, 'l', 'r'), b);
+});
+
+test('a photo card offers its own photos (#41): the field, the sources each server has, how they start', { skip: ts.skip || (!PC && 'TypeScript imports need Node >= 22.18') }, () => {
+  assert.ok(F.FIELDS.photo.some((s) => s.type === 'photoSource'), 'the photo card has the Fotos field');
+  // Marco Cloud: the gallery, no Immich; self-hosted with both: all four; a source already chosen stays offered
+  assert.deepEqual(PC.sourceChoices({ gallery: true, immich: false }, 'stock'), ['stock', 'gallery', 'mixed']);
+  assert.deepEqual(PC.sourceChoices({ gallery: true, immich: true }, 'stock'), ['stock', 'gallery', 'mixed', 'immich']);
+  assert.deepEqual(PC.sourceChoices({ gallery: false, immich: false }, 'immich'), ['stock', 'immich']);
+  // "Propias" starts from the screen's Fondo; a source this server lacks becomes Stock, its rules go with it
+  const bg = { source: 'immich', stockTopic: 'sea', order: 'name', immich: { albumIds: ['6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b'], favoritesOnly: true }, weatherFx: 'rich',
+    rules: [{ id: 'g', when: { type: 'birthday' }, photos: { source: 'gallery', files: ['a.jpg'] } }, { id: 'i', when: { type: 'birthday' }, photos: { source: 'immich', albumId: '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b' } }] };
+  const cloudCard = PC.startPhotoSource(bg, true, { gallery: true, immich: false });
+  assert.equal(cloudCard.mode, 'own');
+  assert.equal(cloudCard.source, 'stock');
+  assert.equal(cloudCard.stockTopic, 'sea');
+  assert.equal(cloudCard.order, 'name');
+  assert.deepEqual(cloudCard.rules.map((r) => r.id), ['g']);
+  assert.equal(cloudCard.weatherFx, 'off', 'a card starts with no weather effect');
+  const side = PC.startPhotoSource(bg, false, { gallery: true, immich: true });
+  assert.equal(side.source, 'immich');
+  assert.equal(side.weatherFx, 'rich', "the sidebar starts with the Fondo's effect");
+  side.rules[0].id = 'changed';
+  assert.equal(bg.rules[0].id, 'g', 'a copy, not the Fondo itself');
+  // the builder checks a card the same way (immichAvailable false on Marco Cloud)
+  const c = clean();
+  const cv = sanitizeCanvas(c, 'canvas', { ...defaultCanvas(), items: [{ id: 'cv_photo001', kind: 'photo', pos: { zone: 'main', x: 0, y: 0, size: 'm' }, props: { photoSource: side } }] }, {}, { immichAvailable: false });
+  assert.ok(c.errors.some(([p, m]) => p === 'canvas.items[0].props.photoSource.source' && m === 'Immich is not available'), JSON.stringify(c.errors));
+  assert.equal(cv.items[0].props.photoSource.mode, 'own');
 });

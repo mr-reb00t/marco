@@ -839,6 +839,8 @@ const PICSUM: [number, string][] = [
 export function mockPhotos(topic = ''): PhotosResponse {
   // &photo=half: one photo, white on the left half and black on the right (the per-card ink of Personalizado)
   if (new URLSearchParams(location.search).get('photo') === 'half') return { photos: [{ url: halfPhoto(), author: '', source: 'stock' as const }] };
+  // &photo=topic: three small plain photos in a colour of the topic, offline (the photo card tests tell lists apart)
+  if (new URLSearchParams(location.search).get('photo') === 'topic') return { photos: [0, 1, 2].map((i) => ({ url: topicPhoto(topic, i), author: '', source: 'stock' as const })) };
   const list = PICSUM.map(([id, author]) => ({ url: `https://picsum.photos/id/${id}/1920/1080`, author, source: 'stock' as const }));
   const k = /^topic(\d+)$/.exec(topic) ? (Number(topic.slice(5)) * 3) % list.length : 0;
   const photos = [...list.slice(k), ...list.slice(0, k)];
@@ -846,6 +848,18 @@ export function mockPhotos(topic = ''): PhotosResponse {
   // the still screen always shows it whatever the card's place in the list
   const own = showPhoto();
   return { photos: own ? [{ ...own, source: 'stock' as const }] : photos };
+}
+
+/** A small plain photo: its hue from the topic, its lightness from `i`. */
+function topicPhoto(topic: string, i: number): string {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 36;
+  const g = c.getContext('2d')!;
+  const hue = [...topic].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) % 360, 17);
+  g.fillStyle = `hsl(${hue} 70% ${30 + i * 15}%)`;
+  g.fillRect(0, 0, 64, 36);
+  return c.toDataURL('image/png');
 }
 
 let half = '';

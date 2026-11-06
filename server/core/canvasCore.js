@@ -7,6 +7,7 @@ import { cardErrorText, checkCard, cssProblem } from './cardTemplate.js';
 import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, FX_CURRENCIES, MARKET_CURRENCIES, MARKET_RANGES, SPORTS_LEAGUES, STOCK_SYMBOL_RE, TEAM_ID_RE } from './dataCore.js';
 import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 import { defaultTodoView, sanitizeTodoView } from './todoCore.js';
+import { displayPhotoSource, sanitizePhotoSource } from './photoSource.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
@@ -723,15 +724,21 @@ export const CANVAS_KINDS = {
     // placed over it; in the sidebar it fills the whole bar behind its cards (sideBackdropId). The old `behind` switch
     // is read and dropped. intervalSec: 10 s to a day, the steps of the screen's Fondo (#41). dim: how much the photo
     // is darkened (0 to 0.6), so the cards over it read well; edge: square corners, and out to the edges of the
-    // screen on the sides where it touches them
+    // screen on the sides where it touches them. photoSource: its own photos (core/photoSource.js), kept only when set
+    // (absent: the screen's Fondo, the look it always had)
     defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, dim: 0, edge: false }),
-    props: (c, p, x) => ({
-      intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 86400),
-      fit: P.oneOf(c, `${p}.fit`, x.fit, 'cover', ['cover', 'contain']),
-      caption: P.bool(c, `${p}.caption`, x.caption, false),
-      dim: Math.round(P.num(c, `${p}.dim`, x.dim, 0, 0, 0.6, false) * 100) / 100,
-      edge: P.bool(c, `${p}.edge`, x.edge, false),
-    }),
+    props: (c, p, x, refs, opts) => {
+      const out = {
+        intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 86400),
+        fit: P.oneOf(c, `${p}.fit`, x.fit, 'cover', ['cover', 'contain']),
+        caption: P.bool(c, `${p}.caption`, x.caption, false),
+        dim: Math.round(P.num(c, `${p}.dim`, x.dim, 0, 0, 0.6, false) * 100) / 100,
+        edge: P.bool(c, `${p}.edge`, x.edge, false),
+      };
+      const ps = photoSourceOf(c, `${p}.photoSource`, x.photoSource, refs, opts);
+      if (ps) out.photoSource = ps;
+      return out;
+    },
   },
   widget: {
     cat: 'content', sizes: ['s', 'm', 't', 'l', 'xl', 'full'], def: 'm', cells: [3, 2, 12, 8], side: true, edition: 'all',
@@ -1939,6 +1946,19 @@ function stackSide(c, list, key) {
   return out;
 }
 
+/**
+ * A photo card's or the sidebar's own photo options (#41, core/photoSource.js), or undefined when none are stored.
+ * Their special backgrounds may name any calendar (`refs.ruleSourceIds`, as the screen's Fondo rules); Immich only
+ * where the server has it (`opts.immichAvailable`).
+ */
+function photoSourceOf(c, path, raw, refs, opts) {
+  if (raw === undefined || raw === null) return undefined;
+  const ids = refs?.ruleSourceIds ?? null;
+  return sanitizePhotoSource(raw, {
+    err: (q, m) => c.err(q, m), path, sourceIds: ids ? [...ids] : null, immichAvailable: opts?.immichAvailable !== false,
+  }) ?? undefined;
+}
+
 /** Sidebar side on a portrait screen: left goes on top, right at the bottom. */
 export function portraitSide(side) {
   return side === 'left' ? 'top' : side === 'right' ? 'bottom' : side;
@@ -1981,6 +2001,9 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
   if (sbInterval !== undefined) sidebar.intervalSec = sbInterval;
   const sbDim = P.num(c, `${p}.sidebar.dim`, sb.dim, undefined, 0, 0.6, false);
   if (sbDim !== undefined) sidebar.dim = Math.round(sbDim * 100) / 100;
+  // its own photos (core/photoSource.js), kept only when set (absent: the screen's Fondo)
+  const sbPhotos = photoSourceOf(c, `${p}.sidebar.photoSource`, sb.photoSource, refs, opts);
+  if (sbPhotos) sidebar.photoSource = sbPhotos;
   // the photo cannot be both behind the whole screen and in the sidebar alone
   if (sidebar.fill === 'photo' && background === 'photo') sidebar.fill = 'glass';
   // the grid (always 'fine' once converted above) and "Densidad" (kept only when not the default)
@@ -2579,6 +2602,9 @@ export function projectCanvas(screen, opts = {}) {
       const { memberIds, ...rest } = props;
       props = { ...rest, columns: memberIds ? memberIds.map((id) => members.get(id)).filter(Boolean) : null };
     }
+    // a photo card's own photo options without its special backgrounds (their words name events): /api/photos?for=
+    // applies them, the display only learns that there are some
+    if (it.kind === 'photo' && props.photoSource) props = { ...props, photoSource: displayPhotoSource(props.photoSource) };
     // the target's name (the button's text when it has none of its own); a deleted screen is no target
     if (it.kind === 'nav.button' && props.target && props.target !== NAV_HOME) {
       if (opts.screens && !names.has(props.target)) props = { ...props, target: '' };
@@ -2639,6 +2665,8 @@ export function projectCanvas(screen, opts = {}) {
   });
   const { items: _i, touch: _t, ...rest } = cv;
   const out = { ...structuredClone(rest), orientation: screen.screen?.orientation ?? 'auto', touch, taps, swipe: taps && !!cv.swipe, items };
+  // the sidebar's own photo options, the same way as a photo card's
+  if (out.sidebar?.photoSource) out.sidebar.photoSource = displayPhotoSource(out.sidebar.photoSource);
   if (nextMs !== null) out.next = new Date(nextMs).toISOString();
   if (opts.haOff && items.some((it) => !it.disabled && (it.kind.startsWith('ha.') || (it.kind === 'rotator' && rotatorLeaves(it.props.cards).some((cd) => cd.kind.startsWith('ha.') && !cd.disabled))))) out.haOff = true;
   return out;

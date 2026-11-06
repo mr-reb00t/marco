@@ -585,3 +585,25 @@ test('special background rule with an Immich album: its photos on that screen on
     },
   });
 });
+
+test('a photo card with its own Immich album (#41): its list on ?for=, and its photos load on that screen only', async () => {
+  const card = { id: 'cv_immich01', kind: 'photo', pos: { zone: 'main', x: 0, y: 0, size: 'm', w: 8, h: 8 }, style: { surface: 'glass' }, props: { intervalSec: 60, fit: 'cover', caption: false, dim: 0, edge: false, photoSource: { mode: 'own', source: 'immich', stockTopic: 'nature', order: 'name', immich: { albumIds: [ALBUM_B], favoritesOnly: false }, rules: [], weatherFx: 'off' } } };
+  await withApp(async ({ call, k, kitchenKey }) => {
+    const list = (await call('GET', '/api/photos?count=50&for=cv_immich01', { key: kitchenKey })).json.photos;
+    // album B by file name: 11, 12, 20, 21
+    assert.deepEqual(list.map((p) => p.id), [assetId(11), assetId(12), assetId(20), assetId(21)]);
+    await settle();
+    // asset 20 is only in album B, which only the kitchen's card shows
+    const only = list.find((p) => p.id === assetId(20));
+    assert.equal((await call('GET', `${only.url}&k=${kitchenKey}`)).status, 200);
+    assert.equal((await call('GET', `${only.url}&k=${k}`)).status, 404, 'the living room does not show album B');
+    // the kitchen's own slideshow stays on stock
+    assert.ok((await call('GET', '/api/photos?count=5', { key: kitchenKey })).json.photos.every((p) => p.source === 'stock'));
+  }, {
+    mutate: (c) => {
+      const s = c.screens[1];
+      s.layout.preset = 'canvas';
+      s.canvas = { v: 1, background: 'ambient', sidebar: { side: 'none', size: 'normal', fill: 'glass' }, items: [card] };
+    },
+  });
+});

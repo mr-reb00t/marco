@@ -596,6 +596,21 @@ photo settings it compares between screens (`photoSigOf`). A gallery file that a
 loaded by that screen's displays even when the screen does not show the gallery (never a hidden one); the albums of
 rules count as albums in use for the Immich proxy and the admin's Immich status.
 
+**Photo cards and the sidebar photo with photos of their own (#41).** A *Personalizado* photo card
+(`props.photoSource`) and the sidebar's photo (`canvas.sidebar.photoSource`) may have the Fondo's photo options of
+their own: source, stock topic, order, Immich albums, special backgrounds and a weather effect
+(`server/core/photoSource.js`, the same checks as `background`; `mode: "screen"` or no block shows the screen's photos).
+The server reads them from the saved config: `core/screens.js photoTarget(screen, for)` answers
+`/api/photos?for=<card id>|sidebar` (rotation memory keyed by the block's settings, so cards with the same share it),
+and `screenPhotoBlocks(screen)` lists every setting a screen shows, which the gallery and Immich media checks, the
+Immich albums in use and `syncPhotoRules()` walk. The display config carries each block without its rules (`special`,
+`rulesSig`). On the display, `web/display/ownPhotos.ts` keeps one list per distinct setting, asked for when a card
+needs it and again only on the screen's own photo refreshes (the hourly tick, a `photos` event, a privacy change, a
+special background check); a card on the screen's photos keeps nothing. The sidebar's photo is the screen's slideshow
+with its own settings (`web/shared/glass.ts effectiveBackground`, `own: 'sidebar'`), so it keeps the WebGL weather
+effect. A card is part of the page above the WebGL canvas, so its effect is one CSS layer inside the card
+(`web/display/cardWeather.ts`): a pattern built once and moved with transforms only, none while it is off.
+
 ## Overlay and decorations
 
 Two layers over a whole screen (#24), both per screen, both in `server/core/decorCore.js` (validation and the date

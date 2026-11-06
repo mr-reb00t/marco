@@ -299,6 +299,27 @@ export interface TestWidgetResponse {
 }
 
 /** Albums a screen plays when its background source is 'immich'. */
+/**
+ * Photo options of a Personalizado photo card (props.photoSource) or of the sidebar's photo (canvas.sidebar.photoSource),
+ * #41: the keys of the screen's Fondo (server/core/photoSource.js). 'screen' (the default, and what a missing block
+ * means) shows the screen's photos; 'own' these. weatherFx: the effect over that photo only ('off' unless chosen).
+ */
+export interface PhotoSource {
+  mode: 'screen' | 'own';
+  source: BackgroundConfig['source'];
+  stockTopic: string;
+  order: 'random' | 'newest' | 'name';
+  immich: ImmichBackground;
+  rules: BackgroundRule[];
+  weatherFx: 'off' | 'simple' | 'rich';
+}
+
+/** A PhotoSource as the display gets it: no rules, only whether there are some and a signature of them. */
+export interface DisplayPhotoSource extends Omit<PhotoSource, 'rules'> {
+  special: boolean;
+  rulesSig: string;
+}
+
 export interface ImmichBackground {
   /** Immich album ids (UUIDs), at most 20; [] = stock photos */
   albumIds: string[];
@@ -345,6 +366,9 @@ export interface BackgroundConfig {
   /** Display config only: the screen has special background rules (never the rules themselves), so the display asks for
    *  its photos again when the events, the config or the day change (Marco Cloud pushes no `photos` event for them). */
   special?: boolean;
+  /** Display only (web/shared/glass.ts effectiveBackground): the slideshow is the Personalizado sidebar's photo with
+   *  photos of its own, asked for with GET /api/photos?for=sidebar. */
+  own?: 'sidebar';
 }
 
 /** When a special background rule holds: an event today whose title has `text` (accents and case ignored; in
@@ -1081,7 +1105,11 @@ export interface CanvasConfig {
    * `intervalSec` (10 to 86400) and `dim` (0 to 0.6): the photo of fill 'photo' (#41); absent, the screen's
    * background.intervalSec and canvas.dim
    */
-  sidebar: { side: 'none' | 'left' | 'right' | 'top' | 'bottom'; size: 'narrow' | 'normal' | 'wide'; fill: 'glass' | 'solid' | 'photo'; intervalSec?: number; dim?: number };
+  sidebar: {
+    side: 'none' | 'left' | 'right' | 'top' | 'bottom'; size: 'narrow' | 'normal' | 'wide'; fill: 'glass' | 'solid' | 'photo'; intervalSec?: number; dim?: number;
+    /** its own photo options (#41); absent = the screen's Fondo. A display gets it as a DisplayPhotoSource. */
+    photoSource?: PhotoSource | DisplayPhotoSource;
+  };
   defaults: { surface: CanvasSurface; radius: 'sq' | 'm' | 'l' | 'xl' };
   /** "Permitir tocar en la pantalla" (Home Assistant controls, the navigation cards) */
   touch: boolean;
@@ -2022,6 +2050,9 @@ export interface Features {
   spotify: boolean;
   /** Manual "Descargar ahora" / "Descargar todos" on Admin > Estado (POST /api/admin/status/refresh). Absent = off. */
   sourceRefresh: boolean;
+  /** A Personalizado photo card or the sidebar's photo may have photos of its own (canvas photoSource, GET
+   *  /api/photos?for=). Absent = off. */
+  photoSources: boolean;
 }
 
 export type FeatureName = keyof Features;

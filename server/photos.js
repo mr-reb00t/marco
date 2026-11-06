@@ -294,9 +294,10 @@ export function getPhoto(file) {
 
 export const PHOTO_ORDERS = ['random', 'newest', 'name'];
 const collator = new Intl.Collator('es', { numeric: true, sensitivity: 'base' });
-/** Per-screen memory of the last batch served (gallery, Immich): { files, last } (random: avoid repeats; sequential: cursor). */
+/** Per-screen memory of the last batch served (gallery, Immich): { files, last } (random: avoid repeats; sequential: cursor).
+ *  Keyed by screen, or by a photo card's own settings (core/screens.js photoTarget): up to 12 screens and a few more each. */
 const recent = new Map();
-const RECENT_MAX = 64;
+const RECENT_MAX = 96;
 export function resetPhotoHistory() { recent.clear(); }
 
 function sortFor(list, order) {

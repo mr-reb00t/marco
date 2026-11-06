@@ -21,6 +21,7 @@ import { CITIES_MAX, CITIES_MIN } from '../../../server/core/weatherPlaces.js';
 import { TodoViewFields } from '../components/TodoViewFields';
 import { ShownDaysPicker } from '../components/ShownDaysField';
 import { SpotifyAccountSelect } from '../sections/Spotify';
+import { PhotoSourceFields, type PhotoSourceEnv } from './PhotoSourceFields';
 
 export interface FieldEnv {
   /** the kinds this server offers (a Rotativa picks its cards among them) */
@@ -50,6 +51,8 @@ export interface FieldEnv {
   values?: HookValueInfo[];
   /** the raw state of each entity the draft binds or its conditions read, by entity id (a Rotativa's card conditions) */
   haRaw?: Record<string, string>;
+  /** a photo card's own photos (#41): the screen's Fondo and the calendars a special background may read */
+  photos?: PhotoSourceEnv;
 }
 
 const fmt = (unit: string | undefined, v: number) =>
@@ -396,6 +399,7 @@ export function ContentFields({ item, env, put, nested = false }: { item: Canvas
           );
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
         if (s.type === 'rotatorCards') return isLoneGroup(item) ? <LoneGroupCards item={item} env={env} put={put} /> : <RotatorCards item={item} env={env} put={put} />;
+        if (s.type === 'photoSource') return env.photos ? <PhotoSourceFields card value={p.photoSource} env={env.photos} put={(v) => put('photoSource', v)} /> : null;
         if (s.type === 'todoView') return <TodoViewFields value={p} lists={env.todoLists ?? []} onChange={(k, v, merge) => put(k, v, merge ? `${item.id}.${k}` : undefined)} />;
         if (s.type === 'note' && s.top && nested) return null;
         if (s.type === 'note')

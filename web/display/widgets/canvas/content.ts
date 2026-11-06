@@ -1,7 +1,8 @@
 // Personalizado content: the screen message, the to-do list, the news, a photo slideshow of its own, a saved widget
 // (config.widgets, drawn by widgets/custom.ts in this card), a pushed value (Valor), the empty spacer, and the
 // placeholder card of a widget this screen cannot show. Item text is written with textContent only.
-import type { DisplayCanvasItem, DisplayValue, Photo } from '../../../shared/types';
+import type { DisplayCanvasItem, DisplayPhotoSource, DisplayValue, Photo, PhotosResponse } from '../../../shared/types';
+import { mountCardWeather, type CardWeather } from '../../cardWeather';
 import { ctx } from '../../ctx';
 import { mediaUrl } from '../../identity';
 import { reducedMotion } from '../../dom';
@@ -148,7 +149,11 @@ function news(): CanvasAdapter {
 }
 
 // ------------------------------------------------------------------------------------------------ photo
-/** Its own slideshow of the screen's photos: a crossfade every intervalSec, starting at a different photo per item. */
+/**
+ * Its own slideshow: a crossfade every intervalSec, starting at a different photo per item. The screen's photos, or
+ * with "Fotos: Propias" (#41, props.photoSource mode 'own') a list of its own (ownPhotos.ts, the server reads the
+ * card's saved source, order and special backgrounds), with its own "Efecto del tiempo" over it (cardWeather.ts).
+ */
 function photo(item0: DisplayCanvasItem): CanvasAdapter {
   let env: AdapterEnv;
   let root: HTMLElement;
@@ -156,14 +161,46 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   let idx = -1;
   let cur: HTMLElement | null = null;
   let listSig = '';
+  // where the list on screen came from ('screen' or the own settings): another one comes in at once, not at the next change
+  let listSrc = '';
   // photos of this list shown so far: once it is all of them, the card asks for the next batch (env.morePhotos)
   let round = 0;
   // the image loading now: one that an earlier change started and that ends later neither shows nor sets the timer
   let seq = 0;
   let rule = state.photos?.rule ?? '';
+  // its own list (null: not own, or still loading)
+  let ownResp: PhotosResponse | null = null;
+  let fx: CardWeather | null = null;
   // spread items over the list, so two photo cards do not show the same one
   const offset = [...item0.id].reduce((n, c) => n + c.charCodeAt(0), 0);
-  const list = (): Photo[] => state.photos?.photos ?? [];
+  const ownBlock = (): DisplayPhotoSource | null => {
+    const ps = (env.item().props as Props).photoSource as DisplayPhotoSource | undefined;
+    return ps && ps.mode === 'own' ? ps : null;
+  };
+  const srcOf = (b: DisplayPhotoSource | null) => (b ? JSON.stringify([b.source, b.stockTopic, b.order, b.immich, b.rulesSig]) : 'screen');
+  const resp = (): PhotosResponse | null => (ownBlock() ? ownResp : state.photos);
+  const list = (): Photo[] => resp()?.photos ?? [];
+  /** Ask for its own list (or let it go): a card on the screen's photos keeps nothing and starts nothing. */
+  const syncOwn = () => {
+    const b = ownBlock();
+    if (b) ownResp = env.wantPhotos(b);
+    else {
+      ownResp = null;
+      env.releasePhotos();
+    }
+  };
+  /** Its weather effect: only with its own photos and an effect chosen, never with Ahorro, lite mode or less motion. */
+  const syncFx = () => {
+    const b = ownBlock();
+    const on = !!b && b.weatherFx !== 'off' && !env.calm() && !reducedMotion();
+    if (!on) {
+      fx?.destroy();
+      fx = null;
+      return;
+    }
+    fx ??= mountCardWeather(root);
+    fx.set(env.weatherFx(), b!.weatherFx);
+  };
   // "Cambiar de foto cada": 10 s to a day, as the screen's Fondo (a day is far below the largest setTimeout delay)
   const everyMs = () => Math.min(86400, Math.max(10, Number((env.item().props as Props).intervalSec) || 60)) * 1000;
   const show = () => {
@@ -176,6 +213,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       return;
     }
     if (!photos.length) {
+      // its own list is still on its way: the photo on screen stays until it comes
+      if (ownBlock() && !ownResp && cur) return;
       root.classList.add('is-empty');
       return;
     }
@@ -183,7 +222,10 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     idx = idx < 0 ? offset % photos.length : (idx + 1) % photos.length;
     const p = photos[idx];
     // the whole batch has been on screen: the next one comes in for the next change (it continues from this photo)
-    if (++round >= photos.length && photos.length > 1) env.morePhotos(p.file || p.id || '');
+    if (++round >= photos.length && photos.length > 1) {
+      if (ownBlock() && ownResp) env.moreOwnPhotos(p.file || p.id || '');
+      else env.morePhotos(p.file || p.id || '');
+    }
     const props = env.item().props as Props;
     const img = new Image();
     const mine = ++seq;
@@ -196,7 +238,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       node.className = `cv-ph${props.fit === 'contain' ? ' contain' : ''}`;
       node.style.backgroundImage = `url("${img.src.replace(/["\\\n]/g, '')}")`;
       if (typeof p.focusX === 'number' && typeof p.focusY === 'number') node.style.backgroundPosition = `${(p.focusX * 100).toFixed(1)}% ${(p.focusY * 100).toFixed(1)}%`;
-      root.insertBefore(node, root.querySelector('.cv-ph-cap'));
+      // under the weather effect and the caption
+      root.insertBefore(node, root.querySelector('.cv-phfx') ?? root.querySelector('.cv-ph-cap'));
       const old = cur;
       cur = node;
       if (old) {
@@ -225,6 +268,26 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     const d = Number((env.item().props as Props).dim);
     root.style.setProperty('--ph-dim', String(Number.isFinite(d) ? Math.min(0.6, Math.max(0, d)) : 0));
   };
+  /** A list came (the screen's or its own): from its start at the next change, or at once for another source or rule. */
+  const onList = () => {
+    const sig = list().map((p) => p.url).join('|');
+    const src = srcOf(ownBlock());
+    if (sig === listSig) return;
+    listSig = sig;
+    // a new batch: from its start at the next change (the photo on screen stays until then)
+    round = 0;
+    idx = -1;
+    // another special background took over (or ended), or the card now shows other photos: they come in now
+    const r = resp()?.rule ?? '';
+    if (r !== rule || src !== listSrc) {
+      // (an empty list, its own still on its way: the next one that comes still counts as new)
+      if (sig) {
+        rule = r;
+        listSrc = src;
+      }
+      show();
+    } else if (!cur) show();
+  };
   return {
     mount(r, e) {
       root = r;
@@ -234,33 +297,40 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       const cap = document.createElement('div');
       cap.className = 'cv-ph-cap';
       root.appendChild(cap);
+      syncOwn();
+      syncFx();
       listSig = list().map((p) => p.url).join('|');
+      listSrc = srcOf(ownBlock());
+      rule = resp()?.rule ?? '';
       show();
     },
     update() {
       shade();
+      syncOwn();
+      syncFx();
+      // other photos than the list on screen: they come in as soon as their list is here
+      if (srcOf(ownBlock()) !== listSrc) {
+        onList();
+        return;
+      }
       idx = Math.max(-1, idx - 1);
       show();
     },
     data(topic) {
+      if (topic === 'weather') {
+        if (fx) syncFx();
+        return;
+      }
       if (topic !== 'photos') return;
-      const sig = list().map((p) => p.url).join('|');
-      if (sig === listSig) return;
-      listSig = sig;
-      // a new batch: from its start at the next change (the photo on screen stays until then)
-      round = 0;
-      idx = -1;
-      // another special background took over (or ended): its photos come in now, not at the next change
-      const r = state.photos?.rule ?? '';
-      if (r !== rule) {
-        rule = r;
-        idx = -1;
-        show();
-      } else if (!cur) show();
+      if (ownBlock()) syncOwn();
+      onList();
     },
     destroy() {
       if (timer) clearTimeout(timer);
       timer = null;
+      fx?.destroy();
+      fx = null;
+      env.releasePhotos();
       root.textContent = '';
     },
   };

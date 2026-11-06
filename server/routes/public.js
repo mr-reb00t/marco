@@ -14,7 +14,7 @@ import { activeBackgroundRule } from '../photoRules.js';
 import { backgroundRuleSig } from '../core/bgRules.js';
 import { sseHandler } from '../sse.js';
 import { streamInit, streamHello, onStreamOpen, onStreamClose, pollDisplay } from '../displays.js';
-import { displayConfig as projectDisplayConfig, todoTouch } from '../core/screens.js';
+import { displayConfig as projectDisplayConfig, isPhotoFor, photoTarget, todoTouch } from '../core/screens.js';
 import { requestScreen, resolveDisplayAccess, KEY_HEADER } from '../displayAccess.js';
 import { needsSetup } from '../auth.js';
 import { addDays, localDate, isDateStr, daysBetween } from '../core/lib/tz.js';
@@ -191,13 +191,19 @@ export function publicRouter({ version }) {
       const cfg = getConfig();
       const { screen } = requestScreen(cfg, req);
       const after = typeof req.query.after === 'string' ? req.query.after : '';
+      // ?for=<card id>|sidebar: the photos of one Personalizado photo card or of the sidebar's photo (#41), read from
+      // that card's saved settings (core/screens.js photoTarget); the display never names a source, a file or a URL
+      const forId = req.query.for;
+      if (forId !== undefined && !isPhotoFor(forId)) return res.status(400).json({ error: 'invalid_for' });
+      const t = forId === undefined ? { key: screen.id, block: screen.background, rules: screen.background.rules } : photoTarget(screen, forId);
+      if (!t) return res.status(404).json({ error: 'photo_card_not_found' });
       // Privacy mode with "hide photos": stock photos only, gallery file names never reach the display.
       const hide = screen.privacy?.hidePhotos && screenPrivacy(cfg, screen).active;
-      const background = hide ? { ...screen.background, source: 'stock' } : screen.background;
+      const background = hide ? { ...t.block, source: 'stock' } : t.block;
       // a special background rule that holds now (core/bgRules.js) brings its own photos; privacy still wins.
       // `rule` is only a signature, so the display knows when to change the photo at once (never the rule itself).
-      const rule = hide ? null : await activeBackgroundRule(cfg, screen);
-      const photos = await getPhotos(Number(req.query.count) || 20, background, { key: hide ? `${screen.id}|private` : screen.id, after: hide ? '' : after, rule });
+      const rule = hide ? null : await activeBackgroundRule(cfg, screen, new Date(), t.rules);
+      const photos = await getPhotos(Number(req.query.count) || 20, background, { key: hide ? `${t.key}|private` : t.key, after: hide ? '' : after, rule });
       res.json({ photos, rule: backgroundRuleSig(rule) });
     } catch (err) {
       next(err);

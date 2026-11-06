@@ -606,6 +606,35 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'calendar.month', pos: M(0, 0, 'xl') },
     ],
   },
+  // a photo card with photos of its own (#41, photoSource 'own': topic1 and a light weather effect) next to one with
+  // the screen's photos; &wx=rain for the effect. photoOwnOff: the same with the effect off; photoOwnSide: the
+  // sidebar's photo with photos of its own
+  photoOwn: {
+    canvas: { background: 'ambient' },
+    orientation: 'landscape',
+    items: [
+      { kind: 'photo', pos: B(0, 0, 12, 16), props: { fit: 'cover', photoSource: { mode: 'own', source: 'stock', stockTopic: 'topic1', weatherFx: 'simple' } } },
+      { kind: 'photo', pos: B(12, 0, 12, 16), props: { fit: 'cover' } },
+      { kind: 'clock.digital', pos: B(1, 1, 8, 3) },
+    ],
+  },
+  photoOwnOff: {
+    canvas: { background: 'ambient' },
+    orientation: 'landscape',
+    items: [
+      { kind: 'photo', pos: B(0, 0, 12, 16), props: { fit: 'cover', photoSource: { mode: 'own', source: 'stock', stockTopic: 'topic1', weatherFx: 'off' } } },
+      { kind: 'photo', pos: B(12, 0, 12, 16), props: { fit: 'cover', photoSource: { mode: 'screen', source: 'stock', stockTopic: 'topic2', weatherFx: 'rich' } } },
+      { kind: 'clock.digital', pos: B(1, 1, 8, 3) },
+    ],
+  },
+  photoOwnSide: {
+    canvas: { background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'photo', photoSource: { mode: 'own', source: 'stock', stockTopic: 'topic2', order: 'random', immich: { albumIds: [], favoritesOnly: false }, rules: [], weatherFx: 'simple' } } },
+    orientation: 'landscape',
+    items: [
+      { kind: 'clock.digital', pos: S(0, 3) },
+      { kind: 'calendar.month', pos: M(0, 0, 'xl') },
+    ],
+  },
   // ... or inside the bar's gaps, with round corners
   sideBackdropInset: {
     canvas: { background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'glass' } },

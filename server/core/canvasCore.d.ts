@@ -83,11 +83,15 @@ export interface CanvasRefs {
   memberIds?: Set<string> | null;
   /** saved screen ids ("Ir a pantalla"); null = any well-formed id */
   screenIds?: Set<string> | null;
+  /** every calendar a photo card's own special backgrounds may name (core/photoSource.js); null = any */
+  ruleSourceIds?: Set<string> | null;
 }
 export interface CanvasOpts {
   canvasKinds?: readonly string[];
   haControls?: boolean;
   cameraLive?: boolean;
+  /** false: no Immich (Marco Cloud), a photo card's own Immich source and rules are refused */
+  immichAvailable?: boolean;
 }
 
 export interface CanvasKindDef {

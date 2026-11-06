@@ -2,12 +2,13 @@
 // core/bgRules.js), and the check that tells displays when that changes. The refresher calls syncPhotoRules() after
 // every run (each minute, after a calendar refresh and after a config save), so midnight, a new or removed event and
 // a rule edit reach the screens within a minute: the screens whose active rule changed get a `photos` live event and
-// ask for a new batch.
+// ask for a new batch. A Personalizado photo card or sidebar with photos of its own (#41, core/photoSource.js) has
+// rules of its own, checked the same way.
 import { getConfig } from './store.js';
 import { getDetailedEvents } from './calendars.js';
 import { publish } from './pollHub.js';
 import { screenPrivacy } from './privacy.js';
-import { screenSourceIds } from './core/screens.js';
+import { screenPhotoBlocks, screenSourceIds } from './core/screens.js';
 import { localDate } from './core/lib/tz.js';
 import { backgroundRuleSig, matchBackgroundRule, ruleEventSources, rulesNeedEvents } from './core/bgRules.js';
 
@@ -16,10 +17,10 @@ let told = new Map();
 
 /**
  * The rule of `screen` that holds at `now`, or null. Event rules read today's events of their calendars (the
- * calendars the screen shows when they name none, even when the screen hides its calendar).
+ * calendars the screen shows when they name none, even when the screen hides its calendar). `rules` = the list to
+ * check: the screen's Fondo's (default), or a photo card's or the sidebar's own.
  */
-export async function activeBackgroundRule(cfg, screen, now = new Date()) {
-  const rules = screen?.background?.rules;
+export async function activeBackgroundRule(cfg, screen, now = new Date(), rules = screen?.background?.rules) {
   if (!Array.isArray(rules) || !rules.length) return null;
   const tz = cfg.datetime.timezone;
   const today = localDate(now, tz);
@@ -53,7 +54,14 @@ export async function syncPhotoRules(now = new Date()) {
   if (!cfg) return [];
   const changed = [];
   for (const s of cfg.screens) {
-    const sig = backgroundRuleSig(await activeBackgroundRule(cfg, s, now));
+    // the Fondo's rule, then each card's and the sidebar's own that have rules: one signature per screen
+    const parts = [];
+    for (const { key, block } of screenPhotoBlocks(s)) {
+      if (key && !block.rules?.length) continue;
+      const r = backgroundRuleSig(await activeBackgroundRule(cfg, s, now, block.rules));
+      parts.push(key ? `${key}:${r}` : r);
+    }
+    const sig = parts.join('|');
     if (told.has(s.id) && told.get(s.id) !== sig) changed.push(s.id);
     told.set(s.id, sig);
   }

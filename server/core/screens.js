@@ -7,6 +7,7 @@ import { showsFamilyQr } from './familyCore.js';
 import { carouselBlock } from './carousels.js';
 import { canvasCards, canvasWidgetIds, projectCanvas } from './canvasCore.js';
 import { LOCAL_TODO_LIST, todoListNames, todoViews } from './todoCore.js';
+import { isOwnPhotoSource, photoSourceSig, rulesAlbumIds, rulesGalleryFiles } from './photoSource.js';
 
 /** Default screen profile (cfg.defaultScreen, falling back to the first one). */
 export function defaultScreen(cfg) {
@@ -224,4 +225,82 @@ export function displayConfig(cfg, screen, { privacy = null, carousel = null, fa
       : { id: screen.id, kind: 'screen', slug: screen.slug, name: screen.name },
     carousel: carousel ? carouselBlock(cfg, carousel) : null,
   };
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Photo options of the photo cards and the sidebar (#41, core/photoSource.js)
+
+const PHOTO_FOR_RE = /^(sidebar|[A-Za-z0-9_-]{1,64})$/;
+/** A valid `for` of GET /api/photos: 'sidebar' or a card id. */
+export const isPhotoFor = (v) => typeof v === 'string' && PHOTO_FOR_RE.test(v);
+
+/**
+ * Every photo option block stored on a screen, whatever its mode and whether it shows now: [{ id, block }] with the
+ * card id or 'sidebar'. For imports and migrations (Marco Cloud turns Immich blocks into stock with it).
+ */
+export function allPhotoSources(screen) {
+  const out = [];
+  const cv = screen?.canvas;
+  for (const it of canvasCards(cv?.items)) if (it.kind === 'photo' && it.props?.photoSource && typeof it.props.photoSource === 'object') out.push({ id: it.id, block: it.props.photoSource });
+  if (cv?.sidebar?.photoSource && typeof cv.sidebar.photoSource === 'object') out.push({ id: 'sidebar', block: cv.sidebar.photoSource });
+  return out;
+}
+
+/** The sidebar shows its own photos: a Personalizado screen whose sidebar is filled with a photo of its own. */
+function sidebarOwn(screen) {
+  const cv = screen?.canvas;
+  return screen?.layout?.preset === 'canvas' && !!cv && cv.background !== 'photo' && cv.sidebar?.side !== 'none' && cv.sidebar?.fill === 'photo' && isOwnPhotoSource(cv.sidebar.photoSource);
+}
+
+/** The photo cards of a screen with photos of their own (shown ones; inside a Rotativa too). */
+function ownCards(screen) {
+  if (screen?.layout?.preset !== 'canvas') return [];
+  return canvasCards(screen.canvas?.items).filter((it) => it.kind === 'photo' && !it.hidden && isOwnPhotoSource(it.props?.photoSource));
+}
+
+/**
+ * The photo settings a screen's displays may show: [{ key, block }], its Fondo first (key ''), then each photo card
+ * and the sidebar with photos of their own (key = card id or 'sidebar'). Media access (gallery files, Immich assets)
+ * and the special backgrounds' live check read this list.
+ */
+export function screenPhotoBlocks(screen) {
+  const out = [{ key: '', block: screen?.background ?? {} }];
+  for (const it of ownCards(screen)) out.push({ key: it.id, block: it.props.photoSource });
+  if (sidebarOwn(screen)) out.push({ key: 'sidebar', block: screen.canvas.sidebar.photoSource });
+  return out;
+}
+
+const showsGalleryBlock = (b) => b?.source === 'gallery' || b?.source === 'mixed';
+
+/** Some photo setting of the screen shows the gallery (its Fondo, or a card or the sidebar with photos of their own). */
+export const screenShowsGallery = (screen) => screenPhotoBlocks(screen).some((x) => showsGalleryBlock(x.block));
+
+/** Gallery files the special backgrounds of a screen may show (its Fondo's and its cards' and sidebar's own). */
+export function screenRuleGalleryFiles(screen) {
+  const out = new Set();
+  for (const x of screenPhotoBlocks(screen)) for (const f of rulesGalleryFiles(x.block.rules)) out.add(f);
+  return out;
+}
+
+/** Immich albums the special backgrounds of a screen play. */
+export function screenRuleAlbumIds(screen) {
+  const out = new Set();
+  for (const x of screenPhotoBlocks(screen)) for (const a of rulesAlbumIds(x.block.rules)) out.add(a);
+  return [...out];
+}
+
+/**
+ * What GET /api/photos?for= serves: { key, block, rules } for a photo card (`forId` = its id; inside a Rotativa too)
+ * or the sidebar ('sidebar'). A card or sidebar that shows the screen's photos gets the screen's (key = screen id,
+ * the screen's own rotation memory); one with its own gets them with a key of its settings, so two cards with the same
+ * share their rotation. null: no such photo card is shown on this screen.
+ */
+export function photoTarget(screen, forId) {
+  const own = (block) => ({ key: `${screen.id}|own|${photoSourceSig(block)}`, block, rules: block.rules ?? [] });
+  const theScreen = { key: screen.id, block: screen.background, rules: screen.background?.rules ?? [] };
+  if (forId === 'sidebar') return sidebarOwn(screen) ? own(screen.canvas.sidebar.photoSource) : theScreen;
+  if (screen?.layout?.preset !== 'canvas') return null;
+  const card = canvasCards(screen.canvas?.items).find((it) => it.id === forId && it.kind === 'photo' && !it.hidden);
+  if (!card) return null;
+  return isOwnPhotoSource(card.props?.photoSource) ? own(card.props.photoSource) : theScreen;
 }

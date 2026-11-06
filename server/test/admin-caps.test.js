@@ -52,7 +52,7 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(old.edition, 'self-hosted');
   assert.equal(old.features, null);
   // accountMenu, microsoftCalendar, updates, feedback, privacy and the doorbell only exist on servers that say so
-  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh'].includes(k), k);
+  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources'].includes(k), k);
   // carousels: on for this server, off for servers that do not say so (they would drop config.carousels)
   assert.equal(hasFeature(selfHosted(), 'carousels'), true);
   assert.equal(hasFeature(capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: true } }), 'carousels'), false);
@@ -73,6 +73,11 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(hasFeature(sh, 'doorbell'), false, 'an older self-hosted server has no doorbell hook');
   assert.equal(hasFeature(selfHosted(), 'immich'), true);
   assert.equal(hasFeature(sh, 'immich'), false, 'an older self-hosted server has no Immich proxy');
+  // a photo card's own photos (#41): only servers that answer GET /api/photos?for= (Marco Cloud says so once it does)
+  assert.equal(hasFeature(selfHosted(), 'photoSources'), true);
+  assert.equal(hasFeature(sh, 'photoSources'), false, 'an older self-hosted server has no ?for= on /api/photos');
+  const { photoSources: _ps, ...cloudBefore } = cloudHealth().features;
+  assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: cloudBefore }), 'photoSources'), false, 'Marco Cloud until it says so');
   assert.equal(hasFeature(cloud(), 'immich'), false, 'Marco Cloud has no Immich');
   assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: { news: true } }), 'immich'), false, 'a missing key is off');
   // "now playing" with Spotify: only on servers that link a Spotify app (an older one has no /api/admin/spotify)

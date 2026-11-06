@@ -178,9 +178,11 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
     return {
       sourceIds: new Set(pool), widgets: new Map((full.widgets ?? []).map((w) => [w.id, w])), memberIds: new Set((full.family?.members ?? cfg.family?.members ?? []).map((m) => m.id)),
       screenIds: new Set((full.screens ?? []).map((x) => x.id)),
+      // a photo card's own special backgrounds may read any calendar, as the screen's Fondo rules (core/photoSource.js)
+      ruleSourceIds: new Set(allSourceOptions(cfg).map((s) => s.id)),
     };
   }, [cfg, full]);
-  const opts = useMemo(() => ({ canvasKinds: allowed, haControls: !cloud, cameraLive: !cloud }), [cloud]);
+  const opts = useMemo(() => ({ canvasKinds: allowed, haControls: !cloud, cameraLive: !cloud, immichAvailable: has('immich') }), [cloud]);
   // values pushed by POST /api/hooks/values: the Valor card's key picker and the frame's preview
   const hookValues = useHookValues(has('valueHooks'));
   const previewValues = useMemo(() => displayValues(hookValues), [hookValues]);
@@ -201,6 +203,13 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       values: hookValues ?? [],
       allowed,
       pinCard: (item: string, card: string | null) => setPin((p) => (card ? { item, card } : p?.item === item ? null : p)),
+      // a photo card's or the sidebar's own photos (#41): they start from the screen's Fondo, and their special
+      // backgrounds pick calendars as the Fondo's do (sections/BackgroundRules.tsx)
+      photos: {
+        screenBackground: cfg.background,
+        ruleSources: allSourceOptions(full).filter((o) => !Array.isArray(cfg.calendar.sourceIds) || cfg.calendar.sourceIds.includes(o.id)),
+        privacy: !!cfg.privacy?.hidePhotos,
+      },
     };
   }, [cfg, full, refs, hookValues]);
   // Home Assistant cards in the frame: states and points of the draft's entities (also for items not saved yet)
