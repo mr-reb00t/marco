@@ -644,7 +644,8 @@ function sanitizeCommuteOptions(ctx, p, v) {
     const toVal = r.to === '' || r.to === undefined || r.to === null ? '' : hhmm(ctx, `${q}.to`, r.to, '');
     return {
       id: id(ctx, `${q}.id`, typeof r.id === 'string' && r.id.startsWith(COMMUTE_ROUTE_PREFIX) ? r.id : undefined, COMMUTE_ROUTE_PREFIX, seenRoutes),
-      name: str(ctx, `${q}.name`, r.name, '', 60).trim() || 'Commute',
+      // '' = unnamed: the display shows "Route 1", never the addresses
+      name: str(ctx, `${q}.name`, r.name, '', 60).trim(),
       origin: requiredStr(ctx, `${q}.origin`, r.origin, '', 200),
       destination: requiredStr(ctx, `${q}.destination`, r.destination, '', 200),
       mode: oneOf(ctx, `${q}.mode`, r.mode, 'driving', COMMUTE_MODES),
@@ -657,7 +658,8 @@ function sanitizeCommuteOptions(ctx, p, v) {
   }).filter(Boolean);
   return {
     units: oneOf(ctx, `${p}.units`, o.units, 'auto', COMMUTE_UNITS),
-    refreshMin: oneOf(ctx, `${p}.refreshMin`, o.refreshMin, 10, COMMUTE_REFRESH_MIN),
+    // 5 minutes was offered before 0.38 (never released): it becomes 10, the floor
+    refreshMin: oneOf(ctx, `${p}.refreshMin`, o.refreshMin === 5 ? 10 : o.refreshMin, 10, COMMUTE_REFRESH_MIN),
     showRouteSummary: bool(ctx, `${p}.showRouteSummary`, o.showRouteSummary, true),
     showArrival: bool(ctx, `${p}.showArrival`, o.showArrival, true),
     routes,
@@ -952,7 +954,8 @@ export function migrateConfig(raw) {
  * needs one is refused (weather.apiKey 'API key required'). Left out, keys are not checked (imports, restores).
  * Widgets: `opts.widgetTypes` (default every type) refuses other types with 'not available on this server',
  * `opts.widgetProtocols` (default ['http:', 'https:']) refuses other URL schemes with 'https required', and
- * `opts.minWidgetRefreshSec` (default none) refuses shorter refreshes. Marco Cloud passes ['image'], ['https:'], 30.
+ * `opts.minWidgetRefreshSec` (default none) refuses shorter refreshes. Marco Cloud passes ['image', 'prices',
+ * 'currency', 'value'] (no 'commute', so a commute widget is refused there), ['https:'], 30.
  * `opts.immichAvailable` false (servers without Immich, such as Marco Cloud): a screen with the Immich source is refused.
  * Personalizado screens (core/canvasCore.js sanitizeCanvas): `opts.canvasKinds` (default every kind but the reserved
  * ones) refuses other kinds with 'not available on this server', `opts.haControls` false turns every touch control off

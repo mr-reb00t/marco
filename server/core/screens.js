@@ -8,6 +8,7 @@ import { carouselBlock } from './carousels.js';
 import { canvasCards, canvasWidgetIds, projectCanvas, sidebarOwnBlock } from './canvasCore.js';
 import { LOCAL_TODO_LIST, todoListNames, todoViews } from './todoCore.js';
 import { isOwnPhotoSource, photoSourceSig, rulesAlbumIds, rulesGalleryFiles } from './photoSource.js';
+import { displayCommuteOptions } from './commuteCore.js';
 
 /** Default screen profile (cfg.defaultScreen, falling back to the first one). */
 export function defaultScreen(cfg) {
@@ -124,6 +125,8 @@ export const widgetVersion = (w) => shortHash(JSON.stringify(
     ? [w.type]
     : w.type === 'prices'
       ? [w.type, w.options.prices?.zone, ...(w.options.prices?.tariff === 'grid' ? [w.options.prices.grid] : [])]
+      // the whole options (addresses too) go into the hash, so any saved change reloads the card; only the 8 hex
+      // digits leave the server, never the addresses
       : w.type === 'commute'
         ? [w.type, w.options.commute]
         : [w.type, w.options.url, w.options.refreshSec, w.options.bust],
@@ -149,7 +152,9 @@ export function displayWidgets(cfg, screen, { isPrivate = false, widgetSrc = nul
     // the display asks this server for the zone's prices (GET /api/display/prices) and draws them itself
     ? { id: w.id, type: w.type, name: w.name, place, corner, size, refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: widgetVersion(w), prices: { ...w.options.prices } }
     : w.type === 'commute'
-      ? { id: w.id, type: w.type, name: w.name, place, corner, size, refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: widgetVersion(w), commute: structuredClone(w.options.commute) }
+      // travel times: the display asks this server by widget id (GET /api/display/commute) and draws them itself. It
+      // gets what the card draws (route ids, names, modes), never the addresses or the schedule.
+      ? { id: w.id, type: w.type, name: w.name, place, corner, size, refreshSec: 0, fit: 'contain', bust: false, src: '', via: 'direct', v: widgetVersion(w), commute: displayCommuteOptions(w.options.commute) }
       : {
           id: w.id, type: w.type, name: w.name, place, corner, size,
           refreshSec: w.options.refreshSec, fit: w.options.fit, bust: w.options.bust,

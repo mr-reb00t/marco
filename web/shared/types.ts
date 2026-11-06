@@ -177,6 +177,7 @@ export type CommuteDirection = 'to' | 'from' | 'auto';
 export type CommuteTrafficLevel = 'clear' | 'moderate' | 'heavy';
 export interface CommuteRoute {
   id: string; // "cr_xxx"
+  /** '' = the display shows "Route 1", "Route 2"... */
   name: string;
   origin: string;
   destination: string;
@@ -189,23 +190,33 @@ export interface CommuteRoute {
 }
 export interface CommuteWidgetOptions {
   units: 'auto' | 'metric' | 'imperial';
-  refreshMin: 5 | 10 | 15 | 30 | 60;
+  /** minutes between refreshes; 10 at the least (each one is a paid Google request) */
+  refreshMin: 10 | 15 | 30 | 60;
   showRouteSummary: boolean;
   showArrival: boolean;
   routes: CommuteRoute[];
 }
+/** A commute widget as a display gets it (core/commuteCore.js displayCommuteOptions): no addresses, no schedule. */
+export interface DisplayCommuteOptions {
+  units: CommuteWidgetOptions['units'];
+  refreshMin: number;
+  showRouteSummary: boolean;
+  showArrival: boolean;
+  routes: { id: string; name: string; mode: CommuteMode }[];
+}
+/** One route of GET /api/display/commute. No addresses: `name` is the saved name ('' = unnamed). */
 export interface CommuteRouteResult {
   id: string;
   name: string;
   mode: CommuteMode;
-  origin: string;
-  destination: string;
+  /** showing the way back (destination to origin) */
   reversed: boolean;
   active: boolean;
   ok: boolean;
   durationSec?: number;
   normalDurationSec?: number;
   delaySec?: number;
+  delayMin?: number;
   traffic?: CommuteTrafficLevel;
   distanceMeters?: number;
   summary?: string;
@@ -334,8 +345,8 @@ export interface DisplayWidget {
   currency?: CurrencyOptions;
   /** type 'value': what to draw (the display reads its screen's values feed, GET /api/display/values) */
   value?: ValueWidgetOptions;
-  /** type 'commute': what to draw (the display fetches /api/display/commute?id=) */
-  commute?: CommuteWidgetOptions;
+  /** type 'commute': what to draw (the display fetches /api/display/commute?id=&v=); never the addresses */
+  commute?: DisplayCommuteOptions;
 }
 /** POST /api/admin/test/widget { type, url } */
 export interface TestWidgetResponse {
@@ -2107,6 +2118,9 @@ export interface Features {
   /** A Personalizado photo card or the sidebar's photo may have photos of its own (canvas photoSource, GET
    *  /api/photos?for=). Absent = off. */
   photoSources: boolean;
+  /** The commute widget (type 'commute'): live travel times from Google with the owner's own key (server/commute.js,
+   *  GET /api/display/commute, /api/admin/commute/key, /api/admin/test/commute). Absent = off. */
+  commute: boolean;
 }
 
 export type FeatureName = keyof Features;

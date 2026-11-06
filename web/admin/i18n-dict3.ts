@@ -60,4 +60,8 @@ export const ROWS3: [string, string, string][] = [
   ['Siempre Destino → Origen', 'Always Destination → Origin', 'Sempre Destino → Origem'],
   ['Invertir a partir de', 'Reverse after', 'Inverter a partir das'],
   ['Añadir ruta', 'Add route', 'Adicionar rota'],
+  ['Google cobra las consultas que pasan de su cuota gratuita mensual. Cada ruta visible se consulta una vez por intervalo de actualización; un horario por ruta evita consultas cuando no hace falta.', 'Google bills the requests beyond its free monthly allowance. Each route on screen is requested once per refresh interval; a schedule per route avoids requests when they are not needed.', 'A Google cobra os pedidos que ultrapassam a sua quota gratuita mensal. Cada rota visível é consultada uma vez por intervalo de atualização; um horário por rota evita pedidos quando não são precisos.'],
+  ['Cada actualización de una ruta es una consulta a Google.', 'Each refresh of a route is one request to Google.', 'Cada atualização de uma rota é um pedido à Google.'],
+  ['Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.', 'Outside these days and hours the route is not shown or requested from Google. No days ticked: every day; no hours: all day.', 'Fora destes dias e horas a rota não é mostrada nem consultada à Google. Sem dias marcados: todos; sem horas: o dia todo.'],
+  ['Pon las dos horas o ninguna', 'Set both times or neither', 'Indique as duas horas ou nenhuma'],
 ];

@@ -2192,6 +2192,10 @@ export const NL: Record<string, string> = {
   'Siempre Destino → Origen': 'Altijd Bestemming → Vertrekpunt',
   'Invertir a partir de': 'Omkeren vanaf',
   'Añadir ruta': 'Route toevoegen',
+  'Google cobra las consultas que pasan de su cuota gratuita mensual. Cada ruta visible se consulta una vez por intervalo de actualización; un horario por ruta evita consultas cuando no hace falta.': 'Google rekent verzoeken boven het gratis maandtegoed af. Elke zichtbare route wordt één keer per verversinterval opgevraagd; een schema per route voorkomt verzoeken als ze niet nodig zijn.',
+  'Cada actualización de una ruta es una consulta a Google.': 'Elke verversing van een route is één verzoek aan Google.',
+  'Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.': 'Buiten deze dagen en uren wordt de route niet getoond en niet bij Google opgevraagd. Geen dagen aangevinkt: elke dag; geen uren: de hele dag.',
+  'Pon las dos horas o ninguna': 'Vul beide tijden in of geen van beide',
 };
 
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */

@@ -6,7 +6,8 @@ import { COMMUTE_REFRESH_MIN, formatDistance, formatDurationParts, MAX_COMMUTE_R
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
 import { Icon } from '../components/icons';
-import { Button, Field, ReorderButtons, Segmented, Select, TextInput, ToggleRow } from '../components/ui';
+import { Button, Field, ReorderButtons, Segmented, Select, TextInput, ToggleRow, WeekdayPicker } from '../components/ui';
+import { weekdayNames } from '../dates';
 import { t } from '../i18n';
 import { moveItem, uid } from '../util';
 import { previewTested } from '../widgetPreview';
@@ -69,7 +70,8 @@ function CommuteApiKey({ st, setSt }: { st: WeatherKeyStatus | null; setSt: (s: 
           <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener noreferrer">
             console.cloud.google.com
           </a>
-          . {t('Se guarda solo en el servidor y nunca se vuelve a mostrar.')}
+          . {t('Se guarda solo en el servidor y nunca se vuelve a mostrar.')}{' '}
+          {t('Google cobra las consultas que pasan de su cuota gratuita mensual. Cada ruta visible se consulta una vez por intervalo de actualización; un horario por ruta evita consultas cuando no hace falta.')}
         </>
       }
     >
@@ -137,6 +139,7 @@ export function CommuteWidgetFields({ w, errors, upd, part }: {
   });
   const [keyStatus, setKeyStatus] = useState<WeatherKeyStatus | null>(null);
   const [tests, setTests] = useState<Record<string, { loading: boolean; res?: TestCommuteResponse }>>({});
+  const wd = weekdayNames('short');
 
   useEffect(() => {
     api.commuteKey().then(setKeyStatus).catch(() => setKeyStatus(null));
@@ -157,7 +160,7 @@ export function CommuteWidgetFields({ w, errors, upd, part }: {
     return (
       <div class="stack">
         <div class="grid grid--2">
-          <Field label={t('Actualizar cada')}>
+          <Field label={t('Actualizar cada')} hint={t('Cada actualización de una ruta es una consulta a Google.')}>
             <Select
               value={o.refreshMin}
               options={COMMUTE_REFRESH_MIN.map((m) => ({ value: m, label: `${m} min` }))}
@@ -295,6 +298,17 @@ export function CommuteWidgetFields({ w, errors, upd, part }: {
                     />
                   </Field>
                 )}
+              </div>
+              <Field label={t('Días')} hint={t('Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.')}>
+                <WeekdayPicker labels={wd} value={r.days} onChange={(v) => set((c) => void (c.routes[idx].days = v))} />
+              </Field>
+              <div class="grid grid--2">
+                <Field label={t('Desde')} error={rErr('from')}>
+                  <TextInput type="time" value={r.from} error={!!rErr('from')} onValue={(v) => set((c) => void (c.routes[idx].from = v))} />
+                </Field>
+                <Field label={t('Hasta')} error={rErr('to')}>
+                  <TextInput type="time" value={r.to} error={!!rErr('to')} onValue={(v) => set((c) => void (c.routes[idx].to = v))} />
+                </Field>
               </div>
               {tState?.res && <RouteTestResult res={tState.res} units={o.units} />}
             </div>

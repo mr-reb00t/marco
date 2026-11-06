@@ -383,7 +383,11 @@ export function validateGlobal(c: StoredConfig): Errors {
         if (!r.origin.trim()) e[`${p}.route.${r.id}.origin`] = 'Obligatorio';
         if (!r.destination.trim()) e[`${p}.route.${r.id}.destination`] = 'Obligatorio';
         if (r.direction === 'auto' && !TIME_RE.test(r.reverseAfter)) e[`${p}.route.${r.id}.reverseAfter`] = 'Hora no válida (HH:MM)';
+        if (r.from && !TIME_RE.test(r.from)) e[`${p}.route.${r.id}.from`] = 'Hora no válida (HH:MM)';
+        if (r.to && !TIME_RE.test(r.to)) e[`${p}.route.${r.id}.to`] = 'Hora no válida (HH:MM)';
+        else if (Boolean(r.from) !== Boolean(r.to)) e[`${p}.route.${r.id}.to`] = 'Pon las dos horas o ninguna';
       }
+      if (!hasFeature(wcaps, 'commute')) e[`${p}.type`] = 'No disponible aquí';
       continue;
     }
     const bad = widgetUrlProblem(w.options.url, wcaps.edition === 'cloud');

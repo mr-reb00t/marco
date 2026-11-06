@@ -1,10 +1,12 @@
-// The commute time widget ('commute'): drawn by the display from GET /api/display/commute (server/commute.js).
+// The commute time widget ('commute'): drawn by the display from GET /api/display/commute?id=&v= (server/commute.js).
 // Placed by widgets/custom.ts like any widget: a corner, the side column or the whole screen (the 'widget' layout).
-import type { CommuteMode, CommuteResponse, CommuteRouteResult, CommuteWidgetOptions, DisplayWidget } from '../../shared/types';
-import { delayMinutes, formatDistance, formatDurationParts } from '../../../server/core/commuteCore.js';
+// The display never has the addresses: it asks by widget id and gets route names and times.
+import type { CommuteMode, CommuteResponse, CommuteRouteResult, DisplayCommuteOptions, DisplayWidget } from '../../shared/types';
+import { delayMinutes, formatDistance, formatDurationParts, MIN_COMMUTE_REFRESH_MIN } from '../../../server/core/commuteCore.js';
 import { formatTime } from '../../shared/i18n';
-import { getJSON } from '../api';
+import { ApiError, getJSON } from '../api';
 import { ctx } from '../ctx';
+import { isPreview, withScreen } from '../identity';
 
 const RETRY_MS = 60_000;
 const SVG = 'http://www.w3.org/2000/svg';
@@ -43,22 +45,20 @@ function modeIcon(mode: CommuteMode): SVGSVGElement {
   return s;
 }
 
-function demoCommute(opts: CommuteWidgetOptions | undefined): CommuteResponse {
+function demoCommute(opts: DisplayCommuteOptions | undefined): CommuteResponse {
   const routes = opts?.routes?.length
     ? opts.routes
     : [
-        { id: 'cr_1', name: 'Work', origin: 'Home', destination: 'Downtown Office', mode: 'driving' as const, direction: 'auto' as const, reverseAfter: '12:00', days: [], from: '', to: '' },
-        { id: 'cr_2', name: 'School', origin: 'Home', destination: 'Oak Elementary', mode: 'driving' as const, direction: 'to' as const, reverseAfter: '12:00', days: [], from: '', to: '' },
+        { id: 'cr_1', name: 'Work', mode: 'driving' as const },
+        { id: 'cr_2', name: 'School', mode: 'driving' as const },
       ];
   return {
     fetchedAt: new Date().toISOString(),
     keySet: true,
     routes: routes.map((r, i) => ({
       id: r.id,
-      name: r.name || 'Commute',
+      name: r.name,
       mode: r.mode || 'driving',
-      origin: r.origin,
-      destination: r.destination,
       reversed: false,
       active: true,
       ok: true,
@@ -80,6 +80,8 @@ export class CommuteCard {
   private w: DisplayWidget;
   private data: CommuteResponse | null = null;
   private failed = false;
+  /** admin preview of a widget not saved yet (or changed): a note until it is saved */
+  private unsaved = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private place: 'corner' | 'side' | 'full' = 'corner';
   private maxW = 0;
@@ -93,7 +95,7 @@ export class CommuteCard {
   }
 
   get hasData(): boolean {
-    return Boolean(this.data || (this.w.commute?.routes && this.w.commute.routes.length));
+    return Boolean(this.data || this.unsaved || (this.w.commute?.routes && this.w.commute.routes.length));
   }
 
   start(): void {
@@ -110,9 +112,9 @@ export class CommuteCard {
   }
 
   update(w: DisplayWidget): void {
-    const prev = JSON.stringify(this.w.commute);
+    const prev = `${this.w.v}|${JSON.stringify(this.w.commute)}`;
     this.w = w;
-    if (JSON.stringify(w.commute) !== prev) {
+    if (`${w.v}|${JSON.stringify(w.commute)}` !== prev) {
       void this.poll();
     } else {
       this.draw();
@@ -134,18 +136,28 @@ export class CommuteCard {
       return;
     }
     const opts = this.w.commute;
-    const routes = opts?.routes ?? [];
-    const refreshMin = opts?.refreshMin || 10;
-    const pollMs = Math.max(5, refreshMin) * 60_000;
+    const pollMs = Math.max(MIN_COMMUTE_REFRESH_MIN, opts?.refreshMin || MIN_COMMUTE_REFRESH_MIN) * 60_000;
     let next = pollMs;
     try {
-      const qs = `routes=${encodeURIComponent(JSON.stringify(routes))}&refreshMin=${encodeURIComponent(String(refreshMin))}`;
-      this.data = await getJSON<CommuteResponse>(`/api/display/commute?${qs}`);
+      // the widget id and its version only: the server reads the routes from the saved widget
+      const path = `/api/display/commute?id=${encodeURIComponent(this.w.id)}&v=${encodeURIComponent(this.w.v)}`;
+      this.data = await getJSON<CommuteResponse>(withScreen(path));
       this.failed = false;
-    } catch {
+      this.unsaved = false;
+    } catch (e) {
+      const status = e instanceof ApiError ? e.status : 0;
       if (ctx.params.get('demo') === '1') {
         this.data = demoCommute(opts);
         this.failed = false;
+      } else if (isPreview && (status === 404 || status === 409)) {
+        // the admin preview of a new or changed widget: the server answers for saved widgets only
+        this.data = null;
+        this.unsaved = true;
+        next = 15_000;
+      } else if (status === 404) {
+        // removed from this screen, or the screen went private: nothing to show until the config says otherwise
+        this.data = null;
+        this.failed = true;
       } else {
         this.failed = true;
         next = this.data ? pollMs / 2 : RETRY_MS;
@@ -153,7 +165,7 @@ export class CommuteCard {
     }
     this.draw();
     const anyStale = Boolean(this.data?.routes?.some((r) => r.stale));
-    this.onState?.(this.data ? (anyStale || this.failed ? 'stale' : 'ok') : 'failed');
+    this.onState?.(this.unsaved ? 'ok' : this.data ? (anyStale || this.failed ? 'stale' : 'ok') : 'failed');
     this.timer = setTimeout(() => void this.poll(), next * (0.9 + Math.random() * 0.2));
   }
 
@@ -161,6 +173,12 @@ export class CommuteCard {
     const u = this.w.commute?.units ?? 'auto';
     if (u === 'metric' || u === 'imperial') return u;
     return ctx.cfg?.weather?.units === 'imperial' ? 'imperial' : 'metric';
+  }
+
+  /** An unnamed route: "Route 2" by its place in the widget, never its addresses. */
+  private routeLabel(id: string): string {
+    const i = (this.w.commute?.routes ?? []).findIndex((x) => x.id === id);
+    return ctx.t('commuteRoute', { n: i >= 0 ? i + 1 : 1 });
   }
 
   private formatDur(sec: number): string {
@@ -181,6 +199,12 @@ export class CommuteCard {
     const title = el('span', 'cw-title', this.w.name || ctx.t('commuteTitle'));
     head.appendChild(title);
     this.el.appendChild(head);
+
+    if (this.unsaved) {
+      this.el.appendChild(el('div', 'cw-empty', ctx.t('widgetSaveToSee')));
+      this.fit();
+      return;
+    }
 
     if (!this.data && !this.failed) {
       this.el.appendChild(el('div', 'cw-empty', ctx.t('commuteLoading')));
@@ -214,18 +238,14 @@ export class CommuteCard {
 
       const info = el('div', 'cw-info');
       const nameLine = el('div', 'cw-name');
-      nameLine.appendChild(el('span', 'cw-name-text', r.name || `${r.origin} -> ${r.destination}`));
+      nameLine.appendChild(el('span', 'cw-name-text', r.name || this.routeLabel(r.id)));
       if (r.reversed) {
         nameLine.appendChild(el('span', 'cw-rev', '⇄'));
       }
       info.appendChild(nameLine);
 
       const metaParts: string[] = [];
-      if (showSummary && r.summary) {
-        metaParts.push(ctx.t('commuteVia', { s: r.summary }));
-      } else if (r.origin && r.destination) {
-        metaParts.push(`${r.origin} → ${r.destination}`);
-      }
+      if (showSummary && r.summary) metaParts.push(ctx.t('commuteVia', { s: r.summary }));
       if (typeof r.distanceMeters === 'number' && r.distanceMeters > 0) {
         const dStr = formatDistance(r.distanceMeters, units);
         if (dStr) metaParts.push(dStr);

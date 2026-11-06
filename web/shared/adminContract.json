@@ -469,7 +469,7 @@
       "method": "GET",
       "path": "/api/admin/commute/key",
       "query": [],
-      "feature": "widgets",
+      "feature": "commute",
       "callers": [
         "commuteKey"
       ],
@@ -486,7 +486,7 @@
       "method": "PUT",
       "path": "/api/admin/commute/key",
       "query": [],
-      "feature": "widgets",
+      "feature": "commute",
       "callers": [
         "setCommuteKey"
       ],
@@ -2056,7 +2056,7 @@
       "method": "POST",
       "path": "/api/admin/test/commute",
       "query": [],
-      "feature": "widgets",
+      "feature": "commute",
       "callers": [
         "testCommute"
       ],

@@ -49,7 +49,7 @@ const FEATURE_RULES = [
   [/^\/api\/admin\/doorbell$/, 'doorbell'],
   [/^\/api\/admin\/(test\/widget$|widgets\/)/, 'widgets'],
   [/^\/api\/admin\/family-access(\/|$)/, 'familyAccess'],
-  [/^\/api\/admin\/(commute\/|test\/commute$)/, 'widgets'],
+  [/^\/api\/admin\/(commute\/|test\/commute$)/, 'commute'],
 ];
 
 const featureFor = (path) => FEATURE_RULES.find(([re]) => re.test(path))?.[1] ?? null;

@@ -52,7 +52,7 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(old.edition, 'self-hosted');
   assert.equal(old.features, null);
   // accountMenu, microsoftCalendar, updates, feedback, privacy and the doorbell only exist on servers that say so
-  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources'].includes(k), k);
+  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute'].includes(k), k);
   // carousels: on for this server, off for servers that do not say so (they would drop config.carousels)
   assert.equal(hasFeature(selfHosted(), 'carousels'), true);
   assert.equal(hasFeature(capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: true } }), 'carousels'), false);
@@ -83,6 +83,11 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   // "now playing" with Spotify: only on servers that link a Spotify app (an older one has no /api/admin/spotify)
   assert.equal(hasFeature(selfHosted(), 'spotify'), true);
   assert.equal(hasFeature(sh, 'spotify'), false, 'an older self-hosted server has no Spotify accounts');
+  // the commute widget (#42): self-hosted servers that have it say so; Marco Cloud has no Google key for it
+  assert.equal(hasFeature(selfHosted(), 'commute'), true);
+  assert.equal(hasFeature(sh, 'commute'), false, 'an older self-hosted server has no /api/display/commute');
+  const { commute: _cm, ...cloudNoCommute } = cloudHealth().features;
+  assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: cloudNoCommute }), 'commute'), false, 'Marco Cloud until it says so');
   const sh2 = capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: false } });
   assert.equal(hasFeature(sh2, 'news'), false, 'an explicit false is off everywhere');
 });
@@ -283,6 +288,25 @@ test('validateAll: Home Assistant rules apply only with the feature', () => {
   const cl = util.validateAll(cfg, cloud());
   assert.ok(!('homeassistant.url' in cl.global));
   assert.ok(!('weather.haWeatherEntity' in cl.global));
+});
+
+test('validateAll: a commute widget is flagged where the server has no commute feature', () => {
+  const cfg = baseConfig();
+  const route = { id: 'cr_1', name: '', origin: 'A', destination: 'B', mode: 'driving', direction: 'to', reverseAfter: '12:00', days: [], from: '', to: '' };
+  cfg.widgets = [{ id: 'w_c', type: 'commute', name: 'Trayectos', options: { url: '', refreshSec: 900, fit: 'contain', bust: false, commute: { units: 'auto', refreshMin: 10, showRouteSummary: true, showArrival: true, routes: [route] } } }];
+  try {
+    setCaps(selfHosted());
+    assert.ok(!('wdg.w_c.type' in util.validateAll(cfg, selfHosted()).global));
+    const { commute: _cm, ...noCommute } = cloudHealth().features;
+    setCaps(capsFrom({ ...cloudHealth(), features: noCommute }));
+    assert.equal(util.validateAll(cfg, cloud()).global['wdg.w_c.type'], 'No disponible aquí');
+    // one time of a schedule without the other
+    setCaps(selfHosted());
+    cfg.widgets[0].options.commute.routes = [{ ...route, from: '07:00' }];
+    assert.ok(util.validateAll(cfg, selfHosted()).global['wdg.w_c.route.cr_1.to']);
+  } finally {
+    setCaps(capsFrom(null));
+  }
 });
 
 test('validateAll: carousels need a name, a free address, a screen and 10 s to 1 h per step', () => {

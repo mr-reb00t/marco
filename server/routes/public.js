@@ -7,8 +7,7 @@ import { getWeather } from '../weather.js';
 import { getNews } from '../news.js';
 import { getPrices, PricesError } from '../prices.js';
 import { priceZone } from '../core/pricesCore.js';
-import { getCommute, CommuteError } from '../commute.js';
-import { MAX_COMMUTE_ROUTES } from '../core/commuteCore.js';
+import { getCommute } from '../commute.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
 import { getPhotos } from '../photos.js';
@@ -16,7 +15,7 @@ import { activeBackgroundRule } from '../photoRules.js';
 import { backgroundRuleSig } from '../core/bgRules.js';
 import { sseHandler } from '../sse.js';
 import { streamInit, streamHello, onStreamOpen, onStreamClose, pollDisplay } from '../displays.js';
-import { displayConfig as projectDisplayConfig, isPhotoFor, photoTarget, todoTouch } from '../core/screens.js';
+import { displayConfig as projectDisplayConfig, displayWidgets, isPhotoFor, photoTarget, todoTouch } from '../core/screens.js';
 import { requestScreen, resolveDisplayAccess, KEY_HEADER } from '../displayAccess.js';
 import { needsSetup } from '../auth.js';
 import { addDays, localDate, isDateStr, daysBetween } from '../core/lib/tz.js';
@@ -180,32 +179,24 @@ export function publicRouter({ version }) {
     }
   });
 
-  // Live travel times for a commute widget (saved widget id or JSON routes from the admin live preview).
+  // Live travel times of a commute widget (server/commute.js), by widget id only: a saved widget that the requesting
+  // screen shows now (placed on it, its 'widget' layout or a Personalizado item; displayWidgets, so nothing while the
+  // screen is private). The routes and the refresh come from the saved widget, never from the request: each refresh is
+  // a paid Google request with the owner's key. ?v= (the widget's version) must match the saved one: 409 'unsaved'
+  // is the admin preview of a changed widget. Unknown, not shown or private: 404.
   r.get('/display/commute', async (req, res, next) => {
     try {
       const cfg = getConfig();
-      const tz = cfg.datetime.timezone;
       const id = typeof req.query.id === 'string' ? req.query.id : '';
-      let routes = null;
-      let refreshMin = 10;
-      if (typeof req.query.routes === 'string' && req.query.routes) {
-        try {
-          const parsed = JSON.parse(req.query.routes);
-          if (Array.isArray(parsed)) routes = parsed.slice(0, MAX_COMMUTE_ROUTES);
-        } catch {
-          return res.status(400).json({ error: 'invalid_routes' });
-        }
-      } else if (id) {
-        const w = (cfg.widgets || []).find((x) => x.id === id && x.type === 'commute');
-        if (!w || !w.options?.commute) return res.status(404).json({ error: 'not_found' });
-        routes = w.options.commute.routes || [];
-        refreshMin = w.options.commute.refreshMin || 10;
-      }
-      if (!Array.isArray(routes)) return res.status(400).json({ error: 'invalid_routes' });
-      if (req.query.refreshMin) refreshMin = Math.max(5, Math.min(60, Number(req.query.refreshMin) || 10));
-      res.json(await getCommute(routes, { tz, refreshMin }));
+      const { screen } = requestScreen(cfg, req);
+      const shown = id ? displayWidgets(cfg, screen, { isPrivate: screenPrivacy(cfg, screen).active }).find((w) => w.id === id && w.type === 'commute') : null;
+      const def = shown ? cfg.widgets.find((w) => w.id === id) : null;
+      if (!shown || !def?.options?.commute) return res.status(404).json({ error: 'not_found' });
+      const v = typeof req.query.v === 'string' ? req.query.v : '';
+      if (v && v !== shown.v) return res.status(409).json({ error: 'unsaved' });
+      const { routes, refreshMin } = def.options.commute;
+      res.json(await getCommute(routes, { tz: cfg.datetime.timezone, refreshMin }));
     } catch (err) {
-      if (err instanceof CommuteError) return res.status(502).json({ error: err.code });
       next(err);
     }
   });

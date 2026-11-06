@@ -88,8 +88,8 @@ export function capsFrom(health: Partial<HealthResponse> | null | undefined): Ca
  *  with /api/admin/family-access); spotify: "now playing" with Spotify (servers that link the household's own
  *  Spotify app); sourceRefresh: the manual download buttons on Estado (servers that answer
  *  POST /api/admin/status/refresh); photoSources: a photo card or the sidebar's photo with photos of its own (servers
- *  that answer GET /api/photos?for=). */
-const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources'];
+ *  that answer GET /api/photos?for=); commute: the commute widget (servers with GET /api/display/commute). */
+const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute'];
 
 export function hasFeature(caps: Caps, feature: FeatureName): boolean {
   if (!caps.features) return !OPT_IN.includes(feature);

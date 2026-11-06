@@ -222,6 +222,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
   const webOk = has('webWidgets');
   const pricesOk = has('priceWidgets');
   const valuesOk = has('valueHooks');
+  const commuteOk = has('commute');
   const urlBad = widgetUrlProblem(w.options.url, cloud);
   // choices below the server's shortest refresh are not offered (web pages keep "never reload")
   const minRefresh = limit('widgetMinRefreshSec') ?? 0;
@@ -296,7 +297,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
                       : undefined
           }
         >
-          {((w.type === 'web' && !webOk) || (prices && !pricesOk) || (value && !valuesOk)) && <span class="chip chip--static chip--bad">{t('No disponible aquí')}</span>}
+          {((w.type === 'web' && !webOk) || (prices && !pricesOk) || (value && !valuesOk) || (commute && !commuteOk)) && <span class="chip chip--static chip--bad">{t('No disponible aquí')}</span>}
           <Select<WidgetType>
             value={w.type}
             error={!!errors[`wdg.${w.id}.type`]}
@@ -306,7 +307,7 @@ function WidgetCard({ w, i, n, full, errors, upd, remove, move, go, setScreenId,
               ...(pricesOk || prices ? [{ value: 'prices' as const }] : []),
               { value: 'currency' as const },
               ...(valuesOk || value ? [{ value: 'value' as const }] : []),
-              { value: 'commute' as const },
+              ...(commuteOk || commute ? [{ value: 'commute' as const }] : []),
             ].map((o) => ({ ...o, label: t(TYPE_LABEL[o.value]) }))}
             onChange={(v) =>
               upd((x) => {

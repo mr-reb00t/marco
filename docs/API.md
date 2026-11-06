@@ -123,7 +123,9 @@ The admin and the display read these fields to decide which sections, actions an
   (each person's own phone dashboard, see "Family access"), `spotify` ("now playing" with the household's own Spotify
   app, see [Now playing](#now-playing)), `sourceRefresh` (the manual download buttons on *Estado*,
   `POST /api/admin/status/refresh`; the admin hides them when a server leaves it out), `photoSources` (a photo card or
-  the sidebar's photo may have photos of its own, `GET /api/photos?for=`; the admin offers *Propias* only with it). A self-hosted server turns all of them on, except
+  the sidebar's photo may have photos of its own, `GET /api/photos?for=`; the admin offers *Propias* only with it),
+  `commute` (the `commute` widget type, `GET /api/display/commute`, `/api/admin/test/commute` and
+  `/api/admin/commute/key`, see [Commute times](#commute-times); Marco Cloud answers `false`). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -166,9 +168,10 @@ The admin and the display read these fields to decide which sections, actions an
 
 Clients treat a response with no `features` field (servers older than 0.5.0) as having every feature on, except
 `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`, `carousels`,
-`immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor` and `accountSettings`. A key missing from `features` counts as off only when `edition` is not `'self-hosted'`, and a missing
-`accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`, `carousels`,
-`immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor` or `accountSettings` is always off.
+`immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings` and the
+newer opt-in keys (`screenBuilder`, `familyAccess`, `spotify`, `sourceRefresh`, `photoSources`, `commute`). A key missing
+from `features` counts as off only when `edition` is not `'self-hosted'`, and a missing opt-in key (the ones just
+listed) is always off.
 
 ### Account mode
 
@@ -651,9 +654,9 @@ never match a screen id; a saved id that does not follow this gets a new one.
 Images (and, on a server with `webWidgets`, web pages) the owner puts on screens. Saved with the config
 (`PUT /api/admin/config`), no endpoint of its own except the test.
 
-- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency' | 'value', name, options: { url, refreshSec,
-  fit: 'contain' | 'cover', bust, prices?, currency?, value? } }`, at most 20 (`prices`: [Electricity prices](#electricity-prices),
-  `currency`: [Exchange rates](#exchange-rates), `value`: [Pushed values](#pushed-values-valor)). `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
+- `config.widgets[]`: `{ id: 'w_…', type: 'image' | 'web' | 'prices' | 'currency' | 'value' | 'commute', name, options: { url, refreshSec,
+  fit: 'contain' | 'cover', bust, prices?, currency?, value?, commute? } }`, at most 20 (`prices`: [Electricity prices](#electricity-prices),
+  `currency`: [Exchange rates](#exchange-rates), `value`: [Pushed values](#pushed-values-valor), `commute`: [Commute times](#commute-times)). `url` must be written out as `http(s)://host` (no user or password, no spaces, quotes,
   angle brackets, backslashes or control characters) and is stored normalised. Image refresh: 1, 10, 30 s, 1, 5,
   15 min, 1, 6, 24 h (default 15 min); web: 0 (never reload, the default) or 30 s to 24 h. `bust` (images, default
   on) adds `_marco=<time>` to the address at every reload, for servers that send long cache times.
@@ -685,6 +688,47 @@ corner, in the side column, on the whole screen (the `widget` layout) or in a Pe
   pair", "invalid currency code").
 - `DisplayWidget.currency` carries the options; `src` is empty. The widget's numbers come from the same cache entries
   as the cards': any pairs cost the source nothing more.
+
+### Commute times
+
+A widget of type `commute` (needs `features.commute`) shows live travel times from Google for up to 8 saved routes.
+The server asks Google with the owner's own API key (Directions API, or Routes API v2 when Directions is not enabled
+for the key); a display never sees the key or the addresses. The schedule and parsing helpers are in
+`server/core/commuteCore.js`, the requests and the cache in `server/commute.js`.
+
+- `options.commute`: `{ units: 'auto' | 'metric' | 'imperial', refreshMin: 10 | 15 | 30 | 60, showRouteSummary,
+  showArrival, routes: [{ id: 'cr_…', name, origin, destination, mode: 'driving' | 'transit' | 'bicycling' | 'walking',
+  direction: 'to' | 'from' | 'auto', reverseAfter: 'HH:MM', days: [0..6], from: 'HH:MM' | '', to: 'HH:MM' | '' }] }`,
+  1 to 8 routes. `origin` and `destination` are required (200 characters at most). `name` may be empty (the display
+  then shows "Route 1", "Route 2"...). `direction: 'auto'` shows the way back from `reverseAfter` on. `days` (empty =
+  every day) with `from` and `to` (both or neither; a window may cross midnight) is the route's schedule: outside it the
+  route is not shown and Google is not asked. `options.url` is stored empty. `400` paths:
+  `widgets[i].options.commute.routes` ("at least one route"), `widgets[i].options.commute.routes[j].origin`, and so on.
+- `DisplayWidget.commute`: `{ units, refreshMin, showRouteSummary, showArrival, routes: [{ id, name, mode }] }`. No
+  addresses and no schedule; `v` changes whenever the saved widget changes (a short hash).
+- `GET /api/display/commute?id=<widget id>&v=<its v>` (display auth): only for a saved commute widget that the
+  requesting screen shows now (placed on it, its `widget` layout or a Personalizado `widget` card), and nothing while
+  the screen is private. The routes and the refresh always come from the saved widget; nothing in the query can
+  change them. `{ fetchedAt, keySet, routes: [{ id, name, mode, reversed, active, ok, durationSec?,
+  normalDurationSec?, delaySec?, delayMin?, traffic?: 'clear' | 'moderate' | 'heavy', distanceMeters?, summary?,
+  provider?, fetchedAt?, stale?, error? }] }`; `keySet: false` (and no routes) when no key is saved. `active: false` is
+  a route outside its schedule. `error` is a code only (`key_invalid`, `http_denied`, `rate_limited`, `no_route`,
+  `not_found`, `timeout`, `fetch_failed`, `bad_response`, `http_error`). `404 { error: 'not_found' }` for an unknown
+  widget, one the screen does not show, or a private screen; `409 { error: 'unsaved' }` when `v` is not the saved
+  widget's (the admin preview of unsaved changes shows a note until they are saved).
+- Cost: Google bills Routes and Directions requests past its free monthly allowance. Each leg (origin, destination,
+  mode) is one cache entry for every screen, fetched again after the widget's `refreshMin` (10 minutes at the least).
+  A failure is remembered and retried after 2, 5, 15, 30, then 60 minutes (a refused key: 60 minutes, or as soon as
+  the key changes). At most 200 legs are kept, the least recently used go first.
+- `POST /api/admin/test/commute { origin, destination, mode }`: `{ ok: true, durationSec, normalDurationSec, delaySec,
+  traffic, distanceMeters, summary, provider }` or `{ ok: false, error }` (`invalid_route`, `key_missing`,
+  `key_invalid`, `not_found`, `rate_limited`, `timeout`, `fetch_failed`, `bad_response`, `http_error`), through the
+  cache (one request per route and minute at the most).
+- `GET /api/admin/commute/key`: `{ set, hint }` (last 4 characters only). `PUT /api/admin/commute/key { key }`: 16 to
+  128 letters, digits, `_` or `-` (empty removes it), tried with one request: `400 { error: 'key_invalid' }` when
+  Google says the key is wrong; any other answer saves it with `checked: false`. Stored in `data/secrets.json`
+  (`commute.apiKey`), included in exports with secrets; the `GOOGLE_MAPS_API_KEY` environment variable is used when
+  none is saved.
 
 ### Electricity prices
 

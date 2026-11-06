@@ -2192,6 +2192,10 @@ export const DA: Record<string, string> = {
   'Siempre Destino → Origen': 'Altid Destination → Start',
   'Invertir a partir de': 'Vend efter kl.',
   'Añadir ruta': 'Tilføj rute',
+  'Google cobra las consultas que pasan de su cuota gratuita mensual. Cada ruta visible se consulta una vez por intervalo de actualización; un horario por ruta evita consultas cuando no hace falta.': 'Google tager betaling for forespørgsler ud over den gratis månedlige kvote. Hver synlig rute hentes én gang pr. opdateringsinterval; en tidsplan pr. rute undgår forespørgsler, når de ikke er nødvendige.',
+  'Cada actualización de una ruta es una consulta a Google.': 'Hver opdatering af en rute er én forespørgsel til Google.',
+  'Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.': 'Uden for disse dage og tidspunkter vises ruten ikke og hentes ikke fra Google. Ingen dage valgt: hver dag; ingen tidspunkter: hele dagen.',
+  'Pon las dos horas o ninguna': 'Angiv begge tidspunkter eller ingen',
 };
 
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */
