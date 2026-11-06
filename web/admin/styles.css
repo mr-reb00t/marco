@@ -3331,3 +3331,71 @@ input:checked + .check-box {
 .modal--picker .modal__actions .btn {
   justify-content: center;
 }
+
+/* ---------------------------------------------------------------- a block inside a form (a commute route) */
+.subcard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.subcard__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+.subcard__head > .row-actions {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.subcard__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* folded in the builder: the chevron, the name and the mode on one line, in the normal ink */
+.bld-route-head {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text);
+  text-align: left;
+}
+.bld-route-head > strong {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bld-route-head > .muted {
+  /* (the mode gives way before the name) */
+  flex: 0 1000 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.bld-route-head > .muted::before {
+  content: '· ';
+}
+/* what a route still lacks, without blocking the save */
+.subcard__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--warn);
+}
+.subcard > .subcard__hint {
+  margin-top: -6px;
+}

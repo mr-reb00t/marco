@@ -19,7 +19,7 @@ import {
   resolveRouteLeg,
   trafficLevel,
 } from '../core/commuteCore.js';
-import { commuteCacheSize, setCommuteFetch, testCommute } from '../commute.js';
+import { COMMUTE_CACHE_MAX, commuteCacheSize, setCommuteFetch, testCommute } from '../commute.js';
 import { _resetPrivacy, applyPrivacy } from '../privacy.js';
 import { validateConfig } from '../core/validate.js';
 import { defaultConfig } from '../core/defaults.js';
@@ -487,12 +487,13 @@ test('commute: a route outside its schedule is not asked; failures back off; no 
   }
 });
 
-test('commute cache: bounded (200 legs, least recently used first)', async () => {
+test('commute cache: bounded (COMMUTE_CACHE_MAX legs; a leg not due yet is never pushed out, a new one is busy)', async () => {
   const { calls } = await commuteServer([commuteWidget('w_comm', [route()])]);
   try {
-    for (let i = 0; i < 230; i++) await testCommute({ origin: `Street ${i}`, destination: 'Plaza', mode: 'driving' });
-    assert.equal(calls.length, 230);
-    assert.ok(commuteCacheSize() <= 200, String(commuteCacheSize()));
+    for (let i = 0; i < COMMUTE_CACHE_MAX + 30; i++) await testCommute({ origin: `Street ${i}`, destination: 'Plaza', mode: 'driving' });
+    assert.equal(calls.length, COMMUTE_CACHE_MAX);
+    assert.ok(commuteCacheSize() <= COMMUTE_CACHE_MAX, String(commuteCacheSize()));
+    assert.deepEqual(await testCommute({ origin: 'Street 9999', destination: 'Plaza', mode: 'driving' }), { ok: false, error: 'busy' });
   } finally {
     setCommuteFetch(null);
   }

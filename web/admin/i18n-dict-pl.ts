@@ -3191,6 +3191,7 @@ export const PL: Record<string, string> = {
   'Falta el origen': 'Brak punktu wyjścia',
   'Falta el destino': 'Brak celu',
   'Escribe las direcciones': 'Wpisz adresy',
+  'Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.': 'Zbyt wiele tras jest teraz w użyciu. Spróbuj ponownie za kilka minut.',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

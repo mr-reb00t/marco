@@ -205,7 +205,7 @@ function note(root: HTMLElement, text: string): void {
 // ------------------------------------------------------------------------------------------------ fitting
 
 /** The one-line parts of the data cards that must show whole: a name with an ellipsis, a row part wider than its column. */
-const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-fx-pair, .cv-dt-nd, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l, .cv-cm-name, .cv-cm-meta, .cv-cm-dur, .cv-cm-status, .cv-cm-eta, .cv-cm-sub, .cv-cm-top';
+const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-fx-pair, .cv-dt-nd, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l, .cv-cm-name:not(.is-soft), .cv-cm-meta, .cv-cm-dur, .cv-cm-status, .cv-cm-eta, .cv-cm-sub, .cv-cm-top';
 
 /** The card's content is taller (or wider) than its box (the editor would say it does not fit), or a row of a list is squeezed shorter than its text. */
 export function cutV(root: HTMLElement): boolean {

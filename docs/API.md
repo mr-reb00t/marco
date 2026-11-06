@@ -713,13 +713,15 @@ for the key); a display never sees the key or the addresses. The schedule and pa
   normalDurationSec?, delaySec?, delayMin?, traffic?: 'clear' | 'moderate' | 'heavy', distanceMeters?, summary?,
   provider?, fetchedAt?, stale?, error? }] }`; `keySet: false` (and no routes) when no key is saved. `active: false` is
   a route outside its schedule. `error` is a code only (`key_invalid`, `http_denied`, `rate_limited`, `no_route`,
-  `not_found`, `timeout`, `fetch_failed`, `bad_response`, `http_error`). `404 { error: 'not_found' }` for an unknown
+  `not_found`, `timeout`, `fetch_failed`, `bad_response`, `http_error`, `busy`). `404 { error: 'not_found' }` for an unknown
   widget, one the screen does not show, or a private screen; `409 { error: 'unsaved' }` when `v` is not the saved
   widget's (the admin preview of unsaved changes shows a note until they are saved).
 - Cost: Google bills Routes and Directions requests past its free monthly allowance. Each leg (origin, destination,
   mode) is one cache entry for every screen, fetched again after the widget's `refreshMin` (10 minutes at the least).
   A failure is remembered and retried after 2, 5, 15, 30, then 60 minutes (a refused key: 60 minutes, or as soon as
-  the key changes). At most 200 legs are kept, the least recently used go first.
+  the key changes). At most 1000 legs are kept, more than a saved config can use at once (544). When room is
+  needed, the least recently used legs that are due again go first; a leg not due yet is never pushed out, so a new
+  leg finding the cache full of those answers `busy` and Google is not asked.
 - `POST /api/admin/test/commute { origin, destination, mode }`: `{ ok: true, durationSec, normalDurationSec, delaySec,
   traffic, distanceMeters, summary, provider }` or `{ ok: false, error }` (`invalid_route`, `key_missing`,
   `key_invalid`, `not_found`, `rate_limited`, `timeout`, `fetch_failed`, `bad_response`, `http_error`), through the
@@ -753,7 +755,7 @@ function as the widget's (`core/commuteCore.js sanitizeCommuteOptions`), with th
   condition on, and the screen not private. Otherwise `404 { error: 'not_found' }`, also for an id that is not a
   canvas id or a card of another screen. `409 { error: 'unsaved' }` when `v` is given and is not the saved card's sig:
   the admin preview of a new or changed card then draws made-up times marked "Ejemplo". Google is never asked on a
-  404 or a 409. The leg cache, the shared in-flight requests, the backoff, the 200-leg cap and the 10-minute floor are
+  404 or a 409. The leg cache, the shared in-flight requests, the backoff, the leg cap and the 10-minute floor are
   the widget's: a route on a widget and on a card costs one request per refresh.
 - *Exportar esta pantalla* writes every route of the card with `origin` and `destination` emptied and marks the card
   with the pick `routes` ("Escribe las direcciones"); reading a screen file empties them again. Backups and the

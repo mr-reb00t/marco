@@ -8,7 +8,10 @@
 // - a leg is fetched again after its widget's refresh, never sooner than MIN_COMMUTE_REFRESH_MIN minutes
 // - a route outside its schedule (days, from, to) is not fetched at all
 // - a failure is remembered and retried later and later (BACKOFF_MIN), whoever asks in between
-// - the cache holds MAX_CACHE_ENTRIES legs at the most
+// - the cache holds MAX_CACHE_ENTRIES legs at the most, more than a saved config can use at once (20 widgets and
+//   12 screens of 4 Trayectos cards, 8 routes each: 544 legs). A leg not due again yet is never pushed out: when the
+//   cache is full of those, a new leg answers 'busy' and Google is not asked (else every ask would push out another
+//   leg and be asked again, whatever the refresh)
 //
 // The API key never leaves this file: errors carry a code only (core/commuteCore.js CommuteError).
 import {
@@ -22,7 +25,7 @@ export { CommuteError, COMMUTE_KEY_RE } from './core/commuteCore.js';
 const TIMEOUT = 15_000;
 const STALE_AFTER_MS = 45 * 60_000;
 const FORGET_AFTER_MS = 24 * 3600_000;
-const MAX_CACHE_ENTRIES = 200;
+const MAX_CACHE_ENTRIES = 1000;
 /** The admin's test button: a route already asked within this time is answered from memory. */
 const TEST_MIN_MS = 60_000;
 /** Wait before trying a failed leg again, by number of failures in a row (minutes). */
@@ -84,16 +87,20 @@ function legCacheKey(origin, destination, mode) {
   return `${mode}|${o}|${d}`;
 }
 
+/** Makes room for one more leg: false when every leg in memory is still waiting for its next ask (nothing goes). */
 function forgetUnused(now) {
   for (const [k, e] of cache) {
     if (now - e.usedAt > FORGET_AFTER_MS) cache.delete(k);
   }
-  if (cache.size >= MAX_CACHE_ENTRIES) {
-    // the least recently used legs go first, leaving room for one more
-    const sorted = [...cache.entries()].sort((a, b) => (a[1].usedAt || 0) - (b[1].usedAt || 0));
-    for (let i = 0; i <= sorted.length - MAX_CACHE_ENTRIES; i++) cache.delete(sorted[i][0]);
-  }
+  if (cache.size < MAX_CACHE_ENTRIES) return true;
+  // the least recently used legs that are due again go first, leaving room for one more
+  const due = [...cache.entries()].filter(([k, e]) => now >= e.nextAt && !inflight.has(k)).sort((a, b) => (a[1].usedAt || 0) - (b[1].usedAt || 0));
+  for (let i = 0; i < due.length && cache.size >= MAX_CACHE_ENTRIES; i++) cache.delete(due[i][0]);
+  return cache.size < MAX_CACHE_ENTRIES;
 }
+
+/** Room for this many legs (tests). */
+export const COMMUTE_CACHE_MAX = MAX_CACHE_ENTRIES;
 
 /** One request to Google's network; a network failure becomes a code (the error would carry the URL). */
 async function ask(url, init) {
@@ -173,7 +180,10 @@ function failed(prev, code, t) {
 async function getLeg({ origin, destination, mode, refreshMin = MIN_COMMUTE_REFRESH_MIN, test = false }) {
   const now = clock();
   const key = legCacheKey(origin, destination, mode);
-  if (!cache.has(key)) forgetUnused(now);
+  // (a full cache of legs not due yet: the new one is not asked, rather than pushing out one that would be asked again)
+  if (!cache.has(key) && !inflight.has(key) && !forgetUnused(now)) {
+    return { durationSec: 0, normalDurationSec: 0, distanceMeters: 0, summary: '', provider: '', fetchedAt: 0, at: now, nextAt: now, usedAt: now, error: 'busy', failures: 0 };
+  }
   const ttl = Math.max(MIN_COMMUTE_REFRESH_MIN, Number(refreshMin) || MIN_COMMUTE_REFRESH_MIN) * 60_000;
   let entry = cache.get(key);
   const due = !entry || (test ? now - entry.at >= TEST_MIN_MS : now >= entry.nextAt);

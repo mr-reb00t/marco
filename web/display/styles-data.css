@@ -173,6 +173,8 @@
 #app.preset-canvas .cv-cm-dur { font-weight: 700; white-space: nowrap; }
 #app.preset-canvas .cv-cm-dur .u { font-weight: 500; color: var(--fg-2); font-size: 0.8em; }
 #app.preset-canvas .cv-cm.is-stale :is(.cv-cm-num, .cv-cm-dur) { opacity: 0.6; }
+/* several routes: only an old time is dimmed, on its own row, line or column */
+#app.preset-canvas :is(.cv-cm-row, .cv-cm-col, .cv-cm-ln).is-old .cv-cm-dur { opacity: 0.6; }
 #app.preset-canvas .cv-cm-fail { color: var(--fg-2); font-size: 1.5em; font-weight: 700; white-space: nowrap; }
 /* the preview of a card not saved yet: made-up times, said in the corner */
 #app.preset-canvas .cv-cm-sample { position: absolute; top: 0.7rem; right: 0.9rem; font-size: calc(1.2rem * var(--cv-scale, 1)); z-index: 1; }
@@ -219,7 +221,7 @@
 #app.preset-canvas .cv-cm-txt { display: flex; flex-direction: column; gap: 0.08em; min-width: 0; }
 #app.preset-canvas .cv-cm-nl { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
 #app.preset-canvas .cv-cm-lname { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
-#app.preset-canvas .cv-cm-lmeta { min-width: 0; color: var(--fg-2); font-size: 0.78em; font-variant-numeric: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cm-lmeta { display: block; min-width: 0; color: var(--fg-2); font-size: 0.78em; font-variant-numeric: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #app.preset-canvas .cv-cm.no-name .cv-cm-lname { display: none; }
 #app.preset-canvas .cv-cm-row .cv-mk-val { gap: 0.2em; }
 #app.preset-canvas .cv-cm-row .cv-cm-dur { font-size: 1.25em; line-height: 1.1; }
@@ -248,6 +250,6 @@
 #app.preset-canvas .cv-cm-ln .cv-cm-mi { width: 1.5em; height: 1.5em; }
 #app.preset-canvas .cv-cm-ln.is-moderate .cv-cm-mi { color: var(--cm-warn); }
 #app.preset-canvas .cv-cm-ln.is-heavy .cv-cm-mi { color: var(--ha-alert); }
-#app.preset-canvas .cv-cm-ln .cv-cm-name { flex: 0 1 auto; }
+#app.preset-canvas .cv-cm-ln .cv-cm-lname { flex: 0 1 auto; }
 #app.preset-canvas .cv-cm-val { flex: none; display: flex; align-items: center; gap: 0.5em; margin-left: auto; }
 #app.preset-canvas .cv-cm-ln .cv-cm-tr { font-size: 0.75em; }

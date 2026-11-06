@@ -74,7 +74,8 @@ function trafficChip(r: Route): HTMLElement | null {
   const level = r.traffic ?? 'clear';
   const late = typeof r.delayMin === 'number' ? r.delayMin : delayMinutes(r.durationSec, r.normalDurationSec ?? r.durationSec);
   const c = el('span', `cv-cm-tr is-${level}`);
-  c.append(el('i', 'dot'), el('span', '', late >= 1 ? ctx.t('commuteDelay', { n: late }) : ctx.t('commuteClear')));
+  c.append(el('i', 'dot'), el('span', 'tx', late >= 1 ? ctx.t('commuteDelay', { n: late }) : ctx.t('commuteClear')));
+  if (late >= 1) c.dataset.n = String(late);
   return c;
 }
 
@@ -91,6 +92,78 @@ function nameEl(r: Route, cls = 'cv-cm-name'): HTMLElement {
 
 /** "vuelta" after a route that shows the way back. */
 const backEl = (r: Route) => (r.reversed ? el('span', 'cv-cm-back', ctx.t('commuteBack')) : null);
+
+/** The class of a route's row, line or column: its traffic, and is-old when its time is old (dimmed on its own). */
+const rowCls = (r: Route) => `is-${r.mode === 'driving' && r.ok ? r.traffic ?? 'clear' : 'clear'}${r.ok && r.stale ? ' is-old' : ''}`;
+
+const over = (e: Element) => (e as HTMLElement).scrollWidth > (e as HTMLElement).clientWidth + 1;
+
+/**
+ * Something is cut (data.ts cut), a line is pushed wider than its place (a name keeps a few letters at the least,
+ * floorNames) or the line under a list name ends in "…". The names of the lists and the lines may end in "…" (the
+ * times are what they are for), so they are not in data.ts CLIP.
+ */
+function bad(root: HTMLElement): boolean {
+  return cut(root) || [...root.querySelectorAll('.cv-cm-ln, .cv-cm-lmeta')].some(over);
+}
+
+/** A name of a list, a line or a column ends in "…". */
+const namesCut = (root: HTMLElement) => [...root.querySelectorAll('.cv-cm-lname')].some(over);
+
+/** data.ts ladder, with bad(). */
+function fit(root: HTMLElement, steps: (() => boolean | void)[]): void {
+  let i = 0;
+  let guard = 60;
+  while (i < steps.length && guard-- > 0 && bad(root)) if (steps[i]() !== true) i++;
+}
+
+/**
+ * The text at the largest size between `lo` and `hi` (--dk) at which nothing is cut; false when even `lo` is cut
+ * (the text is left at `lo`).
+ */
+function fitDk(root: HTMLElement, lo: number, hi: number): boolean {
+  const set = (k: number) => root.style.setProperty('--dk', k.toFixed(3));
+  set(hi);
+  if (!bad(root)) return true;
+  set(lo);
+  if (bad(root)) return false;
+  let a = lo;
+  let b = hi;
+  for (let i = 0; i < 7; i++) {
+    const m = (a + b) / 2;
+    set(m);
+    if (bad(root)) b = m;
+    else a = m;
+  }
+  set(Math.max(lo, a * 0.98));
+  return true;
+}
+
+/**
+ * Give things up in order until the text fits at its floor: each stage changes the card, then the text is made as
+ * large as fits between the stage's floor and `hi`.
+ */
+function stages(root: HTMLElement, hi: number, plan: [number, (() => void) | null][]): void {
+  for (const [floor, step] of plan) {
+    step?.();
+    if (fitDk(root, Math.min(floor, hi), hi)) return;
+  }
+}
+
+/** A name of a line keeps a few letters and its "…" at the least: past that the text gets smaller, not the name. */
+function floorNames(root: HTMLElement): void {
+  for (const n of root.querySelectorAll<HTMLElement>('.cv-cm-ln .cv-cm-lname, .cv-cm-name.is-soft')) {
+    const fs = parseFloat(getComputedStyle(n).fontSize);
+    if (fs > 0) n.style.minWidth = `${Math.min(n.scrollWidth / fs, 4.2).toFixed(2)}em`;
+  }
+}
+
+/** The traffic chips with the minutes only ("+5"; "Fluido" stays). */
+function shortChips(root: HTMLElement): void {
+  for (const c of root.querySelectorAll<HTMLElement>('.cv-cm-tr[data-n] .tx')) c.textContent = `+${(c.parentElement as HTMLElement).dataset.n}`;
+}
+
+const dropAll = (root: HTMLElement, sel: string) => () => root.querySelectorAll(sel).forEach((x) => x.remove());
 
 export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   let env: AdapterEnv;
@@ -165,6 +238,8 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   };
 
   const note = (text: string) => root.appendChild(el('span', 'cv-dt-note', text));
+  /** The name of a card that shows its routes in turn may end in "…" (data.ts CLIP leaves .is-soft out). */
+  const softName = () => (turning > 1 ? 'cv-cm-name is-soft' : 'cv-cm-name');
 
   const render = (force = false) => {
     if (!root) return;
@@ -198,18 +273,19 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     const one = look === 'focus' || look === 'pill' || look === 'line';
     if (one && rs.length > 1) turning = rs.length;
     idx = turning ? idx % rs.length : 0;
-    const stale = one ? staleOf([rs[idx]]) : staleOf(rs);
-    root.classList.toggle('is-stale', !!stale);
+    // (several routes: each old time is dimmed on its own row, and the line under the card names it when it is one)
+    let stale = one ? staleOf([rs[idx]]) : staleOf(rs);
+    const olds = rs.filter((r) => r.ok && r.stale);
+    if (!one && stale && olds.length === 1 && rs.length > 1) stale = `${olds[0].label} · ${stale}`;
+    root.classList.toggle('is-stale', one && !!stale);
     const scale = Number(it.style?.scale) || 1;
     if (look === 'focus') drawFocus(rs, stale, scale);
     else if (look === 'pill') drawPill(rs[idx], rs.length, stale, scale);
     else if (look === 'line') drawLine(rs[idx]);
     else if (look === 'cols') {
-      // side by side only while every column keeps its route's name: else one row per route
+      // side by side only while every column keeps its route's whole name: else one row per route
       drawCols(rs, stale);
-      const names = [...root.querySelectorAll<HTMLElement>('.cv-cm-chead .cv-cm-lname')];
-      const short = names.filter((n) => n.scrollWidth > n.clientWidth + 1).length;
-      if (root.classList.contains('no-name') || short * 2 > names.length) {
+      if (root.classList.contains('no-name') || namesCut(root)) {
         root.textContent = '';
         root.classList.remove('is-cols', 'no-name');
         root.classList.add('is-list');
@@ -232,7 +308,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     const wide = !!b && b.w / Math.max(1, b.h) >= 2 && b.zone === 'main';
     root.classList.toggle('is-wide', wide);
     const head = el('div', 'cv-mk-head cv-cm-head');
-    head.append(modeChip(r), nameEl(r));
+    head.append(modeChip(r), nameEl(r, softName()));
     const back = backEl(r);
     if (back) head.appendChild(back);
     if (rs.length > 1) {
@@ -278,17 +354,21 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       root.querySelector(sel)?.remove();
       for (const x of root.querySelectorAll('.cv-cm-meta:empty, .cv-cm-status:empty')) x.remove();
     };
+    floorNames(root);
+    // (the name goes only after the type got smaller, and never while the routes take turns: it says which one is on)
     ladder(root, [
       drop('.cv-cm-via'), drop('.cv-cm-dist'), drop('.cv-cm-bar'), drop('.cv-cm-eta'),
-      sideways(root, () => root.classList.add('no-name')),
-      wk(0.85), wk(0.72), wk(0.6), wk(0.5), wk(0.4),
+      sideways(root, dropAll(root, '.cv-cm-back')),
+      wk(0.85), wk(0.72),
+      ...(turning > 1 ? [] : [sideways(root, () => root.classList.add('no-name'))]),
+      wk(0.6), wk(0.5), wk(0.4),
     ]);
   };
 
   // ---------------------------------------------------------------------------------------------- pill
   const drawPill = (r: Route, n: number, stale: string, scale: number) => {
     const top = el('div', 'cv-cm-top');
-    top.append(modeIcon(r.mode, 'cv-cm-mi'), nameEl(r));
+    top.append(modeIcon(r.mode, 'cv-cm-mi'), nameEl(r, softName()));
     const mid = r.ok ? bigDur(r) : el('div', 'cv-cm-fail', failText(r));
     root.append(top, mid);
     // the traffic of a car; the arrival time of the other modes (no traffic to tell)
@@ -305,11 +385,12 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     if (!box) return;
     const wk0 = fitWidth(root, mid, bigType(root, box, 15, scale, 15, typeCap(root)));
     const wk = (f: number) => () => root.style.setProperty('--wk', Math.max(0.3, wk0 * f).toFixed(3));
-    // (the name says which route it is: it goes only after the type got smaller)
+    floorNames(root);
+    // (the name says which route it is: it goes only after the type got smaller, and never while the routes take turns)
     ladder(root, [
       () => root.querySelector('.cv-cm-dots')?.remove(),
       wk(0.85), wk(0.72),
-      () => root.classList.add('no-name'),
+      ...(turning > 1 ? [] : [() => root.classList.add('no-name')]),
       wk(0.6), wk(0.5), wk(0.4),
     ]);
   };
@@ -317,8 +398,9 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   // ---------------------------------------------------------------------------------------------- one line
   /** One route on one line: the icon, the name, the time and the traffic, as large as the box allows. */
   const lineRow = (r: Route): HTMLElement => {
-    const row = el('div', `cv-cm-ln is-${r.mode === 'driving' && r.ok ? r.traffic ?? 'clear' : 'clear'}`);
-    row.append(modeIcon(r.mode, 'cv-cm-mi'), nameEl(r));
+    const row = el('div', `cv-cm-ln ${rowCls(r)}`);
+    // (the name may end in "…", never below a few letters: floorNames)
+    row.append(modeIcon(r.mode, 'cv-cm-mi'), nameEl(r, 'cv-cm-lname'));
     const back = backEl(r);
     if (back) row.appendChild(back);
     const val = el('div', 'cv-cm-val');
@@ -339,15 +421,17 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   const drawLine = (r: Route) => {
     root.appendChild(lineRow(r));
     if (!box) return;
-    const k = Math.max(0.8, Math.min(1.5, (box.h * 0.45) / (box.rem * 1.6)));
-    root.style.setProperty('--dk', k.toFixed(3));
-    const dk = (f: number) => () => root.style.setProperty('--dk', Math.max(0.45, k * f).toFixed(3));
-    ladder(root, [
-      () => root.querySelector('.cv-cm-back')?.remove(),
-      () => root.classList.add('no-name'),
-      dk(0.9), dk(0.8), dk(0.7), dk(0.6), dk(0.5),
-      () => root.querySelectorAll('.cv-cm-dur .u').forEach((x) => x.remove()),
-      dk(0.4),
+    // as large as the box's height allows, then smaller before anything goes; the name goes last, and never while the
+    // card shows its routes in turn (it is what says which one is on)
+    const k = Math.max(0.8, Math.min(3, (box.h * 0.45) / (box.rem * 1.6)));
+    floorNames(root);
+    stages(root, k, [
+      [0.8, null],
+      [0.8, dropAll(root, '.cv-cm-back')],
+      [0.65, () => shortChips(root)],
+      [0.5, dropAll(root, '.cv-cm-dur .u')],
+      ...(turning > 1 ? [] : [[0.5, () => root.classList.add('no-name')] as [number, () => void]]),
+      [0.4, null],
     ]);
   };
 
@@ -362,18 +446,20 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     root.appendChild(list);
     if (stale) root.appendChild(staleFoot(stale));
     if (!b) return;
-    ladder(root, [
-      () => root.querySelector('.cv-dt-foot')?.remove(),
-      dropRow(root, list, '.cv-cm-ln'),
-      sideways(root, () => root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove())),
-      sideways(root, () => root.classList.add('no-name')),
-      () => root.style.setProperty('--dk', '0.85'),
-      () => root.style.setProperty('--dk', '0.7'),
-      () => root.style.setProperty('--dk', '0.6'),
-      () => root.querySelectorAll('.cv-cm-dur .u').forEach((x) => x.remove()),
-      () => root.style.setProperty('--dk', '0.5'),
+    floorNames(root);
+    fit(root, [() => root.querySelector('.cv-dt-foot')?.remove(), dropRow(root, list, '.cv-cm-ln')]);
+    // the text smaller before the names go, and the names only when one route is left
+    const one = list.childElementCount < 2;
+    stages(root, 1, [
+      [1, null],
+      [0.85, dropAll(root, '.cv-cm-back')],
+      [0.7, () => shortChips(root)],
+      [0.55, dropAll(root, '.cv-cm-dur .u')],
+      ...(one ? [[0.55, () => root.classList.add('no-name')] as [number, () => void]] : []),
+      [0.45, null],
     ]);
-    grow(root, 1.8);
+    // one or two lines in a large box read from across the room: they grow with it
+    grow(root, list.childElementCount <= 2 ? 3.5 : 1.8);
   };
 
   // ---------------------------------------------------------------------------------------------- list
@@ -382,13 +468,13 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
    * time or under it (`inline`); fitted (rows dropped and the text made smaller until nothing is cut, then grown).
    * Returns how many rows it shows and its text size.
    */
-  const listOnce = (rs: Route[], stale: string, meta: boolean, inline: boolean): { rows: number; k: number } => {
+  const listOnce = (rs: Route[], stale: string, meta: boolean, inline: boolean): { rows: number; k: number; meta: boolean } => {
     root.textContent = '';
     root.classList.remove('no-name');
     root.style.setProperty('--dk', '1');
     const list = el('div', 'cv-mk-list cv-cm-list');
     for (const r of rs) {
-      const row = el('div', `cv-mk-row cv-cm-row is-${r.mode === 'driving' && r.ok ? r.traffic ?? 'clear' : 'clear'}`);
+      const row = el('div', `cv-mk-row cv-cm-row ${rowCls(r)}`);
       const who = el('div', 'cv-mk-who');
       const txt = el('div', 'cv-cm-txt');
       const nm = el('div', 'cv-cm-nl');
@@ -397,8 +483,13 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       const back = backEl(r);
       if (back) nm.appendChild(back);
       txt.appendChild(nm);
-      const line = meta ? [arrival(r), via(r)].filter(Boolean).join(' · ') : '';
-      if (line) txt.appendChild(el('span', 'cv-cm-lmeta', line));
+      // the arrival and the road; the road goes first when the line is too long (never cut in the middle of a word)
+      const parts = meta ? [arrival(r), via(r)].filter(Boolean) : [];
+      if (parts.length) {
+        const line = el('span', 'cv-cm-lmeta');
+        parts.forEach((x, i) => line.appendChild(el('span', i ? 'cv-cm-lvia' : 'cv-cm-leta', `${i ? ' · ' : ''}${x}`)));
+        txt.appendChild(line);
+      }
       who.append(modeChip(r), txt);
       const val = el('div', `cv-mk-val${inline ? ' is-inline' : ''}`);
       if (r.ok && r.durationSec) val.appendChild(el('b', 'cv-mk-p cv-cm-dur', durText(r.durationSec)));
@@ -410,17 +501,31 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     }
     root.appendChild(list);
     if (stale) root.appendChild(staleFoot(stale));
-    if (!box) return { rows: rs.length, k: 1 };
-    ladder(root, [
+    if (!box) return { rows: rs.length, k: 1, meta };
+    const lmetaCut = () => [...root.querySelectorAll('.cv-cm-lmeta')].some(over);
+    fit(root, [
       dropRow(root, list, '.cv-mk-row'),
-      sideways(root, () => root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove())),
-      () => root.style.setProperty('--dk', '0.9'),
-      () => root.style.setProperty('--dk', '0.8'),
-      () => root.style.setProperty('--dk', '0.7'),
-      sideways(root, () => root.classList.add('no-name')),
+      () => {
+        if (lmetaCut()) root.querySelectorAll('.cv-cm-lvia').forEach((x) => x.remove());
+      },
+      () => {
+        if (lmetaCut()) root.querySelectorAll('.cv-cm-lmeta').forEach((x) => x.remove());
+      },
+      () => {
+        if (namesCut(root)) root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove());
+      },
     ]);
-    grow(root, 1.7);
-    return { rows: list.childElementCount, k: parseFloat(root.style.getPropertyValue('--dk')) || 1 };
+    stages(root, 1, [
+      [1, null],
+      [0.9, dropAll(root, '.cv-cm-back')],
+      [0.7, null],
+      ...(list.childElementCount < 2 ? [[0.7, () => root.classList.add('no-name')] as [number, () => void]] : []),
+    ]);
+    grow(root, list.childElementCount <= 2 ? 3 : 1.7);
+    const k = parseFloat(root.style.getPropertyValue('--dk')) || 1;
+    // (the line under the names only with the text above its size: smaller it does not read from a distance)
+    const hasMeta = !!root.querySelector('.cv-cm-lmeta');
+    return { rows: list.childElementCount, k, meta: hasMeta && k >= 1.2 };
   };
 
   /**
@@ -433,6 +538,8 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     let best: { meta: boolean; inline: boolean; score: number } | null = null;
     for (const [meta, inline] of tries) {
       const r = listOnce(rs, stale, meta, inline);
+      // (the line under the names is kept only when it reads, or not at all)
+      if (meta && !r.meta) continue;
       // (with the arrival lines and the text at least 1.25 times its size, it reads well enough: those win)
       const score = r.rows * 10 + (meta && r.k >= 1.25 ? 5 + r.k : r.k * (meta ? 1.25 : 1));
       if (!best || score > best.score + 0.01) best = { meta, inline, score };
@@ -446,7 +553,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     const list = el('div', 'cv-cm-cols');
     list.style.gridTemplateColumns = `repeat(${rs.length}, minmax(0, 1fr))`;
     for (const r of rs) {
-      const col = el('div', `cv-cm-col is-${r.mode === 'driving' && r.ok ? r.traffic ?? 'clear' : 'clear'}`);
+      const col = el('div', `cv-cm-col ${rowCls(r)}`);
       const head = el('div', 'cv-cm-chead');
       // (a long name ends in "…": the times are what the columns are for)
       head.append(modeIcon(r.mode, 'cv-cm-mi'), nameEl(r, 'cv-cm-lname'));
@@ -472,6 +579,8 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     root.appendChild(list);
     if (stale) root.appendChild(staleFoot(stale));
     if (!box) return;
+    // ("vuelta" goes before a name ends in "…")
+    if (namesCut(root)) root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove());
     ladder(root, [
       () => root.querySelector('.cv-dt-foot')?.remove(),
       () => root.querySelectorAll('.cv-cm-eta').forEach((x) => x.remove()),
@@ -527,16 +636,16 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
  * to spare reads from further away; a few halvings find the largest that fits.
  */
 function grow(root: HTMLElement, max: number): void {
-  if (!root.isConnected || cut(root)) return;
+  if (!root.isConnected || bad(root)) return;
   const k0 = parseFloat(root.style.getPropertyValue('--dk')) || 1;
   let lo = k0;
   let hi = k0 * max;
   root.style.setProperty('--dk', hi.toFixed(3));
-  if (!cut(root) && !overfull(root)) return;
+  if (!bad(root) && !overfull(root)) return;
   for (let i = 0; i < 7; i++) {
     const mid = (lo + hi) / 2;
     root.style.setProperty('--dk', mid.toFixed(3));
-    if (cut(root) || overfull(root)) hi = mid;
+    if (bad(root) || overfull(root)) hi = mid;
     else lo = mid;
   }
   // (a hair under the largest that fits: a name measured whole to the pixel may still end in "…" on screen)

@@ -14,7 +14,7 @@ import { COMMUTE_LOOKS, commuteSig, sanitizeCommuteOptions } from '../core/commu
 import {
   CANVAS_KINDS, CLOUD_CANVAS_KINDS, canvasDefaults, commuteCardOf, defaultCanvas, defaultItemStyle, exportCanvasFile, readCanvasFile, sanitizeCanvas,
 } from '../core/canvasCore.js';
-import { setCommuteFetch } from '../commute.js';
+import { COMMUTE_CACHE_MAX, commuteCacheSize, getCommute, setCommuteFetch } from '../commute.js';
 import { _resetPrivacy, applyPrivacy } from '../privacy.js';
 import { validateConfig } from '../core/validate.js';
 import { defaultConfig } from '../core/defaults.js';
@@ -89,6 +89,17 @@ test('validation: the card shares the widget\'s rules; it may be saved without i
   assert.deepEqual([...COMMUTE_LOOKS], ['auto', 'focus', 'list', 'line', 'pill']);
   assert.equal(CANVAS_KINDS.commute.perScreen, 4);
 });
+
+/**
+ * A card schedule that is off now, read with the real clock as the endpoint reads it (the fake clock only reaches
+ * commute.js): one hour starting two hours from now, in the config's time zone.
+ */
+function offNow(tz = defaultConfig().datetime.timezone) {
+  const hh = Number(new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
+  const from = (hh + 2) % 24;
+  const pad = (n) => String(n).padStart(2, '0');
+  return { from: `${pad(from)}:00`, to: from === 23 ? '23:59' : `${pad(from + 1)}:00` };
+}
 
 /** A config with a Personalizado first screen holding `items`, validated. */
 function canvasConfig(items, extra = (c) => c) {
@@ -245,7 +256,7 @@ test('GET /api/display/commute?item=: 404 and no Google request for a card the r
   const cards = [
     item('cv_comm0001'),
     item('cv_hide0001', cardProps([route({ id: 'cr_h', origin: 'Hidden 1' })]), { hidden: true, pos: { zone: 'main', x: 12, y: 0, size: 'w' } }),
-    item('cv_sche0001', cardProps([route({ id: 'cr_s', origin: 'Night 1' })]), { pos: { zone: 'main', x: 0, y: 4, size: 'w' }, schedule: [{ id: 's1', enabled: true, days: [], from: '22:00', to: '23:00' }] }),
+    item('cv_sche0001', cardProps([route({ id: 'cr_s', origin: 'Night 1' })]), { pos: { zone: 'main', x: 0, y: 4, size: 'w' }, schedule: [{ id: 's1', enabled: true, days: [], ...offNow() }] }),
     item('cv_cond0001', cardProps([route({ id: 'cr_c', origin: 'Cond 1' })]), { pos: { zone: 'main', x: 12, y: 4, size: 'w' }, when: { src: 'value', key: 'away', op: 'eq', value: 'yes' } }),
   ];
   // (four cards a screen at the most: the Rotativas are on a second screen)
@@ -358,4 +369,38 @@ test('Marco Cloud: no Trayectos card (refused, left out of a screen file)', () =
   assert.equal(r.ok, true);
   assert.equal(r.canvas.items.length, 0);
   assert.equal(r.dropped, 1);
+});
+
+test('the leg cache: the most legs a config can use fit, and a cache full of legs not due yet asks Google nothing new', async () => {
+  await server(canvasConfig([item('cv_comm0001')]));
+  let n = 0;
+  let now = Date.parse('2026-10-12T08:30:00Z');
+  setCommuteFetch(async () => {
+    n++;
+    return { status: 200, text: async () => GOOGLE_OK };
+  }, () => now);
+  const legs = (k) => Array.from({ length: 8 }, (_x, i) => route({ id: `cr_${k}_${i}`, origin: `Origin ${k} ${i}` }));
+  try {
+    // 20 widgets and 12 screens of 4 cards, 8 routes each (544 legs), asked twice before they are due: once each
+    for (let round = 0; round < 2; round++) for (let k = 0; k < 68; k++) await getCommute(legs(k), { tz: 'UTC' });
+    assert.equal(n, 544);
+    assert.ok(COMMUTE_CACHE_MAX > 544);
+    // filled up with legs not due yet: a new leg is 'busy' and nothing pushes out the others
+    for (let k = 68; k < COMMUTE_CACHE_MAX / 8; k++) await getCommute(legs(k), { tz: 'UTC' });
+    assert.equal(n, COMMUTE_CACHE_MAX);
+    const busy = await getCommute(legs(900), { tz: 'UTC' });
+    assert.deepEqual(busy.routes.map((r) => r.error), Array(8).fill('busy'));
+    assert.equal(n, COMMUTE_CACHE_MAX);
+    await getCommute(legs(0), { tz: 'UTC' });
+    assert.equal(n, COMMUTE_CACHE_MAX);
+    assert.equal(commuteCacheSize(), COMMUTE_CACHE_MAX);
+    // once legs are due again, the least recently used of them make room
+    now += 11 * 60_000;
+    const later = await getCommute(legs(900), { tz: 'UTC' });
+    assert.ok(later.routes.every((r) => r.ok));
+    assert.equal(n, COMMUTE_CACHE_MAX + 8);
+    assert.equal(commuteCacheSize(), COMMUTE_CACHE_MAX);
+  } finally {
+    setCommuteFetch(null);
+  }
 });

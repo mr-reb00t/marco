@@ -43,6 +43,7 @@ const ERROR_TEXT: Record<string, string> = {
   fetch_failed: 'No se pudo conectar con Google Maps.',
   bad_response: 'Respuesta no válida de Google Maps.',
   invalid_route: 'Escribe el origen y el destino.',
+  busy: 'Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.',
 };
 
 /**
@@ -159,13 +160,15 @@ const MODE_LABEL: Record<CommuteMode, string> = { driving: 'En coche', transit: 
 /**
  * A commute widget's or a Trayectos card's routes: name, mode, origin and destination (with a Probar button: one
  * Google request, POST /api/admin/test/commute), direction and schedule; added, moved and removed. `errorOf(idx,
- * route, field)` the message under a field, if any. `compact`: the builder's narrow Inspector, one column, each route
+ * route, field)` the message under a field, if any; `hintOf` the same as a note that does not block saving (a card's
+ * missing address). `compact`: the builder's narrow Inspector, one column, each route
  * folded to a line until it is opened. `onTested`: after a test (the widget preview loads again).
  */
-export function CommuteRoutesEditor({ routes, onChange, errorOf, units, onTested, compact = false, min = 1 }: {
+export function CommuteRoutesEditor({ routes, onChange, errorOf, hintOf, units, onTested, compact = false, min = 1 }: {
   routes: CommuteRoute[];
   onChange: (next: CommuteRoute[]) => void;
   errorOf?: (idx: number, r: CommuteRoute, field: string) => string | undefined;
+  hintOf?: (idx: number, r: CommuteRoute, field: string) => string | undefined;
   units: CommuteWidgetOptions['units'];
   onTested?: () => void;
   compact?: boolean;
@@ -202,6 +205,11 @@ export function CommuteRoutesEditor({ routes, onChange, errorOf, units, onTested
           const msg = errorOf?.(idx, r, field);
           return msg ? t(msg) : undefined;
         };
+        const hint = (field: string) => {
+          const msg = hintOf?.(idx, r, field);
+          return msg ? t(msg) : undefined;
+        };
+        const lacks = hint('origin') ?? hint('destination');
         const tState = tests[r.id];
         const title = r.name.trim() || `${t('Ruta')} ${idx + 1}`;
         const folded = compact && open !== r.id;
@@ -209,11 +217,12 @@ export function CommuteRoutesEditor({ routes, onChange, errorOf, units, onTested
           <div class="subcard__head">
             {compact ? (
               <button type="button" class="link-btn bld-route-head" aria-expanded={!folded} onClick={() => setOpen(folded ? r.id : null)}>
-                <Icon name={folded ? 'chevron' : 'up'} size={14} /> <strong>{title}</strong>
-                <span class="muted small"> · {t(MODE_LABEL[r.mode])}{when(r) ? ` · ${when(r)}` : ''}</span>
+                <Icon name={folded ? 'chevron' : 'up'} size={14} />
+                <strong>{title}</strong>
+                <span class="muted small">{t(MODE_LABEL[r.mode])}{when(r) ? ` · ${when(r)}` : ''}</span>
               </button>
             ) : (
-              <strong>{title}</strong>
+              <strong class="subcard__title">{title}</strong>
             )}
             <div class="row-actions">
               <ReorderButtons index={idx} count={routes.length} onMove={(a, b) => onChange(moveItem(routes, a, b))} />
@@ -229,7 +238,7 @@ export function CommuteRoutesEditor({ routes, onChange, errorOf, units, onTested
           <div key={r.id} class="subcard">
             {head}
             {folded ? (
-              (err('origin') || err('destination')) && <p class="small field__error">{err('origin') ?? err('destination')}</p>
+              (err('origin') || err('destination')) ? <p class="small field__error">{err('origin') ?? err('destination')}</p> : lacks && <p class="subcard__hint">{lacks}</p>
             ) : (
               <>
                 <div class={grid}>
@@ -245,10 +254,10 @@ export function CommuteRoutesEditor({ routes, onChange, errorOf, units, onTested
                   </Field>
                 </div>
                 <div class={grid}>
-                  <Field label={t('Punto de salida')} error={err('origin')}>
+                  <Field label={t('Punto de salida')} error={err('origin')} hint={hint('origin') && <span class="subcard__hint">{hint('origin')}</span>}>
                     <TextInput value={r.origin} maxLength={200} placeholder={t('Dirección o lugar de salida')} error={!!err('origin')} onValue={(v) => put(idx, { origin: v })} />
                   </Field>
-                  <Field label={t('Destino')} error={err('destination')}>
+                  <Field label={t('Destino')} error={err('destination')} hint={hint('destination') && <span class="subcard__hint">{hint('destination')}</span>}>
                     <div class="search-row">
                       <TextInput value={r.destination} maxLength={200} placeholder={t('Dirección o lugar de llegada')} error={!!err('destination')} onValue={(v) => put(idx, { destination: v })} />
                       <Button size="sm" icon="play" disabled={!r.origin.trim() || !r.destination.trim()} loading={!!tState?.loading} onClick={() => void runTest(r)}>

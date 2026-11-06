@@ -400,7 +400,7 @@ function CommuteRoutesField({ item, put }: { item: CanvasItem; put: (k: string, 
         min={0}
         routes={routes}
         units={p.units ?? 'auto'}
-        errorOf={(idx, _r, field) => missing.get(`${idx}.${field}`)}
+        hintOf={(idx, _r, field) => missing.get(`${idx}.${field}`)}
         onChange={(next) => put('routes', next, `${item.id}.routes`)}
       />
     </Field>
