@@ -9,6 +9,7 @@ import { HA_ICON, haIconOf } from '../../display/widgets/ha/haIcons';
 import { FEATURE_DOMAINS, tileFeatures } from '../../../server/core/haCore.js';
 import { attrsFromSlim } from '../../shared/haGuess';
 import { t } from '../i18n';
+import { intervalLabel, intervalsWith } from '../intervals';
 import { Icon } from '../components/icons';
 import { FIELDS, type Spec } from './fieldSpecs';
 import { isLoneGroup } from './kinds';
@@ -373,7 +374,7 @@ export function HaOffNote({ env }: { env: FieldEnv }) {
 }
 
 /** The kind's own options for `item`. `put` changes one prop (`merge`: a key for undo to merge typing). */
-export function ContentFields({ item, env, put }: { item: CanvasItem; env: FieldEnv; put: (k: string, v: unknown, merge?: string) => void }) {
+export function ContentFields({ item, env, put, nested = false }: { item: CanvasItem; env: FieldEnv; put: (k: string, v: unknown, merge?: string) => void; nested?: boolean }) {
   // (a lone group, #25: only its cards; it never turns)
   const specs: Spec[] = isLoneGroup(item) ? [{ type: 'rotatorCards' }] : FIELDS[item.kind] ?? [];
   const p = item.props as Record<string, any>;
@@ -396,6 +397,7 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
         if (s.type === 'rotatorCards') return isLoneGroup(item) ? <LoneGroupCards item={item} env={env} put={put} /> : <RotatorCards item={item} env={env} put={put} />;
         if (s.type === 'todoView') return <TodoViewFields value={p} lists={env.todoLists ?? []} onChange={(k, v, merge) => put(k, v, merge ? `${item.id}.${k}` : undefined)} />;
+        if (s.type === 'note' && s.top && nested) return null;
         if (s.type === 'note')
           return (
             <p class="muted small bld-note">
@@ -446,6 +448,14 @@ export function ContentFields({ item, env, put }: { item: CanvasItem; env: Field
             </Field>
           );
         if (s.type === 'navIcon') return <NavIconField value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} label={t(s.label)} />;
+        if (s.type === 'interval') {
+          const cur = Number(p[s.k]) || 60;
+          return (
+            <Field label={t(s.label)}>
+              <Select value={cur} options={intervalsWith(cur).map((v) => ({ value: v, label: intervalLabel(v) }))} onChange={(v) => put(s.k, v)} />
+            </Field>
+          );
+        }
         if (s.type === 'num')
           return (
             <Field label={t(s.label)}>

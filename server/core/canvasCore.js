@@ -719,15 +719,16 @@ export const CANVAS_KINDS = {
   },
   photo: {
     cat: 'content', sizes: ['s', 'm', 't', 'l', 'xl'], def: 'm', cells: [2, 2, 12, 8], side: true, edition: 'all', perScreen: 2,
-    // behind: under the other cards (#36): it takes no cells of the grid, so they can be placed over it (isBehind).
-    // dim: how much the photo is darkened (0 to 0.6), so the cards over it read well; edge: square corners, and out to
-    // the edges of the screen on the sides where it touches them (the main area only)
-    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, behind: false, dim: 0, edge: false }),
+    // always under the other cards (#36, isBehind): in the main area it takes no cells of the grid, so they can be
+    // placed over it; in the sidebar it fills the whole bar behind its cards (sideBackdropId). The old `behind` switch
+    // is read and dropped. intervalSec: 10 s to a day, the steps of the screen's Fondo (#41). dim: how much the photo
+    // is darkened (0 to 0.6), so the cards over it read well; edge: square corners, and out to the edges of the
+    // screen on the sides where it touches them
+    defaults: () => ({ intervalSec: 60, fit: 'cover', caption: false, dim: 0, edge: false }),
     props: (c, p, x) => ({
-      intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 600),
+      intervalSec: P.num(c, `${p}.intervalSec`, x.intervalSec, 60, 10, 86400),
       fit: P.oneOf(c, `${p}.fit`, x.fit, 'cover', ['cover', 'contain']),
       caption: P.bool(c, `${p}.caption`, x.caption, false),
-      behind: P.bool(c, `${p}.behind`, x.behind, false),
       dim: Math.round(P.num(c, `${p}.dim`, x.dim, 0, 0, 0.6, false) * 100) / 100,
       edge: P.bool(c, `${p}.edge`, x.edge, false),
     }),
@@ -1410,16 +1411,70 @@ function rotatorCardRange(cd, grid) {
  * box is worked out (cellRange, boxOf, lookSize accept it).
  */
 /**
- * A card drawn under the others (a photo with "Detrás de las otras tarjetas", #36): in the main area it takes no
- * cells, so it never moves another card and any card can be placed over it.
+ * A card drawn under the others: every photo card (#36, #41). In the main area it takes no cells, so it never moves
+ * another card and any card can be placed over it; in the sidebar it fills the bar behind the cards (sideBackdropId).
+ * A photo inside a Rotativa is a card of the Rotativa, never behind.
  */
 export function isBehind(item) {
-  return item?.kind === 'photo' && item.props?.behind === true;
+  return item?.kind === 'photo';
 }
 
-/** A photo card with "Hasta el borde de la pantalla": square corners, over the main area's padding where it touches it. */
+/** A photo card with "Hasta el borde de la pantalla": square corners, over the padding up to the screen's edge where it touches it. */
 export function isEdge(item) {
   return item?.kind === 'photo' && item.props?.edge === true;
+}
+
+/**
+ * The photo card that fills the sidebar behind its cards: the first photo of the stack by order (ties: the first in
+ * the list), or null. It takes no place in the stack (its span is not used), but counts towards the sidebar's cap.
+ * `list`: [{ id, kind, pos }] of one orientation.
+ */
+export function sideBackdropId(list) {
+  let best = null;
+  for (const x of list) {
+    if (x?.kind !== 'photo' || x.pos?.zone !== 'side') continue;
+    if (!best || (Number(x.pos.order) || 0) < (Number(best.pos.order) || 0)) best = x;
+  }
+  return best ? best.id : null;
+}
+
+/**
+ * Cards over an edge photo, centred on it (#41): a photo out to the screen's edge on one side of an axis reaches past
+ * the grid's padding there, while its other (inner) side stops on a column or row line, so a card on the photo's
+ * cells has the padding on one side and nothing on the other. Each card fully inside the photo's cells that touches
+ * its inner side gets the same padding there (styles-canvas.css data-inset). `entries`: [{ id, kind, props, pos }] of
+ * one orientation. Returns Map id → sides ('l', 't', 'r', 'b').
+ */
+export function photoInsets(entries, orientation = 'landscape', grid = 'fine') {
+  const out = new Map();
+  const { cols, rows } = gridDims(orientation, grid);
+  const boxes = [];
+  for (const e of entries) {
+    if (e?.pos?.zone !== 'main') continue;
+    const [w, h] = posCells(e.pos, orientation, grid);
+    boxes.push({ e, x: e.pos.x, y: e.pos.y, w, h });
+  }
+  for (const ph of boxes) {
+    if (!isEdge(ph.e)) continue;
+    const l = ph.x === 0;
+    const t = ph.y === 0;
+    const r = ph.x + ph.w >= cols;
+    const b = ph.y + ph.h >= rows;
+    // the inner side of each axis where the photo is out to the edge on one side only
+    const inner = [l !== r ? (l ? 'r' : 'l') : '', t !== b ? (t ? 'b' : 't') : ''].filter(Boolean);
+    if (!inner.length) continue;
+    for (const c of boxes) {
+      if (c === ph || c.e.kind === 'photo') continue;
+      if (c.x < ph.x || c.y < ph.y || c.x + c.w > ph.x + ph.w || c.y + c.h > ph.y + ph.h) continue;
+      let sides = out.get(c.e.id) ?? '';
+      for (const s of inner) {
+        const touches = s === 'r' ? c.x + c.w === ph.x + ph.w : s === 'l' ? c.x === ph.x : s === 'b' ? c.y + c.h === ph.y + ph.h : c.y === ph.y;
+        if (touches && !sides.includes(s)) sides += s;
+      }
+      if (sides) out.set(c.e.id, sides);
+    }
+  }
+  return out;
 }
 
 export function kindFor(item) {
@@ -1775,13 +1830,16 @@ function readPos(c, p, raw) {
 /**
  * Place the main-zone items of `list` ({ item, pos, path }) on one orientation's grid, in order: a size the kind
  * does not allow becomes its default, the box is clamped inside the grid, and an item that overlaps an earlier one
- * moves to the nearest free spot (with a warning). With no free spot at all it is dropped (an error). Returns the
- * ids that were dropped.
+ * moves to the nearest free spot (with a warning), one with no photo under it when there is one (photos take no
+ * cells, isBehind, and go first). With no free spot at all it is dropped (an error). Returns the ids that were dropped.
  */
 function placeMain(c, list, orientation, key, grid = 'fine') {
   const occ = makeOccupancy(orientation, grid);
+  // the same cells with the photos' boxes taken too
+  const occP = makeOccupancy(orientation, grid);
   const dropped = new Set();
-  for (const { item, path } of list) {
+  const ordered = [...list.filter((x) => isBehind(x.item)), ...list.filter((x) => !isBehind(x.item))];
+  for (const { item, path } of ordered) {
     const pos = item[key];
     const k = kindFor(item);
     // a box saved smaller than the kind's smallest (a smallest raised since): grown where there is room, else kept
@@ -1819,9 +1877,12 @@ function placeMain(c, list, orientation, key, grid = 'fine') {
     pos.x = Math.min(Math.max(0, pos.x), occ.cols - w);
     pos.y = Math.min(Math.max(0, pos.y), occ.rows - h);
     // under the other cards: anywhere on the grid, taking no cells
-    if (isBehind(item)) continue;
+    if (isBehind(item)) {
+      occupy(occP, item.id, pos.x, pos.y, w, h);
+      continue;
+    }
     if (!fitsAt(occ, pos.x, pos.y, w, h)) {
-      const spot = nearestFree(occ, pos.x, pos.y, w, h);
+      const spot = nearestFree(occP, pos.x, pos.y, w, h) ?? nearestFree(occ, pos.x, pos.y, w, h);
       if (!spot) {
         c.err(path, 'no free space on the grid');
         dropped.add(item.id);
@@ -1832,21 +1893,30 @@ function placeMain(c, list, orientation, key, grid = 'fine') {
       pos.y = spot.y;
     }
     occupy(occ, item.id, pos.x, pos.y, w, h);
+    occupy(occP, item.id, pos.x, pos.y, w, h);
   }
   return dropped;
 }
 
 /**
  * The sidebar stack of one orientation: order renumbered 0..n-1, at most one fill, spans clamped so the total stays
- * within SIDE_UNITS. Returns the items that did not fit (they go to the main area).
+ * within SIDE_UNITS. The photo that fills the bar behind the cards (sideBackdropId) takes no units; another photo
+ * does not fit (a warning). Returns the items that did not fit (they go to the main area).
  */
-function stackSide(list, key) {
+function stackSide(c, list, key) {
   list.sort((a, b) => a.item[key].order - b.item[key].order);
+  const bd = sideBackdropId(list.map((it) => ({ id: it.item.id, kind: it.item.kind, pos: it.item[key] })));
   let used = 0;
   let fill = false;
   const out = [];
   for (const it of list) {
     const pos = it.item[key];
+    if (it.item.id === bd) continue;
+    if (it.item.kind === 'photo') {
+      warnOf(c, `${it.path}.${key}`, 'only one photo can fill the sidebar, moved to the main area');
+      out.push(it);
+      continue;
+    }
     if (pos.span === 'fill') {
       if (!fill) {
         fill = true;
@@ -1905,6 +1975,12 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     size: P.oneOf(c, `${p}.sidebar.size`, sb.size, D.sidebar.size, SIDEBAR_SIZES),
     fill: P.oneOf(c, `${p}.sidebar.fill`, sb.fill, D.sidebar.fill, SIDEBAR_FILLS),
   };
+  // the sidebar's own photo (fill 'photo', #41): how often it changes and how much it is darkened, kept only when set
+  // (absent: the screen's Fondo interval and canvas.dim, the look it always had)
+  const sbInterval = P.num(c, `${p}.sidebar.intervalSec`, sb.intervalSec, undefined, 10, 86400);
+  if (sbInterval !== undefined) sidebar.intervalSec = sbInterval;
+  const sbDim = P.num(c, `${p}.sidebar.dim`, sb.dim, undefined, 0, 0.6, false);
+  if (sbDim !== undefined) sidebar.dim = Math.round(sbDim * 100) / 100;
   // the photo cannot be both behind the whole screen and in the sidebar alone
   if (sidebar.fill === 'photo' && background === 'photo') sidebar.fill = 'glass';
   // the grid (always 'fine' once converted above) and "Densidad" (kept only when not the default)
@@ -2071,7 +2147,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     sideL.sort((a, b) => a.item.pos.order - b.item.pos.order);
     for (const it of sideL.splice(CANVAS_LIMITS.side)) toMain(it, 'pos');
   }
-  for (const it of stackSide(sideL, 'pos')) toMain(it, 'pos');
+  for (const it of stackSide(c, sideL, 'pos')) toMain(it, 'pos');
   // items moved out of the sidebar look for room after the ones placed by the owner (nearest to the top left)
   const mainL = [...items.filter((it) => it.item.pos.zone === 'main' && !it.item.pos.moved), ...items.filter((it) => it.item.pos.moved)];
   for (const it of mainL) delete it.item.pos.moved;
@@ -2088,7 +2164,7 @@ export function sanitizeCanvas(c, p, raw, refs = {}, opts = {}) {
     }
     const sideP = kept.filter((it) => it.item.portrait?.zone === 'side');
     for (const it of sideP.splice(CANVAS_LIMITS.side)) toMain(it, 'portrait');
-    for (const it of stackSide(sideP, 'portrait')) toMain(it, 'portrait');
+    for (const it of stackSide(c, sideP, 'portrait')) toMain(it, 'portrait');
     const mainP = [...kept.filter((it) => it.item.portrait?.zone === 'main' && !it.item.portrait.moved), ...kept.filter((it) => it.item.portrait?.moved)];
     for (const it of mainP) delete it.item.portrait.moved;
     // a portrait spot that cannot be found leaves the item out of the portrait view (it stays on landscape)
@@ -2327,6 +2403,9 @@ export function deriveCanvasPortrait(items, _sidebar, grid = 'fine') {
   const placed = [];
   const omitted = [];
   const main = items.filter((it) => it.pos?.zone === 'main').slice().sort((a, b) => a.pos.y - b.pos.y || a.pos.x - b.pos.x);
+  // a photo with cards over it on landscape stays under them on portrait; one with no card over it is placed among
+  // the cards like any other (what a photo saved without "Detrás de las otras tarjetas" always got)
+  const covered = new Set(main.filter((it) => isBehind(it) && photoCovered(main, it, g)).map((it) => it.id));
   for (const it of main) {
     const k = kindFor(it);
     const named = [...new Set([it.pos.size, k?.def, 's'].filter((s) => s && (!k || k.sizes.includes(s) || s === 's')))];
@@ -2336,7 +2415,7 @@ export function deriveCanvasPortrait(items, _sidebar, grid = 'fine') {
     for (const box of tries) {
       const [w, h] = posCells(box, 'portrait', g);
       // under the other cards: where it was, inside the grid, taking no cells
-      if (isBehind(it)) {
+      if (covered.has(it.id)) {
         const { cols, rows } = gridDims('portrait', g);
         if (w > cols || h > rows) continue;
         placed.push({ id: it.id, pos: { zone: 'main', x: Math.min(it.pos.x, cols - w), y: Math.min(it.pos.y, rows - h), ...box } });
@@ -2354,6 +2433,16 @@ export function deriveCanvasPortrait(items, _sidebar, grid = 'fine') {
   }
   for (const it of items) if (it.pos?.zone === 'side') placed.push({ id: it.id, pos: { ...it.pos } });
   return { placed, omitted };
+}
+
+/** True when a main card that is not a photo shares a cell with the photo `ph` on landscape. */
+function photoCovered(main, ph, g) {
+  const [pw, phh] = posCells(ph.pos, 'landscape', g);
+  return main.some((it) => {
+    if (it === ph || isBehind(it)) return false;
+    const [w, h] = posCells(it.pos, 'landscape', g);
+    return it.pos.x < ph.pos.x + pw && ph.pos.x < it.pos.x + w && it.pos.y < ph.pos.y + phh && ph.pos.y < it.pos.y + h;
+  });
 }
 
 // ---- screens saved on the legacy grid ----------------------------------------------------------------------------

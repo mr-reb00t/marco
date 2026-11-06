@@ -13,9 +13,9 @@ export const colorOfKind = (k: CanvasKind | string): string => CAT_COLOR[CANVAS_
 export function CanvasThumb({ cv, portrait = false, light = false }: { cv: CanvasConfig; portrait?: boolean; light?: boolean }) {
   const W = portrait ? 90 : 160;
   const H = portrait ? 160 : 90;
-  const { side, items } = geometryBoxes(cv, portrait ? 'portrait' : 'landscape', W, H);
+  const { side, sidePhoto, items } = geometryBoxes(cv, portrait ? 'portrait' : 'landscape', W, H);
   const bg = cv.background === 'photo' ? 'url(#cvt-ph)' : cv.background === 'solid' ? (cv.color ?? (light ? '#f4f2ee' : '#0d0e12')) : light ? '#e9e6f2' : 'url(#cvt-amb)';
-  const sideFill = cv.sidebar.fill === 'photo' ? 'url(#cvt-ph)' : cv.sidebar.fill === 'solid' ? (light ? '#ffffff' : '#1c1c22') : light ? 'rgb(255 255 255 / .55)' : 'rgb(255 255 255 / .14)';
+  const sideFill = sidePhoto || cv.sidebar.fill === 'photo' ? 'url(#cvt-ph)' : cv.sidebar.fill === 'solid' ? (light ? '#ffffff' : '#1c1c22') : light ? 'rgb(255 255 255 / .55)' : 'rgb(255 255 255 / .14)';
   return (
     <svg viewBox={`0 0 ${W} ${H}`} class="schematic cv-thumb" aria-hidden="true">
       <defs>

@@ -3,7 +3,7 @@
 // three tabs: Contenido (its own options and its title), Tamaño (the sizes it allows, the text size) and Estilo.
 import type { CanvasConfig, CanvasGlass, CanvasItem, CanvasItemStyle, CanvasSize, GlassConfig, HaState, SideSpan } from '../../shared/types';
 import { CANVAS_KINDS, INK_PROPS, NAV_TAP_KINDS, defaultItemStyle, type CanvasPick } from '../../../server/core/canvasCore.js';
-import { normalizeGlass } from '../../shared/glass';
+import { normalizeGlass, sidebarFillOf } from '../../shared/glass';
 import { Icon } from '../components/icons';
 import { Button, Callout, ColorPicker, Field, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { t } from '../i18n';
@@ -15,7 +15,8 @@ import { ScheduleField } from './ScheduleField';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { PICK_TEXT } from './picks';
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, GROUP_HELP, isLoneGroup, itemIcon, itemKindName } from './kinds';
-import { boxCells, cellsOf, fitSpan, grid, growToCards, itemOf, placements, rangeOf, readOnly, resize, setBehind, setCells, sideOf, sizesOf, sizingOf, type Orient, type Refusal, type Result } from './model';
+import { boxCells, cellsOf, fitSpan, grid, growToCards, itemOf, placements, rangeOf, readOnly, resize, setCells, sideBackdrop, sideOf, sizesOf, sizingOf, type Orient, type Refusal, type Result } from './model';
+import { intervalLabel, intervalsWith } from '../intervals';
 
 /** The corners the editor offers; a screen saved with the old soft corners ('m') shows the nearest, Redondeadas. */
 const RADIUS_OPTS = [
@@ -31,10 +32,12 @@ export type InspectorTab = 'content' | 'size' | 'style';
 const TINTS = ['#1d2b4c', '#123d3a', '#24361f', '#3d2a17', '#4a1d26', '#33204a', '#e9e2d6', '#dde8f3'];
 
 /** The surface a card really gets: its own, or the page's (none inside a glass or solid sidebar). */
-function surfaceOf(cv: CanvasConfig, item: CanvasItem, zone: 'main' | 'side' | undefined): 'glass' | 'solid' | 'none' {
+function surfaceOf(cv: CanvasConfig, item: CanvasItem, zone: 'main' | 'side' | undefined, orient: Orient): 'glass' | 'solid' | 'none' {
   if (item.kind === 'spacer') return 'none';
   if (item.style.surface !== 'inherit') return item.style.surface;
-  return zone === 'side' && cv.sidebar.fill !== 'photo' ? 'none' : cv.defaults.surface;
+  // (over a photo card that fills the sidebar, #41, the cards keep the page's surface, as over the sidebar's photo)
+  const fill = sidebarFillOf(cv, orient === 'portrait');
+  return zone === 'side' && fill !== 'photo' && fill !== 'card' && item.id !== sideBackdrop(cv, orient) ? 'none' : cv.defaults.surface;
 }
 
 const opacityWord = (v: number) => (v < 0.2 ? 'Muy transparente' : v < 0.42 ? 'Más transparente' : v <= 0.58 ? 'Equilibrado' : v <= 0.8 ? 'Más sólido' : 'Muy sólido');
@@ -124,6 +127,8 @@ export interface InspectorProps {
   screenOrientation: 'landscape' | 'portrait' | 'auto';
   /** where the screen's photos come from (its Fondo section): named under Foto */
   photoSource: { source: string; stockTopic: string };
+  /** how often the screen's photo changes (its Fondo section): the sidebar's photo too, until it has its own (#41) */
+  photoInterval: number;
   selected: string | null;
   tab: InspectorTab;
   setTab: (t: InspectorTab) => void;
@@ -191,6 +196,8 @@ function PagePanel(p: InspectorProps) {
   const g = normalizeGlass(p.glass);
   const putGlass = <K extends keyof GlassConfig>(k: K, v: GlassConfig[K]) => p.setGlass({ ...g, [k]: v }, `glass.${k}`);
   const sideOn = cv.sidebar.side !== 'none';
+  // a photo card that fills the sidebar on either orientation (#41)
+  const backdrop = !!(sideBackdrop(cv, 'landscape') || sideBackdrop(cv, 'portrait'));
   const touchy = cv.items.some((i) => CANVAS_KINDS[i.kind]?.controls || CANVAS_KINDS[i.kind]?.nav) || p.inCarousel;
   const haTouchy = cv.items.some((i) => CANVAS_KINDS[i.kind]?.controls);
   const canPortrait = p.screenOrientation !== 'landscape';
@@ -294,18 +301,34 @@ function PagePanel(p: InspectorProps) {
               onChange={(v) => set((c) => void (c.sidebar.size = v))}
             />
           </Field>
-          <Field label={t('Relleno de la barra')}>
+          {/* a photo card in the sidebar fills it (#41): it wins over the fill, which comes back when the card leaves */}
+          <Field label={t('Relleno de la barra')} hint={backdrop ? t('Una tarjeta de foto llena la barra lateral, así que este relleno no se ve. Vuelve si la quitas de la barra.') : undefined}>
             <Segmented
               full
               value={cv.sidebar.fill}
               options={[
-                { value: 'glass', label: t('Cristal') },
-                { value: 'solid', label: t('Sólida') },
-                { value: 'photo', label: t('Foto'), off: cv.background === 'photo', title: cv.background === 'photo' ? t('La foto ya está de fondo en toda la pantalla.') : undefined },
+                { value: 'glass', label: t('Cristal'), off: backdrop },
+                { value: 'solid', label: t('Sólida'), off: backdrop },
+                { value: 'photo', label: t('Foto'), off: backdrop || cv.background === 'photo', title: cv.background === 'photo' ? t('La foto ya está de fondo en toda la pantalla.') : undefined },
               ]}
-              onChange={(v) => set((c) => void (c.sidebar.fill = v))}
+              onChange={(v) => !backdrop && set((c) => void (c.sidebar.fill = v))}
             />
           </Field>
+          {/* the sidebar's own photo (#41): how often it changes and how dark, from the screen's Fondo until set here */}
+          {cv.sidebar.fill === 'photo' && !backdrop && cv.background !== 'photo' && (
+            <>
+              <Field label={t('Cambiar foto cada')} hint={`${photoSourceText(p.photoSource)} ${t('Se cambian en la sección Fondo de esta pantalla.')}`}>
+                <Select
+                  value={cv.sidebar.intervalSec ?? p.photoInterval}
+                  options={intervalsWith(cv.sidebar.intervalSec ?? p.photoInterval).map((v) => ({ value: v, label: intervalLabel(v) }))}
+                  onChange={(v) => set((c) => void (c.sidebar.intervalSec = v))}
+                />
+              </Field>
+              <Field label={t('Oscurecer foto')}>
+                <Slider value={cv.sidebar.dim ?? cv.dim} min={0} max={0.6} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set((c) => void (c.sidebar.dim = Math.round(v * 100) / 100), 'sidebar.dim')} />
+              </Field>
+            </>
+          )}
         </>
       )}
       <h4 class="bld-h">{t('Estilo por defecto de las tarjetas')}</h4>
@@ -461,12 +484,6 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
     p.edit(g.cv, merge);
     if (g.stuck.length) p.refuse('cardsNoRoom');
   };
-  /** A photo sent behind the other cards or put back among them (#36): back among them it needs free cells. */
-  const putBehind = (v: boolean) => {
-    const r = setBehind(cv, item.id, v);
-    p.edit(r.cv);
-    if (r.stuck.length) p.refuse('behindNoRoom');
-  };
   const style = (k: keyof CanvasItemStyle, v: unknown, merge?: string) => upd((x) => void ((x.style as unknown as Record<string, unknown>)[k] = v), merge);
   const sideOn = sideOf(cv, orient) !== 'none';
   const why = p.why.get(item.id) ?? null;
@@ -540,7 +557,7 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
               </Button>
             </Callout>
           )}
-          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates, haRaw: p.haRaw }} put={(k, v, merge) => (item.kind === 'rotator' && k === 'cards' ? putCards(v, merge) : item.kind === 'photo' && k === 'behind' ? putBehind(v === true) : upd((x) => void (x.props[k] = v), merge))} />
+          <ContentFields item={item} env={{ ...p.env, haStates: p.haStates, haRaw: p.haRaw }} put={(k, v, merge) => (item.kind === 'rotator' && k === 'cards' ? putCards(v, merge) : upd((x) => void (x.props[k] = v), merge))} />
           {p.env.ha && <HaControlsPanel item={item} cv={cv} states={p.haStates} openMode={p.openMode} upd={upd} />}
           <ConditionField item={item} ha={p.env.ha} values={p.env.values ?? []} raw={p.haRaw} upd={upd} />
           <ScheduleField item={item} upd={upd} />
@@ -564,7 +581,8 @@ function ItemPanel(p: InspectorProps & { item: CanvasItem }) {
           {ro && <p class="muted small">{t('En vertical automático los tamaños son los del horizontal.')}</p>}
           {pos?.zone === 'main' && !ro && <SizePick item={item} cv={cv} orient={orient} onPick={(sz) => p.apply(resize(cv, orient, item.id, sz))} />}
           {pos?.zone === 'main' && !ro && <CellsPick item={item} cv={cv} orient={orient} apply={p.apply} refuse={p.refuse} />}
-          {pos?.zone === 'side' && !ro && (
+          {pos?.zone === 'side' && !ro && item.id === sideBackdrop(cv, orient) && <p class="muted small">{t('Llena la barra lateral, detrás de sus tarjetas.')}</p>}
+          {pos?.zone === 'side' && !ro && item.id !== sideBackdrop(cv, orient) && (
             <Field label={t('Alto en la barra')}>
               <Segmented
                 full
@@ -607,7 +625,7 @@ function StylePanel(p: InspectorProps & { item: CanvasItem; upd: (fn: (it: Canva
   const { item, upd } = p;
   const st = item.style;
   const set = (k: keyof CanvasItemStyle, v: unknown, merge?: string) => upd((x) => void ((x.style as unknown as Record<string, unknown>)[k] = v), merge);
-  const surface = surfaceOf(p.cv, item, p.zone);
+  const surface = surfaceOf(p.cv, item, p.zone, p.orient);
   // its own glass (a custom colour alone also means its own material, from the screen's glass)
   const own = st.glass ?? (st.color ? normalizeGlass(p.glass) : null);
   const putGlass = <K extends keyof CanvasGlass>(k: K, v: CanvasGlass[K]) => upd((x) => void (x.style.glass = { ...(x.style.glass ?? normalizeGlass(p.glass)), [k]: v }), `${item.id}.glass.${k}`);

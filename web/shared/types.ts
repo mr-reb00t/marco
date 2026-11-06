@@ -1077,7 +1077,11 @@ export interface CanvasConfig {
   scrim: 'uniform' | 'topBottom' | 'edges';
   /** solid background colour (null = the theme background) */
   color: string | null;
-  sidebar: { side: 'none' | 'left' | 'right' | 'top' | 'bottom'; size: 'narrow' | 'normal' | 'wide'; fill: 'glass' | 'solid' | 'photo' };
+  /**
+   * `intervalSec` (10 to 86400) and `dim` (0 to 0.6): the photo of fill 'photo' (#41); absent, the screen's
+   * background.intervalSec and canvas.dim
+   */
+  sidebar: { side: 'none' | 'left' | 'right' | 'top' | 'bottom'; size: 'narrow' | 'normal' | 'wide'; fill: 'glass' | 'solid' | 'photo'; intervalSec?: number; dim?: number };
   defaults: { surface: CanvasSurface; radius: 'sq' | 'm' | 'l' | 'xl' };
   /** "Permitir tocar en la pantalla" (Home Assistant controls, the navigation cards) */
   touch: boolean;

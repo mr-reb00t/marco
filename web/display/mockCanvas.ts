@@ -570,7 +570,7 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'weather.now', pos: M(1, 11, 's') },
       { kind: 'calendar.agenda', pos: M(16, 0, 't'), props: { days: 7 } },
       // last in the list, so the display draws it under the others by its layer, not by its order
-      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', behind: true } },
+      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover' } },
     ],
   },
   // ... darkened, square and out to the edges of the screen on the three sides it touches (#36)
@@ -580,7 +580,40 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'clock.digital', pos: B(1, 1, 8, 4) },
       { kind: 'weather.now', pos: M(1, 11, 's') },
       { kind: 'calendar.agenda', pos: M(16, 0, 't'), props: { days: 7 } },
-      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', behind: true, dim: 0.35, edge: true } },
+      { kind: 'photo', pos: B(0, 0, 16, 16), props: { fit: 'cover', dim: 0.35, edge: true } },
+    ],
+  },
+  // a photo filling the left column out to the screen's edges, with cards over it on its full columns (#41): they sit
+  // centred on the photo, the same margin on both sides
+  behindColumn: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'photo', pos: B(0, 0, 8, 16), props: { fit: 'cover', dim: 0.35, edge: true } },
+      { kind: 'clock.digital', pos: B(0, 0, 8, 3) },
+      { kind: 'todo', pos: B(0, 3, 8, 5) },
+      { kind: 'value', pos: B(0, 8, 4, 2), props: { key: 'car.one', label: 'Car', unit: '%' } },
+      { kind: 'value', pos: B(4, 8, 4, 2), props: { key: 'home.battery', label: 'Home', unit: '%' } },
+      { kind: 'calendar.month', pos: M(8, 0, 'xl') },
+    ],
+  },
+  // a photo card in the sidebar fills the whole bar behind its cards (#41), out to its edges ...
+  sideBackdrop: {
+    canvas: { background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'glass' } },
+    items: [
+      { kind: 'photo', pos: S(0, 'fill'), props: { fit: 'cover', dim: 0.3, edge: true } },
+      { kind: 'clock.digital', pos: S(1, 3) },
+      { kind: 'todo', pos: S(2, 'fill') },
+      { kind: 'calendar.month', pos: M(0, 0, 'xl') },
+    ],
+  },
+  // ... or inside the bar's gaps, with round corners
+  sideBackdropInset: {
+    canvas: { background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'glass' } },
+    items: [
+      { kind: 'photo', pos: S(0, 'fill'), props: { fit: 'cover', dim: 0.3 } },
+      { kind: 'clock.digital', pos: S(1, 3) },
+      { kind: 'todo', pos: S(2, 'fill') },
+      { kind: 'calendar.month', pos: M(0, 0, 'xl') },
     ],
   },
   // Sonando ahora (?np=idle: nothing plays, every card is hidden): the wide card, a big one, one line, one without a

@@ -1,6 +1,7 @@
 // Glass material of the Modern display style (screen.glass), shared by the display and the admin preview.
 // Everything ends up as a handful of CSS custom properties on <html>: no extra layers, no extra backdrop-filters.
-import type { CanvasConfig, GlassConfig } from './types';
+import type { CanvasConfig, CanvasPos, GlassConfig } from './types';
+import { sideBackdropId } from '../../server/core/canvasCore.js';
 
 export const GLASS_DEFAULTS: GlassConfig = { appearance: 'auto', opacity: 0.5, blur: 18, tint: 'dark', edge: true };
 
@@ -156,17 +157,40 @@ export function calendarSheetAlpha(raw: unknown, opts: { light: boolean; lite: b
   return Math.round((lo + (hi - lo) * v) * 1000) / 1000;
 }
 
+/** The items of a canvas as far as its sidebar fill goes (the editor's CanvasItem and the display's item both fit). */
+type FillItems = { items?: { id: string; kind: string; pos: CanvasPos; portrait?: CanvasPos | null; hidden?: boolean }[]; portraitAuto?: boolean };
+
+/**
+ * The photo card that fills the sidebar behind its cards on this orientation (canvasCore sideBackdropId), or null.
+ * A card hidden by hand is not drawn, so it fills nothing; an automatic portrait keeps the sidebar as it is.
+ */
+export function sidebarBackdropOf(canvas: Pick<CanvasConfig, 'sidebar'> & FillItems, portrait = false): string | null {
+  if (!canvas.items || (canvas.sidebar?.side ?? 'none') === 'none') return null;
+  const list = canvas.items.filter((it) => !it.hidden).map((it) => ({ id: it.id, kind: it.kind, pos: portrait && !canvas.portraitAuto ? it.portrait ?? null : it.pos }));
+  return sideBackdropId(list);
+}
+
+/**
+ * How the sidebar is filled on this orientation: its saved fill, or 'card' while a photo card fills it (#41: the card
+ * wins; the saved fill is kept and comes back when the card leaves the sidebar).
+ */
+export function sidebarFillOf(canvas: Pick<CanvasConfig, 'sidebar'> & FillItems, portrait = false): CanvasConfig['sidebar']['fill'] | 'card' {
+  return sidebarBackdropOf(canvas, portrait) ? 'card' : canvas.sidebar.fill;
+}
+
 /**
  * The background a Personalizado screen (layout 'canvas') really shows, from its own canvas.background: the slideshow
- * behind the whole screen ('photo'), only in the sidebar (sidebar fill 'photo'), or none ('ambient', 'solid').
+ * behind the whole screen ('photo'), only in the sidebar (sidebar fill 'photo', unless a photo card fills the sidebar),
+ * or none ('ambient', 'solid'). In the sidebar it changes every sidebar.intervalSec when that is set (#41).
  * The saved screen.background is never rewritten (its source, interval and the rest still apply), so going back to
  * another layout finds it as it was.
  */
-export function effectiveBackground<B extends { enabled?: boolean; scope?: string }>(bg: B, canvas: Pick<CanvasConfig, 'background' | 'sidebar'> | null | undefined): B {
+export function effectiveBackground<B extends { enabled?: boolean; scope?: string }>(bg: B, canvas: (Pick<CanvasConfig, 'background' | 'sidebar'> & FillItems) | null | undefined, portrait = false): B {
   if (!canvas) return bg;
   const photo = canvas.background === 'photo';
-  const side = !photo && canvas.sidebar?.side !== 'none' && canvas.sidebar?.fill === 'photo';
-  return { ...bg, enabled: photo || side, scope: photo ? 'screen' : 'side' };
+  const side = !photo && canvas.sidebar?.side !== 'none' && canvas.sidebar?.fill === 'photo' && !sidebarBackdropOf(canvas, portrait);
+  const every = side && typeof canvas.sidebar.intervalSec === 'number' ? { intervalSec: canvas.sidebar.intervalSec } : {};
+  return { ...bg, enabled: photo || side, scope: photo ? 'screen' : 'side', ...every };
 }
 
 /**

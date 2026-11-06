@@ -60,7 +60,7 @@ import { renderMessage, renderTodo } from './widgets/extras';
 import { Highlights } from './widgets/highlights';
 import { News } from './widgets/news';
 import { Photos, photoStats, type SlideshowPosition } from './widgets/photos';
-import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, photoOnWholeScreen } from '../shared/glass';
+import { calendarSheetAlpha, effectiveBackground, glassVars, normalizeGlass, photoOnWholeScreen, sidebarFillOf } from '../shared/glass';
 import { Weather } from './widgets/weather';
 import { screenWeather, weatherSig } from './weatherPlaces';
 import { weatherPlacesOf } from '../../server/core/weatherPlaces.js';
@@ -453,7 +453,7 @@ function applyLayout(): void {
     // Personalizado: where its sidebar is on this orientation, how it is filled, and the background
     ...(preset === 'canvas' && cfg.canvas
       ? [
-          `cv-side-${sidebarSide(cfg.canvas, portrait)}`, `cv-fill-${cfg.canvas.sidebar.fill}`, `cv-bg-${cfg.canvas.background}`, `cv-scrim-${cfg.canvas.scrim ?? 'uniform'}`,
+          `cv-side-${sidebarSide(cfg.canvas, portrait)}`, `cv-fill-${sidebarFillOf(cfg.canvas, portrait)}`, `cv-bg-${cfg.canvas.background}`, `cv-scrim-${cfg.canvas.scrim ?? 'uniform'}`,
           // "Densidad compacta" (styles-canvas.css)
           cfg.canvas.density === 'compact' ? 'cv-dense' : '',
         ]
@@ -462,7 +462,9 @@ function applyLayout(): void {
   if (preset === 'canvas' && cfg.canvas) {
     const share = SIDEBAR_SHARE[cfg.canvas.sidebar.size] ?? SIDEBAR_SHARE.normal;
     app.style.setProperty('--cv-side', `${(share * 100).toFixed(2)}%`);
-    app.style.setProperty('--cv-dim', String(cfg.canvas.dim ?? 0.15));
+    // the sidebar's own photo has its own "Oscurecer foto" (#41), else the canvas's
+    const sideDim = cfg.background.enabled && cfg.background.scope === 'side' ? cfg.canvas.sidebar.dim : undefined;
+    app.style.setProperty('--cv-dim', String(sideDim ?? cfg.canvas.dim ?? 0.15));
     if (cfg.canvas.background === 'solid' && cfg.canvas.color) app.style.setProperty('--cv-bg', cfg.canvas.color);
     else app.style.removeProperty('--cv-bg');
   } else for (const k of ['--cv-side', '--cv-dim', '--cv-bg']) app.style.removeProperty(k);
@@ -622,7 +624,7 @@ function applyConfig(raw: DisplayConfig): void {
   // Personalizado: its own background (canvas.background): the photo behind the whole screen or in the sidebar only,
   // the animated backdrop, or a plain colour. The saved screen.background (source, interval, ...) still applies.
   if (effectivePreset(cfg) === 'canvas' && cfg.canvas) {
-    cfg.background = effectiveBackground(cfg.background, cfg.canvas);
+    cfg.background = effectiveBackground(cfg.background, cfg.canvas, isPortrait(cfg));
     if (cfg.canvas.background !== 'ambient') cfg.background.ambient = 'none';
     // "Animado" with the screen's ambient effect off would be a plain black page: it shows the aurora
     else if (cfg.background.ambient === 'none') cfg.background.ambient = 'aurora';

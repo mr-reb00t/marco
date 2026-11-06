@@ -5,7 +5,7 @@
 import type { CanvasConfig, CanvasItem, CanvasKind, CanvasPos, CanvasSize, RotatorEntry, SideSpan } from '../../shared/types';
 import {
   CANVAS_KINDS, CANVAS_LIMITS, CANVAS_SIZE_IDS, SIDE_UNITS, boxAllowed, boxOf, canvasCards, canvasDefaults, cellRange, defaultItemStyle, deriveCanvasPortrait, fitsAt, isBehind,
-  firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, rotatorNodes, sizeCells, type CanvasKindDef,
+  firstFree, gridDims, kindFor, makeOccupancy, nearestFree, newCanvasId, occupy, portraitSide, posCells, rotatorLeaves, rotatorNodes, sideBackdropId, sizeCells, type CanvasKindDef,
 } from '../../../server/core/canvasCore.js';
 
 export type Orient = 'landscape' | 'portrait';
@@ -14,7 +14,7 @@ export type PosKey = 'pos' | 'portrait';
 export type MainPos = Extract<CanvasPos, { zone: 'main' }>;
 export type SidePos = Extract<CanvasPos, { zone: 'side' }>;
 /** Why an operation changed nothing. */
-export type Refusal = 'noRoom' | 'noBigger' | 'cardsNoRoom' | 'behindNoRoom' | 'sideFull' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
+export type Refusal = 'noRoom' | 'noBigger' | 'cardsNoRoom' | 'sideFull' | 'sidePhoto' | 'tooMany' | 'kindCap' | 'noSide' | 'notInSide' | 'auto' | 'limit';
 export type Result = { ok: true; cv: CanvasConfig; id?: string } | { ok: false; why: Refusal };
 
 const ok = (cv: CanvasConfig, id?: string): Result => ({ ok: true, cv, id });
@@ -80,25 +80,38 @@ export function omittedInPortrait(cv: CanvasConfig): string[] {
 }
 
 /**
- * The cells taken on `o`, leaving out `except`. A photo behind the other cards (#36) takes none, and has none in its
- * way: placing it, every cell is free.
+ * The cells taken on `o`, leaving out `except`. A photo (always behind the other cards, #36) takes none, and has none
+ * in its way: placing it, every cell is free. `photos`: the photos' cells count as taken too (a new card looks for
+ * room that no photo is under first, firstSpot).
  */
-export function occupancy(cv: CanvasConfig, o: Orient, except?: string | string[]) {
+export function occupancy(cv: CanvasConfig, o: Orient, except?: string | string[], opts: { photos?: boolean } = {}) {
   const skip = new Set(Array.isArray(except) ? except : except ? [except] : []);
   const occ = makeOccupancy(o);
   if (typeof except === 'string' && isBehind(itemOf(cv, except))) return occ;
   for (const [id, p] of placements(cv, o)) {
-    if (p.zone !== 'main' || skip.has(id) || isBehind(itemOf(cv, id))) continue;
+    if (p.zone !== 'main' || skip.has(id) || (!opts.photos && isBehind(itemOf(cv, id)))) continue;
     const [w, h] = boxCells(p, o);
     occupy(occ, id, p.x, p.y, w, h);
   }
   return occ;
 }
 
-/** The sidebar stack on `o`, in order. */
+/**
+ * The photo card that fills the sidebar behind its cards on `o` (#41, canvasCore sideBackdropId), or null. It takes
+ * no place in the stack: sideStack leaves it out.
+ */
+export function sideBackdrop(cv: CanvasConfig, o: Orient): string | null {
+  if (sideOf(cv, o) === 'none') return null;
+  const list: { id: string; kind: string; pos: CanvasPos }[] = [];
+  for (const [id, p] of placements(cv, o)) if (p.zone === 'side') list.push({ id, kind: itemOf(cv, id)?.kind ?? '', pos: p });
+  return sideBackdropId(list);
+}
+
+/** The sidebar stack on `o`, in order (the photo that fills the bar is not in it, sideBackdrop). */
 export function sideStack(cv: CanvasConfig, o: Orient): { id: string; pos: SidePos }[] {
+  const bd = sideBackdrop(cv, o);
   const out: { id: string; pos: SidePos }[] = [];
-  for (const [id, p] of placements(cv, o)) if (p.zone === 'side') out.push({ id, pos: p });
+  for (const [id, p] of placements(cv, o)) if (p.zone === 'side' && id !== bd) out.push({ id, pos: p });
   return out.sort((a, b) => a.pos.order - b.pos.order);
 }
 
@@ -140,12 +153,16 @@ export const spanForBox = (b: Box, o: Orient): 2 | 3 | 4 => {
 /** Sidebar span → main-area size of `k`: 2 is small, 3 medium, 4 and fill large, then the closest the kind allows. */
 export const sizeForSpan = (k: KindRef, span: SideSpan): CanvasSize => closestSize(k, span === 2 ? 's' : span === 3 ? 'm' : 'l');
 
-/** Units of the stack the fixed spans take, how many items there are and whether one fills the rest. */
+/**
+ * Units of the stack the fixed spans take, how many items there are and whether one fills the rest. The photo that
+ * fills the bar takes no units but counts towards the sidebar's cap.
+ */
 export function sideUse(cv: CanvasConfig, o: Orient, except?: string) {
   const list = sideStack(cv, o).filter((x) => x.id !== except);
+  const bd = sideBackdrop(cv, o);
   const fill = list.some((x) => x.pos.span === 'fill');
   const units = list.reduce((n, x) => n + (x.pos.span === 'fill' ? 0 : x.pos.span), 0);
-  return { count: list.length, units, fill };
+  return { count: list.length + (bd && bd !== except ? 1 : 0), units, fill };
 }
 
 /**
@@ -499,7 +516,7 @@ const SPANS: SideSpan[] = [2, 3, 4, 'fill'];
 export function stepSpan(cv0: CanvasConfig, o: Orient, id: string, dir: 1 | -1 = 1): Result {
   if (readOnly(cv0, o)) return no('auto');
   const p = placements(cv0, o).get(id);
-  if (p?.zone !== 'side') return no('notInSide');
+  if (p?.zone !== 'side' || id === sideBackdrop(cv0, o)) return no('notInSide');
   const i = SPANS.indexOf(p.span);
   for (let n = 1; n < SPANS.length; n++) {
     const want = SPANS[(i + dir * n + SPANS.length * 2) % SPANS.length];
@@ -515,7 +532,7 @@ export function stepSpan(cv0: CanvasConfig, o: Orient, id: string, dir: 1 | -1 =
 export function setSpan(cv0: CanvasConfig, o: Orient, id: string, span: SideSpan): Result {
   if (readOnly(cv0, o)) return no('auto');
   const p = placements(cv0, o).get(id);
-  if (p?.zone !== 'side') return no('notInSide');
+  if (p?.zone !== 'side' || id === sideBackdrop(cv0, o)) return no('notInSide');
   if (fitSpan(cv0, o, span, id) !== span) return no('sideFull');
   const cv = clone(cv0);
   setPos(cv, o, id, { ...p, span });
@@ -530,6 +547,16 @@ export function toSide(cv0: CanvasConfig, o: Orient, id: string, index: number):
   const p = placements(cv0, o).get(id);
   if (!it || !p) return no('noRoom');
   if (!kind(it.kind)?.side) return no('noSide');
+  // a photo fills the bar behind its cards (#41): one at most, and it needs no room in the stack
+  if (it.kind === 'photo') {
+    const bd = sideBackdrop(cv0, o);
+    if (bd === id) return no('noRoom');
+    if (bd) return no('sidePhoto');
+    if (sideUse(cv0, o, id).count >= CANVAS_LIMITS.side) return no('sideFull');
+    const cv = clone(cv0);
+    setPos(cv, o, id, { zone: 'side', order: 0, span: 2 });
+    return ok(cv, id);
+  }
   if (p.zone === 'side') return reorderSide(cv0, o, id, index);
   const span = fitSpan(cv0, o, spanForBox(p, o), id);
   if (!span) return no('sideFull');
@@ -576,12 +603,14 @@ export function toMain(cv: CanvasConfig, o: Orient, id: string, x: number, y: nu
  * spot, the place of a card that shows nothing (`voids`, see resolveMain).
  */
 export function firstSpot(cv: CanvasConfig, o: Orient, k: KindRef, size?: CanvasSize, voids?: ReadonlySet<string>): MainDrop | null {
-  const occ = occupancy(cv, o);
   const sizes = [size ?? kind(k).def, ...sizesOf(k, o)];
-  for (const s of sizes) {
-    const [w, h] = cellsOf(s, o);
-    const spot = firstFree(occ, w, h);
-    if (spot) return { x: spot.x, y: spot.y, size: s };
+  // room with no photo under it first, then over a photo (always behind the cards, so a card may go there)
+  for (const occ of [occupancy(cv, o, undefined, { photos: true }), occupancy(cv, o)]) {
+    for (const s of sizes) {
+      const [w, h] = cellsOf(s, o);
+      const spot = firstFree(occ, w, h);
+      if (spot) return { x: spot.x, y: spot.y, size: s };
+    }
   }
   if (!voids?.size) return null;
   const pl = placements(cv, o);
@@ -640,10 +669,18 @@ export function addItem(
   const other: Orient = o === 'portrait' ? 'landscape' : 'portrait';
   if (target?.zone === 'side') {
     if (sideOf(cv, o) === 'none' || !kind(k).side) return no('noSide');
-    const span = fitSpan(cv, o, spanForSize(kind(k).def));
-    if (!span) return no('sideFull');
-    cv.items.push(it);
-    insertSide(cv, o, it.id, span, target.index);
+    if (k === 'photo') {
+      // the photo fills the bar behind its cards (#41): one at most, and it takes no room in the stack
+      if (sideBackdrop(cv, o)) return no('sidePhoto');
+      if (sideUse(cv, o).count >= CANVAS_LIMITS.side) return no('sideFull');
+      cv.items.push(it);
+      setPos(cv, o, it.id, { zone: 'side', order: 0, span: 2 });
+    } else {
+      const span = fitSpan(cv, o, spanForSize(kind(k).def));
+      if (!span) return no('sideFull');
+      cv.items.push(it);
+      insertSide(cv, o, it.id, span, target.index);
+    }
   } else {
     const drop = target?.drop ?? firstSpot(cv, o, sizingOf(it), undefined, voids);
     if (!drop) return no('noRoom');
@@ -685,7 +722,7 @@ export function duplicateItem(cv0: CanvasConfig, o: Orient, id: string): Result 
   if (p.zone === 'main') {
     const drop = resolveMain(cv0, o, p, p.x, p.y);
     if (drop) target = { zone: 'main', drop };
-  } else if (fitSpan(cv0, o, p.span)) target = { zone: 'side', index: p.order + 1 };
+  } else if (id !== sideBackdrop(cv0, o) && fitSpan(cv0, o, p.span)) target = { zone: 'side', index: p.order + 1 };
   const r = addItem(cv0, o, src.kind, target);
   if (!r.ok) return r;
   const it = itemOf(r.cv, r.id!)!;
@@ -695,7 +732,7 @@ export function duplicateItem(cv0: CanvasConfig, o: Orient, id: string): Result 
   if (src.interactive !== undefined) it.interactive = src.interactive;
   if (p.zone === 'side') {
     const sp = placements(r.cv, o).get(it.id);
-    if (sp?.zone === 'side') setPos(r.cv, o, it.id, { ...sp, span: fitSpan(cv0, o, p.span) ?? sp.span });
+    if (sp?.zone === 'side' && it.id !== sideBackdrop(r.cv, o)) setPos(r.cv, o, it.id, { ...sp, span: fitSpan(cv0, o, p.span) ?? sp.span });
   }
   return r;
 }
@@ -786,29 +823,6 @@ export function growToCards(cv0: CanvasConfig, id: string): { cv: CanvasConfig; 
   return { cv, grown, stuck };
 }
 
-/**
- * A photo behind the other cards (#36) put back among them, or sent behind them. Back among them it must not cover
- * another card: it stays where it is when the cells are free, else it moves to the nearest free spot of its size.
- * `stuck`: the orientations with no room at all (it stays behind then).
- */
-export function setBehind(cv0: CanvasConfig, id: string, behind: boolean): { cv: CanvasConfig; stuck: Orient[] } {
-  let cv = updateItem(cv0, id, (it) => void (it.props.behind = behind));
-  if (behind) return { cv, stuck: [] };
-  const stuck: Orient[] = [];
-  for (const o of ['landscape', 'portrait'] as Orient[]) {
-    if (readOnly(cv, o)) continue;
-    const p = placements(cv, o).get(id);
-    if (p?.zone !== 'main') continue;
-    const [w, h] = boxCells(p, o);
-    if (fitsAt(occupancy(cv, o, id), p.x, p.y, w, h)) continue;
-    const drop = resolveMain(cv, o, asBox(p), p.x, p.y, { id });
-    const r = drop ? applyMain(cv, o, id, { ...drop, swap: undefined }) : no('noRoom');
-    if (r.ok) cv = r.cv;
-    else stuck.push(o);
-  }
-  return stuck.length ? { cv: updateItem(cv0, id, (it) => void (it.props.behind = true)), stuck } : { cv, stuck };
-}
-
 /** Change an item's props or style (the inspector). */
 export function updateItem(cv0: CanvasConfig, id: string, fn: (it: CanvasItem) => void): CanvasConfig {
   const cv = clone(cv0);
@@ -822,7 +836,9 @@ export const itemOf = (cv: CanvasConfig, id: string | null | undefined): CanvasI
 /** Items in the order Tab walks them: by row, then column; the sidebar stack first when it is on the left or top. */
 export function tabOrder(cv: CanvasConfig, o: Orient): string[] {
   const pl = placements(cv, o);
-  const side = sideStack(cv, o).map((x) => x.id);
+  // the photo that fills the sidebar comes before the sidebar's cards, so the overlay draws it under them (#41)
+  const bd = sideBackdrop(cv, o);
+  const side = [...(bd ? [bd] : []), ...sideStack(cv, o).map((x) => x.id)];
   // a photo behind the other cards (#36) comes first, so the overlay draws it under them
   const back = (id: string) => (isBehind(itemOf(cv, id)) ? 0 : 1);
   const main = [...pl.entries()].filter(([, p]) => p.zone === 'main').sort(([ia, a], [ib, b]) => back(ia) - back(ib) || (a as MainPos).y - (b as MainPos).y || (a as MainPos).x - (b as MainPos).x).map(([id]) => id);

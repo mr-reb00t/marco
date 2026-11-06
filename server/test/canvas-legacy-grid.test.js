@@ -31,6 +31,13 @@ const save = (raw) => {
 };
 /** A main position twice as large (what the conversion must give). */
 const twice = (p) => (p && p.zone === 'main' ? { ...p, x: p.x * 2, y: p.y * 2, ...(p.w !== undefined ? { w: p.w * 2, h: p.h * 2 } : {}) } : p);
+/**
+ * The one change a save makes on purpose: a photo card always goes behind the other cards and takes no cells (#41),
+ * so the card the hand-made portrait of 'hand.portrait' left out (no free cells while the photo took them) is looked
+ * for again on the save, as always, and now finds room over the photo.
+ */
+const SAVED = { 'hand.portrait': { cv_qvxq4yxb: { zone: 'main', x: 0, y: 18, size: 'w' } } };
+const savedPortrait = (name, it) => SAVED[name]?.[it.id] ?? twice(it.portrait);
 // at a fixed time outside every schedule of the fixtures (the old projection was captured at such a time)
 const project = (cv, orientation = 'auto') => projectCanvas({ layout: { preset: 'canvas' }, screen: { orientation }, canvas: cv }, { now: new Date('2026-10-17T12:00:00Z'), tz: 'UTC' });
 
@@ -83,7 +90,7 @@ test('read and saved: a legacy screen validates to the doubled one with no warni
     assert.deepEqual([a.c.errors, a.c.warnings.filter((w) => !/portrait: no free space/.test(w))], [[], []], name);
     assert.ok(a.c.warnings.length <= left, name);
     assert.equal(a.out.grid, 'fine');
-    assert.deepEqual(a.out.items.map((it) => [it.id, it.pos, it.portrait]), f.canvas.items.map((it) => [it.id, twice(it.pos), twice(it.portrait)]), name);
+    assert.deepEqual(a.out.items.map((it) => [it.id, it.pos, it.portrait]), f.canvas.items.map((it) => [it.id, twice(it.pos), savedPortrait(name, it)]), name);
     // saved back: nothing changes any more (stored as fine, never converted twice)
     const b = save(a.out);
     assert.deepEqual([b.c.errors, b.c.warnings], [a.c.errors, a.c.warnings], name);
@@ -103,11 +110,12 @@ test('read and saved: a legacy screen validates to the doubled one with no warni
 test('the display gets the same rectangles: every position the old projection sent, doubled', () => {
   for (const [name, f] of Object.entries(FIX)) {
     const want = f.display.map((d) => ({ id: d.id, pos: twice(d.pos), portrait: twice(d.portrait) }));
-    // a stored canvas the server has not read yet (Marco Cloud reads the store as it is), and the saved one
-    for (const cv of [f.canvas, save(f.canvas).out]) {
+    // a stored canvas the server has not read yet (Marco Cloud reads the store as it is), and the saved one (SAVED)
+    for (const [cv, saved] of [[f.canvas, false], [save(f.canvas).out, true]]) {
       const p = project(cv, f.orientation);
       assert.equal(p.grid, 'fine');
-      assert.deepEqual(p.items.map((it) => ({ id: it.id, pos: it.pos, portrait: it.portrait })), want, name);
+      const exp = saved ? want.map((d) => ({ ...d, portrait: SAVED[name]?.[d.id] ?? d.portrait })) : want;
+      assert.deepEqual(p.items.map((it) => ({ id: it.id, pos: it.pos, portrait: it.portrait })), exp, name);
     }
   }
 });
@@ -127,8 +135,9 @@ test('a config with legacy screens: validateConfig converts them, the file impor
   c.defaultScreen = 's_0';
   const r = validateConfig(c);
   assert.equal(r.ok, true, JSON.stringify(r.errors));
-  // (only the card that hand-made portrait left out, looked for again as on every save)
-  assert.deepEqual(r.warnings.map((w) => w.path), ['screens[1].canvas.items[6].portrait']);
+  // (only the card that hand-made portrait left out, looked for again as on every save: it finds room over the photo
+  // now, SAVED, so no warning)
+  assert.deepEqual(r.warnings.map((w) => w.path), []);
   assert.ok(r.value.screens.every((s) => s.canvas.grid === 'fine'));
   assert.deepEqual(r.value.screens[0].canvas, save(FIX['template.bento'].canvas).out);
   assert.deepEqual(r.value.screens[2].canvas, save(FIX['template.kitchen'].canvas).out, 'a converted screen is not converted again');

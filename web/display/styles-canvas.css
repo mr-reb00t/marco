@@ -106,8 +106,21 @@
 #app.preset-canvas .cv-item { position: relative; display: flex; min-width: 0; min-height: 0; }
 #app.preset-canvas .cv-item[hidden] { display: none; }
 /* a photo behind the other cards (#36): they may share its cells, and are drawn over it */
-#app.preset-canvas .cv-item:not(.is-behind) { z-index: 1; }
-#app.preset-canvas .cv-item.is-behind { z-index: 0; }
+#app.preset-canvas .cv-item:not(.is-behind):not(.is-backdrop) { z-index: 1; }
+#app.preset-canvas .cv-item.is-behind,
+#app.preset-canvas .cv-item.is-backdrop { z-index: 0; }
+/* a photo card in the sidebar fills the whole bar under its cards (#41): inside the bar's gaps with round corners, or
+   out to its edges (and so to the screen's edges where the bar touches them) with "Hasta el borde de la pantalla". The
+   cards keep the bar's padding, so their margins over the photo match on each axis */
+.style-modern #app.preset-canvas #canvas-side:not([hidden]) { position: relative; }
+#app#app.preset-canvas .cv-item.is-backdrop { position: absolute; inset: var(--cv-gap, 1.2rem); }
+#app#app.preset-canvas .cv-item.is-backdrop.is-edge { inset: 0; }
+/* cards over an edge photo: the grid's padding on the photo's inner side too, so they sit centred on it (#41,
+   canvasCore photoInsets, data-inset of l, t, r, b) */
+.style-modern #app.preset-canvas .cv-item[data-inset*='l'] { margin-left: var(--cv-edge, 2.4rem); }
+.style-modern #app.preset-canvas .cv-item[data-inset*='r'] { margin-right: var(--cv-edge, 2.4rem); }
+.style-modern #app.preset-canvas .cv-item[data-inset*='t'] { margin-top: var(--cv-edge, 2.4rem); }
+.style-modern #app.preset-canvas .cv-item[data-inset*='b'] { margin-bottom: var(--cv-edge, 2.4rem); }
 /* a photo out to the edges of the screen (its "Hasta el borde de la pantalla"): over the grid's padding on each side
    its box touches (data-edge: l, t, r, b), with no rim or shadow, as the Modern design's photo */
 .style-modern #app.preset-canvas .cv-item.is-edge[data-edge*='l'] { margin-left: calc(-1 * var(--cv-edge, 2.4rem)); }

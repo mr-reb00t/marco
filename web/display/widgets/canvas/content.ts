@@ -162,6 +162,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   // spread items over the list, so two photo cards do not show the same one
   const offset = [...item0.id].reduce((n, c) => n + c.charCodeAt(0), 0);
   const list = (): Photo[] => state.photos?.photos ?? [];
+  // "Cambiar de foto cada": 10 s to a day, as the screen's Fondo (a day is far below the largest setTimeout delay)
+  const everyMs = () => Math.min(86400, Math.max(10, Number((env.item().props as Props).intervalSec) || 60)) * 1000;
   const show = () => {
     const photos = list();
     if (timer) clearTimeout(timer);
@@ -204,11 +206,16 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       const cap = root.querySelector<HTMLElement>('.cv-ph-cap')!;
       cap.textContent = props.caption ? [p.title, p.place, p.author].filter(Boolean).join(' · ') : '';
     };
-    img.onerror = () => undefined;
+    // a photo that does not load: the next one soon, not after a long interval (up to a day, #41)
+    img.onerror = () => {
+      if (!root.isConnected) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(show, Math.min(everyMs(), 60_000));
+    };
     // a gallery photo carries the display's credential (?k=): an <img> sends no header, and without it a screen on a
     // private link or a paired device gets 401 and the card stays black (only an admin session's cookie got through)
     img.src = mediaUrl(p.url);
-    timer = setTimeout(show, Math.min(600, Math.max(10, Number(props.intervalSec) || 60)) * 1000);
+    timer = setTimeout(show, everyMs());
   };
   // its "Oscurecer foto" (0 to 0.6, styles-canvas.css)
   const shade = () => {

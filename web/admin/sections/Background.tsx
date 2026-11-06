@@ -9,15 +9,8 @@ import { effectiveBackground, setCanvasPhoto } from '../../shared/glass';
 import type { SectionProps } from './common';
 import { AlbumCover, immichErrorText } from './Immich';
 import { BackgroundRulesCard } from './BackgroundRules';
+import { intervalLabel, intervalsWith } from '../intervals';
 
-const INTERVALS = [30, 60, 120, 300, 600, 900, 1800, 3600, 10800, 86400];
-
-function intervalLabel(s: number) {
-  if (s < 60) return t('{n} segundos', { n: s });
-  if (s < 3600) return s === 60 ? t('1 minuto') : t('{n} minutos', { n: s / 60 });
-  if (s < 86400) return s === 3600 ? t('1 hora') : t('{n} horas', { n: s / 3600 });
-  return t('1 día');
-}
 
 export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
   const b = cfg.background;
@@ -35,7 +28,9 @@ export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
     if (usesGallery && gallery === null) api.photos().then(setGallery, () => setGallery([]));
   }, [usesGallery]);
   const inRotation = gallery?.filter((p) => !p.hidden).length ?? 0;
-  const intervals = INTERVALS.includes(b.intervalSec) ? INTERVALS : [...INTERVALS, b.intervalSec].sort((a, c) => a - c);
+  const intervals = intervalsWith(b.intervalSec);
+  // the sidebar's photo of a Personalizado screen with an interval of its own (#41, set in the editor)
+  const sideEvery = canvas && effectiveBackground(b, canvas).scope === 'side' && shown ? canvas.sidebar.intervalSec : undefined;
   return (
     <>
       <PageHeader scope="screen" title={t('Fondo')} desc={t('Fotos de fondo, transiciones y efectos ambientales animados.')} />
@@ -124,7 +119,11 @@ export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
             </Field>
           )}
           <div class="grid grid--2">
-            <Field label={t('Cambiar foto cada')} error={errors['background.intervalSec']}>
+            <Field
+              label={t('Cambiar foto cada')}
+              error={errors['background.intervalSec']}
+              hint={sideEvery ? t('En la barra lateral de esta pantalla la foto cambia cada {interval}, como se eligió en el editor.', { interval: intervalLabel(sideEvery) }) : undefined}
+            >
               <Select value={b.intervalSec} options={intervals.map((s) => ({ value: s, label: intervalLabel(s) }))} onChange={(v) => set((d) => void (d.background.intervalSec = v))} />
             </Field>
             <Field label={t('Brillo')}>

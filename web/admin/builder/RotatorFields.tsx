@@ -169,6 +169,7 @@ export function RotatorCards({ item, env, put }: { item: CanvasItem; env: FieldE
                 ) : (
                   <>
                     <ContentFields
+                      nested
                       item={{ ...item, id: c.id, kind: c.kind, props: c.props }}
                       env={env}
                       put={(k, v, merge) => set(cards.map((x) => (x.id === c.id ? ({ ...x, props: { ...x.props, [k]: v } } as RotatorCard) : x)), merge)}
@@ -264,6 +265,7 @@ function GroupCards(p: { item: CanvasItem; env: FieldEnv; group: RotatorGroup; t
               remove={() => setM(members.filter((x) => x.id !== m.id))}
             >
               <ContentFields
+                nested
                 item={{ ...item, id: m.id, kind: m.kind, props: m.props }}
                 env={m.kind === 'rotator' ? { ...env, pinCard: undefined, nest: { taken } } : env}
                 put={(k, v, merge) => setM(members.map((x) => (x.id === m.id ? ({ ...x, props: { ...x.props, [k]: v } } as RotatorMember) : x)), merge)}

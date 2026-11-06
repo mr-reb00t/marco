@@ -15,7 +15,7 @@ import { cellAt, cellBox, computeGeometry, inSide, mainBox, sideBox, sideIndexAt
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, itemIcon, itemKindName } from './kinds';
 import {
   addItem, applyBox, applyMain, boxCells, boxFor, fitSpan, grid, sizingOf, handleBox, itemOf, occupantsAt, placements, rangeOf, voidIds, readOnly, reorderSide, resize, resolveMain,
-  sideOf, sideStack, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
+  sideBackdrop, sideOf, sideStack, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
 } from './model';
 
 /** Something new from the palette: a kind and the props it starts with (a saved widget's id). */
@@ -43,7 +43,8 @@ export interface RectsInfo {
   need: Map<string, { w: number; h: number }>;
 }
 
-type Target = { zone: 'main'; drop: MainDrop | null; cell: { x: number; y: number }; size: CellsBox | CanvasSize; inWay: string[] } | { zone: 'side'; index: number; ok: boolean } | null;
+/** `whole`: a photo over the sidebar, which fills the whole bar behind its cards (#41) */
+type Target = { zone: 'main'; drop: MainDrop | null; cell: { x: number; y: number }; size: CellsBox | CanvasSize; inWay: string[] } | { zone: 'side'; index: number; ok: boolean; whole?: boolean } | null;
 interface Ghost {
   box: Box | null;
   ok: boolean;
@@ -233,6 +234,8 @@ export function Stage(props: {
 
   const pl = useMemo(() => placements(cv, orient), [cv, orient]);
   const stack = useMemo(() => sideStack(cv, orient), [cv, orient]);
+  // the photo that fills the sidebar behind its cards (#41)
+  const backdrop = useMemo(() => sideBackdrop(cv, orient), [cv, orient]);
   const tracks = useMemo(() => sideTracks(stack), [stack]);
   const ro = readOnly(cv, orient);
   /** Cards that show nothing on the screen now: a spacer, an empty card (the display says so) or one hidden by hand. */
@@ -259,6 +262,7 @@ export function Stage(props: {
     const p = pl.get(id);
     if (!p) return null;
     if (p.zone === 'main') return mainBox(geo, orient, p);
+    if (id === backdrop) return geo.strip;
     const tr = tracks.get(id);
     return tr ? sideBox(geo, tr.start, tr.span) : null;
   };
@@ -288,6 +292,11 @@ export function Stage(props: {
       });
       const index = sideIndexAt(geo, boxes, px, py);
       if (!k.side) return { zone: 'side', index, ok: false };
+      // a photo fills the whole bar behind its cards: one at most
+      if (what.kind === 'photo') {
+        const bd = sideBackdrop(c, orient);
+        return { zone: 'side', index: 0, ok: !bd || bd === what.id, whole: true };
+      }
       if (from?.zone === 'side') return { zone: 'side', index, ok: true };
       const size: CellsBox = from?.zone === 'main' ? from : { size: sz.def };
       return { zone: 'side', index, ok: !!fitSpan(c, orient, spanForBox(size, orient), what.id) };
@@ -330,6 +339,8 @@ export function Stage(props: {
       const label = tg.inWay.length ? `${t('No hay sitio para este tamaño')} · ${t('En ese hueco está: {names}', { names: tg.inWay.join(', ') })}` : t('No hay sitio para este tamaño');
       return { box: cellBox(geo, orient, Math.min(Math.max(0, tg.cell.x - Math.floor(w / 2)), cols - w), Math.min(Math.max(0, tg.cell.y - Math.floor(h / 2)), rows - h), w, h), ok: false, label };
     }
+    // a photo over the sidebar: the whole bar
+    if (tg.whole) return { box: geo.strip, ok: tg.ok, label: tg.ok ? t('Llena la barra lateral') : t('No cabe en la barra lateral') };
     // a bar where it goes in the stack
     const c = live.current.cv;
     const list = sideStack(c, orient).filter((x) => x.id !== what.id);
@@ -364,10 +375,12 @@ export function Stage(props: {
       r = what.id ? applyMain(c, orient, what.id, tg.drop) : addItem(c, orient, what.kind, { zone: 'main', drop: tg.drop }, what.props);
     } else {
       if (!tg.ok) {
-        live.current.refuse('sideFull');
+        live.current.refuse(tg.whole ? 'sidePhoto' : 'sideFull');
         return false;
       }
       const from = what.id ? placements(c, orient).get(what.id) : undefined;
+      // the photo that already fills the bar dropped on it again: nothing changes
+      if (tg.whole && from?.zone === 'side') return false;
       r = !what.id ? addItem(c, orient, what.kind, { zone: 'side', index: tg.index }, what.props) : from?.zone === 'side' ? reorderSide(c, orient, what.id, tg.index) : toSide(c, orient, what.id, tg.index);
     }
     if (!r.ok) {
@@ -562,7 +575,7 @@ export function Stage(props: {
   const sizeTag = (id: string) => {
     const p = pl.get(id);
     if (!p) return '';
-    if (p.zone === 'side') return t(SPAN_LABEL[String(p.span)]);
+    if (p.zone === 'side') return id === backdrop ? t('Llena la barra lateral') : t(SPAN_LABEL[String(p.span)]);
     const [w, h] = boxCells(p, orient);
     return p.w === undefined ? `${t(SIZE_LABEL[p.size])} · ${w}×${h}` : `${w}×${h}`;
   };
@@ -616,7 +629,7 @@ export function Stage(props: {
                   type="button"
                   key={id}
                   data-id={id}
-                  class={`bld-it ${sel === id ? 'is-sel' : ''} ${it.hidden ? 'is-hidden' : ''} ${isBehind(it) ? 'is-behind' : ''} ${isVoid ? 'is-void' : ''} ${props.url ? '' : 'is-bare'}`}
+                  class={`bld-it ${sel === id ? 'is-sel' : ''} ${it.hidden ? 'is-hidden' : ''} ${isBehind(it) || id === backdrop ? 'is-behind' : ''} ${isVoid ? 'is-void' : ''} ${props.url ? '' : 'is-bare'}`}
                   style={px(b)}
                   title={vd === 'empty' ? t('No tiene nada que mostrar ahora, así que en la pantalla no se ve, pero ocupa su sitio. Suelta otra tarjeta encima para usar el hueco.') : vd === 'space' ? t('Un hueco vacío. Suelta otra tarjeta encima para usar el sitio.') : undefined}
                   aria-label={`${name} · ${sizeTag(id)}${vtext ? ` · ${vtext}` : ''}${why ? ` · ${t(HIDDEN_TEXT[why].badge)}` : ''}`}
@@ -666,7 +679,7 @@ export function Stage(props: {
             {sel && selBox && (
               <div class={`bld-selection ${selBox.h < cellBox(geo, orient, 0, 0, 1, 2).h - 1 ? 'is-short' : ''}`} style={px(selBox)} aria-hidden="true">
                 <span class="bld-selection__tag">{sizeTag(sel)}</span>
-                {!ro && (
+                {!ro && sel !== backdrop && (
                   <span
                     class="bld-handle"
                     role="presentation"

@@ -686,3 +686,20 @@ test('a group on its own (#25): a Rotativa with only a group, named and drawn as
   assert.equal(K.isLoneGroup({ kind: 'rotator', props: { cards: [...spec.cards, { id: '', kind: 'value', props: {} }] } }), false);
   assert.equal(K.itemKindName({ kind: 'rotator', props: { cards: [] } }), 'Rotativa');
 });
+
+test('occupancy: photos take no cells, unless asked to count them (a new card looks for room off them first, #41)', ts, () => {
+  const cv = {
+    ...defaultCanvas(),
+    items: [
+      { id: 'cv_photo001', kind: 'photo', pos: { zone: 'main', x: 0, y: 0, size: 'm', w: 8, h: 16 }, props: {} },
+      { id: 'cv_clock001', kind: 'clock.digital', pos: { zone: 'main', x: 0, y: 0, size: 'm', w: 8, h: 4 }, props: {} },
+    ],
+  };
+  const plain = M.occupancy(cv, 'landscape');
+  assert.equal(plain.cells[8][2], null);
+  assert.equal(plain.cells[1][1], 'cv_clock001');
+  const photos = M.occupancy(cv, 'landscape', undefined, { photos: true });
+  assert.equal(photos.cells[8][2], 'cv_photo001');
+  // (the card over it is still the card)
+  assert.equal(photos.cells[1][1], 'cv_clock001');
+});

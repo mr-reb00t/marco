@@ -1,4 +1,4 @@
-// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32), manual calendar downloads (#37), the days a calendar grid shows (#39) and what night mode does (#38). Admin text keyed by the
+// A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32), manual calendar downloads (#37), the days a calendar grid shows (#39) and what night mode does (#38), the photo card behind the cards and in the sidebar (#36, #41). Admin text keyed by the
 // Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
 const ROWS: [string, string, string, string, string, string][] = [
@@ -138,15 +138,47 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Det bliver aldrig bredere end sit panel: vil du have et større ur, så gør panelet bredere eller skjul sekunderne.',
     'Nigdy nie jest szerszy niż jego panel: aby zegar był większy, poszerz panel lub ukryj sekundy.',
   ],
-  // a photo card behind the other cards on Personalizado (#36)
-  ['Detrás de las otras tarjetas', 'Behind the other cards', 'Atrás dos outros cartões', 'Achter de andere kaarten', 'Bag de andre kort', 'Za innymi kartami'],
+  // a photo card on Personalizado: always behind the other cards (#36), and in the sidebar it fills the bar (#41)
   [
-    'Las demás tarjetas se pueden poner encima de la foto. Solo en la zona principal, no en la barra lateral.',
-    'The other cards can be placed over the photo. Only in the main area, not in the sidebar.',
-    'Os outros cartões podem ser colocados por cima da foto. Só na zona principal, não na barra lateral.',
-    'De andere kaarten kunnen op de foto worden gezet. Alleen in het hoofdgedeelte, niet in de zijbalk.',
-    'De andre kort kan placeres oven på fotoet. Kun i hovedområdet, ikke i sidebjælken.',
-    'Pozostałe karty można umieścić na zdjęciu. Tylko w obszarze głównym, nie na pasku bocznym.',
+    'La foto va siempre detrás de las otras tarjetas, así que puedes poner tarjetas encima. En la barra lateral llena toda la barra.',
+    'The photo always goes behind the other cards, so you can place cards over it. In the sidebar it fills the whole bar.',
+    'A foto fica sempre atrás dos outros cartões, por isso podes pôr cartões por cima. Na barra lateral enche a barra toda.',
+    'De foto staat altijd achter de andere kaarten, dus je kunt er kaarten op zetten. In de zijbalk vult hij de hele balk.',
+    'Fotoet ligger altid bag de andre kort, så du kan lægge kort oven på det. I sidebjælken fylder det hele bjælken.',
+    'Zdjęcie jest zawsze za innymi kartami, więc możesz kłaść na nim karty. Na pasku bocznym wypełnia cały pasek.',
+  ],
+  ['Llena la barra lateral', 'Fills the sidebar', 'Enche a barra lateral', 'Vult de zijbalk', 'Fylder sidebjælken', 'Wypełnia pasek boczny'],
+  [
+    'Llena la barra lateral, detrás de sus tarjetas.',
+    'It fills the sidebar, behind its cards.',
+    'Enche a barra lateral, atrás dos seus cartões.',
+    'Hij vult de zijbalk, achter de kaarten erin.',
+    'Det fylder sidebjælken, bag dens kort.',
+    'Wypełnia pasek boczny, za jego kartami.',
+  ],
+  [
+    'Una tarjeta de foto llena la barra lateral, así que este relleno no se ve. Vuelve si la quitas de la barra.',
+    'A photo card fills the sidebar, so this fill does not show. It comes back if you take the card out of the bar.',
+    'Um cartão de foto enche a barra lateral, por isso este preenchimento não se vê. Volta se tirares o cartão da barra.',
+    'Een fotokaart vult de zijbalk, dus deze vulling is niet te zien. Hij komt terug als je de kaart uit de balk haalt.',
+    'Et fotokort fylder sidebjælken, så denne udfyldning ses ikke. Den kommer tilbage, hvis du tager kortet ud af bjælken.',
+    'Karta zdjęcia wypełnia pasek boczny, więc tego wypełnienia nie widać. Wróci, gdy wyjmiesz kartę z paska.',
+  ],
+  [
+    'La barra lateral ya tiene una foto detrás de sus tarjetas. Solo cabe una.',
+    'The sidebar already has a photo behind its cards. Only one fits.',
+    'A barra lateral já tem uma foto atrás dos seus cartões. Só cabe uma.',
+    'De zijbalk heeft al een foto achter de kaarten. Er past er maar één.',
+    'Sidebjælken har allerede et foto bag sine kort. Der er kun plads til ét.',
+    'Pasek boczny ma już zdjęcie za swoimi kartami. Mieści się tylko jedno.',
+  ],
+  [
+    'En la barra lateral de esta pantalla la foto cambia cada {interval}, como se eligió en el editor.',
+    'In the sidebar of this screen the photo changes every {interval}, as chosen in the editor.',
+    'Na barra lateral deste ecrã a foto muda a cada {interval}, como se escolheu no editor.',
+    'In de zijbalk van dit scherm verandert de foto elke {interval}, zoals gekozen in de editor.',
+    'I sidebjælken på denne skærm skifter fotoet hver {interval}, som valgt i editoren.',
+    'Na pasku bocznym tego ekranu zdjęcie zmienia się co {interval}, tak jak wybrano w edytorze.',
   ],
   // a Personalizado screen's photo: the Fondo section's switch and the editor's Fondo go together
   [
@@ -168,20 +200,12 @@ const ROWS: [string, string, string, string, string, string][] = [
   // ... out to the edges of the screen
   ['Hasta el borde de la pantalla', 'Out to the screen edge', 'Até à borda do ecrã', 'Tot aan de rand van het scherm', 'Helt ud til skærmkanten', 'Do krawędzi ekranu'],
   [
-    'Esquinas rectas, y la foto llega al borde de la pantalla por los lados donde lo toca, como la foto del diseño Moderno. Solo en la zona principal.',
-    'Square corners, and the photo reaches the edge of the screen on the sides where it touches it, like the photo of the Modern design. Only in the main area.',
-    'Cantos retos, e a foto chega à borda do ecrã nos lados onde lhe toca, como a foto do design Moderno. Só na zona principal.',
-    'Rechte hoeken, en de foto loopt door tot de rand van het scherm aan de kanten waar hij die raakt, zoals de foto van het ontwerp Modern. Alleen in het hoofdgedeelte.',
-    'Lige hjørner, og fotoet går helt ud til skærmkanten på de sider, hvor det rører den, som fotoet i designet Moderne. Kun i hovedområdet.',
-    'Proste rogi, a zdjęcie sięga krawędzi ekranu po stronach, gdzie jej dotyka, jak zdjęcie w projekcie Nowoczesny. Tylko w obszarze głównym.',
-  ],
-  [
-    'Delante de las otras tarjetas no hay sitio libre para la foto, así que sigue detrás. Haz sitio o hazla más pequeña.',
-    'There is no free room for the photo in front of the other cards, so it stays behind them. Make room or make it smaller.',
-    'À frente dos outros cartões não há espaço livre para a foto, por isso fica atrás. Abre espaço ou torna-a mais pequena.',
-    'Voor de andere kaarten is geen vrije plek voor de foto, dus blijft hij erachter. Maak ruimte of maak hem kleiner.',
-    'Der er ikke plads til fotoet foran de andre kort, så det bliver bagved. Gør plads eller gør det mindre.',
-    'Przed innymi kartami nie ma wolnego miejsca na zdjęcie, więc zostaje za nimi. Zrób miejsce lub je zmniejsz.',
+    'Esquinas rectas, y la foto llega al borde de la pantalla por los lados donde lo toca, como la foto del diseño Moderno. En la barra lateral llega a los bordes de la barra.',
+    'Square corners, and the photo reaches the edge of the screen on the sides where it touches it, like the photo of the Modern design. In the sidebar it reaches the edges of the bar.',
+    'Cantos retos, e a foto chega à borda do ecrã nos lados onde lhe toca, como a foto do design Moderno. Na barra lateral chega às bordas da barra.',
+    'Rechte hoeken, en de foto loopt door tot de rand van het scherm aan de kanten waar hij die raakt, zoals de foto van het ontwerp Modern. In de zijbalk loopt hij door tot de randen van de balk.',
+    'Lige hjørner, og fotoet går helt ud til skærmkanten på de sider, hvor det rører den, som fotoet i designet Moderne. I sidebjælken går det helt ud til bjælkens kanter.',
+    'Proste rogi, a zdjęcie sięga krawędzi ekranu po stronach, gdzie jej dotyka, jak zdjęcie w projekcie Nowoczesny. Na pasku bocznym sięga krawędzi paska.',
   ],
   // manual calendar downloads on Estado (#37); {secs}, not {n}, so t() never picks plural forms for these short labels
   ['Descargar ahora', 'Fetch now', 'Transferir agora', 'Nu ophalen', 'Hent nu', 'Pobierz teraz'],

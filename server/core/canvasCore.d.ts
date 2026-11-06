@@ -248,6 +248,10 @@ export function readCanvasFile(
 /** The kind an item is sized as (a Rotativa: the range its cards allow too). */
 export function isBehind(item: { kind: string; props?: Record<string, unknown> } | null | undefined): boolean;
 export function isEdge(item: { kind: string; props?: Record<string, unknown> } | null | undefined): boolean;
+/** The photo card that fills the sidebar behind its cards (the first photo of the stack by order), or null. */
+export function sideBackdropId(list: { id: string; kind: string; pos: CanvasPos | null | undefined }[]): string | null;
+/** Cards over an edge photo that get the grid's padding on the photo's inner side (id → 'l' | 't' | 'r' | 'b' letters). */
+export function photoInsets(entries: { id: string; kind: string; props?: Record<string, unknown>; pos: CanvasPos | null | undefined }[], orientation?: Orientation | string, grid?: GridArg): Map<string, string>;
 export function kindFor(item: { kind: string; props?: Record<string, unknown> } | null | undefined): CanvasKindDef;
 /** "Tiempo en varias ciudades": a new card's places, and its layouts. */
 export const CITIES_DEFAULT: { name: string; lat: number; lon: number }[];

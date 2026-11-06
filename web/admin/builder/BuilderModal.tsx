@@ -58,8 +58,8 @@ const REFUSALS: Record<Refusal, string> = {
   noRoom: 'No hay sitio para este tamaño',
   noBigger: 'No hay sitio para un tamaño mayor. Haz sitio a su alrededor o elige otro tamaño.',
   cardsNoRoom: 'La Rotativa necesita un hueco mayor para esa tarjeta y no hay sitio alrededor. Haz sitio o quita la tarjeta.',
-  behindNoRoom: 'Delante de las otras tarjetas no hay sitio libre para la foto, así que sigue detrás. Haz sitio o hazla más pequeña.',
   sideFull: 'No cabe en la barra lateral',
+  sidePhoto: 'La barra lateral ya tiene una foto detrás de sus tarjetas. Solo cabe una.',
   tooMany: 'Ya hay {n} widgets, el máximo en una pantalla',
   kindCap: 'No caben más widgets de este tipo en una pantalla',
   noSide: 'Este widget no puede ir en la barra lateral',
@@ -639,6 +639,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       orient={orient}
       screenOrientation={fixed}
       photoSource={{ source: cfg.background.source, stockTopic: cfg.background.stockTopic }}
+      photoInterval={cfg.background.intervalSec}
       selected={selected}
       tab={tab}
       setTab={setTab}

@@ -11,7 +11,7 @@
 // - A card its condition hides now ("Mostrar solo si", worked out on the server) keeps its cell too (.is-cond-off);
 //   the admin's preview still shows it, so it can be edited.
 import type { Announcement, CanvasPos, DisplayCanvas, DisplayCanvasItem, DisplayConfig, DisplayRotatorCard, DisplayRotatorGroup, DisplayRotatorNested, GlassConfig } from '../../shared/types';
-import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, isEdge, lookSize, posCells, sizeCells } from '../../../server/core/canvasCore.js';
+import { CANVAS_KINDS, fullLookMin, gridDims, isBehind, isEdge, lookSize, photoInsets, posCells, sideBackdropId, sizeCells } from '../../../server/core/canvasCore.js';
 import { glassVars, normalizeGlass } from '../../shared/glass';
 import { parseColor, readableOn, rgbStr } from '../color';
 import { ctx } from '../ctx';
@@ -300,6 +300,8 @@ export class Canvas {
   private media = new Map<string, { widgetId: string; box: HTMLElement }>();
   private evCache: { src: NEvent[]; key: string; out: NEvent[] }[] = [];
   private paused = false;
+  /** the photo card that fills the sidebar behind its cards on this orientation (#41), or null */
+  private backdrop: string | null = null;
 
   constructor(private main: HTMLElement, private side: HTMLElement, private deps: CanvasDeps) {
     // a body that changed size is fitted again (a window resize changes every body; a card the builder moved, one)
@@ -362,7 +364,10 @@ export class Canvas {
     this.side.classList.toggle('is-row', side === 'top' || side === 'bottom');
 
     const shown = cv.items.map((it) => ({ it, pos: posFor(it, portrait) })).filter((x): x is { it: DisplayCanvasItem; pos: CanvasPos } => !!x.pos && (x.pos.zone === 'main' || side !== 'none'));
-    const tracks = sideTracks(shown.map((x) => ({ id: x.it.id, pos: x.pos })));
+    // a photo card in the sidebar fills it behind the other cards and takes no place in the stack (#41)
+    const bd = side === 'none' ? null : sideBackdropId(shown.map((x) => ({ id: x.it.id, kind: x.it.kind, pos: x.pos })));
+    this.backdrop = bd;
+    const tracks = sideTracks(shown.filter((x) => x.it.id !== bd).map((x) => ({ id: x.it.id, pos: x.pos })));
     const keep = new Set<string>();
     for (const { it, pos } of shown) {
       keep.add(it.id);
@@ -376,7 +381,7 @@ export class Canvas {
       const rebuilt = !!e.item.disabled !== !!it.disabled;
       e.item = it;
       if (changed || screenChanged) e.cfg = itemCfg(cfg, it);
-      this.place(e, pos, tracks.get(it.id));
+      this.place(e, pos, tracks.get(it.id), it.id === bd);
       this.style(e);
       if (rebuilt) {
         this.dropSubs(e);
@@ -390,6 +395,13 @@ export class Canvas {
       if (e.kind === 'rotator') this.syncSubs(e, changed, screenChanged);
     }
     for (const e of [...this.entries.values()]) if (!keep.has(e.id)) this.drop(e);
+    // cards over an edge photo get the grid's padding on the photo's inner side too, so they sit centred on it (#41)
+    const insets = photoInsets(shown.filter((x) => x.pos.zone === 'main').map((x) => ({ id: x.it.id, kind: x.it.kind, props: x.it.props, pos: x.pos })), portrait ? 'portrait' : 'landscape');
+    for (const e of this.entries.values()) {
+      const v = insets.get(e.id);
+      if (v) e.el.dataset.inset = v;
+      else delete e.el.dataset.inset;
+    }
     // DOM order = item order (focus order, and the admin's overlay reads the rects in this order)
     for (const x of shown) {
       const e = this.entries.get(x.it.id)!;
@@ -724,8 +736,9 @@ export class Canvas {
     return out;
   }
 
-  private place(e: Entry, pos: CanvasPos, track: { start: number; span: number } | undefined): void {
+  private place(e: Entry, pos: CanvasPos, track: { start: number; span: number } | undefined, backdrop = false): void {
     const s = e.el.style;
+    e.el.classList.toggle('is-backdrop', backdrop);
     if (pos.zone === 'main') {
       e.zone = 'main';
       const [w, h] = posCells(pos, this.portrait ? 'portrait' : 'landscape');
@@ -748,9 +761,18 @@ export class Canvas {
     }
     e.el.classList.remove('is-behind', 'is-edge');
     delete e.el.dataset.edge;
+    delete e.el.dataset.inset;
     e.zone = 'side';
     e.el.dataset.size = 'side';
     delete e.el.dataset.cells;
+    // the photo that fills the sidebar behind its cards (#41): the whole bar, or out to its edges (styles-canvas.css)
+    if (backdrop) {
+      e.el.classList.toggle('is-edge', isEdge(e.item));
+      s.gridColumn = '';
+      s.gridRow = '';
+      e.el.hidden = false;
+      return;
+    }
     const t = track ?? { start: 0, span: 2 };
     e.el.hidden = t.span <= 0;
     const row = this.side.classList.contains('is-row');
@@ -762,12 +784,13 @@ export class Canvas {
   private style(e: Entry): void {
     const cv = this.cv!;
     const st = e.item.style;
-    // inside a glass or solid sidebar the bar itself is the card
-    const inherit = e.zone === 'side' && cv.sidebar.fill !== 'photo' ? 'none' : cv.defaults.surface;
+    // inside a glass or solid sidebar the bar itself is the card (not over a photo card that fills the bar, #41)
+    const backdrop = e.zone === 'side' && !!this.backdrop;
+    const inherit = e.zone === 'side' && cv.sidebar.fill !== 'photo' && !backdrop ? 'none' : cv.defaults.surface;
     let surface = st?.surface && st.surface !== 'inherit' ? st.surface : inherit;
     if (e.kind === 'spacer') surface = 'none';
     // a photo out to the edges has square corners, as the Modern design's photo
-    const radius = e.zone === 'main' && isEdge(e.item) ? 'sq' : st?.radius && st.radius !== 'inherit' ? st.radius : cv.defaults.radius;
+    const radius = (e.zone === 'main' || e.id === this.backdrop) && isEdge(e.item) ? 'sq' : st?.radius && st.radius !== 'inherit' ? st.radius : cv.defaults.radius;
     e.surface = surface;
     const keep = ['is-ink-dark', 'is-thin', 'no-edge', 'no-blur', 'has-own', 'has-color'].filter((k) => e.card.classList.contains(k));
     e.card.className = [`cv-card is-${surface} r-${radius}`, ...keep].join(' ');
@@ -794,12 +817,15 @@ export class Canvas {
     const photoOn = !!bg.enabled && !document.getElementById('app')?.classList.contains('no-photo');
     const screenPhoto = photoOn && bg.scope === 'screen';
     const sidePhoto = photoOn && (screenPhoto || cv.sidebar.fill === 'photo');
+    // a photo card that fills the sidebar (#41): the cards over it are real glass, with no tone of the screen's photo
+    const bd = this.backdrop;
+    const overCard = (e: Entry) => !!bd && e.zone === 'side' && e.id !== bd;
     // the photo right behind a card (its tone tints the glass) ...
-    const photoBehind = (e: Entry) => (e.zone === 'side' ? sidePhoto : screenPhoto);
+    const photoBehind = (e: Entry) => (overCard(e) ? false : e.zone === 'side' ? sidePhoto : screenPhoto);
     // ... or the animated backdrop (canvas.background 'ambient'): something moves behind it, so its glass is real glass
     // (translucent, blurred within the budget), only without a photo tone to follow
     const ambientOn = cv.background === 'ambient' && bg.ambient !== 'none';
-    const behind = (e: Entry) => photoBehind(e) || ambientOn;
+    const behind = (e: Entry) => overCard(e) || photoBehind(e) || ambientOn;
     const base = normalizeGlass(cfg.screen.glass);
     const glassOf = (e: Entry) => {
       const own = e.item.style?.glass;
@@ -810,7 +836,7 @@ export class Canvas {
     const shown = [...this.entries.values()].filter((e) => !e.el.hidden && !e.el.classList.contains('is-empty') && !e.el.classList.contains('is-cond-off'));
     const rects = new Map(shown.map((e) => [e.id, e.el.getBoundingClientRect()]));
     // the blur budget: the glass sidebar is one more blurred sheet
-    let budget = BLUR_BUDGET - (cv.sidebar.side !== 'none' && cv.sidebar.fill === 'glass' && (sidePhoto || ambientOn) && !this.side.hidden ? 1 : 0);
+    let budget = BLUR_BUDGET - (cv.sidebar.side !== 'none' && cv.sidebar.fill === 'glass' && !bd && (sidePhoto || ambientOn) && !this.side.hidden ? 1 : 0);
     const blurs = new Set<string>();
     if (!low) {
       const want = shown.filter((e) => e.surface === 'glass' && behind(e) && glassOf(e).g.blur > 0);

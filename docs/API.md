@@ -1129,14 +1129,30 @@ Saving also stores a box that is
 exactly a named size as the name alone, and refuses `w` without `h` or a value that is not a whole cell (an error; the
 named size is used). The portrait view drawn from the landscape one keeps a box of its own (at most 16 wide) before it
 tries the named sizes. The display config carries `w` and `h` as they are; sidebar items keep their `span` (2, 3, 4 or
-`fill`). Cards never share cells, except a photo card with `props.behind: true` ("Detrás de las otras tarjetas", #36,
-`isBehind(item)`): on the main grid it takes no cells, so saving never moves the cards placed over it, and the display
-draws it under them (`.cv-item.is-behind`). The portrait view drawn from the landscape one keeps it where it was
-(inside the grid) and places the other cards as if it were not there. In the sidebar it is an ordinary card. Any
-photo card also has `props.dim` (0 to 0.6, default 0: a shade over the photo, "Oscurecer foto") and `props.edge`
-(default `false`, "Hasta el borde de la pantalla", `isEdge(item)`): on the main grid it gets square corners and, on each
-side its box touches the grid's edge, covers the grid's padding up to the screen's edge (`.cv-item.is-edge`,
-`data-edge` of `l`, `t`, `r`, `b`). A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
+`fill`). Cards never share cells, except over a photo card: a photo is always drawn behind the other cards (#36,
+#41, `isBehind(item)`). On the main grid it takes no cells, so saving never moves the cards placed over it, and the
+display draws it under them (`.cv-item.is-behind`). The old switch `props.behind` ("Detrás de las otras tarjetas") is
+accepted with any value and dropped; a screen saved with it off keeps every card where it was. A card that saving has
+to move looks for free cells with no photo under them first, then over a photo. The portrait view drawn from the
+landscape one keeps a photo that has cards over it on landscape where it was (inside the grid, taking no cells) and
+places the other cards as if it were not there; a photo with no card over it is placed among the cards like any other.
+In the sidebar the first photo of the stack by `order` (`sideBackdropId(list)`) fills the whole bar behind its cards
+(`.cv-item.is-backdrop`): it takes no place in the stack (its `span` is kept but not used) and still counts towards the
+sidebar's 8 items; another photo in the sidebar is moved to the main area with a warning. While a photo card fills the
+sidebar, the bar's own fill is not drawn (the display's `#app` gets `cv-fill-card` instead of `cv-fill-<fill>`, and
+the cards in it keep the page's surface, as with fill `photo`); `sidebar.fill` itself is never changed and shows again
+once the card leaves the sidebar. Any photo card also has `props.intervalSec` (10 to 86400, default 60: how often it
+changes, the steps of the screen's background up to a day), `props.dim` (0 to 0.6, default 0: a shade over the photo,
+"Oscurecer foto") and `props.edge` (default `false`, "Hasta el borde de la pantalla", `isEdge(item)`): on the main grid
+it gets square corners and, on each side its box touches the grid's edge, covers the grid's padding up to the screen's
+edge (`.cv-item.is-edge`, `data-edge` of `l`, `t`, `r`, `b`); in the sidebar it fills the bar out to its edges with
+square corners (without it, it sits inside the bar's gaps). Where such a photo reaches the screen's edge on one side of
+an axis only, every card fully on its cells that touches its other (inner) side gets the grid's padding on that side
+too (`photoInsets(entries, orientation)`, `data-inset` of `l`, `t`, `r`, `b`), so cards across the photo's columns sit
+centred on it. The sidebar's own photo (`sidebar.fill: "photo"`) may have `sidebar.intervalSec` (10 to 86400) and
+`sidebar.dim` (0 to 0.6): how often it changes and how much it is darkened. Both are optional and written only when
+set; without them it changes with the screen's `background.intervalSec` and is darkened by `canvas.dim`, as before. The
+photos of the card and of the sidebar both come from the screen's background source (`/api/photos?screen=`). A screen takes up to 48 cards (a Rotativa's cards count, the cards of its groups too) and 80 Home Assistant entities (`CANVAS_LIMITS`; each
 kind's own cap comes on top).
 
 **Grid and density.** Every canvas is on the 24×16 grid, and a saved one carries `grid: "fine"`. `grid` is deprecated:
