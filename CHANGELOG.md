@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.38.0] - 2026-11-06
+
+### Added
+- *Trayectos* widget: live travel times from Google Maps by car, public transport, bike or on foot, with the traffic
+  delay, the arrival time and the main road (#42, thanks to @mfrederick903). It needs a Google Maps API key, saved
+  only on the server and never shown again; the server can also read it from `GOOGLE_MAPS_API_KEY`.
+- *Trayectos* card for Personalizado screens, in four designs: one route large, a list (or columns in a wide box),
+  one line per route, and the time alone. *Automático* picks one from the card's size and its number of routes. It
+  follows the data cards' glass, theme, text size and sidebar looks.
+- Each route can have its own days and hours; outside them it is not asked for.
+- New opt-in health feature `commute`. Marco Cloud does not offer it.
+
+### Security
+- Screens never receive the addresses of a route, only its name, mode and times. A screen asks for the times of a
+  widget or card it shows, by id; the routes and the refresh come from the saved settings, so a display link cannot
+  spend the owner's Google key on other routes. Nothing is asked while the screen is private.
+- Google is asked at most every 10 minutes per route, backs off after errors, and *Probar* can be used once a minute
+  per route. The key never appears in answers, errors or logs. A screen file leaves the card's addresses out.
+
 ## [0.37.0] - 2026-11-06
 
 ### Added
