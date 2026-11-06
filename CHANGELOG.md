@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.37.0] - 2026-11-06
+
+### Added
+- The Personalizado photo card and the sidebar's photo (*Relleno de la barra: Foto*) can have photos of their own
+  (#41). Choose *Fotos: Propias* in the editor to pick the source (Stock, Mi galería, Mezcla or an Immich album), the
+  order (random, newest first, by name) and *Fondos especiales* for certain days or birthdays, the same choices as the
+  screen's *Fondo*. *Como el Fondo de la pantalla* stays the default, so saved screens look the same. Immich is only
+  offered where it is available.
+- *Efecto del tiempo* for a photo card and the sidebar photo. On a card it is off by default and draws light rain or
+  snow (with *Realista* also fog and sun) over that card only. It is not drawn with *Ahorro*, `?lite=1` or when the
+  device asks for less motion. The sidebar photo uses the same effect as the Modern photo.
+- `GET /api/photos?for=<card id>|sidebar`: the photos of one photo card or of the sidebar, read from its saved
+  settings on the server. New health feature `photoSources`.
+
+### Changed
+- Gallery photos and Immich albums used only by a photo card or the sidebar now load on that screen's displays, a
+  gallery change reaches those screens, and a special background on a card changes its photo within a minute.
+- *Fondo* says when the sidebar or a photo card of the screen has photos of its own.
+
 ## [0.36.0] - 2026-11-06
 
 ### Changed
