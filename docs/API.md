@@ -1136,9 +1136,12 @@ accepted with any value and dropped; a screen saved with it off keeps every card
 to move looks for free cells with no photo under them first, then over a photo. The portrait view drawn from the
 landscape one keeps a photo that has cards over it on landscape where it was (inside the grid, taking no cells) and
 places the other cards as if it were not there; a photo with no card over it is placed among the cards like any other.
+That includes a photo saved with the old `props.behind: true` and no card over it, which used to stay where it was, so
+the portrait view of such a screen can change.
 In the sidebar the first photo of the stack by `order` (`sideBackdropId(list)`) fills the whole bar behind its cards
 (`.cv-item.is-backdrop`): it takes no place in the stack (its `span` is kept but not used) and still counts towards the
-sidebar's 8 items; another photo in the sidebar is moved to the main area with a warning. While a photo card fills the
+sidebar's 8 items; another photo in the sidebar is moved to the main area with a warning (a display drawing a screen stored before
+that leaves it out until the screen is saved again). While a photo card fills the
 sidebar, the bar's own fill is not drawn (the display's `#app` gets `cv-fill-card` instead of `cv-fill-<fill>`, and
 the cards in it keep the page's surface, as with fill `photo`); `sidebar.fill` itself is never changed and shows again
 once the card leaves the sidebar. Any photo card also has `props.intervalSec` (10 to 86400, default 60: how often it

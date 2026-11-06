@@ -158,6 +158,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   let listSig = '';
   // photos of this list shown so far: once it is all of them, the card asks for the next batch (env.morePhotos)
   let round = 0;
+  // the image loading now: one that an earlier change started and that ends later neither shows nor sets the timer
+  let seq = 0;
   let rule = state.photos?.rule ?? '';
   // spread items over the list, so two photo cards do not show the same one
   const offset = [...item0.id].reduce((n, c) => n + c.charCodeAt(0), 0);
@@ -184,11 +186,12 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     if (++round >= photos.length && photos.length > 1) env.morePhotos(p.file || p.id || '');
     const props = env.item().props as Props;
     const img = new Image();
+    const mine = ++seq;
     img.decoding = 'async';
     img.alt = '';
     img.referrerPolicy = 'no-referrer';
     img.onload = () => {
-      if (!root.isConnected) return;
+      if (!root.isConnected || mine !== seq) return;
       const node = document.createElement('div');
       node.className = `cv-ph${props.fit === 'contain' ? ' contain' : ''}`;
       node.style.backgroundImage = `url("${img.src.replace(/["\\\n]/g, '')}")`;
@@ -208,7 +211,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     };
     // a photo that does not load: the next one soon, not after a long interval (up to a day, #41)
     img.onerror = () => {
-      if (!root.isConnected) return;
+      if (!root.isConnected || mine !== seq) return;
       if (timer) clearTimeout(timer);
       timer = setTimeout(show, Math.min(everyMs(), 60_000));
     };

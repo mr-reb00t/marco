@@ -703,3 +703,53 @@ test('occupancy: photos take no cells, unless asked to count them (a new card lo
   // (the card over it is still the card)
   assert.equal(photos.cells[1][1], 'cv_clock001');
 });
+
+test('a new photo from the palette goes behind the cards: dropped on them, picked on a full screen, over a spacer (#41)', ts, () => {
+  const cv = {
+    ...defaultCanvas(),
+    items: [
+      { id: 'cv_month001', kind: 'calendar.month', pos: { zone: 'main', x: 0, y: 0, size: 'l', w: 12, h: 16 }, props: {} },
+      { id: 'cv_agend001', kind: 'calendar.agenda', pos: { zone: 'main', x: 12, y: 0, size: 'l', w: 12, h: 16 }, props: {} },
+    ],
+  };
+  // dropped where it is let go, over the cards
+  const drop = M.resolveMain(cv, 'landscape', { size: 'm', w: 8, h: 16 }, 0, 0, { kind: 'photo' });
+  assert.deepEqual([drop.x, drop.y, drop.replace], [0, 0, undefined]);
+  // a card (no kind given, or another kind) still finds no room there
+  assert.equal(M.resolveMain(cv, 'landscape', 'm', 0, 0), null);
+  assert.equal(M.resolveMain(cv, 'landscape', 'm', 0, 0, { kind: 'clock.digital' }), null);
+  // picked from the palette on a full screen: it still goes in, behind the cards
+  const r = M.addItem(cv, 'landscape', 'photo', null);
+  assert.equal(r.ok, true);
+  assert.equal(r.cv.items.length, 3);
+  // with half the grid free it takes the free half first
+  const half = { ...cv, items: [cv.items[0]] };
+  const a = M.addItem(half, 'landscape', 'photo', null);
+  const pa = M.placements(a.cv, 'landscape').get(a.id);
+  assert.ok(pa.x >= 12, `free half first, got x=${pa.x}`);
+  // a photo dropped over a spacer leaves the spacer where it is
+  const sp = { ...defaultCanvas(), items: [{ id: 'cv_space001', kind: 'spacer', pos: { zone: 'main', x: 0, y: 0, size: 'm', w: 24, h: 16 }, props: {} }] };
+  const d2 = M.resolveMain(sp, 'landscape', 'm', 0, 0, { kind: 'photo', voids: M.voidIds(sp) });
+  assert.equal(d2.replace, undefined);
+});
+
+test('the sidebar photo the screen shows: one hidden by hand does not hide the bar\'s fill (#41)', ts, () => {
+  const cv = {
+    ...defaultCanvas(),
+    sidebar: { ...defaultCanvas().sidebar, side: 'left' },
+    items: [{ id: 'cv_photo001', kind: 'photo', hidden: true, pos: { zone: 'side', order: 0, span: 2 }, props: {} }],
+  };
+  assert.equal(M.sideBackdrop(cv, 'landscape'), 'cv_photo001');
+  assert.equal(M.sideBackdrop(cv, 'landscape', { shown: true }), null);
+  cv.items[0].hidden = false;
+  assert.equal(M.sideBackdrop(cv, 'landscape', { shown: true }), 'cv_photo001');
+});
+
+test('marginBox: an edge photo reaches over the padding, a card centred on it gets the padding on its inner side (#41)', ts, () => {
+  const g = { ...G.computeGeometry(defaultCanvas(), 'landscape'), edge: 10 };
+  const b = { x: 100, y: 100, w: 200, h: 100 };
+  assert.deepEqual(G.marginBox(b, g), b);
+  assert.deepEqual(G.marginBox(b, g, 'lt'), { x: 90, y: 90, w: 210, h: 110 });
+  assert.deepEqual(G.marginBox(b, g, '', 'r'), { x: 100, y: 100, w: 190, h: 100 });
+  assert.deepEqual(G.marginBox(b, { ...g, edge: 0 }, 'l', 'r'), b);
+});

@@ -98,12 +98,16 @@ export function occupancy(cv: CanvasConfig, o: Orient, except?: string | string[
 
 /**
  * The photo card that fills the sidebar behind its cards on `o` (#41, canvasCore sideBackdropId), or null. It takes
- * no place in the stack: sideStack leaves it out.
+ * no place in the stack: sideStack leaves it out. `shown`: only one the screen shows (not hidden by hand), as the
+ * display decides whether the bar's own fill is drawn (glass.ts sidebarBackdropOf).
  */
-export function sideBackdrop(cv: CanvasConfig, o: Orient): string | null {
+export function sideBackdrop(cv: CanvasConfig, o: Orient, opts: { shown?: boolean } = {}): string | null {
   if (sideOf(cv, o) === 'none') return null;
   const list: { id: string; kind: string; pos: CanvasPos }[] = [];
-  for (const [id, p] of placements(cv, o)) if (p.zone === 'side') list.push({ id, kind: itemOf(cv, id)?.kind ?? '', pos: p });
+  for (const [id, p] of placements(cv, o)) {
+    const it = itemOf(cv, id);
+    if (p.zone === 'side' && !(opts.shown && it?.hidden)) list.push({ id, kind: it?.kind ?? '', pos: p });
+  }
   return sideBackdropId(list);
 }
 
@@ -270,7 +274,7 @@ function makeRoom(cv: CanvasConfig, o: Orient, size: Box | CanvasSize, x: number
  * free spot. null: no room anywhere.
  */
 export function resolveMain(
-  cv: CanvasConfig, o: Orient, size0: Box | CanvasSize, x: number, y: number, opts: { id?: string; at?: { x: number; y: number }; voids?: ReadonlySet<string> } = {},
+  cv: CanvasConfig, o: Orient, size0: Box | CanvasSize, x: number, y: number, opts: { id?: string; kind?: string; at?: { x: number; y: number }; voids?: ReadonlySet<string> } = {},
 ): MainDrop | null {
   const size = asBox(size0);
   const { cols, rows } = grid(o);
@@ -278,6 +282,8 @@ export function resolveMain(
   if (w > cols || h > rows) return null;
   const cx = Math.min(Math.max(0, x), cols - w);
   const cy = Math.min(Math.max(0, y), rows - h);
+  // a new photo (`kind`, no id yet) goes behind the cards, so nothing is in its way: it lands where it is dropped
+  if (!opts.id && opts.kind && isBehind({ kind: opts.kind })) return { x: cx, y: cy, ...size };
   const occ = occupancy(cv, o, opts.id);
   if (fitsAt(occ, cx, cy, w, h)) return { x: cx, y: cy, ...size };
   const here = opts.id ? placements(cv, o).get(opts.id) : undefined;
@@ -604,8 +610,19 @@ export function toMain(cv: CanvasConfig, o: Orient, id: string, x: number, y: nu
  */
 export function firstSpot(cv: CanvasConfig, o: Orient, k: KindRef, size?: CanvasSize, voids?: ReadonlySet<string>): MainDrop | null {
   const sizes = [size ?? kind(k).def, ...sizesOf(k, o)];
-  // room with no photo under it first, then over a photo (always behind the cards, so a card may go there)
-  for (const occ of [occupancy(cv, o, undefined, { photos: true }), occupancy(cv, o)]) {
+  // room with no photo under it first, then over a photo (always behind the cards, so a card may go there); a new
+  // photo then goes over cards with no other photo there, and else anywhere (the top left)
+  const passes = [occupancy(cv, o, undefined, { photos: true }), occupancy(cv, o)];
+  if (kind(k) === CANVAS_KINDS.photo) {
+    const photos = makeOccupancy(o);
+    for (const [id, p] of placements(cv, o)) {
+      if (p.zone !== 'main' || !isBehind(itemOf(cv, id))) continue;
+      const [w, h] = boxCells(p, o);
+      occupy(photos, id, p.x, p.y, w, h);
+    }
+    passes.push(photos, makeOccupancy(o));
+  }
+  for (const occ of passes) {
     for (const s of sizes) {
       const [w, h] = cellsOf(s, o);
       const spot = firstFree(occ, w, h);

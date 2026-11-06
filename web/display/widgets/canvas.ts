@@ -363,9 +363,11 @@ export class Canvas {
     this.side.hidden = side === 'none';
     this.side.classList.toggle('is-row', side === 'top' || side === 'bottom');
 
-    const shown = cv.items.map((it) => ({ it, pos: posFor(it, portrait) })).filter((x): x is { it: DisplayCanvasItem; pos: CanvasPos } => !!x.pos && (x.pos.zone === 'main' || side !== 'none'));
-    // a photo card in the sidebar fills it behind the other cards and takes no place in the stack (#41)
-    const bd = side === 'none' ? null : sideBackdropId(shown.map((x) => ({ id: x.it.id, kind: x.it.kind, pos: x.pos })));
+    const placed = cv.items.map((it) => ({ it, pos: posFor(it, portrait) })).filter((x): x is { it: DisplayCanvasItem; pos: CanvasPos } => !!x.pos && (x.pos.zone === 'main' || side !== 'none'));
+    // a photo card in the sidebar fills it behind the other cards and takes no place in the stack (#41); a second
+    // one (a screen stored before that, which saving moves to the main area) is left out until then
+    const bd = side === 'none' ? null : sideBackdropId(placed.map((x) => ({ id: x.it.id, kind: x.it.kind, pos: x.pos })));
+    const shown = placed.filter((x) => !(x.pos.zone === 'side' && x.it.kind === 'photo' && x.it.id !== bd));
     this.backdrop = bd;
     const tracks = sideTracks(shown.filter((x) => x.it.id !== bd).map((x) => ({ id: x.it.id, pos: x.pos })));
     const keep = new Set<string>();
@@ -833,13 +835,15 @@ export class Canvas {
       const auto = own.tint === 'auto';
       return { g: normalizeGlass({ ...own, tint: auto ? 'dark' : own.tint } as GlassConfig), auto };
     };
+    // a photo card that covers its whole box (fit cover) hides its own glass, so blurring what is under it is wasted
+    const opaque = (e: Entry) => e.kind === 'photo' && e.item.props?.fit !== 'contain';
     const shown = [...this.entries.values()].filter((e) => !e.el.hidden && !e.el.classList.contains('is-empty') && !e.el.classList.contains('is-cond-off'));
     const rects = new Map(shown.map((e) => [e.id, e.el.getBoundingClientRect()]));
     // the blur budget: the glass sidebar is one more blurred sheet
     let budget = BLUR_BUDGET - (cv.sidebar.side !== 'none' && cv.sidebar.fill === 'glass' && !bd && (sidePhoto || ambientOn) && !this.side.hidden ? 1 : 0);
     const blurs = new Set<string>();
     if (!low) {
-      const want = shown.filter((e) => e.surface === 'glass' && behind(e) && glassOf(e).g.blur > 0);
+      const want = shown.filter((e) => e.surface === 'glass' && behind(e) && glassOf(e).g.blur > 0 && !opaque(e));
       const area = (e: Entry) => {
         const r = rects.get(e.id)!;
         return r.width * r.height;
@@ -858,15 +862,16 @@ export class Canvas {
       const region = photo && r && fr && fr.width > 1 && fr.height > 1
         ? toneOf((r.left - fr.left) / fr.width, (r.top - fr.top) / fr.height, (r.right - fr.left) / fr.width, (r.bottom - fr.top) / fr.height, fr.width / fr.height)
         : null;
-      const noBlur = !low && e.surface === 'glass' && hasPhoto && g.blur > 0 && !blurs.has(e.id) && shown.includes(e);
+      const covers = opaque(e);
+      const noBlur = !low && !covers && e.surface === 'glass' && hasPhoto && g.blur > 0 && !blurs.has(e.id) && shown.includes(e);
       const tint: GlassConfig['tint'] = auto ? (region ? (region.lum > 0.55 ? 'light' : 'dark') : cfg.screen.theme === 'light' ? 'light' : 'dark') : g.tint;
       const color = st?.color ?? null;
       const accent = st?.accent ?? null;
-      const key = [e.surface, JSON.stringify(g), tint, color, accent, hasPhoto, low, noBlur, region ? `${region.tone.toFixed(2)}|${region.rgb}` : photo && photoStats ? `${photoStats.tone}|${photoStats.rgb}` : '-'].join('|');
+      const key = [e.surface, JSON.stringify(g), tint, color, accent, hasPhoto, low, noBlur, covers, region ? `${region.tone.toFixed(2)}|${region.rgb}` : photo && photoStats ? `${photoStats.tone}|${photoStats.rgb}` : '-'].join('|');
       if (key === e.lookKey) continue;
       e.lookKey = key;
       e.noBlur = noBlur;
-      const out = glassVars({ ...g, tint }, photo ? (region ?? photoStats) : null, { lite: low || noBlur, hasPhoto });
+      const out = glassVars({ ...g, tint }, photo ? (region ?? photoStats) : null, { lite: low || noBlur || covers, hasPhoto });
       const vars: Record<string, string> = { ...out.vars };
       // a solid card is the solid tint: light (dark text) only with a light tint
       let inkDark = e.surface === 'solid' ? tint === 'light' : out.inkDark;

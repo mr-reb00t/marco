@@ -6,16 +6,16 @@ import { postDraftWeather } from '../weatherPreview';
 import { HIDDEN_TEXT, type HiddenWhy } from './hiddenWhy';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { HaPreview } from './haPreview';
-import type { CanvasConfig, CanvasKind, CanvasSize, DataItemData, DisplayConfig, DisplayValue } from '../../shared/types';
-import { CANVAS_KINDS, canvasDefaults, isBehind } from '../../../server/core/canvasCore.js';
+import type { CanvasConfig, CanvasKind, CanvasPos, CanvasSize, DataItemData, DisplayConfig, DisplayValue } from '../../shared/types';
+import { CANVAS_KINDS, CANVAS_LIMITS, canvasDefaults, isBehind, isEdge, photoInsets } from '../../../server/core/canvasCore.js';
 import { Icon } from '../components/icons';
 import { t } from '../i18n';
 import { gesture } from './dnd';
-import { cellAt, cellBox, computeGeometry, inSide, mainBox, sideBox, sideIndexAt, sideTracks, type Box, type Geometry } from './geometry';
+import { cellAt, cellBox, computeGeometry, inSide, mainBox, marginBox, sideBox, sideIndexAt, sideTracks, type Box, type Geometry } from './geometry';
 import { KIND_META, SIZE_LABEL, SPAN_LABEL, itemIcon, itemKindName } from './kinds';
 import {
   addItem, applyBox, applyMain, boxCells, boxFor, fitSpan, grid, sizingOf, handleBox, itemOf, occupantsAt, placements, rangeOf, voidIds, readOnly, reorderSide, resize, resolveMain,
-  sideBackdrop, sideOf, sideStack, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
+  sideBackdrop, sideOf, sideStack, sideUse, sizeForSpan, sizesOf, spanForBox, stepSize, tabOrder, toSide, type Box as CellsBox, type MainDrop, type Orient, type Refusal, type Result,
 } from './model';
 
 /** Something new from the palette: a kind and the props it starts with (a saved widget's id). */
@@ -44,7 +44,7 @@ export interface RectsInfo {
 }
 
 /** `whole`: a photo over the sidebar, which fills the whole bar behind its cards (#41) */
-type Target = { zone: 'main'; drop: MainDrop | null; cell: { x: number; y: number }; size: CellsBox | CanvasSize; inWay: string[] } | { zone: 'side'; index: number; ok: boolean; whole?: boolean } | null;
+type Target = { zone: 'main'; drop: MainDrop | null; cell: { x: number; y: number }; size: CellsBox | CanvasSize; inWay: string[] } | { zone: 'side'; index: number; ok: boolean; whole?: boolean; why?: Refusal } | null;
 interface Ghost {
   box: Box | null;
   ok: boolean;
@@ -229,10 +229,24 @@ export function Stage(props: {
     const r = reported;
     if (!r || r.W !== W || r.H !== H || !!r.side !== !!mine.side || (mine.side && r.row !== mine.row)) return mine;
     if (mine.side && r.side && Math.abs(r.side.w * r.side.h - mine.side.w * mine.side.h) > 0.08 * mine.side.w * mine.side.h) return mine;
-    return { ...r, strip: mine.strip };
+    return { ...r, strip: mine.strip, edge: mine.edge };
   }, [cv, orient, reported, props.fontScale, W, H]);
 
   const pl = useMemo(() => placements(cv, orient), [cv, orient]);
+  // the margins the display gives an edge photo and the cards centred on it (#41), so their outlines match the screen
+  const margins = useMemo(() => {
+    const out = new Map<string, string>();
+    const { cols, rows } = grid(orient);
+    const shown = cv.items.filter((it) => !it.hidden && pl.get(it.id)?.zone === 'main');
+    for (const it of shown) {
+      const p = pl.get(it.id) as Extract<CanvasPos, { zone: 'main' }>;
+      if (!isEdge(it)) continue;
+      const [w, h] = boxCells(p, orient);
+      out.set(it.id, [p.x === 0 && 'l', p.y === 0 && 't', p.x + w >= cols && 'r', p.y + h >= rows && 'b'].filter(Boolean).join(''));
+    }
+    const inset = photoInsets(shown.map((it) => ({ id: it.id, kind: it.kind, props: it.props, pos: pl.get(it.id) })), orient);
+    return { out, inset };
+  }, [cv, orient, pl]);
   const stack = useMemo(() => sideStack(cv, orient), [cv, orient]);
   // the photo that fills the sidebar behind its cards (#41)
   const backdrop = useMemo(() => sideBackdrop(cv, orient), [cv, orient]);
@@ -261,7 +275,7 @@ export function Stage(props: {
   const boxOf = (id: string): Box | null => {
     const p = pl.get(id);
     if (!p) return null;
-    if (p.zone === 'main') return mainBox(geo, orient, p);
+    if (p.zone === 'main') return marginBox(mainBox(geo, orient, p), geo, margins.out.get(id), margins.inset.get(id));
     if (id === backdrop) return geo.strip;
     const tr = tracks.get(id);
     return tr ? sideBox(geo, tr.start, tr.span) : null;
@@ -292,10 +306,11 @@ export function Stage(props: {
       });
       const index = sideIndexAt(geo, boxes, px, py);
       if (!k.side) return { zone: 'side', index, ok: false };
-      // a photo fills the whole bar behind its cards: one at most
+      // a photo fills the whole bar behind its cards: one at most, and it counts towards the sidebar's cap
       if (what.kind === 'photo') {
         const bd = sideBackdrop(c, orient);
-        return { zone: 'side', index: 0, ok: !bd || bd === what.id, whole: true };
+        const why: Refusal | undefined = bd === what.id && bd ? undefined : bd ? 'sidePhoto' : sideUse(c, orient, what.id).count >= CANVAS_LIMITS.side ? 'sideFull' : undefined;
+        return { zone: 'side', index: 0, ok: !why, whole: true, why };
       }
       if (from?.zone === 'side') return { zone: 'side', index, ok: true };
       const size: CellsBox = from?.zone === 'main' ? from : { size: sz.def };
@@ -306,7 +321,7 @@ export function Stage(props: {
     const size: CellsBox | CanvasSize = from?.zone === 'main' ? from : from?.zone === 'side' ? sizeForSpan(sz, from.span) : sz.def;
     const [w, h] = boxCells(size, orient);
     const g = what.grab && from?.zone === 'main' ? what.grab : { x: Math.floor(w / 2), y: Math.floor(h / 2) };
-    const drop = resolveMain(c, orient, size, cell.x - g.x, cell.y - g.y, { id: what.id, at: cell, voids: voidsOf(c) });
+    const drop = resolveMain(c, orient, size, cell.x - g.x, cell.y - g.y, { id: what.id, kind: what.kind, at: cell, voids: voidsOf(c) });
     // a new card that does not fit there at its usual size goes in at the largest smaller box that does (any w×h
     // within its range, a named size first at the same area; it can be changed afterwards), as a tap on its palette
     // tile already does
@@ -375,7 +390,7 @@ export function Stage(props: {
       r = what.id ? applyMain(c, orient, what.id, tg.drop) : addItem(c, orient, what.kind, { zone: 'main', drop: tg.drop }, what.props);
     } else {
       if (!tg.ok) {
-        live.current.refuse(tg.whole ? 'sidePhoto' : 'sideFull');
+        live.current.refuse(tg.why ?? 'sideFull');
         return false;
       }
       const from = what.id ? placements(c, orient).get(what.id) : undefined;

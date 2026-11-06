@@ -196,8 +196,18 @@ function PagePanel(p: InspectorProps) {
   const g = normalizeGlass(p.glass);
   const putGlass = <K extends keyof GlassConfig>(k: K, v: GlassConfig[K]) => p.setGlass({ ...g, [k]: v }, `glass.${k}`);
   const sideOn = cv.sidebar.side !== 'none';
-  // a photo card that fills the sidebar on either orientation (#41)
-  const backdrop = !!(sideBackdrop(cv, 'landscape') || sideBackdrop(cv, 'portrait'));
+  // a photo card the screen shows that fills the sidebar (#41): the fill is locked only when it is covered in every
+  // orientation the screen can take; in only one, the hint says where the fill still shows
+  const orients: Orient[] = p.screenOrientation === 'auto' ? ['landscape', 'portrait'] : [p.screenOrientation];
+  const covered = orients.filter((o) => sideBackdrop(cv, o, { shown: true }));
+  const backdrop = covered.length === orients.length;
+  const fillHint = backdrop
+    ? t('Una tarjeta de foto llena la barra lateral, así que este relleno no se ve. Vuelve si la quitas de la barra.')
+    : covered[0] === 'landscape'
+      ? t('En horizontal una tarjeta de foto llena la barra lateral: este relleno solo se ve en vertical.')
+      : covered[0] === 'portrait'
+        ? t('En vertical una tarjeta de foto llena la barra lateral: este relleno solo se ve en horizontal.')
+        : undefined;
   const touchy = cv.items.some((i) => CANVAS_KINDS[i.kind]?.controls || CANVAS_KINDS[i.kind]?.nav) || p.inCarousel;
   const haTouchy = cv.items.some((i) => CANVAS_KINDS[i.kind]?.controls);
   const canPortrait = p.screenOrientation !== 'landscape';
@@ -302,7 +312,7 @@ function PagePanel(p: InspectorProps) {
             />
           </Field>
           {/* a photo card in the sidebar fills it (#41): it wins over the fill, which comes back when the card leaves */}
-          <Field label={t('Relleno de la barra')} hint={backdrop ? t('Una tarjeta de foto llena la barra lateral, así que este relleno no se ve. Vuelve si la quitas de la barra.') : undefined}>
+          <Field label={t('Relleno de la barra')} hint={fillHint}>
             <Segmented
               full
               value={cv.sidebar.fill}

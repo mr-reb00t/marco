@@ -165,6 +165,22 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Karta zdjęcia wypełnia pasek boczny, więc tego wypełnienia nie widać. Wróci, gdy wyjmiesz kartę z paska.',
   ],
   [
+    'En horizontal una tarjeta de foto llena la barra lateral: este relleno solo se ve en vertical.',
+    'In landscape a photo card fills the sidebar: this fill only shows in portrait.',
+    'Na horizontal um cartão de foto enche a barra lateral: este preenchimento só se vê na vertical.',
+    'Liggend vult een fotokaart de zijbalk: deze vulling is alleen staand te zien.',
+    'I liggende format fylder et fotokort sidebjælken: denne udfyldning ses kun i stående format.',
+    'W poziomie karta zdjęcia wypełnia pasek boczny: to wypełnienie widać tylko w pionie.',
+  ],
+  [
+    'En vertical una tarjeta de foto llena la barra lateral: este relleno solo se ve en horizontal.',
+    'In portrait a photo card fills the sidebar: this fill only shows in landscape.',
+    'Na vertical um cartão de foto enche a barra lateral: este preenchimento só se vê na horizontal.',
+    'Staand vult een fotokaart de zijbalk: deze vulling is alleen liggend te zien.',
+    'I stående format fylder et fotokort sidebjælken: denne udfyldning ses kun i liggende format.',
+    'W pionie karta zdjęcia wypełnia pasek boczny: to wypełnienie widać tylko w poziomie.',
+  ],
+  [
     'La barra lateral ya tiene una foto detrás de sus tarjetas. Solo cabe una.',
     'The sidebar already has a photo behind its cards. Only one fits.',
     'A barra lateral já tem uma foto atrás dos seus cartões. Só cabe uma.',

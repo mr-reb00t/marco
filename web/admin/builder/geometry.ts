@@ -26,6 +26,8 @@ export interface Geometry {
   row: boolean;
   /** the sidebar's whole strip, padding included */
   strip: Box | null;
+  /** the main grid's padding (styles-canvas.css --cv-edge), which an edge photo and the cards over it use (#41) */
+  edge?: number;
 }
 
 /** The display's root size unit (styles.css --u) for a screen of W×H and a font scale. */
@@ -59,7 +61,7 @@ export function computeGeometry(cv: CanvasConfig, o: Orient, fs = 1, size?: { w:
   const edge = (dense ? 1.4 : 2.4) * rem;
   const edgeX = (dense ? 1.2 : 2) * rem;
   return {
-    W, H, row, strip: sideBox,
+    W, H, row, strip: sideBox, edge,
     main: pad(mainBox, edge, edge, gap),
     side: sideBox ? (row ? pad(sideBox, edge, edgeX, gap) : pad(sideBox, edgeX, edge, gap)) : null,
   };
@@ -89,6 +91,20 @@ export const mainBox = (g: Geometry, o: Orient, p: Extract<CanvasPos, { zone: 'm
   const [w, h] = boxCells(p, o);
   return cellBox(g, o, p.x, p.y, w, h);
 };
+
+/**
+ * A main-grid card's box with the margins the display gives it (styles-canvas.css): an edge photo reaches over the
+ * grid's padding on the sides it touches the screen's edge (`out`, data-edge), and a card over such a photo gets that
+ * padding on the photo's inner side (`inset`, data-inset, canvasCore photoInsets). Sides are letters l, t, r, b.
+ */
+export function marginBox(b: Box, g: Geometry, out = '', inset = ''): Box {
+  const e = g.edge ?? 0;
+  if (!e || (!out && !inset)) return b;
+  const m = (s: string) => (out.includes(s) ? -e : 0) + (inset.includes(s) ? e : 0);
+  const l = m('l');
+  const t = m('t');
+  return { x: b.x + l, y: b.y + t, w: b.w - l - m('r'), h: b.h - t - m('b') };
+}
 
 /** Start and length (in units of the stack) of each sidebar item; the fill item takes what the others leave. */
 export function sideTracks(list: { id: string; pos: Extract<CanvasPos, { zone: 'side' }> }[]): Map<string, { start: number; span: number }> {
