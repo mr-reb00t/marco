@@ -230,6 +230,12 @@ export interface CommuteResponse {
   keySet: boolean;
   routes: CommuteRouteResult[];
 }
+/** The designs of a Trayectos card (core/commuteCore.js COMMUTE_LOOKS); 'auto' picks one from the box. */
+export type CommuteLook = 'auto' | 'focus' | 'list' | 'line' | 'pill';
+/** A Trayectos card of a Personalizado screen (canvas kind 'commute'): its routes and how it looks. */
+export type CommuteCardProps = CommuteWidgetOptions & { look: CommuteLook };
+/** A Trayectos card as a display gets it (canvasCore projectCanvas): no addresses; `sig` changes with them. */
+export type DisplayCommuteCardProps = DisplayCommuteOptions & { look: CommuteLook; sig: string };
 export type TestCommuteResponse =
   | { ok: true; durationSec: number; normalDurationSec: number; delaySec: number; traffic: CommuteTrafficLevel; distanceMeters: number; summary: string; provider: string }
   | { ok: false; error: string };
@@ -1094,6 +1100,8 @@ export type CanvasKind =
   | 'market' | 'sports' | 'stocks' | 'currency'
   // Sonando ahora: what a linked Spotify account plays (server/core/nowPlayingCore.js, NowPlayingData)
   | 'nowplaying'
+  // Trayectos: live travel times of the card's own routes (server/commute.js, CommuteCardProps), self-hosted only
+  | 'commute'
   | 'html'
   // reserved for a later version (a declarative card), refused today
   | 'card';

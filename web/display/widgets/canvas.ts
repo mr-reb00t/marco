@@ -30,6 +30,7 @@ import type { HaSource } from '../haFeed';
 import type { ValueSource } from '../valuesFeed';
 import type { DataSource } from '../dataFeed';
 import type { NowPlayingSource } from '../nowPlayingFeed';
+import type { CommuteSource } from '../commuteFeed';
 
 export interface CanvasDeps {
   /** every normalised event of the screen */
@@ -55,6 +56,8 @@ export interface CanvasDeps {
   data: DataSource;
   /** what the linked Spotify accounts of this screen play (nowPlayingFeed.ts) */
   nowPlaying: NowPlayingSource;
+  /** travel times of this screen's Trayectos cards (commuteFeed.ts) */
+  commute: CommuteSource;
   /** the navigation cards (main.ts, web/display/nav.ts) */
   nav: NavSource;
   /** the next batch of the screen's photos, after `after` (AdapterEnv.morePhotos) */
@@ -95,7 +98,7 @@ export const BLUR_BUDGET = 26;
  * zoomed instead: its text, icons and gaps grow or shrink together inside the same box, and the card's own fitting
  * (the agenda's "+N more", the cramped mark) measures the zoomed content.
  */
-const OWN_SCALE = /^(?:ha\.|clock\.|nav\.|date$|weather\.now$|value$|heading$|html$|market$|sports$|stocks$|currency$)/;
+const OWN_SCALE = /^(?:ha\.|clock\.|nav\.|date$|weather\.now$|value$|heading$|html$|market$|sports$|stocks$|currency$|commute$)/;
 
 /** The text size of a card on its body: --cv-scale for the kinds that read it, a zoom for the others (none at 100 %). */
 function applyScale(e: { kind: string; item: DisplayCanvasItem; body: HTMLElement }): void {
@@ -458,7 +461,7 @@ export class Canvas {
     // a card grown to its box (FILL) was measured with what it showed then (a "loading" line, last minute's list):
     // with new content it is fitted again, so how it looks never depends on when the data came
     // (Home Assistant, pushed values and data cards draw none of them)
-    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'nowplaying' && topic !== 'photos' && topic !== 'nav') for (const e of this.every()) if (FILL[e.kind]) this.relayoutSoon(e.parent?.id ?? e.id);
+    if (topic !== 'ha' && topic !== 'values' && topic !== 'data' && topic !== 'nowplaying' && topic !== 'commute' && topic !== 'photos' && topic !== 'nav') for (const e of this.every()) if (FILL[e.kind]) this.relayoutSoon(e.parent?.id ?? e.id);
   }
 
   /** Fit every card to its box again (resize, fonts, the sidebar changed size), or only the cards of `only`. */
@@ -733,6 +736,7 @@ export class Canvas {
       values: this.deps.values,
       data: this.deps.data,
       nowPlaying: this.deps.nowPlaying,
+      commute: this.deps.commute,
       nav: this.deps.nav,
     };
   }

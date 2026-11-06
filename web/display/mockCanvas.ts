@@ -1,6 +1,7 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, commute,
+// commuteLines, commutePortrait, commuteSide, commuteStates, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -22,6 +23,17 @@ const M = (x: number, y: number, size: string) => ({ zone: 'main' as const, x, y
 /** A box of its own: w×h cells (the named size is worked out by the validation). */
 const B = (x: number, y: number, w: number, h: number) => ({ zone: 'main' as const, x, y, size: 'm' as never, w, h });
 const S = (order: number, span: 2 | 3 | 4 | 'fill') => ({ zone: 'side' as const, order, span });
+
+/**
+ * A route of a demo Trayectos card: made-up places (the display never gets them: the projection leaves them out) and
+ * the demo times of cr_demo<n> (mockCommute.ts: 0 a little slow by car, 1 by bus, 2 slow, 3 by bike, 4 the way back on
+ * foot, 5 a long drive).
+ */
+const R = (n: number | string, name: string, mode: 'driving' | 'transit' | 'bicycling' | 'walking' = 'driving') => ({
+  id: typeof n === 'number' ? `cr_demo${n}` : n, name, origin: 'Calle Inventada 12, Villaejemplo', destination: 'Plaza Ficticia 3, Villaejemplo', mode,
+  direction: 'to', reverseAfter: '12:00', days: [], from: '', to: '',
+});
+const COMMUTE_ROUTES = [R(0, 'Trabajo'), R(1, 'Universidad', 'transit'), R(2, 'Aeropuerto'), R(3, 'Gimnasio', 'bicycling'), R(4, 'Casa de la abuela', 'walking')];
 
 // Showcase screens for the website and the video (made up, in English with &lang=en): web/display/showcase/, one file
 // per screen and their registry (index.ts) with the states and data each one needs. &shot=show.<key> (the clock stands
@@ -416,6 +428,77 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'stocks', pos: B(7, 0, 6, 5), props: { symbols: [{ sym: 'SPY', name: 'S&P 500' }], layout: 'big', currency: 'USD', sparkline: true, chartStyle: 'background', label: 'name' } },
       { kind: 'stocks', pos: B(0, 6, 8, 6), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }, { sym: 'GOOGL', name: 'Google' }], layout: 'list', currency: 'EUR', label: 'name' } },
       { kind: 'stocks', pos: B(0, 13, 16, 2), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'ticker', currency: 'EUR', label: 'name' } },
+    ],
+  },
+  // Trayectos (made-up times, mockCommute.ts) among the data cards: one route large in a medium box and in a wide one
+  // (slow traffic), the time alone in the smallest box, a list with the way back and a route with no way found
+  commute: {
+    canvas: { background: 'photo', dim: 0.2 },
+    items: [
+      { kind: 'commute', pos: M(0, 0, 'm'), props: { routes: [R(0, 'Trabajo')] } },
+      { kind: 'commute', pos: M(8, 0, 'w'), props: { routes: [R(2, 'Aeropuerto')] } },
+      { kind: 'commute', pos: M(20, 0, 'xs'), props: { routes: [R(1, 'Universidad', 'transit')] } },
+      { kind: 'commute', pos: M(8, 4, 'l'), props: { routes: [R(0, 'Trabajo'), R(1, 'Universidad', 'transit'), R(4, 'Casa de la abuela', 'walking'), R('cr_demo_noroute', 'Pueblo')] } },
+      { kind: 'value', pos: M(20, 4, 'xs'), props: { key: 'solar.today', label: 'Solar hoy', unit: 'kWh', decimals: 1, icon: '☀️' } },
+      { kind: 'market', pos: M(0, 6, 'm'), props: { coins: [{ id: 'bitcoin', currency: 'eur' }, { id: 'ethereum', currency: 'eur' }, { id: 'solana', currency: 'eur' }], range: '7d' } },
+      { kind: 'currency', pos: M(20, 8, 'xs'), props: { pairs: [{ base: 'EUR', quote: 'USD' }] } },
+      { kind: 'weather.now', pos: M(0, 12, 'm') },
+      { kind: 'stocks', pos: B(8, 12, 16, 4), props: { symbols: [{ sym: 'AAPL', name: 'Apple' }, { sym: 'MSFT', name: 'Microsoft' }, { sym: 'SPY', name: 'S&P 500' }], layout: 'list', label: 'name' } },
+    ],
+  },
+  // the compact looks: one route a line in a box one cell high, lines in a small box, the routes side by side in a
+  // band, a card with no route written yet; beside the Cripto and Bolsa lines
+  commuteLines: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'commute', pos: B(0, 0, 8, 1), props: { routes: [R(0, 'Trabajo'), R(2, 'Aeropuerto')] } },
+      { kind: 'market', pos: B(0, 1, 8, 1), props: { coins: [{ id: 'bitcoin', currency: 'eur' }], range: '7d' } },
+      { kind: 'commute', pos: B(0, 2, 8, 3), props: { routes: COMMUTE_ROUTES.slice(0, 3) } },
+      { kind: 'commute', pos: M(8, 0, 'w'), props: { routes: [] } },
+      { kind: 'sports', pos: M(8, 4, 'l'), props: { follow: [{ type: 'league', league: 'eng.1', name: '' }], max: 3 } },
+      { kind: 'clock.digital', pos: M(20, 0, 'xs') },
+      { kind: 'commute', pos: M(0, 12, 'band'), props: { routes: COMMUTE_ROUTES.slice(0, 4) } },
+    ],
+  },
+  // the same on a portrait screen (the positions are the landscape ones, the portrait layout derived from them)
+  commutePortrait: {
+    orientation: 'portrait',
+    canvas: { background: 'photo', dim: 0.2 },
+    items: [
+      { kind: 'commute', pos: M(0, 0, 'm'), props: { routes: [R(0, 'Trabajo')] } },
+      { kind: 'commute', pos: M(8, 0, 'xs'), props: { routes: [R(2, 'Aeropuerto')] } },
+      { kind: 'value', pos: M(12, 0, 'xs'), props: { key: 'solar.today', label: 'Solar hoy', unit: 'kWh', decimals: 1, icon: '☀️' } },
+      { kind: 'market', pos: B(8, 4, 8, 2), props: { coins: [{ id: 'bitcoin', currency: 'eur' }, { id: 'ethereum', currency: 'eur' }], range: '7d' } },
+      { kind: 'clock.digital', pos: M(16, 0, 'm') },
+      { kind: 'weather.now', pos: M(16, 6, 'm') },
+      { kind: 'commute', pos: B(0, 6, 16, 6), props: { routes: COMMUTE_ROUTES.slice(0, 4) } },
+      { kind: 'commute', pos: M(0, 12, 'band'), props: { routes: COMMUTE_ROUTES.slice(0, 3) } },
+    ],
+  },
+  // in the sidebar, beside the data cards: a list and lines; on the main grid the routes side by side and one large
+  // at a time
+  commuteSide: {
+    canvas: { background: 'photo', dim: 0.2, sidebar: { side: 'right', size: 'normal', fill: 'glass' } },
+    items: [
+      { kind: 'clock.digital', pos: S(0, 2) },
+      { kind: 'commute', pos: S(1, 4), props: { routes: COMMUTE_ROUTES.slice(0, 3) } },
+      { kind: 'commute', pos: S(2, 2), props: { routes: [R(0, 'Trabajo'), R(1, 'Universidad', 'transit')], look: 'line' } },
+      { kind: 'market', pos: M(0, 0, 'm'), props: { coins: [{ id: 'bitcoin', currency: 'eur' }, { id: 'ethereum', currency: 'eur' }, { id: 'solana', currency: 'eur' }], range: '7d' } },
+      { kind: 'weather.now', pos: M(8, 0, 'm') },
+      { kind: 'value', pos: M(0, 6, 'w'), props: { key: 'solar.today', label: 'Solar hoy', unit: 'kWh', decimals: 1, icon: '☀️' } },
+      { kind: 'commute', pos: M(0, 10, 'w'), props: { routes: [R(0, 'Trabajo'), R(2, 'Aeropuerto'), R(1, 'Universidad', 'transit')] } },
+      { kind: 'commute', pos: M(12, 6, 'm'), props: { routes: [R(2, 'Aeropuerto'), R(0, 'Trabajo')], look: 'focus' } },
+    ],
+  },
+  // what a card says when something is off: no key on the server, old times, a list of one route, a route by bus large
+  commuteStates: {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'commute', pos: M(0, 0, 'm'), props: { routes: [R('cr_demo_nokey', 'Trabajo')] } },
+      { kind: 'commute', pos: M(8, 0, 'm'), props: { routes: [R('cr_demo_stale', 'Trabajo')] } },
+      { kind: 'commute', pos: B(16, 0, 8, 6), props: { routes: [R(1, 'Universidad', 'transit')], look: 'list' } },
+      { kind: 'commute', pos: M(0, 6, 'w'), props: { routes: [R(1, 'Universidad', 'transit')] } },
+      { kind: 'market', pos: M(12, 6, 'w'), props: { coins: [{ id: 'bitcoin', currency: 'eur' }], layout: 'big', range: '7d' } },
     ],
   },
   // Calendar grid lines (#29): Suaves (the look it always had), Marcadas, Fuertes in a colour of its own, and a week;
@@ -888,6 +971,11 @@ function sizeProps(kind: string, n: number): Record<string, unknown> {
     }
     // what plays: two made-up tracks by turns, every third card without its cover, every other without the bar
     case 'nowplaying': return { account: n % 2 ? 'sp_demo0000001' : DEMO_NOW_PLAYING_ACCOUNT, art: n % 3 !== 2, progress: n % 2 === 0 };
+    // one, three or five routes (a long name now and then), each copy in another design
+    case 'commute': return {
+      look: (['auto', 'focus', 'list', 'line', 'pill'] as const)[n % 5],
+      routes: [R(0, n % 3 === 2 ? 'Casa de los abuelos en el pueblo de la sierra' : 'Trabajo'), R(1, 'Universidad', 'transit'), R(2, 'Aeropuerto'), R(3, 'Gimnasio', 'bicycling'), R(4, 'Casa de la abuela', 'walking')].slice(0, [1, 3, 5][n % 3]),
+    };
     case 'ha.scene': return { buttons: ['scene', 'script', 'scene', 'button'].slice(0, 2 + (n % 3)).map((d, i) => ({ entity: `${d}.s_${n}_${i}`, label: '', icon: '' })) };
     default: return {};
   }

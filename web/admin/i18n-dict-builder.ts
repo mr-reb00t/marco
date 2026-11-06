@@ -1827,6 +1827,21 @@ const ROWS: [string, string, string, string, string][] = [
     'Een wisselkaart in een groep toont zijn kaarten na elkaar in zijn deel van de ruimte. Er kunnen geen groepen of een andere wisselkaart in.',
     'Et skiftekort i en gruppe viser sine kort efter hinanden i sin del af pladsen. Det kan ikke indeholde grupper eller et andet skiftekort.',
   ],
+  // Trayectos (canvas kind 'commute'): the palette, the Inspector and the imported card's badge
+  ['Rutas', 'Routes', 'Rotas', 'Routes', 'Ruter'],
+  ['Cuánto se tarda ahora en llegar a tus sitios en coche, en transporte público, en bici o a pie, con el tráfico de Google Maps.', 'How long it takes right now to get to your places by car, public transport, bike or on foot, with Google Maps traffic.', 'Quanto se demora agora a chegar aos teus sítios de carro, de transportes públicos, de bicicleta ou a pé, com o trânsito do Google Maps.', 'Hoe lang je er nu over doet naar je vaste plekken met de auto, het openbaar vervoer, de fiets of te voet, met het verkeer van Google Maps.', 'Hvor lang tid det tager lige nu at komme til dine steder i bil, med offentlig transport, på cykel eller til fods, med trafikken fra Google Maps.'],
+  ['Automático elige según el tamaño de la tarjeta y cuántas rutas hay.', 'Automatic picks one by the size of the card and how many routes it has.', 'Automático escolhe conforme o tamanho do cartão e quantas rotas tem.', 'Automatisch kiest op basis van de grootte van de kaart en het aantal routes.', 'Automatisk vælger ud fra kortets størrelse og hvor mange ruter det har.'],
+  ['Solo el tiempo', 'Time only', 'Só o tempo', 'Alleen de tijd', 'Kun tiden'],
+  ['km', 'km', 'km', 'km', 'km'],
+  ['mi', 'mi', 'mi', 'mi', 'mi'],
+  ['10 min', '10 min', '10 min', '10 min', '10 min'],
+  ['15 min', '15 min', '15 min', '15 min', '15 min'],
+  ['30 min', '30 min', '30 min', '30 min', '30 min'],
+  ['60 min', '60 min', '60 min', '60 min', '60 min'],
+  ['Cada ruta que se ve es una consulta a Google en cada actualización. Fuera de su horario no se consulta.', 'Each route on screen is one Google request at every refresh. Outside its schedule it is not requested.', 'Cada rota visível é uma consulta ao Google em cada atualização. Fora do seu horário não é consultada.', 'Elke zichtbare route is bij elke verversing één verzoek aan Google. Buiten het schema wordt hij niet opgevraagd.', 'Hver rute på skærmen er én forespørgsel til Google ved hver opdatering. Uden for sit tidsrum bliver den ikke forespurgt.'],
+  ['Falta el origen', 'Origin missing', 'Falta a origem', 'Vertrekpunt ontbreekt', 'Startsted mangler'],
+  ['Falta el destino', 'Destination missing', 'Falta o destino', 'Bestemming ontbreekt', 'Destination mangler'],
+  ['Escribe las direcciones', 'Write the addresses', 'Escreve as moradas', 'Vul de adressen in', 'Skriv adresserne'],
 ];
 
 export const ROWS_BUILDER: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

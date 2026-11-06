@@ -82,6 +82,7 @@ import { ValuesFeed } from './valuesFeed';
 import { setValueSource, valueWidgetsChanged } from './widgets/values';
 import { DataFeed } from './dataFeed';
 import { DEMO_NOW_PLAYING_ACCOUNT, demoNowPlaying, NowPlayingFeed } from './nowPlayingFeed';
+import { CommuteFeed, demoCommuteFor } from './commuteFeed';
 import { NowPlayingLine } from './widgets/nowPlayingLine';
 import { demoData } from './mockData';
 import { demoValues } from './mockCanvas';
@@ -184,6 +185,9 @@ const nowPlayingFeed = new NowPlayingFeed(() => {
   renderNowPlayingLine();
 });
 const nowPlayingLine = new NowPlayingLine($('#nowplaying'), nowPlayingFeed);
+// travel times of the Trayectos cards (commuteFeed.ts): asked of this server for each card on screen, as often as
+// the card says (10 minutes at the least)
+const commuteFeed = new CommuteFeed(() => canvasView.onData('commute'));
 function renderNowPlayingLine(): void {
   const cfg = state.config ? ctx.cfg : null;
   if (nowPlayingLine.render(cfg, !!cfg && effectivePreset(cfg) === 'canvas')) refreshMarquee();
@@ -234,6 +238,7 @@ const canvasView = new Canvas($('#canvas'), $('#canvas-side'), {
   values: valuesFeed,
   data: dataFeed,
   nowPlaying: nowPlayingFeed,
+  commute: commuteFeed,
   nav: {
     shows: () => isPreview || !!ctx.cfg?.canvas?.taps,
     live: () => navLive(),
@@ -1548,6 +1553,7 @@ on('config', (s) => {
   // after the URL overrides (?np=), which applyConfig puts on ctx.cfg
   nowPlayingFeed.config(ctx.cfg);
   renderNowPlayingLine();
+  commuteFeed.config(s.config);
   const priv = s.config.privacy;
   const privSig = priv?.active ? 'on' : 'off';
   const privChanged = privateSig !== '' && privSig !== privateSig;
@@ -2429,6 +2435,7 @@ function enterDemo(): void {
   valuesFeed.demo = () => demoValues(state.config);
   dataFeed.demo = (cfg) => demoData(cfg);
   nowPlayingFeed.demo = (accounts) => demoNowPlaying(accounts, params.get('np') === 'idle');
+  commuteFeed.demo = (props) => demoCommuteFor(props);
   statusDot.classList.remove('show');
   // &carousel=1: the demo screens in a loop (web/display/mock.ts mockCarouselConfigs)
   set('config', params.get('carousel') === '1' ? mockCarouselConfigs()[0] : mockConfig());
@@ -2647,6 +2654,7 @@ function onHello(d: Partial<StreamHello>): void {
   valuesFeed.refresh();
   dataFeed.refresh();
   nowPlayingFeed.refresh();
+  commuteFeed.refresh();
   heartbeat.soon();
   if (d.serverVersion) void maybeReloadForVersion(d.serverVersion);
 }

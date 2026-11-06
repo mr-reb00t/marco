@@ -9,7 +9,7 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
-const SHOTS = ['show.home', 'show.data', 'show.bento', 'kinds', 'clocks', 'household', 'controls', 'lights', 'ha', 'media', 'sidebar'];
+const SHOTS = ['show.home', 'show.data', 'show.bento', 'kinds', 'clocks', 'household', 'controls', 'lights', 'ha', 'media', 'sidebar', 'commute'];
 
 // in the page: the text of the light cards, each with its contrast against the card over a dark photo
 const SAMPLE = `(() => {

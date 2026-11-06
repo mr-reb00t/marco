@@ -145,6 +145,8 @@ export function canvasDataItems(screen: unknown, opts?: { now?: Date; tz?: strin
 /** The "now playing" account ids a screen shows (its Sonando ahora cards, or screen.nowPlaying on other layouts). */
 export function nowPlayingAccounts(screen: unknown, opts?: { now?: Date; tz?: string }): string[];
 export const NOW_PLAYING_ACCOUNT_RE: RegExp;
+/** A screen's Trayectos card while it shows (not hidden, its schedule on), as saved (with its routes), or null. */
+export function commuteCardOf(screen: unknown, itemId: string, opts?: { now?: Date; tz?: string }): CanvasItem | null;
 
 type GridArg = CanvasGridId | string | null | undefined;
 export function sizeCells(size: CanvasSize | string, orientation?: Orientation | string, grid?: GridArg): [number, number];
@@ -228,7 +230,7 @@ export function canvasFromDesign(
   opts?: CanvasOpts,
 ): { canvas: CanvasConfig; theme: 'light' | 'dark' | null; template: string };
 
-export type CanvasPick = 'calendars' | 'people' | 'entities' | 'widget' | 'screen';
+export type CanvasPick = 'calendars' | 'people' | 'entities' | 'widget' | 'screen' | 'routes';
 export const CANVAS_FILE_FORMAT: 'marco-screen';
 export const CANVAS_FILE_VERSION: number;
 export const CANVAS_FILE_MAX: number;

@@ -1,5 +1,5 @@
 // Types for the parts of commuteCore.js the browser uses (display 'commute' widget, admin Widgets).
-import type { CommuteDirection, CommuteMode, CommuteRoute, CommuteTrafficLevel, CommuteWidgetOptions, DisplayCommuteOptions } from '../../web/shared/types';
+import type { CommuteDirection, CommuteLook, CommuteMode, CommuteRoute, CommuteTrafficLevel, CommuteWidgetOptions, DisplayCommuteOptions } from '../../web/shared/types';
 
 export const COMMUTE_MODES: readonly CommuteMode[];
 export const COMMUTE_DIRECTIONS: readonly CommuteDirection[];
@@ -23,3 +23,12 @@ export function trafficLevel(durationSec: number, normalDurationSec: number, mod
 export function delayMinutes(durationSec: number, normalDurationSec: number): number;
 export function formatDurationParts(durationSec: number): { hours: number; minutes: number; text: string };
 export function formatDistance(meters: number, units?: 'metric' | 'imperial', locale?: string): string;
+export const COMMUTE_LOOKS: readonly CommuteLook[];
+export function randomRouteId(): string;
+export function sanitizeCommuteOptions(
+  raw: unknown,
+  err?: (path: string, msg: string) => void,
+  p?: string,
+  opts?: { draft?: boolean; newId?: (prefix: string) => string },
+): CommuteWidgetOptions;
+export function commuteSig(o: Partial<CommuteWidgetOptions> | undefined): string;

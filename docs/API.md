@@ -730,6 +730,35 @@ for the key); a display never sees the key or the addresses. The schedule and pa
   (`commute.apiKey`), included in exports with secrets; the `GOOGLE_MAPS_API_KEY` environment variable is used when
   none is saved.
 
+#### Commute card (Personalizado)
+
+The *Trayectos* card (canvas kind `commute`, palette group Datos, self-hosted only: `edition: 'local'`, so never in
+`CLOUD_CANVAS_KINDS`; the builder offers it with `features.commute`) shows the same travel times on a Personalizado
+screen, with its own routes. At most 4 per screen (a Rotativa's cards count). Its routes are validated by the same
+function as the widget's (`core/commuteCore.js sanitizeCommuteOptions`), with the same paths under the item.
+
+- `props`: `{ look: 'auto' | 'focus' | 'list' | 'line' | 'pill', units, refreshMin, showRouteSummary, showArrival,
+  routes }` (as `options.commute` above). A card may be saved with no routes, or a route without its `origin` or
+  `destination` ("not set up yet", as a Valor card without its key): such a route is never asked. `look: 'auto'`
+  picks a design from the card's box and its number of routes: the time alone in the smallest box, one route large
+  (several in turn) in a small one or with one route, a list of rows (side by side in a wide, low box), one line per
+  route in the compact boxes and one route a line in a box one cell high.
+- What a display gets (`projectCanvas`, also for a card in a Rotativa or a group): `{ look, units, refreshMin,
+  showRouteSummary, showArrival, routes: [{ id, name, mode }], sig }`. No address, no schedule. `sig` is 8 hex digits
+  (FNV-1a, `commuteSig`) over the routes with their addresses and schedules and the display options, so a changed
+  address reloads the card (`v` changes too). On a private screen the card is a placeholder (`disabled: 'privacy'`).
+- `GET /api/display/commute?item=<card id>&v=<sig>` (display auth, `Cache-Control: no-store`): the answer of the
+  widget route above, for the card's saved routes, only when the requesting screen is a Personalizado screen that
+  shows that card now: on it, in a Rotativa or in a group, not hidden by hand (nor its Rotativa), its schedule and its
+  condition on, and the screen not private. Otherwise `404 { error: 'not_found' }`, also for an id that is not a
+  canvas id or a card of another screen. `409 { error: 'unsaved' }` when `v` is given and is not the saved card's sig:
+  the admin preview of a new or changed card then draws made-up times marked "Ejemplo". Google is never asked on a
+  404 or a 409. The leg cache, the shared in-flight requests, the backoff, the 200-leg cap and the 10-minute floor are
+  the widget's: a route on a widget and on a card costs one request per refresh.
+- *Exportar esta pantalla* writes every route of the card with `origin` and `destination` emptied and marks the card
+  with the pick `routes` ("Escribe las direcciones"); reading a screen file empties them again. Backups and the
+  household export keep them, as they keep the widget's.
+
 ### Electricity prices
 
 A widget of type `prices` (needs `features.priceWidgets`) has no address: the display asks this server for the zone's
@@ -1306,8 +1335,8 @@ read the screens the *Ir a pantalla* cards of its own screens lead to, and the s
 
 **One screen as a file.** The editor's *Exportar esta pantalla* writes `{ format: "marco-screen", version: 1, canvas,
 picks, theme?, glass? }` with no calendar ids, family member ids, Home Assistant entity ids, saved widget ids or screen
-ids of *Ir a pantalla* (they are emptied and `picks` lists, per item id, what each card lost: `calendars`, `people`,
-`entities`, `widget`, `screen`). Valor
+ids of *Ir a pantalla*, and no address of a *Trayectos* card's routes (they are emptied and `picks` lists, per item id,
+what each card lost: `calendars`, `people`, `entities`, `widget`, `screen`, `routes`). Valor
 keys, coins, teams and symbols stay. Importing it (`canvasCore.readCanvasFile`, in the editor) empties those
 references again, gives every item a new id, leaves out the kinds this server does not offer (and, on Marco Cloud,
 Home Assistant conditions), and validates the result like a save; nothing is stored until the editor is saved.

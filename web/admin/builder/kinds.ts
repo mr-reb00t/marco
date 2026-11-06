@@ -85,6 +85,7 @@ export const KIND_META: Partial<Record<CanvasKind, KindMeta>> = {
   sports: { name: 'Deportes', help: 'Resultados en directo, próximos partidos y últimos resultados de tus equipos o competiciones.', icon: 'trophy', words: 'fútbol liga partido marcador nba equipo resultados', tags: 'fútbol deportes partidos resultados football soccer sports scores futebol desporto voetbal sport fodbold sport piłka mecze wyniki' },
   stocks: { name: 'Bolsa', help: 'Cotizaciones de acciones y fondos, en una línea que se desplaza o en lista.', icon: 'trend', words: 'acciones cotización mercado índice ticker finnhub', tags: 'bolsa acciones stocks shares ações beurs aandelen aktier børs giełda akcje notowania' },
   currency: { name: 'Divisas', help: 'El cambio de hasta seis pares de monedas del Banco Central Europeo, con lo que ha variado desde el día anterior y su curva de 7 días, 30 días o un año.', icon: 'exchange', words: 'divisas cambio moneda euro dólar forinto bce frankfurter', tags: 'divisas cambio moneda currency exchange rate forex câmbio moeda valuta wisselkoers valuta veksling waluty kurs euro dolar złoty' },
+  commute: { name: 'Trayectos', help: 'Cuánto se tarda ahora en llegar a tus sitios en coche, en transporte público, en bici o a pie, con el tráfico de Google Maps.', icon: 'pin', words: 'tráfico coche ruta google maps llegada', tags: 'trayectos tráfico ruta viaje desplazamiento commute traffic route travel trajetos trânsito rota reistijd verkeer route rejsetid trafik rute dojazd ruch trasa korki google maps' },
   heading: { name: 'Sección', help: 'Un título con emoji para agrupar las tarjetas que tiene debajo.', icon: 'tag', words: 'título encabezado grupo', tags: 'sección título section heading title secção kop sectie sektion overskrift home assistant ha hass domótica smart home sekcja tytuł nagłówek' },
   'nav.button': { name: 'Ir a pantalla', help: 'Un botón que lleva a otra pantalla de casa, o de vuelta a la de siempre del dispositivo. Necesita tocar la pantalla.', icon: 'right', words: 'botón navegar pantalla inicio volver carrusel', tags: 'ir pantalla botón navegar inicio go screen button navigate home ir ecrã botão navegar início ga naar scherm knop navigeren start gå til skærm knap naviger przejdź ekran nawigacja przycisk' },
   'nav.pause': { name: 'Pausar carrusel', help: 'Un botón que para el carrusel en esta pantalla y lo deja seguir con otro toque.', icon: 'play', words: 'pausa parar carrusel', tags: 'pausar pausa parar carrusel pause stop carousel pausar carrossel pauzeren carrousel pause karrusel wstrzymaj pauza karuzela' },
@@ -119,13 +120,13 @@ export const PALETTE_KINDS: CanvasKind[] = (Object.keys(CANVAS_KINDS) as CanvasK
 export const AWAY_NOTE = 'Solo en la versión instalada en casa';
 
 /**
- * Whether a kind is not part of this edition at all (Marco Cloud: the Home Assistant cards and HTML propio): the
+ * Whether a kind is not part of this edition at all (Marco Cloud: the Home Assistant cards, Trayectos and HTML propio): the
  * palette shows no tile for it, only its name muted with AWAY_NOTE, and a group with nothing else stays folded.
  */
 export const outOfEdition = (k: CanvasKind, env: { cloud: boolean }): boolean => env.cloud && CANVAS_KINDS[k]?.edition === 'local';
 
 /** Why a kind cannot be added here (null: it can). Spanish t() keys. */
-export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean; photoBg?: boolean }): string | null {
+export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean; commute?: boolean; photoBg?: boolean }): string | null {
   const d = CANVAS_KINDS[k];
   if (!d) return 'No disponible en este servidor';
   if (env.cloud && d.edition === 'local') return 'Solo en Marco instalado en casa';
@@ -134,6 +135,8 @@ export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly s
   if (k === 'stocks' && env.stocks === false) return 'Bolsa necesita una clave de Finnhub que este servidor no tiene todavía.';
   // Sonando ahora reads Spotify accounts linked on this server (feature spotify)
   if (k === 'nowplaying' && env.spotify === false) return 'No disponible en este servidor';
+  // Trayectos asks Google with the owner's key from this server (feature commute)
+  if (k === 'commute' && env.commute === false) return 'No disponible en este servidor';
   if (KIND_META[k]?.soon) return 'Llega en una próxima versión';
   // a photo card over the page's photo makes no sense (photoBg: the page's Fondo is Foto)
   if (k === 'photo' && env.photoBg) return 'Con el Fondo en Foto no se puede añadir. Cambia el Fondo de la pantalla a Animado o Color.';

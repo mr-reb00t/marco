@@ -23,7 +23,7 @@ function cardKinds(env: FieldEnv): CanvasKind[] {
   const allowed = new Set(env.allowed ?? DEFAULT_CANVAS_KINDS);
   const cat = (k: CanvasKind) => CANVAS_CATEGORIES.indexOf(CANVAS_KINDS[k].cat);
   return (Object.keys(CANVAS_KINDS) as CanvasKind[])
-    .filter((k) => rotatorKindOk(k) && allowed.has(k) && !KIND_META[k]?.soon && (!k.startsWith('ha.') || (env.ha && !env.cloud)))
+    .filter((k) => rotatorKindOk(k) && allowed.has(k) && !KIND_META[k]?.soon && (!k.startsWith('ha.') || (env.ha && !env.cloud)) && (k !== 'commute' || env.commute !== false))
     .sort((a, b) => cat(a) - cat(b));
 }
 

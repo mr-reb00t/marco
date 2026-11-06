@@ -85,6 +85,8 @@ export function Palette(props: {
   stocks?: boolean;
   /** false: no Spotify accounts on this server (no spotify feature) */
   spotify?: boolean;
+  /** false: no travel times on this server (no commute feature) */
+  commute?: boolean;
   stage: { current: StageApi | null };
   /** add at the first free spot */
   onAdd: (spec: AddSpec) => void;
@@ -123,12 +125,12 @@ export function Palette(props: {
       const name = w.name.trim() || t('Widget sin nombre');
       const lock = props.cloud && w.type === 'web' ? 'Solo en Marco instalado en casa' : lockOf('widget', props);
       out.push({
-        key: `w:${w.id}`, spec: { kind: 'widget', props: { widgetId: w.id }, label: name }, name, help: w.type === 'prices' ? 'Precio de la luz' : w.type === 'currency' ? 'Divisas' : w.type === 'value' ? 'Valor' : w.type === 'web' ? 'Página web' : 'Imagen',
-        icon: w.type === 'prices' ? 'zap' : w.type === 'currency' ? 'exchange' : w.type === 'value' ? 'activity' : w.type === 'web' ? 'globe' : 'image', group: 'mine', lock, away: props.cloud && w.type === 'web',
+        key: `w:${w.id}`, spec: { kind: 'widget', props: { widgetId: w.id }, label: name }, name, help: w.type === 'prices' ? 'Precio de la luz' : w.type === 'currency' ? 'Divisas' : w.type === 'value' ? 'Valor' : w.type === 'commute' ? 'Trayectos' : w.type === 'web' ? 'Página web' : 'Imagen',
+        icon: w.type === 'prices' ? 'zap' : w.type === 'currency' ? 'exchange' : w.type === 'value' ? 'activity' : w.type === 'commute' ? 'pin' : w.type === 'web' ? 'globe' : 'image', group: 'mine', lock, away: props.cloud && w.type === 'web',
       });
     }
     return out;
-  }, [props.widgets, props.cloud, props.allowed, props.stocks, props.spotify, photoBg]);
+  }, [props.widgets, props.cloud, props.allowed, props.stocks, props.spotify, props.commute, photoBg]);
 
   const nq = q.trim();
   const shown = nq ? tiles.filter((x) => matchesSearch(nq, { kind: x.spec.kind, name: x.name, help: x.help, group: x.group }, t)) : tiles;

@@ -1,7 +1,7 @@
 // Inspector, Contenido tab: draws the options of each kind (fieldSpecs.ts) as one small form.
 import { useState } from 'preact/hooks';
 import { LoneGroupCards, RotatorCards } from './RotatorFields';
-import type { CanvasItem, FamilyMember, HaState, HookValueInfo, TileFeature, TodoList, WidgetDef } from '../../shared/types';
+import type { CanvasItem, CommuteRoute, FamilyMember, HaState, HookValueInfo, TileFeature, TodoList, WidgetDef } from '../../shared/types';
 import { ColorPicker, EmojiPicker, Field, NumberInput, Segmented, Select, Slider, TextInput, ToggleRow } from '../components/ui';
 import { HaEntitySelect } from '../components/HaEntityPicker';
 import { CANVAS_KINDS, HA_ICONS, NAV_ICONS, TILE_FEATURES } from '../../../server/core/canvasCore.js';
@@ -22,6 +22,8 @@ import { TodoViewFields } from '../components/TodoViewFields';
 import { ShownDaysPicker } from '../components/ShownDaysField';
 import { SpotifyAccountSelect } from '../sections/Spotify';
 import { PhotoSourceFields, type PhotoSourceEnv } from './PhotoSourceFields';
+import { CommuteApiKey, CommuteRoutesEditor } from '../sections/CommuteWidget';
+import { sanitizeCommuteOptions } from '../../../server/core/commuteCore.js';
 
 export interface FieldEnv {
   /** the kinds this server offers (a Rotativa picks its cards among them) */
@@ -45,6 +47,8 @@ export interface FieldEnv {
   ha: boolean;
   /** Marco Cloud: no Home Assistant at all */
   cloud?: boolean;
+  /** false: this server has no travel times (no commute feature): a Rotativa offers no Trayectos card */
+  commute?: boolean;
   /** the states the builder fetched for the draft's Home Assistant bindings, by alias (the custom card's preview) */
   haStates?: Record<string, HaState>;
   /** values pushed by POST /api/hooks/values (valuesPreview.ts) */
@@ -377,6 +381,32 @@ export function HaOffNote({ env }: { env: FieldEnv }) {
 }
 
 /** The kind's own options for `item`. `put` changes one prop (`merge`: a key for undo to merge typing). */
+/** Each route's missing address, as the widget would refuse it (a card is saved without them: a hint, not an error). */
+const MISSING: Record<string, string> = { origin: 'Falta el origen', destination: 'Falta el destino' };
+
+/** The routes of a Trayectos card (the commute widget's editor, one column), with what each one still lacks. */
+function CommuteRoutesField({ item, put }: { item: CanvasItem; put: (k: string, v: unknown, merge?: string) => void }) {
+  const p = item.props as { routes?: CommuteRoute[]; units?: 'auto' | 'metric' | 'imperial' };
+  const routes = Array.isArray(p.routes) ? p.routes : [];
+  const missing = new Map<string, string>();
+  sanitizeCommuteOptions(p, (path, msg) => {
+    const m = /^c\.routes\[(\d+)\]\.(origin|destination)$/.exec(path);
+    if (m && msg === 'required') missing.set(`${m[1]}.${m[2]}`, MISSING[m[2]]);
+  }, 'c', { newId: () => 'cr_x' });
+  return (
+    <Field label={t('Rutas')} hint={routes.length ? undefined : t('Añade al menos una ruta')}>
+      <CommuteRoutesEditor
+        compact
+        min={0}
+        routes={routes}
+        units={p.units ?? 'auto'}
+        errorOf={(idx, _r, field) => missing.get(`${idx}.${field}`)}
+        onChange={(next) => put('routes', next, `${item.id}.routes`)}
+      />
+    </Field>
+  );
+}
+
 export function ContentFields({ item, env, put, nested = false }: { item: CanvasItem; env: FieldEnv; put: (k: string, v: unknown, merge?: string) => void; nested?: boolean }) {
   // (a lone group, #25: only its cards; it never turns)
   const specs: Spec[] = isLoneGroup(item) ? [{ type: 'rotatorCards' }] : FIELDS[item.kind] ?? [];
@@ -615,6 +645,8 @@ export function ContentFields({ item, env, put, nested = false }: { item: Canvas
             </Field>
           );
         if (s.type === 'stocksKey') return <StocksKeyField />;
+        if (s.type === 'commuteKey') return <CommuteApiKey compact />;
+        if (s.type === 'commuteRoutes') return <CommuteRoutesField item={item} put={put} />;
         if (s.type === 'spotifyAccount')
           return (
             <Field label={t(s.label)}>

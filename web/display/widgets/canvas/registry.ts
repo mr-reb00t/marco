@@ -6,6 +6,7 @@ import { CALENDAR_ADAPTERS } from './calendar';
 import { CAMERA_ADAPTERS } from './camera';
 import { CHART_ADAPTERS } from './chart';
 import { CLOCK_ADAPTERS } from './clock';
+import { COMMUTE_ADAPTERS } from './commute';
 import { CONTENT_ADAPTERS, placeholder } from './content';
 import { DATA_ADAPTERS } from './data';
 import { FAMILY_ADAPTERS } from './family';
@@ -33,6 +34,7 @@ const ADAPTERS: Record<string, (item: DisplayCanvasItem) => CanvasAdapter> = {
   ...HTML_ADAPTERS,
   ...DATA_ADAPTERS,
   ...NOW_PLAYING_ADAPTERS,
+  ...COMMUTE_ADAPTERS,
   ...NAV_ADAPTERS,
   ...ROTATOR_ADAPTERS,
 };

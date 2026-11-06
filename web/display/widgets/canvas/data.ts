@@ -192,7 +192,7 @@ function emptyNote(d: DataItemData | null | undefined, configured: boolean): str
 }
 
 /** The line under a card that says its numbers are old. */
-function staleFoot(text: string): HTMLElement {
+export function staleFoot(text: string): HTMLElement {
   const f = el('div', 'cv-dt-foot');
   f.appendChild(el('span', 'cv-dt-stale', text));
   return f;
@@ -205,17 +205,17 @@ function note(root: HTMLElement, text: string): void {
 // ------------------------------------------------------------------------------------------------ fitting
 
 /** The one-line parts of the data cards that must show whole: a name with an ellipsis, a row part wider than its column. */
-const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-fx-pair, .cv-dt-nd, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l';
+const CLIP = '.cv-mk-head, .cv-mk-line, .cv-mk-who, .cv-mk-name, .cv-fx-pair, .cv-dt-nd, .cv-mk-val, .cv-mk-badge, .cv-st-who, .cv-st-who .nm, .cv-sp-side, .cv-sp-n, .cv-sp-mid, .cv-sp-group .l, .cv-cm-name, .cv-cm-meta, .cv-cm-dur, .cv-cm-status, .cv-cm-eta, .cv-cm-sub, .cv-cm-top';
 
 /** The card's content is taller (or wider) than its box (the editor would say it does not fit), or a row of a list is squeezed shorter than its text. */
-function cutV(root: HTMLElement): boolean {
+export function cutV(root: HTMLElement): boolean {
   if (root.scrollHeight > root.clientHeight + 1 || root.scrollWidth > root.clientWidth + 1) return true;
-  for (const e of root.querySelectorAll<HTMLElement>('.cv-mk-row, .cv-st-row, .cv-sp-game, .cv-sp-group')) if (e.scrollHeight > e.clientHeight + 1) return true;
+  for (const e of root.querySelectorAll<HTMLElement>('.cv-mk-row, .cv-st-row, .cv-sp-game, .cv-sp-group, .cv-cm-col')) if (e.scrollHeight > e.clientHeight + 1) return true;
   return false;
 }
 
 /** A name or a number of the card is cut short (an ellipsis) or runs over its neighbour. */
-function cutH(root: HTMLElement): boolean {
+export function cutH(root: HTMLElement): boolean {
   for (const e of root.querySelectorAll<HTMLElement>(CLIP)) {
     // (a column squeezed to nothing while its text is there is cut too: the symbol of a quote that vanished)
     if (!e.clientWidth) {
@@ -233,26 +233,26 @@ function cutH(root: HTMLElement): boolean {
   return false;
 }
 
-const cut = (root: HTMLElement) => cutV(root) || cutH(root);
+export const cut = (root: HTMLElement) => cutV(root) || cutH(root);
 
 /**
  * Make a drawn card fit its box by giving things up in order until nothing is cut: each step changes the card once
  * (or returns true to be tried again, as dropping rows one by one). Measured, so it follows the real box (a wide
  * sidebar, a portrait screen, a larger text size) and not the size's name.
  */
-function ladder(root: HTMLElement, steps: (() => boolean | void)[]): void {
+export function ladder(root: HTMLElement, steps: (() => boolean | void)[]): void {
   let i = 0;
   let guard = 60;
   while (i < steps.length && guard-- > 0 && cut(root)) if (steps[i]() !== true) i++;
 }
 
 /** A step: the text of the card at `k` times its size. */
-const dkStep = (root: HTMLElement, k: number) => () => {
+export const dkStep = (root: HTMLElement, k: number) => () => {
   root.style.setProperty('--dk', String(k));
 };
 
 /** A step: while the rows are taller than the card, the last one goes (one row always stays). */
-function dropRow(root: HTMLElement, list: HTMLElement | null, row: string): () => boolean {
+export function dropRow(root: HTMLElement, list: HTMLElement | null, row: string): () => boolean {
   return () => {
     if (!list || !cutV(root)) return false;
     const rows = list.querySelectorAll(row);
@@ -268,7 +268,7 @@ function dropRow(root: HTMLElement, list: HTMLElement | null, row: string): () =
 }
 
 /** A step taken only when something is cut sideways (a name, a row), not for a card that is too short. */
-const sideways = (root: HTMLElement, fn: () => void) => () => {
+export const sideways = (root: HTMLElement, fn: () => void) => () => {
   if (cutH(root)) fn();
 };
 
@@ -276,7 +276,7 @@ const sideways = (root: HTMLElement, fn: () => void) => () => {
  * Grow the text of a list card until it fills its box (up to `max` times): the rows were counted at the normal size,
  * so a card with room to spare reads from further away. Never so far that something is cut again.
  */
-function fill(root: HTMLElement, list: HTMLElement | null, max = 1.6): void {
+export function fill(root: HTMLElement, list: HTMLElement | null, max = 1.6): void {
   if (!list || !root.isConnected || cut(root)) return;
   const cs = getComputedStyle(root);
   const foot = root.querySelector<HTMLElement>(':scope > .cv-dt-foot');
@@ -305,7 +305,7 @@ function fill(root: HTMLElement, list: HTMLElement | null, max = 1.6): void {
 }
 
 /** The rows of a list card share the card's height (.is-spread) when they leave a band under them, and nothing gets cut. */
-function spreadRows(root: HTMLElement, list: HTMLElement | null): void {
+export function spreadRows(root: HTMLElement, list: HTMLElement | null): void {
   if (!list || !root.isConnected || cut(root)) return;
   const last = list.lastElementChild?.getBoundingClientRect();
   const box = list.getBoundingClientRect();

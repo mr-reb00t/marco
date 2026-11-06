@@ -8,6 +8,7 @@ import { COIN_ID_RE, CURRENCY_RANGES, DATA_LIMITS, FX_CODE_RE, FX_CURRENCIES, MA
 import { cleanPlace, CITIES_MAX } from './weatherPlaces.js';
 import { defaultTodoView, sanitizeTodoView } from './todoCore.js';
 import { displayPhotoSource, sanitizePhotoSource } from './photoSource.js';
+import { COMMUTE_LOOKS, commuteSig, displayCommuteOptions, sanitizeCommuteOptions } from './commuteCore.js';
 
 // ---- grid and sizes ----------------------------------------------------------------------------------------------
 
@@ -959,6 +960,18 @@ export const CANVAS_KINDS = {
     defaults: () => ({ pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' }),
     props: (c, p, x) => currencyProps(c, p, x),
   },
+  // ---- Trayectos (self-hosted only): live travel times of the card's own routes, asked of Google by this server with
+  // the owner's key (server/commute.js, GET /api/display/commute?item=). The display gets the route ids, names and
+  // modes and how to draw them, never the addresses or the schedules (projectCanvas). Routes as the commute widget's
+  // (core/commuteCore.js sanitizeCommuteOptions), saved before they are written ('draft'): such a route is not asked.
+  commute: {
+    cat: 'data', sizes: ['xs', 's', 'w', 'm', 't', 'l', 'band'], def: 'w', cells: [2, 2, 12, 6], side: true, edition: 'local', feature: 'commute', private: true, perScreen: 4,
+    defaults: () => ({ look: 'auto', units: 'auto', refreshMin: 10, showArrival: true, showRouteSummary: true, routes: [] }),
+    props: (c, p, x) => ({
+      look: P.oneOf(c, `${p}.look`, x.look, 'auto', COMMUTE_LOOKS),
+      ...sanitizeCommuteOptions(x, (q, m) => c.err(q, m), p, { draft: true }),
+    }),
+  },
   // ---- Sonando ahora (issue #18): what a linked account plays, read by the server (core/nowPlayingCore.js). The
   // card names the account by its opaque id ('' = not chosen yet); no token, email or address ever reaches a display.
   nowplaying: {
@@ -1642,6 +1655,8 @@ const FINE_MIN = {
   'sports': [4, 1],
   'stocks': [4, 1],
   'currency': [4, 1],
+  // one line: the mode, the name and the time of one route at a time
+  'commute': [4, 1],
   // one line: the art as high as the card, the title and the artist beside it
   'nowplaying': [4, 1],
   'ha.tile': [2, 1],
@@ -2626,6 +2641,9 @@ export function projectCanvas(screen, opts = {}) {
       if (opts.screens && !names.has(props.target)) props = { ...props, target: '' };
       else props = { ...props, targetName: names.get(props.target) ?? '' };
     }
+    // Trayectos: what the card draws (route ids, names, modes, the display options) and `sig`, never the addresses
+    // or the schedules; the display asks GET /api/display/commute?item=<id>&v=<sig> and the server reads the routes
+    if (it.kind === 'commute') props = { look: props.look ?? 'auto', ...displayCommuteOptions(props), sig: commuteSig(props) };
     return props;
   };
   /** Why the display draws a placeholder instead of a card ('feature', 'privacy'), or ''. */
@@ -2707,6 +2725,19 @@ export function nowPlayingAccounts(screen, { now = new Date(), tz = 'UTC' } = {}
     for (const it of canvasCards(screen.canvas?.items)) if (it.kind === 'nowplaying' && !it.hidden && !it.disabled && scheduleOn(it, now, tz)) add(it.props?.account);
   } else add(screen?.screen?.nowPlaying);
   return out;
+}
+
+/**
+ * The Trayectos card `itemId` of a screen as its saved card (canvasCards: on the screen, in a Rotativa, in a group),
+ * only while it shows: the screen is a Personalizado one, the card is not hidden by hand (nor its Rotativa) and its
+ * schedule lets it show at `now` in `tz`. Else null. Conditions and privacy are the server's to check on top
+ * (canvasConditions.js hiddenItems, privacy.js): GET /api/display/commute asks Google for nothing else.
+ */
+export function commuteCardOf(screen, itemId, { now = new Date(), tz = 'UTC' } = {}) {
+  if (screen?.layout?.preset !== 'canvas' || typeof itemId !== 'string' || !CANVAS_ID_RE.test(itemId)) return null;
+  const it = canvasCards(screen.canvas?.items).find((x) => x.id === itemId);
+  if (!it || it.kind !== 'commute' || it.hidden || !scheduleOn(it, now, tz)) return null;
+  return it;
 }
 
 /** Widget ids (config.widgets) the canvas of a screen shows ('widget' items), in item order, no repeats. */
@@ -3144,7 +3175,7 @@ export const CANVAS_FILE_VERSION = 1;
 /** Largest file the editor reads (bytes). */
 export const CANVAS_FILE_MAX = 512 * 1024;
 /** What a card asks for again after an import. */
-export const CANVAS_PICKS = ['calendars', 'people', 'entities', 'widget', 'screen'];
+export const CANVAS_PICKS = ['calendars', 'people', 'entities', 'widget', 'screen', 'routes'];
 
 /** An item's props and condition with this household's references emptied; `removed` = the CANVAS_PICKS it lost. */
 function stripItem(it) {
@@ -3174,6 +3205,11 @@ function stripItem(it) {
   if (it.kind === 'widget') {
     removed.add('widget');
     p.widgetId = '';
+  }
+  // the addresses of a Trayectos card's routes are this household's (home, work, school): written again after an import
+  if (it.kind === 'commute' && Array.isArray(p.routes)) {
+    if (p.routes.some((r) => isObj(r) && ((typeof r.origin === 'string' && r.origin) || (typeof r.destination === 'string' && r.destination)))) removed.add('routes');
+    p.routes = p.routes.map((r) => (isObj(r) ? { ...r, origin: '', destination: '' } : r));
   }
   // a screen of this Marco means nothing in another one ('home' does)
   if (it.kind === 'nav.button' && p.target && p.target !== NAV_HOME) {

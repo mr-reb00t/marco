@@ -3,6 +3,7 @@
 import type { CanvasKind } from '../../shared/types';
 import { TILE_SECOND_DOMAINS } from '../../../server/core/canvasCore.js';
 import { FX_CURRENCIES } from '../../../server/core/dataCore.js';
+import { COMMUTE_REFRESH_MIN } from '../../../server/core/commuteCore.js';
 
 export type Opt = { v: string | number; l: string };
 export type Spec =
@@ -70,7 +71,11 @@ export type Spec =
   /** the Spotify account a Sonando ahora card shows (sections/Spotify.tsx SpotifyAccountSelect) */
   | { k: 'account'; type: 'spotifyAccount'; label: string }
   /** a photo card's photos: the screen's Fondo, or its own (#41, PhotoSourceFields.tsx, core/photoSource.js) */
-  | { type: 'photoSource' };
+  | { type: 'photoSource' }
+  /** Trayectos: the household's Google Maps key and the card's routes (sections/CommuteWidget.tsx, shared with the
+   * commute widget) */
+  | { type: 'commuteKey' }
+  | { type: 'commuteRoutes' };
 
 /** A weather card's place: the screen's ("Igual que la pantalla") or one of its own (#11). */
 const PLACE: Spec = { k: 'place', type: 'place', label: 'Lugar' };
@@ -444,4 +449,18 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { type: 'stocksKey' },
   ],
   currency: CURRENCY_FIELDS,
+  commute: [
+    { type: 'commuteKey' },
+    { type: 'commuteRoutes' },
+    {
+      k: 'look', type: 'select', label: 'Diseño',
+      opts: [{ v: 'auto', l: 'Automático' }, { v: 'focus', l: 'Una en grande' }, { v: 'list', l: 'En lista' }, { v: 'line', l: 'Una línea' }, { v: 'pill', l: 'Solo el tiempo' }],
+      hint: 'Automático elige según el tamaño de la tarjeta y cuántas rutas hay.',
+    },
+    { k: 'units', type: 'seg', label: 'Unidades de distancia', opts: [{ v: 'auto', l: 'Automática' }, { v: 'metric', l: 'km' }, { v: 'imperial', l: 'mi' }] },
+    { k: 'refreshMin', type: 'select', label: 'Actualizar cada', opts: COMMUTE_REFRESH_MIN.map((m) => ({ v: m, l: `${m} min` })), hint: 'Cada actualización de una ruta es una consulta a Google.' },
+    { k: 'showArrival', type: 'bool', label: 'Mostrar hora estimada de llegada', hint: 'Calcula la hora de llegada saliendo en este momento.' },
+    { k: 'showRouteSummary', type: 'bool', label: 'Mostrar vía principal', hint: 'Muestra por qué autopista o avenida va la ruta recomendada.' },
+    { type: 'note', text: 'Cada ruta que se ve es una consulta a Google en cada actualización. Fuera de su horario no se consulta.' },
+  ],
 };

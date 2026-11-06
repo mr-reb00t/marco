@@ -700,6 +700,26 @@ cards and Exchange rates. The Value widget (type `value`) draws pushed values th
 card (`web/display/widgets/values.ts`), from the screen's values feed (`valuesFeed.ts`); `screenValueKeys` in
 `server/core/valuesCore.js` counts the keys of the Value widgets placed on a screen with its cards' keys.
 
+## Commute times
+
+Live travel times from Google with the owner's own Maps key (self-hosted only, feature `commute`): the commute widget
+(`config.widgets` type `commute`) and the *Trayectos* card of Personalizado (kind `commute`, `edition: 'local'`, so
+never on Marco Cloud). Endpoints and shapes: docs/API.md, *Commute times*.
+
+- **Shared rules**: `server/core/commuteCore.js` validates the routes of both (`sanitizeCommuteOptions`: strict for a
+  widget, a card may be saved before its addresses are written), resolves a route's direction and schedule, reads
+  Google's answers and makes the `sig` of a card (`commuteSig`). `server/commute.js` asks Google (Directions API, or
+  Routes API v2) and keeps one cache entry per leg for every screen, with the same refresh floor, backoff and cap for
+  widgets and cards.
+- **No addresses on a screen**: a display gets route ids, names and modes only (`displayCommuteOptions`, used by
+  `displayWidgets` and `projectCanvas`). It asks `GET /api/display/commute?id=` (a widget) or `?item=` (a card) and
+  the server reads the saved routes; a card is answered only while its screen shows it (`commuteCardOf`, the schedules
+  and conditions of `canvasConditions.js hiddenItems`, privacy). A screen file leaves the addresses out.
+- **Display**: the widget draws its own list (`widgets/commute.ts`); the card (`widgets/canvas/commute.ts`) is drawn
+  with the data cards' building blocks in four designs (one route large, a list or columns, lines, the time alone) and
+  fitted to its box by the data cards' ladder; `commuteFeed.ts` asks for each card on screen every `refreshMin`
+  minutes. The demo and the preview of an unsaved card draw made-up times (`mockCommute.ts`).
+
 ## Now playing
 
 What a linked Spotify account plays now (issue #18): the *Sonando ahora* card of Personalizado (kind `nowplaying`) and

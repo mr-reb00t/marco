@@ -3176,6 +3176,21 @@ export const PL: Record<string, string> = {
   // a small Rotativa inside a group (#19)
   'Añadir una Rotativa al grupo': 'Dodaj kartę rotującą do grupy',
   'Una Rotativa dentro de un grupo pasa sus tarjetas una tras otra en su parte del hueco. Dentro no puede haber grupos ni otra Rotativa.': 'Karta rotująca w grupie pokazuje swoje karty jedna po drugiej w swojej części miejsca. Nie może zawierać grup ani innej karty rotującej.',
+  // Trayectos (canvas kind 'commute')
+  'Rutas': 'Trasy',
+  'Cuánto se tarda ahora en llegar a tus sitios en coche, en transporte público, en bici o a pie, con el tráfico de Google Maps.': 'Ile teraz zajmuje dojazd do twoich miejsc samochodem, komunikacją miejską, rowerem lub pieszo, z ruchem z Google Maps.',
+  'Automático elige según el tamaño de la tarjeta y cuántas rutas hay.': 'Automatycznie wybiera według rozmiaru karty i liczby tras.',
+  'Solo el tiempo': 'Tylko czas',
+  'km': 'km',
+  'mi': 'mi',
+  '10 min': '10 min',
+  '15 min': '15 min',
+  '30 min': '30 min',
+  '60 min': '60 min',
+  'Cada ruta que se ve es una consulta a Google en cada actualización. Fuera de su horario no se consulta.': 'Każda widoczna trasa to jedno zapytanie do Google przy każdym odświeżeniu. Poza swoim harmonogramem nie jest sprawdzana.',
+  'Falta el origen': 'Brak punktu wyjścia',
+  'Falta el destino': 'Brak celu',
+  'Escribe las direcciones': 'Wpisz adresy',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

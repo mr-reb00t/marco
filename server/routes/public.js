@@ -8,6 +8,9 @@ import { getNews } from '../news.js';
 import { getPrices, PricesError } from '../prices.js';
 import { priceZone } from '../core/pricesCore.js';
 import { getCommute } from '../commute.js';
+import { commuteSig } from '../core/commuteCore.js';
+import { CANVAS_ID_RE, commuteCardOf } from '../core/canvasCore.js';
+import { hiddenItems } from '../canvasConditions.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
 import { getPhotos } from '../photos.js';
@@ -179,23 +182,38 @@ export function publicRouter({ version }) {
     }
   });
 
-  // Live travel times of a commute widget (server/commute.js), by widget id only: a saved widget that the requesting
-  // screen shows now (placed on it, its 'widget' layout or a Personalizado item; displayWidgets, so nothing while the
-  // screen is private). The routes and the refresh come from the saved widget, never from the request: each refresh is
-  // a paid Google request with the owner's key. ?v= (the widget's version) must match the saved one: 409 'unsaved'
-  // is the admin preview of a changed widget. Unknown, not shown or private: 404.
+  // Live travel times (server/commute.js) of a commute widget, by widget id (?id=), or of a Trayectos card of a
+  // Personalizado screen, by item id (?item=). Only one the requesting screen shows now: a saved widget placed on it
+  // (its 'widget' layout or a Personalizado item; displayWidgets, so nothing while the screen is private), or a card
+  // on it, in a Rotativa or a group, not hidden, its schedule and its condition on, the screen not private. The
+  // routes and the refresh come from the saved widget or card, never from the request: each refresh is a paid Google
+  // request with the owner's key. ?v= (the widget's version, the card's sig) must match the saved one: 409 'unsaved'
+  // is the admin preview of a changed widget or card. Unknown, not shown or private: 404, and Google is not asked.
   r.get('/display/commute', async (req, res, next) => {
     try {
+      res.set('cache-control', 'no-store');
       const cfg = getConfig();
+      const tz = cfg.datetime.timezone;
+      const v = typeof req.query.v === 'string' ? req.query.v : '';
+      if (req.query.item !== undefined) {
+        const item = typeof req.query.item === 'string' ? req.query.item : '';
+        if (!CANVAS_ID_RE.test(item)) return res.status(404).json({ error: 'not_found' });
+        const { screen } = requestScreen(cfg, req);
+        if (screenPrivacy(cfg, screen).active) return res.status(404).json({ error: 'not_found' });
+        const card = commuteCardOf(screen, item, { tz });
+        if (!card || hiddenItems(cfg, screen).has(item)) return res.status(404).json({ error: 'not_found' });
+        if (v && v !== commuteSig(card.props)) return res.status(409).json({ error: 'unsaved' });
+        const { routes, refreshMin, showRouteSummary } = card.props;
+        return res.json(await getCommute(routes, { tz, refreshMin, showRouteSummary: showRouteSummary !== false }));
+      }
       const id = typeof req.query.id === 'string' ? req.query.id : '';
       const { screen } = requestScreen(cfg, req);
       const shown = id ? displayWidgets(cfg, screen, { isPrivate: screenPrivacy(cfg, screen).active }).find((w) => w.id === id && w.type === 'commute') : null;
       const def = shown ? cfg.widgets.find((w) => w.id === id) : null;
       if (!shown || !def?.options?.commute) return res.status(404).json({ error: 'not_found' });
-      const v = typeof req.query.v === 'string' ? req.query.v : '';
       if (v && v !== shown.v) return res.status(409).json({ error: 'unsaved' });
       const { routes, refreshMin, showRouteSummary } = def.options.commute;
-      res.json(await getCommute(routes, { tz: cfg.datetime.timezone, refreshMin, showRouteSummary: showRouteSummary !== false }));
+      res.json(await getCommute(routes, { tz, refreshMin, showRouteSummary: showRouteSummary !== false }));
     } catch (err) {
       next(err);
     }

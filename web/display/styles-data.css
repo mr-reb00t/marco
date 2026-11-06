@@ -143,3 +143,111 @@
 #app .pw.fxw { padding: 0; }
 #app .pw.fxw > .fxw-body { box-sizing: border-box; padding: 1.6rem 2rem 1.3rem; }
 #app .pw.fxw.pw--full > .fxw-body { padding: calc(var(--pk) * 1.8rem) calc(var(--pk) * 2.2rem) calc(var(--pk) * 1.4rem); }
+
+/* ---- Trayectos (widgets/canvas/commute.ts): the times of the card's routes. The data cards' type and rows, the Valor
+   card's big figures, the Home Assistant icon chips; the traffic never in colour alone ("+5 min", "Fluido"). Amber as
+   text is too light on light cards (#b58900 is about 3:1 on white): a deeper one there (about 5.4:1). */
+#app.preset-canvas .cv-cm { --cm-warn: var(--ha-warn); }
+.theme-light #app.preset-canvas :is(.cv-card.is-glass:not(.has-own), .cv-card.is-solid:not(.has-own), .cv-card.is-ink-dark:not(.is-none)) .cv-cm,
+.theme-light #app#app.preset-canvas:is(.cv-fill-glass, .cv-fill-solid) > .side .cv-card.is-none .cv-cm,
+#app.preset-canvas .cv-card.is-ink-dark:not(.is-none) .cv-cm { --cm-warn: #8a6400; }
+#app.preset-canvas .cv-cm-name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+#app.preset-canvas .cv-cm-back { flex: none; color: var(--fg-2); font-weight: 500; white-space: nowrap; }
+#app.preset-canvas .cv-cm-back::before { content: '· '; }
+#app.preset-canvas .cv-cm.no-name :is(.cv-cm-name, .cv-cm-back) { display: none; }
+#app.preset-canvas .cv-cm-mi { flex: none; display: inline-flex; width: 1.3em; height: 1.3em; color: var(--fg-2); }
+/* the mode in its chip: amber or red while the traffic is slow (the state colours of the Home Assistant cards) */
+#app.preset-canvas .cv-cm-ico.is-moderate { color: #1c1c1e; background: var(--ha-warn); }
+#app.preset-canvas .cv-cm-ico.is-heavy { color: #fff; background: var(--ha-alert); }
+/* the traffic: a dot and the minutes it adds, on a tint of its colour; "Fluido" in the card's secondary ink */
+#app.preset-canvas .cv-cm-tr {
+  flex: none; display: inline-flex; align-items: center; gap: 0.4em; padding: 0.16em 0.62em 0.18em 0.48em; border-radius: 999px;
+  background: var(--ha-chip); color: var(--fg-2); font-size: 0.85em; font-weight: 700; line-height: 1.2; white-space: nowrap;
+}
+#app.preset-canvas .cv-cm-tr .dot { flex: none; width: 0.58em; height: 0.58em; border-radius: 50%; background: var(--ha-ok); }
+#app.preset-canvas .cv-cm-tr.is-moderate { color: var(--cm-warn); background: color-mix(in srgb, var(--ha-warn) 20%, transparent); }
+#app.preset-canvas .cv-cm-tr.is-moderate .dot { background: var(--ha-warn); }
+#app.preset-canvas .cv-cm-tr.is-heavy { color: var(--ha-alert); background: color-mix(in srgb, var(--ha-alert) 18%, transparent); }
+#app.preset-canvas .cv-cm-tr.is-heavy .dot { background: var(--ha-alert); }
+#app.preset-canvas .cv-cm-eta { color: var(--fg-2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cm-dur { font-weight: 700; white-space: nowrap; }
+#app.preset-canvas .cv-cm-dur .u { font-weight: 500; color: var(--fg-2); font-size: 0.8em; }
+#app.preset-canvas .cv-cm.is-stale :is(.cv-cm-num, .cv-cm-dur) { opacity: 0.6; }
+#app.preset-canvas .cv-cm-fail { color: var(--fg-2); font-size: 1.5em; font-weight: 700; white-space: nowrap; }
+/* the preview of a card not saved yet: made-up times, said in the corner */
+#app.preset-canvas .cv-cm-sample { position: absolute; top: 0.7rem; right: 0.9rem; font-size: calc(1.2rem * var(--cv-scale, 1)); z-index: 1; }
+
+/* one route large: its mode and name, the time in the Valor card's figures, the traffic and the arrival, how much of
+   the time is the traffic (a car), the road and the distance; side by side in a wide box */
+#app.preset-canvas .cv-cm:is(.is-focus, .is-pill) { font-size: calc(1.6rem * var(--wk, 1)); justify-content: center; gap: 0.55em; }
+/* (nothing of theirs shrinks to fit: what does not fit is given up by the card, widgets/canvas/commute.ts) */
+#app.preset-canvas .cv-cm:is(.is-focus, .is-pill) > * { flex: none; }
+#app.preset-canvas .cv-cm-head { flex: none; font-size: 0.85em; }
+#app.preset-canvas .cv-cm-head .cv-ha-ico { width: 2.3em; height: 2.3em; padding: 0.48em; }
+#app.preset-canvas .cv-cm-body { flex: none; display: flex; flex-direction: column; gap: 0.55em; min-width: 0; }
+#app.preset-canvas .cv-cm.is-wide .cv-cm-body { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 1.4em; }
+#app.preset-canvas .cv-cm.is-wide .cv-cm-info { padding-left: 1.4em; border-left: 1px solid var(--m-sep, rgb(255 255 255 / 0.12)); }
+#app.preset-canvas .cv-cm-num { gap: 0.18em; }
+#app.preset-canvas .cv-cm-num .cv-val-unit { margin-right: 0.3em; }
+#app.preset-canvas .cv-cm-num .cv-val-unit:last-child { margin-right: 0; }
+#app.preset-canvas .cv-cm-info { display: flex; flex-direction: column; gap: 0.5em; min-width: 0; }
+#app.preset-canvas .cv-cm-status { display: flex; align-items: center; gap: 0.7em; min-width: 0; }
+#app.preset-canvas .cv-cm-meta { display: flex; gap: 0.45em; min-width: 0; color: var(--fg-2); font-size: 0.85em; font-variant-numeric: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cm-meta > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cm-meta > span + span { flex: none; }
+#app.preset-canvas .cv-cm-meta > span + span::before { content: '·'; margin-right: 0.45em; }
+#app.preset-canvas .cv-cm-bar { display: flex; flex-direction: column; gap: 0.3em; max-width: 22em; }
+#app.preset-canvas .cv-cm-track { display: flex; height: 0.42em; border-radius: 1em; overflow: hidden; background: var(--ha-chip); }
+#app.preset-canvas .cv-cm-track .usual { flex: none; background: var(--fg-3); }
+#app.preset-canvas .cv-cm-track .extra { flex: 1; background: var(--ha-warn); }
+#app.preset-canvas .cv-cm-bar.is-heavy .cv-cm-track .extra { background: var(--ha-alert); }
+#app.preset-canvas .cv-cm-usual { color: var(--fg-3); font-size: 0.78em; white-space: nowrap; }
+
+/* the time and a dot, centred */
+#app.preset-canvas .cv-cm.is-pill { align-items: center; text-align: center; gap: 0.35em; }
+#app.preset-canvas .cv-cm.is-pill .cv-val-num { align-self: center; }
+#app.preset-canvas .cv-cm-top { flex: none; display: flex; align-items: center; gap: 0.4em; max-width: 100%; min-width: 0; color: var(--fg-2); font-size: 0.9em; }
+#app.preset-canvas .cv-cm-top .cv-cm-name { font-weight: 600; }
+#app.preset-canvas .cv-cm.is-pill > .cv-cm-eta { font-size: 0.85em; }
+#app.preset-canvas .cv-cm-dots { margin: 0.15em 0 0; }
+
+/* one row per route, as the Cripto list: each row a band of the card, hairlines between them */
+#app.preset-canvas .cv-cm-list { justify-content: stretch; gap: 0; }
+#app.preset-canvas .cv-cm-list > .cv-cm-row { flex: 1 1 0; padding: 0.35em 0; }
+#app.preset-canvas .cv-cm-list > .cv-cm-row + .cv-cm-row { border-top: 1px solid var(--m-sep, rgb(255 255 255 / 0.1)); }
+#app.preset-canvas .cv-cm-row .cv-ha-ico { width: 2.1em; height: 2.1em; padding: 0.44em; }
+#app.preset-canvas .cv-cm-txt { display: flex; flex-direction: column; gap: 0.08em; min-width: 0; }
+#app.preset-canvas .cv-cm-nl { display: flex; align-items: baseline; gap: 0.4em; min-width: 0; }
+#app.preset-canvas .cv-cm-lname { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+#app.preset-canvas .cv-cm-lmeta { min-width: 0; color: var(--fg-2); font-size: 0.78em; font-variant-numeric: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#app.preset-canvas .cv-cm.no-name .cv-cm-lname { display: none; }
+#app.preset-canvas .cv-cm-row .cv-mk-val { gap: 0.2em; }
+#app.preset-canvas .cv-cm-row .cv-cm-dur { font-size: 1.25em; line-height: 1.1; }
+#app.preset-canvas .cv-cm-row .cv-cm-tr { font-size: 0.72em; }
+#app.preset-canvas .cv-cm-row .cv-mk-val.is-inline { flex-direction: row; align-items: center; gap: 0.7em; }
+#app.preset-canvas .cv-cm-row .cv-mk-val.is-inline .cv-cm-tr { order: -1; font-size: 0.8em; }
+
+/* the routes side by side (a wide, low box: the band, the sidebar across the top or the bottom) */
+#app.preset-canvas .cv-cm-cols { flex: 1; min-height: 0; display: grid; align-items: start; align-content: center; column-gap: 1.3em; }
+#app.preset-canvas .cv-cm-col { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3em; min-width: 0; overflow: hidden; }
+#app.preset-canvas .cv-cm-col + .cv-cm-col { padding-left: 1.3em; border-left: 1px solid var(--m-sep, rgb(255 255 255 / 0.12)); }
+#app.preset-canvas .cv-cm-chead { display: flex; align-items: center; gap: 0.45em; max-width: 100%; min-width: 0; color: var(--fg-2); }
+#app.preset-canvas .cv-cm-col .cv-cm-dur { font-family: var(--font-num); font-size: 2.3em; font-weight: 600; line-height: 1.05; letter-spacing: -0.02em; }
+#app.preset-canvas .cv-cm-col .cv-cm-dur .u { font-family: var(--font-ui, inherit); font-size: 0.42em; letter-spacing: 0; }
+#app.preset-canvas .cv-cm-sub { display: flex; align-items: center; gap: 0.6em; max-width: 100%; min-width: 0; font-size: 0.85em; }
+#app.preset-canvas .cv-cm-col.is-moderate .cv-cm-mi { color: var(--cm-warn); }
+#app.preset-canvas .cv-cm-col.is-heavy .cv-cm-mi { color: var(--ha-alert); }
+
+/* one line per route: the mode, the name, the time and the traffic (the compact look, the sidebar) */
+#app.preset-canvas .cv-cm-lines { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-evenly; }
+#app.preset-canvas .cv-cm-lines > .cv-cm-ln { padding: 0.25em 0; }
+#app.preset-canvas .cv-cm-lines > .cv-cm-ln + .cv-cm-ln { border-top: 1px solid var(--m-sep, rgb(255 255 255 / 0.1)); }
+#app.preset-canvas .cv-cm.is-across .cv-cm-lines { display: grid; align-items: center; column-gap: 1.2em; }
+#app.preset-canvas .cv-cm.is-across .cv-cm-lines > .cv-cm-ln + .cv-cm-ln { border-top: 0; padding-left: 1.2em; border-left: 1px solid var(--m-sep, rgb(255 255 255 / 0.1)); }
+#app.preset-canvas .cv-cm-ln { display: flex; align-items: center; gap: 0.5em; min-width: 0; }
+#app.preset-canvas .cv-cm-ln .cv-cm-mi { width: 1.5em; height: 1.5em; }
+#app.preset-canvas .cv-cm-ln.is-moderate .cv-cm-mi { color: var(--cm-warn); }
+#app.preset-canvas .cv-cm-ln.is-heavy .cv-cm-mi { color: var(--ha-alert); }
+#app.preset-canvas .cv-cm-ln .cv-cm-name { flex: 0 1 auto; }
+#app.preset-canvas .cv-cm-val { flex: none; display: flex; align-items: center; gap: 0.5em; margin-left: auto; }
+#app.preset-canvas .cv-cm-ln .cv-cm-tr { font-size: 0.75em; }

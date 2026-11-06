@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import * as nodeModule from 'node:module';
-import { CANVAS_LIMITS, CLOUD_CANVAS_KINDS, canvasFromTemplate, defaultCanvas, sanitizeCanvas } from '../core/canvasCore.js';
+import { CANVAS_KIND_IDS, CANVAS_LIMITS, CLOUD_CANVAS_KINDS, canvasFromTemplate, defaultCanvas, sanitizeCanvas } from '../core/canvasCore.js';
 
 nodeModule.registerHooks?.({
   resolve(specifier, context, next) {
@@ -481,9 +481,14 @@ test('flexible sizes: W and H steppers, the corner handle (nearest legal box, ne
   assert.equal(M.spanForBox({ size: 'row', w: 2, h: 1 }, 'landscape'), 2);
 });
 
-test('palette on Marco Cloud: the Home Assistant cards and HTML propio are out of the edition, the Casa group has nothing else', ts, () => {
+test('palette on Marco Cloud: the Home Assistant cards, Trayectos and HTML propio are out of the edition, the Casa group has nothing else', ts, () => {
   const away = K.PALETTE_KINDS.filter((k) => K.outOfEdition(k, { cloud: true }));
-  assert.deepEqual(away.sort(), [...K.PALETTE_KINDS.filter((k) => k.startsWith('ha.')), 'html'].sort());
+  assert.deepEqual(away.sort(), [...K.PALETTE_KINDS.filter((k) => k.startsWith('ha.')), 'html', 'commute'].sort());
+  // Trayectos needs the commute feature (travel times from Google with the owner's key, self-hosted only)
+  const all = { cloud: false, allowed: CANVAS_KIND_IDS };
+  assert.equal(K.lockOf('commute', { ...all, commute: true }), null);
+  assert.equal(K.lockOf('commute', { ...all, commute: false }), 'No disponible en este servidor');
+  assert.equal(K.lockOf('commute', { cloud: true, allowed: CLOUD_CANVAS_KINDS, commute: true }), 'Solo en Marco instalado en casa');
   // nothing is out on a self-hosted server, and every kind Cloud can draw stays a tile there
   assert.deepEqual(K.PALETTE_KINDS.filter((k) => K.outOfEdition(k, { cloud: false })), []);
   for (const k of K.PALETTE_KINDS) if (!away.includes(k)) assert.ok(CLOUD_CANVAS_KINDS.includes(k), k);

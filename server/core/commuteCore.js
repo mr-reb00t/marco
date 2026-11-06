@@ -1,6 +1,7 @@
 // Commute time widget ('commute'): pure helpers shared by the server, the admin and the display.
 // No Node built-ins (checked by server/test/core-lint.test.js).
 import { zonedParts } from './lib/tz.js';
+import { randomId } from './lib/text.js';
 
 export const COMMUTE_MODES = Object.freeze(['driving', 'transit', 'bicycling', 'walking']);
 export const COMMUTE_DIRECTIONS = Object.freeze(['to', 'from', 'auto']);
@@ -11,6 +12,154 @@ export const MIN_COMMUTE_REFRESH_MIN = 10;
 export const MAX_COMMUTE_ROUTES = 8;
 export const COMMUTE_ROUTE_PREFIX = 'cr_';
 export const COMMUTE_KEY_RE = /^[A-Za-z0-9_-]{16,128}$/;
+/**
+ * The designs of the Trayectos card of a Personalizado screen (canvasCore CANVAS_KINDS.commute): 'auto' picks one from
+ * the card's box and its number of routes, 'focus' one route large, 'list' rows, 'line' one line each, 'pill' the time
+ * and a dot.
+ */
+export const COMMUTE_LOOKS = Object.freeze(['auto', 'focus', 'list', 'line', 'pill']);
+
+// ---- validation (a commute widget's options, core/validate.js, and the Trayectos card's props, core/canvasCore.js) --
+// Tiny coercers of their own, with the same messages as validate.js: `err(path, msg)` records a problem, the default
+// is kept.
+const HHMM = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const ID = /^[A-Za-z0-9_-]{1,64}$/;
+const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const C = {
+  bool: (err, path, v, d) => {
+    if (v === undefined) return d;
+    if (typeof v === 'boolean') return v;
+    err(path, 'expected boolean');
+    return d;
+  },
+  str: (err, path, v, d, max) => {
+    if (v === undefined || v === null) return d;
+    if (typeof v !== 'string') {
+      err(path, 'expected string');
+      return d;
+    }
+    // eslint-disable-next-line no-control-regex
+    const s = v.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '');
+    if (s.length > max) {
+      err(path, `too long (max ${max})`);
+      return s.slice(0, max);
+    }
+    return s;
+  },
+  oneOf: (err, path, v, d, list) => {
+    if (v === undefined) return d;
+    if (list.includes(v)) return v;
+    err(path, `must be one of ${list.join(', ')}`);
+    return d;
+  },
+  arr: (err, path, v, d, max) => {
+    if (v === undefined) return d;
+    if (!Array.isArray(v)) {
+      err(path, 'expected array');
+      return d;
+    }
+    if (v.length > max) {
+      err(path, `too many items (max ${max})`);
+      return v.slice(0, max);
+    }
+    return v;
+  },
+  hhmm: (err, path, v, d) => {
+    if (v === undefined) return d;
+    if (typeof v === 'string' && HHMM.test(v)) return v;
+    err(path, 'HH:MM');
+    return d;
+  },
+  weekdays: (err, path, v) => {
+    const list = C.arr(err, path, v, [], 7);
+    const out = [...new Set(list.filter((n) => Number.isInteger(n) && n >= 0 && n <= 6))].sort();
+    if (out.length !== list.length) err(path, 'weekdays must be unique integers 0..6 (0 = Sunday)');
+    return out;
+  },
+};
+
+/** A new route id (cr_ and 12 hex digits). */
+export const randomRouteId = () => randomId(COMMUTE_ROUTE_PREFIX);
+
+/**
+ * The options of a commute widget, or the routes and display options of a Trayectos card: at most MAX_COMMUTE_ROUTES
+ * routes, each with its name, addresses, mode, direction and schedule; the refresh one of COMMUTE_REFRESH_MIN.
+ * `err(path, msg)` records each problem (the default is kept), `p` is the path of the options.
+ * `draft`: a card may be saved before its routes are written (no routes, or a route without an address, is "not set
+ * up yet", as a Valor card without its key; GET /api/display/commute leaves such a route out), and a screen file
+ * blanks the addresses on export. A widget needs every address.
+ * `newId(prefix)`: the id of a route that has none (or a repeated one).
+ */
+export function sanitizeCommuteOptions(raw, err = () => {}, p = 'commute', { draft = false, newId = randomId } = {}) {
+  let o = raw;
+  if (o === undefined) o = {};
+  else if (!isObj(o)) {
+    err(p, 'expected object');
+    o = {};
+  }
+  const seenRoutes = new Set();
+  const routeId = (v) => {
+    let s = typeof v === 'string' && v.startsWith(COMMUTE_ROUTE_PREFIX) && ID.test(v) ? v : newId(COMMUTE_ROUTE_PREFIX);
+    while (seenRoutes.has(s)) s = newId(COMMUTE_ROUTE_PREFIX);
+    seenRoutes.add(s);
+    return s;
+  };
+  const address = (path, v) => {
+    const s = C.str(err, path, v, '', 200).trim();
+    if (!s && !draft) err(path, 'required');
+    return s;
+  };
+  const routesIn = C.arr(err, `${p}.routes`, o.routes, [], MAX_COMMUTE_ROUTES);
+  if (!routesIn.length && !draft) err(`${p}.routes`, 'at least one route');
+  const routes = routesIn.map((r, i) => {
+    const q = `${p}.routes[${i}]`;
+    if (!isObj(r)) {
+      err(q, 'expected object');
+      return null;
+    }
+    const fromVal = r.from === '' || r.from === undefined || r.from === null ? '' : C.hhmm(err, `${q}.from`, r.from, '');
+    const toVal = r.to === '' || r.to === undefined || r.to === null ? '' : C.hhmm(err, `${q}.to`, r.to, '');
+    return {
+      id: routeId(r.id),
+      // '' = unnamed: the display shows "Route 1", never the addresses
+      name: C.str(err, `${q}.name`, r.name, '', 60).trim(),
+      origin: address(`${q}.origin`, r.origin),
+      destination: address(`${q}.destination`, r.destination),
+      mode: C.oneOf(err, `${q}.mode`, r.mode, 'driving', COMMUTE_MODES),
+      direction: C.oneOf(err, `${q}.direction`, r.direction, 'to', COMMUTE_DIRECTIONS),
+      reverseAfter: C.hhmm(err, `${q}.reverseAfter`, r.reverseAfter, '12:00'),
+      days: C.weekdays(err, `${q}.days`, r.days),
+      from: fromVal,
+      to: toVal,
+    };
+  }).filter(Boolean);
+  return {
+    units: C.oneOf(err, `${p}.units`, o.units, 'auto', COMMUTE_UNITS),
+    // 5 minutes was offered before 0.38 (never released): it becomes 10, the floor
+    refreshMin: C.oneOf(err, `${p}.refreshMin`, o.refreshMin === 5 ? 10 : o.refreshMin, 10, COMMUTE_REFRESH_MIN),
+    showRouteSummary: C.bool(err, `${p}.showRouteSummary`, o.showRouteSummary, true),
+    showArrival: C.bool(err, `${p}.showArrival`, o.showArrival, true),
+    routes,
+  };
+}
+
+/**
+ * What the times of a set of commute options depend on, as 8 hex digits (FNV-1a): the routes with their addresses
+ * and schedules, the refresh, the units and what the card shows. A Trayectos card sends it as its `sig` (never the
+ * addresses), so a changed address reloads the card, and the admin preview of an unsaved change gets 409.
+ */
+export function commuteSig(o) {
+  const routes = (Array.isArray(o?.routes) ? o.routes : []).map((r) => [
+    r?.id ?? '', r?.name ?? '', r?.origin ?? '', r?.destination ?? '', r?.mode ?? '', r?.direction ?? '', r?.reverseAfter ?? '', r?.days ?? [], r?.from ?? '', r?.to ?? '',
+  ]);
+  const s = JSON.stringify([o?.units ?? 'auto', o?.refreshMin ?? 10, o?.showRouteSummary !== false, o?.showArrival !== false, routes]);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
 
 /**
  * A failed Google request, by code only. The message is always the code: Google's own error text is never kept, so

@@ -200,6 +200,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
       go: (r: string) => goRef.current(r),
       ha: !cloud && !!full.homeassistant?.enabled,
       cloud,
+      commute: has('commute'),
       values: hookValues ?? [],
       allowed,
       pinCard: (item: string, card: string | null) => setPin((p) => (card ? { item, card } : p?.item === item ? null : p)),
@@ -826,6 +827,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
               allowed={allowed}
               stocks={has('stockQuotes')}
               spotify={has('spotify')}
+              commute={has('commute')}
               stage={stageApi}
               onAdd={addSpec}
               onPlace={(spec) => {

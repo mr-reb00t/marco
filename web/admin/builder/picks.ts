@@ -1,5 +1,5 @@
 // Cards imported from a screen file (canvasCore readCanvasFile) lost what pointed into the other household: their
-// calendars, people, Home Assistant entities or widget. Each one is marked "Elige ..." until it is chosen again (an
+// calendars, people, Home Assistant entities, widget or the addresses of their routes. Each one is marked "Elige ..." until it is chosen again (an
 // entity or a widget picked, the calendars or people changed) or the owner keeps it as it is.
 import type { CanvasItem } from '../../shared/types';
 import type { CanvasPick } from '../../../server/core/canvasCore.js';
@@ -17,6 +17,7 @@ export const PICK_TEXT: Record<CanvasPick, string> = {
   entities: 'Elige las entidades',
   widget: 'Elige un widget',
   screen: 'Elige la pantalla',
+  routes: 'Escribe las direcciones',
 };
 
 /** True when one of the item's Home Assistant slots (or its Home Assistant condition) is still empty. */
@@ -30,6 +31,12 @@ function entityEmpty(it: CanvasItem): boolean {
   return list('bind').some((b) => b && 'entity' in b && !b.entity);
 }
 
+/** True when a route of a Trayectos card has no origin or no destination yet. */
+function routeEmpty(it: CanvasItem): boolean {
+  const routes = (it.props as { routes?: { origin?: string; destination?: string }[] }).routes;
+  return Array.isArray(routes) && routes.some((r) => !r?.origin?.trim() || !r?.destination?.trim());
+}
+
 /** What an imported card still has to choose (empty: nothing left). */
 export function pendingPicks(it: CanvasItem, mark: PickMark | undefined): CanvasPick[] {
   if (!mark) return [];
@@ -38,6 +45,7 @@ export function pendingPicks(it: CanvasItem, mark: PickMark | undefined): Canvas
     if (c === 'entities') return entityEmpty(it);
     if (c === 'widget') return !(it.props as { widgetId?: string }).widgetId;
     if (c === 'screen') return !(it.props as { target?: string }).target;
+    if (c === 'routes') return routeEmpty(it);
     return same;
   });
 }

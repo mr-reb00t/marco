@@ -380,3 +380,6 @@
 #app.preset-canvas .cv-body.cv-wx-cities[data-mini] .cv-city[hidden] { display: none; }
 #app.preset-canvas .cv-body.cv-wx-cities[data-mini].is-one .cv-city { flex: 0 1 auto; min-width: 0; }
 #app.preset-canvas .cv-body[data-mini] .cv-wx-place { display: none; }
+/* Trayectos one cell high: one route on one line (the mode, the name, the time, the traffic), each route in turn */
+#app.preset-canvas .cv-cm.is-line[data-mini] { justify-content: center; }
+#app.preset-canvas .cv-cm.is-line[data-mini] .cv-cm-ln { flex: none; }
