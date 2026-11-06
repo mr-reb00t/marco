@@ -1,7 +1,7 @@
 // The commute time widget's settings (Widgets section, type 'commute'): Google Maps API key, saved routes
 // (origin, destination, travel mode, direction / auto-reverse), live route test, refresh interval, and display options.
 import { useEffect, useState } from 'preact/hooks';
-import type { CommuteDirection, CommuteMode, CommuteRoute, CommuteWidgetOptions, TestCommuteResponse, WeatherKeyStatus, WidgetDef } from '../../shared/types';
+import type { CommuteDirection, CommuteMode, CommuteRoute, CommuteWidgetOptions, TestCommuteResponse, CommuteKeyStatus, WidgetDef } from '../../shared/types';
 import { COMMUTE_REFRESH_MIN, formatDistance, formatDurationParts, MAX_COMMUTE_ROUTES } from '../../../server/core/commuteCore.js';
 import { api, ApiError } from '../api';
 import { toast } from '../components/feedback';
@@ -44,7 +44,7 @@ const ERROR_TEXT: Record<string, string> = {
   invalid_route: 'Escribe el origen y el destino.',
 };
 
-function CommuteApiKey({ st, setSt }: { st: WeatherKeyStatus | null; setSt: (s: WeatherKeyStatus) => void }) {
+function CommuteApiKey({ st, setSt }: { st: CommuteKeyStatus | null; setSt: (s: CommuteKeyStatus) => void }) {
   const [edit, setEdit] = useState(false);
   const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
@@ -75,7 +75,17 @@ function CommuteApiKey({ st, setSt }: { st: WeatherKeyStatus | null; setSt: (s: 
         </>
       }
     >
-      {st?.set && !edit ? (
+      {st?.set && st.fromEnv && !edit ? (
+        <>
+          <div class="search-row">
+            <span class="wx-key-saved">
+              <Icon name="check" size={14} /> {t('Clave en GOOGLE_MAPS_API_KEY')} <span class="mono muted">…{st.hint}</span>
+            </span>
+            <Button onClick={() => setEdit(true)}>{t('Cambiar')}</Button>
+          </div>
+          <p class="muted">{t('Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.')}</p>
+        </>
+      ) : st?.set && !edit ? (
         <div class="search-row">
           <span class="wx-key-saved">
             <Icon name="check" size={14} /> {t('Clave guardada')} <span class="mono muted">…{st.hint}</span>
@@ -137,7 +147,7 @@ export function CommuteWidgetFields({ w, errors, upd, part }: {
   const set = (fn: (c: CommuteWidgetOptions) => void) => upd((x) => {
     if (x.options.commute) fn(x.options.commute);
   });
-  const [keyStatus, setKeyStatus] = useState<WeatherKeyStatus | null>(null);
+  const [keyStatus, setKeyStatus] = useState<CommuteKeyStatus | null>(null);
   const [tests, setTests] = useState<Record<string, { loading: boolean; res?: TestCommuteResponse }>>({});
   const wd = weekdayNames('short');
 

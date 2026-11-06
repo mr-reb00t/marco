@@ -194,8 +194,8 @@ export function publicRouter({ version }) {
       if (!shown || !def?.options?.commute) return res.status(404).json({ error: 'not_found' });
       const v = typeof req.query.v === 'string' ? req.query.v : '';
       if (v && v !== shown.v) return res.status(409).json({ error: 'unsaved' });
-      const { routes, refreshMin } = def.options.commute;
-      res.json(await getCommute(routes, { tz: cfg.datetime.timezone, refreshMin }));
+      const { routes, refreshMin, showRouteSummary } = def.options.commute;
+      res.json(await getCommute(routes, { tz: cfg.datetime.timezone, refreshMin, showRouteSummary: showRouteSummary !== false }));
     } catch (err) {
       next(err);
     }

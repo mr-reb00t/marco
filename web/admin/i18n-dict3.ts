@@ -64,4 +64,10 @@ export const ROWS3: [string, string, string][] = [
   ['Cada actualización de una ruta es una consulta a Google.', 'Each refresh of a route is one request to Google.', 'Cada atualização de uma rota é um pedido à Google.'],
   ['Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.', 'Outside these days and hours the route is not shown or requested from Google. No days ticked: every day; no hours: all day.', 'Fora destes dias e horas a rota não é mostrada nem consultada à Google. Sem dias marcados: todos; sem horas: o dia todo.'],
   ['Pon las dos horas o ninguna', 'Set both times or neither', 'Indique as duas horas ou nenhuma'],
+  ['Clave en GOOGLE_MAPS_API_KEY', 'Key in GOOGLE_MAPS_API_KEY', 'Chave em GOOGLE_MAPS_API_KEY'],
+  [
+    'Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.',
+    'It comes from the server environment: to remove it, change that environment. A key saved here replaces it.',
+    'Vem do ambiente do servidor: para a remover, altere esse ambiente. Uma chave guardada aqui substitui-a.',
+  ],
 ];

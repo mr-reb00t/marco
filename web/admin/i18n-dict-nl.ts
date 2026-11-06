@@ -2196,6 +2196,8 @@ export const NL: Record<string, string> = {
   'Cada actualización de una ruta es una consulta a Google.': 'Elke verversing van een route is één verzoek aan Google.',
   'Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.': 'Buiten deze dagen en uren wordt de route niet getoond en niet bij Google opgevraagd. Geen dagen aangevinkt: elke dag; geen uren: de hele dag.',
   'Pon las dos horas o ninguna': 'Vul beide tijden in of geen van beide',
+  'Clave en GOOGLE_MAPS_API_KEY': 'Sleutel in GOOGLE_MAPS_API_KEY',
+  'Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.': 'Komt uit de omgeving van de server: om hem te verwijderen pas je die omgeving aan. Een hier opgeslagen sleutel vervangt hem.',
 };
 
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */

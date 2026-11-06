@@ -23,6 +23,7 @@ import { schedulesNow } from '../core/schedules.js';
 import { getEvents, sourceStatus } from '../calendars.js';
 import { cachedWeather } from '../weather.js';
 import { localDate, addDays } from '../core/lib/tz.js';
+import { commuteKeyChanged } from '../commute.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const LEVELS = ['info', 'warn', 'error'];
@@ -189,6 +190,8 @@ export function systemRouter({ version = getServerVersion() } = {}) {
     else if (applied.includes('family') || photos) notifyFamily();
     // Keys of screens that are not in the imported config are dropped, and so are devices paired with missing screens.
     if (applied.includes('displayKeys') || applied.includes('devices')) syncDisplayKeys();
+    // a restored Google Maps key: routes that failed with the old one try again on their next ask
+    if (applied.includes('commute')) commuteKeyChanged();
     // Keys replaced / devices dropped by the import: close the streams still reading with the old credentials
     // (same as Regenerate link / Revoke). The password case closes admin-session streams via rotateSessionEpoch.
     if (applied.length) revalidateStreams();

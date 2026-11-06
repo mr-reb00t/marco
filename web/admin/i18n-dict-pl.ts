@@ -2170,6 +2170,8 @@ export const PL: Record<string, string> = {
   'Cada actualización de una ruta es una consulta a Google.': 'Każde odświeżenie trasy to jedno zapytanie do Google.',
   'Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.': 'Poza tymi dniami i godzinami trasa nie jest pokazywana ani sprawdzana w Google. Bez zaznaczonych dni: codziennie; bez godzin: cały dzień.',
   'Pon las dos horas o ninguna': 'Podaj obie godziny albo żadnej',
+  'Clave en GOOGLE_MAPS_API_KEY': 'Klucz w GOOGLE_MAPS_API_KEY',
+  'Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.': 'Pochodzi ze środowiska serwera: aby go usunąć, trzeba zmienić to środowisko. Klucz zapisany tutaj go zastępuje.',
   'Foto de fondo': 'Zdjęcie w tle',
   'Solo el lateral': 'Tylko obszar boczny',
   'Toda la pantalla': 'Cały ekran',

@@ -82,6 +82,8 @@ export class CommuteCard {
   private failed = false;
   /** admin preview of a widget not saved yet (or changed): a note until it is saved */
   private unsaved = false;
+  /** preview only: the server answered 404 (new, not on this screen, or the screen is private) */
+  private notShown = false;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private place: 'corner' | 'side' | 'full' = 'corner';
   private maxW = 0;
@@ -144,15 +146,18 @@ export class CommuteCard {
       this.data = await getJSON<CommuteResponse>(withScreen(path));
       this.failed = false;
       this.unsaved = false;
+      this.notShown = false;
     } catch (e) {
       const status = e instanceof ApiError ? e.status : 0;
       if (ctx.params.get('demo') === '1') {
         this.data = demoCommute(opts);
         this.failed = false;
       } else if (isPreview && (status === 404 || status === 409)) {
-        // the admin preview of a new or changed widget: the server answers for saved widgets only
+        // the admin preview: the server answers only for a saved widget (409 'unsaved' for a changed one) that the
+        // previewed screen shows while it is not private (404 otherwise, also for a new widget not saved yet)
         this.data = null;
         this.unsaved = true;
+        this.notShown = status === 404;
         next = 15_000;
       } else if (status === 404) {
         // removed from this screen, or the screen went private: nothing to show until the config says otherwise
@@ -201,7 +206,7 @@ export class CommuteCard {
     this.el.appendChild(head);
 
     if (this.unsaved) {
-      this.el.appendChild(el('div', 'cw-empty', ctx.t('widgetSaveToSee')));
+      this.el.appendChild(el('div', 'cw-empty', ctx.t(this.notShown ? 'commuteNotShown' : 'widgetSaveToSee')));
       this.fit();
       return;
     }

@@ -61,6 +61,13 @@ export const commuteKey = () => String(getSecrets()?.commute?.apiKey || process.
 
 /** Whether a Google Maps API key is saved and its last 4 characters, never the key itself. */
 export const commuteKeyStatus = (k = commuteKey()) => keyStatus(k);
+/** What the admin sees about the key in use: the saved one, or GOOGLE_MAPS_API_KEY when nothing is saved
+ *  (fromEnv: removing that one means changing the server's environment). */
+export function commuteKeyInUse() {
+  const k = commuteKey();
+  const saved = String(getSecrets()?.commute?.apiKey || '').trim();
+  return k && !saved ? { ...keyStatus(k), fromEnv: true } : keyStatus(k);
+}
 
 /** The key changed: every leg may be asked again now, and the API to use is found again. */
 export function commuteKeyChanged() {
@@ -199,7 +206,7 @@ async function getLeg({ origin, destination, mode, refreshMin = MIN_COMMUTE_REFR
  * Travel times of a saved commute widget's routes now: `routes` from the saved config only (routes/public.js), never
  * from a request. Returns CommuteResponse: { fetchedAt, keySet, routes: CommuteRouteResult[] }, without addresses.
  */
-export async function getCommute(routes = [], { tz, refreshMin = MIN_COMMUTE_REFRESH_MIN } = {}) {
+export async function getCommute(routes = [], { tz, refreshMin = MIN_COMMUTE_REFRESH_MIN, showRouteSummary = true } = {}) {
   const zone = tz || getConfig()?.datetime?.timezone || 'UTC';
   const now = clock();
   if (!commuteKey()) return { fetchedAt: new Date(now).toISOString(), keySet: false, routes: [] };
@@ -233,7 +240,8 @@ export async function getCommute(routes = [], { tz, refreshMin = MIN_COMMUTE_REF
       delaySec: Math.max(0, e.durationSec - e.normalDurationSec),
       delayMin: delayMinutes(e.durationSec, e.normalDurationSec),
       distanceMeters: e.distanceMeters,
-      summary: e.summary || '',
+      // only what the card draws: no road or line names when the owner turned the summary off
+      summary: showRouteSummary ? e.summary || '' : '',
       provider: e.provider || 'google_directions',
       fetchedAt: new Date(e.fetchedAt).toISOString(),
       stale: Boolean(e.error) || now - e.fetchedAt > STALE_AFTER_MS,

@@ -353,6 +353,22 @@ test('GET /api/display/commute: a saved widget the screen shows, no addresses in
   }
 });
 
+test('GET /api/display/commute: no road or line names when the summary is turned off', async () => {
+  const w = commuteWidget('w_comm', [route()]);
+  w.options.commute.showRouteSummary = false;
+  const { call, calls } = await commuteServer([w]);
+  try {
+    const d = await call('GET', '/api/display/commute?id=w_comm');
+    assert.equal(d.status, 200);
+    assert.equal(d.json.routes[0].ok, true);
+    assert.equal(d.json.routes[0].summary, '');
+    assert.ok(!JSON.stringify(d.json).includes('Castellana'));
+    assert.ok(calls.length <= 1);
+  } finally {
+    setCommuteFetch(null);
+  }
+});
+
 test('GET /api/display/commute: routes from the request are never used (no Google request)', async () => {
   const { call, calls } = await commuteServer([commuteWidget('w_comm', [route()])]);
   try {
@@ -524,6 +540,25 @@ test('admin: POST /test/commute, GET/PUT /commute/key (one Google request at the
   }
 });
 
+test('admin: /commute/key reports the GOOGLE_MAPS_API_KEY in use after the saved key is removed', async () => {
+  const saved = process.env.GOOGLE_MAPS_API_KEY;
+  process.env.GOOGLE_MAPS_API_KEY = 'AIzaSyFromTheEnvironment0000';
+  const { call, calls } = await commuteServer([commuteWidget('w_comm', [route()])]);
+  try {
+    assert.deepEqual((await call('GET', '/api/admin/commute/key', null, true)).json, { set: true, hint: '7890' });
+    calls.length = 0;
+    const cleared = await call('PUT', '/api/admin/commute/key', { key: '' }, true);
+    assert.deepEqual([cleared.status, cleared.json], [200, { set: true, hint: '0000', fromEnv: true, checked: false }]);
+    assert.equal(calls.length, 0);
+    assert.deepEqual((await call('GET', '/api/admin/commute/key', null, true)).json, { set: true, hint: '0000', fromEnv: true });
+    assert.ok(!JSON.stringify(cleared.json).includes('AIzaSyFromTheEnvironment'));
+  } finally {
+    if (saved === undefined) delete process.env.GOOGLE_MAPS_API_KEY;
+    else process.env.GOOGLE_MAPS_API_KEY = saved;
+    setCommuteFetch(null);
+  }
+});
+
 test('commute: Directions not enabled falls back to Routes v2 once, then asks Routes directly', async () => {
   const { call, calls, clock } = await commuteServer([commuteWidget('w_comm', [route()])], {
     google: (url) => (url.includes('maps.googleapis.com')
@@ -556,4 +591,6 @@ test('commute files: no em dashes and display wiring present', () => {
   }
   const custom = read('web/display/widgets/custom.ts');
   assert.match(custom, /new CommuteCard\(w/);
+  // a restored backup with the Google Maps key lets failed routes try the restored key at once
+  assert.match(read('server/routes/system.js'), /applied\.includes\('commute'\)\) commuteKeyChanged\(\)/);
 });

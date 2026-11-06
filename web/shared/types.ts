@@ -2000,6 +2000,12 @@ export interface WeatherKeyStatus {
   checked?: boolean;
 }
 
+/** GET/PUT /api/admin/commute/key: the Google Maps key in use. */
+export interface CommuteKeyStatus extends WeatherKeyStatus {
+  /** nothing is saved here and the key in use comes from GOOGLE_MAPS_API_KEY (removing it means changing the environment) */
+  fromEnv?: boolean;
+}
+
 export interface NewsItem {
   id: string;
   title: string;

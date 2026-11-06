@@ -474,12 +474,13 @@
         "commuteKey"
       ],
       "request": null,
-      "response": "WeatherKeyStatus",
+      "response": "CommuteKeyStatus",
       "responseArray": false,
       "responseKeys": [
         "set",
         "hint",
-        "checked?"
+        "checked?",
+        "fromEnv?"
       ]
     },
     {
@@ -491,9 +492,14 @@
         "setCommuteKey"
       ],
       "request": "{key}",
-      "response": "WeatherKeyStatus & { checked?: boolean }",
+      "response": "CommuteKeyStatus",
       "responseArray": false,
-      "responseKeys": null
+      "responseKeys": [
+        "set",
+        "hint",
+        "checked?",
+        "fromEnv?"
+      ]
     },
     {
       "method": "GET",

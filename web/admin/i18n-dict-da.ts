@@ -2196,6 +2196,8 @@ export const DA: Record<string, string> = {
   'Cada actualización de una ruta es una consulta a Google.': 'Hver opdatering af en rute er én forespørgsel til Google.',
   'Fuera de estos días y horas la ruta no se muestra ni se consulta a Google. Sin días marcados: todos; sin horas: todo el día.': 'Uden for disse dage og tidspunkter vises ruten ikke og hentes ikke fra Google. Ingen dage valgt: hver dag; ingen tidspunkter: hele dagen.',
   'Pon las dos horas o ninguna': 'Angiv begge tidspunkter eller ingen',
+  'Clave en GOOGLE_MAPS_API_KEY': 'Nøgle i GOOGLE_MAPS_API_KEY',
+  'Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.': 'Kommer fra serverens miljø: for at fjerne den skal miljøet ændres. En nøgle gemt her erstatter den.',
 };
 
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */

@@ -77,6 +77,7 @@ import type {
   HaAdminHistory, HaEntity, HaLiveStatus, HaSlim,
   TestHomeAssistantResponse,
   WeatherKeyStatus,
+  CommuteKeyStatus,
   WeatherPreviewRequest,
   WeatherPreviewResponse,
   TestImmichResponse,
@@ -249,8 +250,8 @@ export const api = {
   setPricesToken: (token: string) => request<WeatherKeyStatus & { checked?: boolean }>('PUT', '/api/admin/prices/token', { token }),
   testCommute: (origin: string, destination: string, mode: CommuteMode = 'driving') =>
     request<TestCommuteResponse>('POST', '/api/admin/test/commute', { origin, destination, mode }),
-  commuteKey: () => request<WeatherKeyStatus>('GET', '/api/admin/commute/key'),
-  setCommuteKey: (key: string) => request<WeatherKeyStatus & { checked?: boolean }>('PUT', '/api/admin/commute/key', { key }),
+  commuteKey: () => request<CommuteKeyStatus>('GET', '/api/admin/commute/key'),
+  setCommuteKey: (key: string) => request<CommuteKeyStatus>('PUT', '/api/admin/commute/key', { key }),
   testHomeAssistant: (url: string, token?: string) =>
     request<TestHomeAssistantResponse>('POST', '/api/admin/test/homeassistant', token ? { url, token } : { url }),
   /** Entities of one domain or several (the builder: grouped by area, with the builder attributes). */
