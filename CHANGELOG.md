@@ -3,6 +3,26 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.36.0] - 2026-11-06
+
+### Changed
+- The Personalizado photo card always goes behind the other cards, so any card can be placed over it. The *Detrás de
+  las otras tarjetas* switch is gone; screens saved with it off look the same. A new card first looks for room with
+  no photo under it.
+- A photo card in the sidebar fills the whole sidebar behind its cards and takes no place in the stack, so cards can
+  be stacked over it. Only one photo can fill the sidebar; a second one moves to the main area. While it is there,
+  the sidebar's own *Relleno* is not drawn, and it comes back when the card leaves.
+
+### Added
+- The photo card can change its photo every 10 seconds up to once a day (30 min, 1 h, 3 h, 24 h and more), the same
+  steps as the screen's *Fondo* (#41).
+- The sidebar's own photo (*Relleno de la barra: Foto*) has its own interval and *Oscurecer foto* (#41).
+
+### Fixed
+- Cards over a photo that reaches the edge of the screen now have the same margin on both sides of the photo (#41).
+  The cards have to span all of the photo's columns.
+- A photo that fails to load is retried within a minute instead of waiting for the next change.
+
 ## [0.35.0] - 2026-11-05
 
 ### Added
