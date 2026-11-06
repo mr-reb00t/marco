@@ -254,6 +254,8 @@ export function isBehind(item: { kind: string; props?: Record<string, unknown> }
 export function isEdge(item: { kind: string; props?: Record<string, unknown> } | null | undefined): boolean;
 /** The photo card that fills the sidebar behind its cards (the first photo of the stack by order), or null. */
 export function sideBackdropId(list: { id: string; kind: string; pos: CanvasPos | null | undefined }[]): string | null;
+/** The sidebar's own photo options when its photo shows them (fill photo, no photo card filling it, mode 'own'), else null. */
+export function sidebarOwnBlock<B>(canvas: { background?: string; portraitAuto?: boolean; sidebar?: { side?: string; fill?: string; photoSource?: B } | null; items?: { id: string; kind: string; pos?: CanvasPos | null; portrait?: CanvasPos | null; hidden?: boolean }[] } | null | undefined, portrait?: boolean): B | null;
 /** Cards over an edge photo that get the grid's padding on the photo's inner side (id → 'l' | 't' | 'r' | 'b' letters). */
 export function photoInsets(entries: { id: string; kind: string; props?: Record<string, unknown>; pos: CanvasPos | null | undefined }[], orientation?: Orientation | string, grid?: GridArg): Map<string, string>;
 export function kindFor(item: { kind: string; props?: Record<string, unknown> } | null | undefined): CanvasKindDef;

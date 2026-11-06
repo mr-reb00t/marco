@@ -4,7 +4,9 @@
 // - its "Efecto del tiempo" is one layer inside that card only, clipped by it; none with the effect off, with ?lite=1,
 //   or on a card that shows the screen's photos (its saved effect does not count there);
 // - a card on the screen's photos asks for no list of its own;
-// - the sidebar's photo with photos of its own runs the screen's slideshow on its own settings.
+// - the sidebar's photo with photos of its own runs the screen's slideshow on its own settings, and a card left on the
+//   screen's photos then shows the Fondo's, not the sidebar's;
+// - a card whose own list fails to load asks again later, never in a loop.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { findChrome, launchChrome, startWeb } from './browser.js';
@@ -96,6 +98,60 @@ describe('a photo card with photos of its own', { skip: !findChrome() && 'no Chr
       assert.equal(r.topic, 'topic2');
       assert.equal(r.fx, 'simple');
       assert.ok(r.n > 0);
+    } finally {
+      await p.close();
+    }
+  });
+
+  test("a card on the screen's photos next to a sidebar with photos of its own shows the Fondo's", { timeout: 90_000 }, async () => {
+    const p = await browser.page(URL_OF(web, 'photoOwnSideCard'), { width: 1920, height: 1080 });
+    try {
+      const r = await p.eval(`(async () => {
+        for (let i = 0; i < 80 && !document.querySelector('.cv-item[data-kind="photo"] .cv-ph'); i++) await new Promise((r) => setTimeout(r, 100));
+        const { state } = await import('/display/store.ts');
+        const { ctx } = await import('/display/ctx.ts');
+        ${CARDS}
+        return { own: ctx.cfg.background.own ?? '', side: state.photos?.photos?.map((x) => x.url) ?? [], card: bgOf(cards[0]), size: own.size };
+      })()`);
+      assert.equal(r.own, 'sidebar', JSON.stringify(r));
+      assert.ok(r.side.length > 0, 'the sidebar has its list');
+      assert.ok(r.card, 'the card shows a photo');
+      assert.ok(!r.side.includes(r.card), `the card shows the Fondo's photos, not the sidebar's: ${r.card.slice(0, 60)}`);
+      assert.equal(r.size, 1, "one list kept apart: the Fondo's");
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('a list that fails to load is asked for again later, not in a loop', { timeout: 60_000 }, async () => {
+    const p = await browser.page(URL_OF(web, 'photoOwn'), { width: 800, height: 600 });
+    try {
+      const r = await p.eval(`(async () => {
+        const { OwnPhotos } = await import('/display/ownPhotos.ts');
+        let calls = 0;
+        const realFetch = window.fetch;
+        // fails at once (the worst case: a loop would never let the page run); stops answering past 50 so a loop cannot hang the test
+        window.fetch = (u, o) => (String(u).includes('/api/photos') ? (++calls > 50 ? new Promise(() => {}) : Promise.reject(new Error('offline'))) : realFetch(u, o));
+        const block = { mode: 'own', source: 'stock', stockTopic: 'topic1', order: 'random', weatherFx: 'off' };
+        let looks = 0;
+        const o = new OwnPhotos({
+          screen: () => 's1', demo: () => false, mock: () => ({ photos: [] }), fallback: () => ({ photos: [{ url: 'screen.jpg' }] }), fondo: () => null,
+          // the cards look again, as canvasView.onData('photos') does
+          changed: () => { looks++; o.want('c1', block); },
+        });
+        const first = o.want('c1', block);
+        await new Promise((r) => setTimeout(r, 1000));
+        o.want('c1', block);
+        o.refresh();
+        await new Promise((r) => setTimeout(r, 300));
+        const after = o.get('c1');
+        window.fetch = realFetch;
+        return { calls, looks, first, after: after?.photos?.[0]?.url ?? '' };
+      })()`);
+      assert.equal(r.first, null, 'nothing yet while it loads');
+      assert.ok(r.calls <= 3, `at most the first request and the refresh: ${JSON.stringify(r)}`);
+      assert.equal(r.looks, 1, 'the cards look again once, when it falls back');
+      assert.equal(r.after, 'screen.jpg', "the screen's photos meanwhile");
     } finally {
       await p.close();
     }

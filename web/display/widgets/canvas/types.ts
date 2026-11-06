@@ -93,13 +93,14 @@ export interface AdapterEnv {
    */
   morePhotos(after: string): void;
   /**
-   * A Foto card with photos of its own (#41, props.photoSource mode 'own'): its list, asked for once per distinct
-   * setting (ownPhotos.ts), or null while it loads. `releasePhotos` when it shows the screen's photos again or goes.
+   * A Foto card's list: with photos of its own (#41, props.photoSource mode 'own') its own, asked for once per distinct
+   * setting (ownPhotos.ts), or null while it loads; with null the screen's photos (the Fondo's while the sidebar has
+   * photos of its own). `releasePhotos` when it goes.
    */
-  wantPhotos(block: DisplayPhotoSource): PhotosResponse | null;
+  wantPhotos(block: DisplayPhotoSource | null): PhotosResponse | null;
   releasePhotos(): void;
-  /** that card's next batch, after the photo it showed last */
-  moreOwnPhotos(after: string): void;
+  /** that card's next batch, after the photo it showed last; false when it shows the screen's list (morePhotos then) */
+  moreOwnPhotos(after: string): boolean;
   /** the weather effect the screen's current weather calls for (null: weather off or not known yet) */
   weatherFx(): WeatherFxPlan | null;
 }

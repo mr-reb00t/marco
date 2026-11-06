@@ -606,9 +606,13 @@ and `screenPhotoBlocks(screen)` lists every setting a screen shows, which the ga
 Immich albums in use and `syncPhotoRules()` walk. The display config carries each block without its rules (`special`,
 `rulesSig`). On the display, `web/display/ownPhotos.ts` keeps one list per distinct setting, asked for when a card
 needs it and again only on the screen's own photo refreshes (the hourly tick, a `photos` event, a privacy change, a
-special background check); a card on the screen's photos keeps nothing. The sidebar's photo is the screen's slideshow
-with its own settings (`web/shared/glass.ts effectiveBackground`, `own: 'sidebar'`), so it keeps the WebGL weather
-effect. A card is part of the page above the WebGL canvas, so its effect is one CSS layer inside the card
+special background check). A list that fails to load (a card not saved yet in the preview, a display offline) is asked
+for again on a timer, a minute later and then less often up to every 30 minutes, and the card shows the Fondo's photos
+meanwhile. A card on the screen's photos keeps nothing. The sidebar's photo is the screen's slideshow with its own
+settings (`web/shared/glass.ts effectiveBackground`, `own: 'sidebar'`), so it keeps the WebGL weather effect; while it
+does, the screen's list is the sidebar's, so the cards on the screen's photos get the Fondo's list from `ownPhotos.ts`
+(`/api/photos` without `for`). Whether the sidebar shows its own photos is one rule for the display and the server,
+`canvasCore.js sidebarOwnBlock`: a photo card that fills the sidebar wins (the server takes the landscape places). A card is part of the page above the WebGL canvas, so its effect is one CSS layer inside the card
 (`web/display/cardWeather.ts`): a pattern built once and moved with transforms only, none while it is off.
 
 ## Overlay and decorations

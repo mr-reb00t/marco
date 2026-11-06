@@ -7,7 +7,7 @@
 // Only answers the display API itself gave for the same credential go in (so the same privacy filtering applies),
 // and only into a page served with Cache-Control: private, no-store.
 import { addDays, localDate } from './lib/tz.js';
-import { canvasEventsNeed } from './canvasCore.js';
+import { canvasEventsNeed, sidebarOwnBlock } from './canvasCore.js';
 
 /** id of the <script type="application/json"> element */
 export const BOOT_ID = 'marco-boot';
@@ -114,9 +114,9 @@ export const eventsPath = ([from, to]) => `/api/events?from=${encodeURIComponent
 export function bootDataPaths(config, now = new Date()) {
   const screen = config?.target?.kind === 'carousel' && typeof config.screenId === 'string' ? config.screenId : '';
   const own = (p) => (screen ? `${p}${p.includes('?') ? '&' : '?'}screen=${encodeURIComponent(screen)}` : p);
-  // a Personalizado sidebar photo with photos of its own (#41) asks for those (web/shared/glass.ts sidebarOwnPhotos)
-  const cv = config?.layout?.preset === 'canvas' ? config.canvas : null;
-  const side = cv && cv.background !== 'photo' && cv.sidebar?.side !== 'none' && cv.sidebar?.fill === 'photo' && cv.sidebar?.photoSource?.mode === 'own';
+  // a Personalizado sidebar photo with photos of its own (#41) asks for those (canvasCore sidebarOwnBlock, the rule the
+  // display follows; landscape, as the server does not know the orientation)
+  const side = config?.layout?.preset === 'canvas' && !!sidebarOwnBlock(config.canvas);
   return [
     own('/api/weather'), own('/api/countdowns'), own(`/api/photos?count=20${side ? '&for=sidebar' : ''}`), '/api/news',
     ...bootEventWindows(config, now).map((w) => own(eventsPath(w))),

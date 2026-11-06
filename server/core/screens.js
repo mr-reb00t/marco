@@ -5,7 +5,7 @@ import { SCREEN_SPLIT_KEYS, SCREEN_ONLY_KEYS, LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_
 import { displayPrivacy } from './privacy.js';
 import { showsFamilyQr } from './familyCore.js';
 import { carouselBlock } from './carousels.js';
-import { canvasCards, canvasWidgetIds, projectCanvas } from './canvasCore.js';
+import { canvasCards, canvasWidgetIds, projectCanvas, sidebarOwnBlock } from './canvasCore.js';
 import { LOCAL_TODO_LIST, todoListNames, todoViews } from './todoCore.js';
 import { isOwnPhotoSource, photoSourceSig, rulesAlbumIds, rulesGalleryFiles } from './photoSource.js';
 
@@ -246,10 +246,12 @@ export function allPhotoSources(screen) {
   return out;
 }
 
-/** The sidebar shows its own photos: a Personalizado screen whose sidebar is filled with a photo of its own. */
+/**
+ * The sidebar shows its own photos: a Personalizado screen whose sidebar is filled with a photo of its own and no
+ * photo card fills it (canvasCore sidebarOwnBlock, as the display decides; the landscape places).
+ */
 function sidebarOwn(screen) {
-  const cv = screen?.canvas;
-  return screen?.layout?.preset === 'canvas' && !!cv && cv.background !== 'photo' && cv.sidebar?.side !== 'none' && cv.sidebar?.fill === 'photo' && isOwnPhotoSource(cv.sidebar.photoSource);
+  return screen?.layout?.preset === 'canvas' && !!sidebarOwnBlock(screen.canvas);
 }
 
 /** The photo cards of a screen with photos of their own (shown ones; inside a Rotativa too). */

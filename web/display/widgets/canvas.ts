@@ -61,9 +61,9 @@ export interface CanvasDeps {
   morePhotos(after: string): void;
   /** the lists of the photo cards with photos of their own, by card id (ownPhotos.ts) */
   ownPhotos: {
-    want(id: string, block: DisplayPhotoSource): PhotosResponse | null;
+    want(id: string, block: DisplayPhotoSource | null): PhotosResponse | null;
     release(id: string): void;
-    more(id: string, after: string): void;
+    more(id: string, after: string): boolean;
   };
   /** the weather effect the screen's weather calls for (AdapterEnv.weatherFx) */
   weatherFx(): WeatherFxPlan | null;

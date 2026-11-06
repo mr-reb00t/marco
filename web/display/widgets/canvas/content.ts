@@ -168,7 +168,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   // the image loading now: one that an earlier change started and that ends later neither shows nor sets the timer
   let seq = 0;
   let rule = state.photos?.rule ?? '';
-  // its own list (null: not own, or still loading)
+  // its list (ownPhotos.ts): its own, the Fondo's while the sidebar has photos of its own, or the screen's; null while
+  // its own is on its way
   let ownResp: PhotosResponse | null = null;
   let fx: CardWeather | null = null;
   // spread items over the list, so two photo cards do not show the same one
@@ -178,16 +179,14 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     return ps && ps.mode === 'own' ? ps : null;
   };
   const srcOf = (b: DisplayPhotoSource | null) => (b ? JSON.stringify([b.source, b.stockTopic, b.order, b.immich, b.rulesSig]) : 'screen');
-  const resp = (): PhotosResponse | null => (ownBlock() ? ownResp : state.photos);
+  const resp = (): PhotosResponse | null => ownResp;
   const list = (): Photo[] => resp()?.photos ?? [];
-  /** Ask for its own list (or let it go): a card on the screen's photos keeps nothing and starts nothing. */
+  /**
+   * Its list: its own, or the screen's photos. A card on the screen's photos keeps nothing and starts nothing, except
+   * while the sidebar's photo has photos of its own: it then gets the Fondo's list, not the sidebar's (ownPhotos.ts).
+   */
   const syncOwn = () => {
-    const b = ownBlock();
-    if (b) ownResp = env.wantPhotos(b);
-    else {
-      ownResp = null;
-      env.releasePhotos();
-    }
+    ownResp = env.wantPhotos(ownBlock());
   };
   /** Its weather effect: only with its own photos and an effect chosen, never with Ahorro, lite mode or less motion. */
   const syncFx = () => {
@@ -213,8 +212,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
       return;
     }
     if (!photos.length) {
-      // its own list is still on its way: the photo on screen stays until it comes
-      if (ownBlock() && !ownResp && cur) return;
+      // its list is still on its way: the photo on screen stays until it comes
+      if (!ownResp && cur) return;
       root.classList.add('is-empty');
       return;
     }
@@ -223,8 +222,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     const p = photos[idx];
     // the whole batch has been on screen: the next one comes in for the next change (it continues from this photo)
     if (++round >= photos.length && photos.length > 1) {
-      if (ownBlock() && ownResp) env.moreOwnPhotos(p.file || p.id || '');
-      else env.morePhotos(p.file || p.id || '');
+      if (!env.moreOwnPhotos(p.file || p.id || '')) env.morePhotos(p.file || p.id || '');
     }
     const props = env.item().props as Props;
     const img = new Image();
@@ -322,7 +320,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
         return;
       }
       if (topic !== 'photos') return;
-      if (ownBlock()) syncOwn();
+      syncOwn();
       onList();
     },
     destroy() {

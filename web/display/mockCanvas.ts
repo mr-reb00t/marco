@@ -608,7 +608,7 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
   },
   // a photo card with photos of its own (#41, photoSource 'own': topic1 and a light weather effect) next to one with
   // the screen's photos; &wx=rain for the effect. photoOwnOff: the same with the effect off; photoOwnSide: the
-  // sidebar's photo with photos of its own
+  // sidebar's photo with photos of its own; photoOwnSideCard: that and a card on the screen's photos (the Fondo's)
   photoOwn: {
     canvas: { background: 'ambient' },
     orientation: 'landscape',
@@ -633,6 +633,14 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
     items: [
       { kind: 'clock.digital', pos: S(0, 3) },
       { kind: 'calendar.month', pos: M(0, 0, 'xl') },
+    ],
+  },
+  photoOwnSideCard: {
+    canvas: { background: 'ambient', sidebar: { side: 'left', size: 'wide', fill: 'photo', photoSource: { mode: 'own', source: 'stock', stockTopic: 'topic2', order: 'random', immich: { albumIds: [], favoritesOnly: false }, rules: [], weatherFx: 'off' } } },
+    orientation: 'landscape',
+    items: [
+      { kind: 'clock.digital', pos: S(0, 3) },
+      { kind: 'photo', pos: M(0, 0, 'xl'), props: { fit: 'cover' } },
     ],
   },
   // ... or inside the bar's gaps, with round corners

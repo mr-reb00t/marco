@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { defaultConfig, defaultScreenProfile } from '../core/defaults.js';
 import { validateConfig } from '../core/validate.js';
-import { canvasDefaults, defaultCanvas, defaultItemStyle, projectCanvas, sanitizeCanvas } from '../core/canvasCore.js';
+import { canvasDefaults, defaultCanvas, defaultItemStyle, projectCanvas, sanitizeCanvas, sidebarOwnBlock } from '../core/canvasCore.js';
+import { bootDataPaths } from '../core/bootstrap.js';
 import { displayPhotoSource, photoSourceSig, sanitizePhotoSource } from '../core/photoSource.js';
 import { allPhotoSources, isPhotoFor, photoTarget, screenPhotoBlocks, screenRuleAlbumIds, screenRuleGalleryFiles, screenShowsGallery } from '../core/screens.js';
 
@@ -193,4 +194,26 @@ test('what a screen shows: the gallery, rule files and Immich albums of its Fond
   assert.deepEqual(screenPhotoBlocks(s).map((x) => x.key), ['', 'cv_photo001']);
   // another layout: only the Fondo
   assert.deepEqual(screenPhotoBlocks({ ...s, layout: { preset: 'bigCalendar' } }).map((x) => x.key), ['']);
+});
+
+test('a photo card filling the sidebar hides its own photos everywhere (display, boot request, server)', () => {
+  const s = structuredClone(validateConfig(oldConfig()).value.screens[1]);
+  s.canvas.sidebar.photoSource = { ...OWN, source: 'stock' };
+  const boot = (screen) => bootDataPaths({ layout: screen.layout, canvas: screen.canvas, calendar: { view: 'month' } }).find((x) => x.startsWith('/api/photos'));
+  assert.equal(sidebarOwnBlock(s.canvas), s.canvas.sidebar.photoSource);
+  assert.equal(boot(s), '/api/photos?count=20&for=sidebar');
+  assert.deepEqual(screenPhotoBlocks(s).map((x) => x.key), ['', 'sidebar']);
+  // a photo card dragged into the sidebar fills it: the block stays stored but nothing shows it
+  s.canvas.items.push({ id: 'cv_photo003', kind: 'photo', pos: { zone: 'side', order: 0, size: 'm' }, style: defaultItemStyle(), props: canvasDefaults('photo') });
+  assert.equal(sidebarOwnBlock(s.canvas), null);
+  assert.equal(boot(s), '/api/photos?count=20');
+  assert.deepEqual(screenPhotoBlocks(s).map((x) => x.key), ['']);
+  assert.equal(photoTarget(s, 'sidebar').key, 's_custom', "the screen's photos");
+  // on a portrait page with places of its own, the card may be elsewhere (the display passes the orientation)
+  s.canvas.items[2].portrait = { zone: 'main', x: 0, y: 0, size: 'm', w: 8, h: 8 };
+  assert.equal(sidebarOwnBlock({ ...s.canvas, portraitAuto: false }, true), s.canvas.sidebar.photoSource);
+  assert.equal(sidebarOwnBlock({ ...s.canvas, portraitAuto: true }, true), null, 'an automatic portrait keeps the landscape places');
+  // hidden by hand: it fills nothing
+  s.canvas.items[2].hidden = true;
+  assert.equal(sidebarOwnBlock(s.canvas), s.canvas.sidebar.photoSource);
 });

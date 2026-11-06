@@ -1446,6 +1446,22 @@ export function sideBackdropId(list) {
 }
 
 /**
+ * The sidebar's own photo options (#41) when its photo shows them, else null (the screen's Fondo then): the sidebar is
+ * filled with a photo (fill 'photo', a side, no photo behind the whole screen), no photo card fills it on this
+ * orientation (sideBackdropId over the cards not hidden by hand; an automatic portrait keeps the landscape places) and
+ * its photoSource has mode 'own'. The one rule for the display (web/shared/glass.ts, main.ts) and the server
+ * (core/screens.js, core/bootstrap.js); the server does not know the orientation and takes the landscape one.
+ */
+export function sidebarOwnBlock(canvas, portrait = false) {
+  const sb = canvas?.sidebar;
+  if (!sb || canvas.background === 'photo' || (sb.side ?? 'none') === 'none' || sb.fill !== 'photo') return null;
+  if (!sb.photoSource || typeof sb.photoSource !== 'object' || sb.photoSource.mode !== 'own') return null;
+  const items = Array.isArray(canvas.items) ? canvas.items : [];
+  const list = items.filter((it) => it && !it.hidden).map((it) => ({ id: it.id, kind: it.kind, pos: portrait && !canvas.portraitAuto ? it.portrait ?? null : it.pos }));
+  return sideBackdropId(list) ? null : sb.photoSource;
+}
+
+/**
  * Cards over an edge photo, centred on it (#41): a photo out to the screen's edge on one side of an axis reaches past
  * the grid's padding there, while its other (inner) side stops on a column or row line, so a card on the photo's
  * cells has the padding on one side and nothing on the other. Each card fully inside the photo's cells that touches

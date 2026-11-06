@@ -204,6 +204,8 @@ const ownPhotos = new OwnPhotos({
   demo: () => state.demo,
   mock: (topic) => mockPhotos(topic),
   fallback: () => state.photos,
+  // the sidebar's photo with photos of its own: state.photos is its list, the Fondo's is kept apart for the cards
+  fondo: () => (state.config && ctx.cfg?.background?.own ? { stockTopic: state.config.background?.stockTopic ?? '', special: !!state.config.background?.special } : null),
   changed: () => canvasView.onData('photos'),
 });
 // Personalizado (layout 'canvas'): the owner's widgets on a grid (widgets/canvas.ts)
@@ -1533,7 +1535,7 @@ const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; o
  * ctx.cfg.background already is this for the screen on display (applyConfig); a carousel's other screens need it too.
  */
 function slideBgOf(cfg: DisplayConfig): DisplayConfig['background'] {
-  const own = effectivePreset(cfg) === 'canvas' ? sidebarOwnPhotos(cfg.canvas) : null;
+  const own = effectivePreset(cfg) === 'canvas' ? sidebarOwnPhotos(cfg.canvas, isPortrait(cfg)) : null;
   return own ? { ...cfg.background, source: own.source, stockTopic: own.stockTopic, order: own.order, immich: own.immich, own: 'sidebar' } : cfg.background;
 }
 on('config', (s) => {
