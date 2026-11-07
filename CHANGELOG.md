@@ -3,6 +3,17 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.39.0] - 2026-11-07
+
+### Added
+- Commute times show "Google Maps" next to them, on the *Trayectos* widget and in every *Trayectos* card design, as
+  Google asks when its times are shown without a Google map. It stays legible in light, dark and glass cards.
+
+### Changed
+- The Google Maps key hints ask for the Routes API: Google no longer lets new projects turn on the Directions API.
+  A key that already has the Directions API keeps working.
+- *Probar* says when it was used too often and asks to wait a minute.
+
 ## [0.38.0] - 2026-11-06
 
 ### Added
