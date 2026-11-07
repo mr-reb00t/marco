@@ -216,7 +216,7 @@ test('validateConfig and displayWidgets for commute widget', () => {
   assert.equal(v3.value.widgets[0].options.commute.routes[0].name, '');
   assert.equal(v3.value.widgets[0].options.commute.refreshMin, 10);
 
-  // Marco Cloud's validator options (CLOUD_VALIDATE_OPTS widgetTypes) leave 'commute' out: the widget is refused
+  // a server whose validator options (widgetTypes) leave 'commute' out refuses the widget
   const cloud = validateConfig(c, { widgetTypes: ['image', 'prices', 'currency', 'value'], widgetProtocols: ['https:'], immichAvailable: false });
   assert.equal(cloud.ok, false);
   assert.ok(cloud.errors.some((e) => e.path === 'widgets[0].type' && e.message === 'not available on this server'));

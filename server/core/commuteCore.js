@@ -366,3 +366,172 @@ export function parseGoogleDirections(text) {
   if (status === 'INVALID_REQUEST') throw new CommuteError('not_found');
   throw new CommuteError('http_error');
 }
+
+// ---- shared by every server that asks Google (server/commute.js here, Marco Cloud's own): the cost rules, the
+// requests and the answer to the displays. Fetching, timeouts and where the legs are kept stay with each server.
+
+/** A good answer older than this is drawn as stale (the screens show when it was fetched). */
+export const COMMUTE_STALE_AFTER_MS = 45 * 60_000;
+/** A leg nobody asked for in this time is forgotten. */
+export const COMMUTE_FORGET_AFTER_MS = 24 * 3600_000;
+/** The admin's test button: a route already asked within this time is answered from what is kept. */
+export const COMMUTE_TEST_MIN_MS = 60_000;
+/** Wait before trying a failed leg again, by number of failures in a row (minutes). */
+export const COMMUTE_BACKOFF_MIN = Object.freeze([2, 5, 15, 30, 60]);
+/** A key Google refuses is not asked again for an hour (or until the key changes). */
+export const COMMUTE_KEY_ERRORS = new Set(['key_invalid', 'http_denied']);
+
+const modeOf = (mode) => (COMMUTE_MODES.includes(mode) ? mode : 'driving');
+
+/** What identifies a leg: the mode and both addresses, trimmed, cut at 200 characters and lower-cased. */
+export function commuteLegKey(origin, destination, mode) {
+  const o = String(origin || '').trim().slice(0, 200).toLowerCase();
+  const d = String(destination || '').trim().slice(0, 200).toLowerCase();
+  return `${mode}|${o}|${d}`;
+}
+
+/** The Directions API request of a leg as `{ url, init }` (the key goes in the URL, as that API wants it). */
+export function googleDirectionsRequest({ origin, destination, mode, apiKey }) {
+  const u = new URL('https://maps.googleapis.com/maps/api/directions/json');
+  u.searchParams.set('origin', origin);
+  u.searchParams.set('destination', destination);
+  u.searchParams.set('mode', modeOf(mode));
+  u.searchParams.set('departure_time', 'now');
+  u.searchParams.set('key', apiKey);
+  return { url: u.href, init: { method: 'GET', headers: { accept: 'application/json' } } };
+}
+
+/** The Routes API (v2 computeRoutes) request of a leg as `{ url, init }` (the key goes in a header). */
+export function googleRoutesRequest({ origin, destination, mode, apiKey }) {
+  const body = {
+    origin: { address: origin },
+    destination: { address: destination },
+    travelMode: googleRoutesTravelMode(mode),
+    ...(mode === 'driving' ? { routingPreference: 'TRAFFIC_AWARE' } : {}),
+  };
+  return {
+    url: 'https://routes.googleapis.com/directions/v2:computeRoutes',
+    init: {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': apiKey,
+        'x-goog-fieldmask': 'routes.duration,routes.staticDuration,routes.distanceMeters,routes.description',
+      },
+      body: JSON.stringify(body),
+    },
+  };
+}
+
+/** The request of a leg for one API ('routes' | 'directions'), and how to read its answer. */
+export function googleCommuteRequest(api, leg) {
+  return api === 'routes'
+    ? { ...googleRoutesRequest(leg), parse: parseGoogleRoutesV2, provider: 'google_routes' }
+    : { ...googleDirectionsRequest(leg), parse: parseGoogleDirections, provider: 'google_directions' };
+}
+
+/** The order to try the two APIs in: the one that answered last first, else Directions then Routes. */
+export function commuteProviderOrder(provider) {
+  return provider === 'routes' ? ['routes', 'directions'] : ['directions', 'routes'];
+}
+
+/** A leg after a good answer at `t`: asked again after the refresh, never sooner than the floor. */
+export function commuteFetched(data, t, refreshMin = MIN_COMMUTE_REFRESH_MIN) {
+  const ttl = Math.max(MIN_COMMUTE_REFRESH_MIN, Number(refreshMin) || MIN_COMMUTE_REFRESH_MIN) * 60_000;
+  return { ...data, fetchedAt: t, at: t, nextAt: t + ttl, usedAt: t, error: null, failures: 0 };
+}
+
+/** A leg after a failed ask at `t` (code only): keeps the last good answer, waits longer after each failure. */
+export function commuteFailed(prev, code, t) {
+  const failures = (prev?.failures || 0) + 1;
+  const waitMin = COMMUTE_KEY_ERRORS.has(code) || code === 'key_missing' ? 60 : COMMUTE_BACKOFF_MIN[Math.min(failures, COMMUTE_BACKOFF_MIN.length) - 1];
+  return {
+    durationSec: 0, normalDurationSec: 0, distanceMeters: 0, summary: '', provider: '', fetchedAt: 0,
+    ...prev,
+    at: t, nextAt: t + waitMin * 60_000, usedAt: t, error: code, failures,
+  };
+}
+
+/** A leg not asked because there is no room for it (nothing is pushed out that would be asked again). */
+export const commuteBusyLeg = (t) => ({
+  durationSec: 0, normalDurationSec: 0, distanceMeters: 0, summary: '', provider: '', fetchedAt: 0, at: t, nextAt: t, usedAt: t, error: 'busy', failures: 0,
+});
+
+/**
+ * The saved routes of a widget or card at `now` in `tz`: the valid ones (both addresses), at most MAX_COMMUTE_ROUTES,
+ * each as `{ base, active, leg }`. `base` is what the screens get about the route (never the addresses); `leg`
+ * ({ origin, destination, mode }) is what to ask Google, only for a route inside its schedule.
+ */
+export function planCommuteRoutes(routes, now, tz = 'UTC') {
+  return (Array.isArray(routes) ? routes : [])
+    .filter((r) => r && typeof r.origin === 'string' && r.origin.trim() && typeof r.destination === 'string' && r.destination.trim())
+    .slice(0, MAX_COMMUTE_ROUTES)
+    .map((route) => {
+      const leg = resolveRouteLeg(route, now, tz);
+      const mode = modeOf(route.mode);
+      const base = { id: String(route.id || ''), name: String(route.name || '').trim(), mode, reversed: leg.reversed };
+      return leg.active ? { base, active: true, leg: { origin: leg.origin, destination: leg.destination, mode } } : { base, active: false };
+    });
+}
+
+/** One route of the answer to the screens (CommuteRouteResult), from its plan `base` and its kept leg `entry`. */
+export function commuteRouteResult(base, entry, now, { showRouteSummary = true } = {}) {
+  if (!entry) return { ...base, active: false, ok: false };
+  if (!(entry.durationSec > 0)) return { ...base, active: true, ok: false, traffic: 'clear', error: entry.error || 'fetch_failed' };
+  return {
+    ...base,
+    active: true,
+    ok: true,
+    durationSec: entry.durationSec,
+    normalDurationSec: entry.normalDurationSec,
+    delaySec: Math.max(0, entry.durationSec - entry.normalDurationSec),
+    delayMin: delayMinutes(entry.durationSec, entry.normalDurationSec),
+    distanceMeters: entry.distanceMeters,
+    // only what the card draws: no road or line names when the owner turned the summary off
+    summary: showRouteSummary ? entry.summary || '' : '',
+    provider: entry.provider || 'google_directions',
+    fetchedAt: new Date(entry.fetchedAt).toISOString(),
+    stale: Boolean(entry.error) || now - entry.fetchedAt > COMMUTE_STALE_AFTER_MS,
+    traffic: trafficLevel(entry.durationSec, entry.normalDurationSec, base.mode),
+    error: entry.error || null,
+  };
+}
+
+/**
+ * The answer to the screens (CommuteResponse) from the plan and the kept legs: `entries[i]` is the leg of `plan[i]`
+ * (undefined for a route outside its schedule). Never carries an address.
+ */
+export function commuteResponse(plan, entries, now, opts = {}) {
+  let latest = 0;
+  const routes = plan.map((p, i) => {
+    const e = p.active ? entries[i] : undefined;
+    if (e?.durationSec > 0) latest = Math.max(latest, e.fetchedAt);
+    return commuteRouteResult(p.base, e, now, opts);
+  });
+  return { fetchedAt: new Date(latest || now).toISOString(), keySet: true, routes };
+}
+
+/** The checked input of the admin's test button: `{ origin, destination, mode }`, or null when an address is missing. */
+export function testCommuteInput({ origin, destination, mode } = {}) {
+  const o = typeof origin === 'string' ? origin.trim().slice(0, 200) : '';
+  const d = typeof destination === 'string' ? destination.trim().slice(0, 200) : '';
+  return o && d ? { origin: o, destination: d, mode: modeOf(mode) } : null;
+}
+
+/** The admin's test button answer from the leg it got: the time, or an error code the admin can explain. */
+export function testCommuteResult(leg, mode) {
+  if (!(leg?.durationSec > 0) || leg.error) {
+    const code = leg?.error || 'fetch_failed';
+    return { ok: false, error: COMMUTE_KEY_ERRORS.has(code) ? 'key_invalid' : code === 'no_route' ? 'not_found' : code };
+  }
+  return {
+    ok: true,
+    durationSec: leg.durationSec,
+    normalDurationSec: leg.normalDurationSec,
+    delaySec: Math.max(0, leg.durationSec - leg.normalDurationSec),
+    traffic: trafficLevel(leg.durationSec, leg.normalDurationSec, mode),
+    distanceMeters: leg.distanceMeters,
+    summary: leg.summary || '',
+    provider: leg.provider || 'google_directions',
+  };
+}

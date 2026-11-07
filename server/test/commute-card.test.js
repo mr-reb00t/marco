@@ -358,17 +358,18 @@ test('screen file: the addresses stay home (export and import blank them, the ca
   assert.ok(!JSON.stringify(r).includes('Somewhere'));
 });
 
-test('Marco Cloud: no Trayectos card (refused, left out of a screen file)', () => {
-  assert.equal(CANVAS_KINDS.commute.edition, 'local');
-  assert.ok(!CLOUD_CANVAS_KINDS.includes('commute'));
+test('Marco Cloud: the Trayectos card is offered (its own key there), and a screen file still blanks the addresses', () => {
+  assert.equal(CANVAS_KINDS.commute.edition, 'all');
+  assert.ok(CLOUD_CANVAS_KINDS.includes('commute'));
   const c = collector();
   const out = sanitizeCanvas(c, 'canvas', { ...defaultCanvas(), items: [item('cv_comm0001')] }, {}, { canvasKinds: CLOUD_CANVAS_KINDS });
-  assert.equal(out.items.length, 0);
-  assert.ok(c.errors.some((e) => e.path === 'canvas.items[0].kind' && e.msg === 'not available on this server'));
+  assert.equal(out.items.length, 1);
+  assert.equal(c.errors.length, 0, JSON.stringify(c.errors));
   const r = readCanvasFile(exportCanvasFile({ ...defaultCanvas(), items: [item('cv_comm0001')] }), {}, { canvasKinds: CLOUD_CANVAS_KINDS });
   assert.equal(r.ok, true);
-  assert.equal(r.canvas.items.length, 0);
-  assert.equal(r.dropped, 1);
+  assert.equal(r.canvas.items.length, 1);
+  assert.equal(r.canvas.items[0].props.routes[0].origin, '');
+  assert.equal(r.canvas.items[0].props.routes[0].destination, '');
 });
 
 test('the leg cache: the most legs a config can use fit, and a cache full of legs not due yet asks Google nothing new', async () => {

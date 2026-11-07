@@ -960,12 +960,12 @@ export const CANVAS_KINDS = {
     defaults: () => ({ pairs: [{ base: 'EUR', quote: 'USD' }], layout: 'list', range: '30d', chart: 'area', chartStyle: 'below' }),
     props: (c, p, x) => currencyProps(c, p, x),
   },
-  // ---- Trayectos (self-hosted only): live travel times of the card's own routes, asked of Google by this server with
-  // the owner's key (server/commute.js, GET /api/display/commute?item=). The display gets the route ids, names and
+  // ---- Trayectos: live travel times of the card's own routes, asked of Google by the server with the owner's own key
+  // (server/commute.js here, Marco Cloud its own; GET /api/display/commute?item=), where the 'commute' feature is on. The display gets the route ids, names and
   // modes and how to draw them, never the addresses or the schedules (projectCanvas). Routes as the commute widget's
   // (core/commuteCore.js sanitizeCommuteOptions), saved before they are written ('draft'): such a route is not asked.
   commute: {
-    cat: 'data', sizes: ['xs', 's', 'w', 'm', 't', 'l', 'band'], def: 'w', cells: [2, 2, 12, 6], side: true, edition: 'local', feature: 'commute', private: true, perScreen: 4,
+    cat: 'data', sizes: ['xs', 's', 'w', 'm', 't', 'l', 'band'], def: 'w', cells: [2, 2, 12, 6], side: true, edition: 'all', feature: 'commute', private: true, perScreen: 4,
     defaults: () => ({ look: 'auto', units: 'auto', refreshMin: 10, showArrival: true, showRouteSummary: true, routes: [] }),
     props: (c, p, x) => ({
       look: P.oneOf(c, `${p}.look`, x.look, 'auto', COMMUTE_LOOKS),

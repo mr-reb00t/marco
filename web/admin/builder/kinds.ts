@@ -135,7 +135,7 @@ export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly s
   if (k === 'stocks' && env.stocks === false) return 'Bolsa necesita una clave de Finnhub que este servidor no tiene todavía.';
   // Sonando ahora reads Spotify accounts linked on this server (feature spotify)
   if (k === 'nowplaying' && env.spotify === false) return 'No disponible en este servidor';
-  // Trayectos asks Google with the owner's key from this server (feature commute)
+  // Trayectos asks Google with the owner's own key from the server (feature commute)
   if (k === 'commute' && env.commute === false) return 'No disponible en este servidor';
   if (KIND_META[k]?.soon) return 'Llega en una próxima versión';
   // a photo card over the page's photo makes no sense (photoBg: the page's Fondo is Foto)
