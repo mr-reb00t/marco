@@ -36,7 +36,7 @@ export const newCommuteOptions = (): CommuteWidgetOptions => ({
 
 const ERROR_TEXT: Record<string, string> = {
   key_missing: 'Añade tu clave de Google Maps arriba.',
-  key_invalid: 'Google Maps no acepta esta clave. Revisa que Directions API o Routes API esté activada.',
+  key_invalid: 'Google Maps no acepta esta clave. Revisa que Routes API esté activada.',
   not_found: 'No se encontró una ruta entre esos dos lugares.',
   rate_limited: 'Límite de consultas alcanzado en Google Maps.',
   timeout: 'Google Maps no respondió a tiempo.',
@@ -66,7 +66,7 @@ export function CommuteApiKey({ compact = false }: { compact?: boolean }) {
       setValue('');
       toast(v ? t('Clave guardada') : t('Clave quitada'));
     } catch (e) {
-      toast((e as ApiError).status === 400 ? t('Google Maps no acepta esta clave. Revisa que Directions API o Routes API esté activada.') : t('No se pudo guardar la clave.'), 'error');
+      toast((e as ApiError).status === 400 ? t('Google Maps no acepta esta clave. Revisa que Routes API esté activada.') : t('No se pudo guardar la clave.'), 'error');
     } finally {
       setSaving(false);
     }
@@ -76,14 +76,15 @@ export function CommuteApiKey({ compact = false }: { compact?: boolean }) {
       label={t('Clave de API de Google Maps')}
       hint={
         <>
-          {t('Activa Directions API o Routes API en')}{' '}
-          <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener noreferrer">
+          {t('Activa Routes API en')}{' '}
+          <a href="https://console.cloud.google.com/apis/library/routes.googleapis.com" target="_blank" rel="noopener noreferrer">
             console.cloud.google.com
           </a>
-          . {t('Se guarda solo en el servidor y nunca se vuelve a mostrar.')}
+          . {t('Una clave antigua con Directions API también sirve.')} {t('Se guarda solo en el servidor y nunca se vuelve a mostrar.')}
           {!compact && (
             <>
               {' '}
+              {t('Las pantallas muestran «Google Maps» junto a los tiempos, como pide Google.')}{' '}
               {t('Google cobra las consultas que pasan de su cuota gratuita mensual. Cada ruta visible se consulta una vez por intervalo de actualización; un horario por ruta evita consultas cuando no hace falta.')}
             </>
           )}

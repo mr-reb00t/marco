@@ -692,9 +692,16 @@ corner, in the side column, on the whole screen (the `widget` layout) or in a Pe
 ### Commute times
 
 A widget of type `commute` (needs `features.commute`) shows live travel times from Google for up to 8 saved routes.
-The server asks Google with the owner's own API key (Directions API, or Routes API v2 when Directions is not enabled
-for the key); a display never sees the key or the addresses. The schedule and parsing helpers are in
-`server/core/commuteCore.js`, the requests and the cache in `server/commute.js`.
+The server asks Google with the owner's own API key: Routes API (the one to enable; Directions API is legacy and
+cannot be enabled on new Google Cloud projects, but an older key with it still works: the server tries one and falls
+back to the other once when Google says the API is not enabled). A display never sees the key or the addresses. The
+schedule, the request builders, the waiting rules and the answer to the screens are in `server/core/commuteCore.js`
+(shared with Marco Cloud); fetching and the cache in `server/commute.js`.
+
+Wherever a time from Google is drawn (the widget and every design of the card), the display writes "Google Maps"
+under it (`web/display/widgets/googleMapsAttr.ts`), as Google's terms ask for its route times shown without its map:
+the text as it is (never translated, `translate="no"`), weight 400, 1.2rem (12 px on a 1080-line screen), white,
+#1F1F1F or #5E5E5E after the card's ink. It is never one of the things a card gives up to fit.
 
 - `options.commute`: `{ units: 'auto' | 'metric' | 'imperial', refreshMin: 10 | 15 | 30 | 60, showRouteSummary,
   showArrival, routes: [{ id: 'cr_…', name, origin, destination, mode: 'driving' | 'transit' | 'bicycling' | 'walking',
@@ -734,8 +741,8 @@ for the key); a display never sees the key or the addresses. The schedule and pa
 
 #### Commute card (Personalizado)
 
-The *Trayectos* card (canvas kind `commute`, palette group Datos, self-hosted only: `edition: 'local'`, so never in
-`CLOUD_CANVAS_KINDS`; the builder offers it with `features.commute`) shows the same travel times on a Personalizado
+The *Trayectos* card (canvas kind `commute`, palette group Datos, `edition: 'all'`; the builder offers it with
+`features.commute`, on Marco Cloud too when that server says so) shows the same travel times on a Personalizado
 screen, with its own routes. At most 4 per screen (a Rotativa's cards count). Its routes are validated by the same
 function as the widget's (`core/commuteCore.js sanitizeCommuteOptions`), with the same paths under the item.
 

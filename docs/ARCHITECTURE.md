@@ -702,15 +702,17 @@ card (`web/display/widgets/values.ts`), from the screen's values feed (`valuesFe
 
 ## Commute times
 
-Live travel times from Google with the owner's own Maps key (self-hosted only, feature `commute`): the commute widget
-(`config.widgets` type `commute`) and the *Trayectos* card of Personalizado (kind `commute`, `edition: 'local'`, so
-never on Marco Cloud). Endpoints and shapes: docs/API.md, *Commute times*.
+Live travel times from Google with the owner's own Maps key (feature `commute`): the commute widget
+(`config.widgets` type `commute`) and the *Trayectos* card of Personalizado (kind `commute`, `edition: 'all'`: a
+server offers it when it has the feature). Endpoints and shapes: docs/API.md, *Commute times*.
 
 - **Shared rules**: `server/core/commuteCore.js` validates the routes of both (`sanitizeCommuteOptions`: strict for a
   widget, a card may be saved before its addresses are written), resolves a route's direction and schedule, reads
-  Google's answers and makes the `sig` of a card (`commuteSig`). `server/commute.js` asks Google (Directions API, or
-  Routes API v2) and keeps one cache entry per leg for every screen, with the same refresh floor, backoff and cap for
-  widgets and cards.
+  Google's answers and makes the `sig` of a card (`commuteSig`). It also builds the requests (Routes API, Directions API
+  for older keys), the waiting rules (`commuteFetched`, `commuteFailed`) and the answer to the screens
+  (`planCommuteRoutes`, `commuteResponse`), so another server keeping its legs elsewhere answers the same.
+  `server/commute.js` asks Google and keeps one cache entry per leg for every screen, with the same refresh floor,
+  backoff and cap for widgets and cards.
 - **No addresses on a screen**: a display gets route ids, names and modes only (`displayCommuteOptions`, used by
   `displayWidgets` and `projectCanvas`). It asks `GET /api/display/commute?id=` (a widget) or `?item=` (a card) and
   the server reads the saved routes; a card is answered only while its screen shows it (`commuteCardOf`, the schedules
@@ -719,6 +721,10 @@ never on Marco Cloud). Endpoints and shapes: docs/API.md, *Commute times*.
   with the data cards' building blocks in four designs (one route large, a list or columns, lines, the time alone) and
   fitted to its box by the data cards' ladder; `commuteFeed.ts` asks for each card on screen every `refreshMin`
   minutes. The demo and the preview of an unsaved card draw made-up times (`mockCommute.ts`).
+- **Attribution**: under every time from Google the widget and the card write "Google Maps"
+  (`widgets/googleMapsAttr.ts`, Google's text attribution for its route times without its map): at a fixed 1.2rem, in
+  white or Google's dark grey after the card's ink, in the card's bottom row (inline at the end of a one-cell-high
+  line, centred under the pill). The cards' fitting ladders never drop it.
 
 ## Now playing
 
