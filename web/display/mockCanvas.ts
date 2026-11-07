@@ -1,7 +1,7 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
 // household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, commute,
-// commuteLines, commutePortrait, commuteSide, commuteStates, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
+// commuteLines, commutePortrait, commuteSide, commuteStates, commuteSurfaces, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
 import { CANVAS_KINDS, gridDims, boxAllowed, kindFor, canvasDefaults, defaultCanvas, defaultItemStyle, itemAliases, lookSize, projectCanvas, sanitizeCanvas, sizeCells, canvasCards } from '../../server/core/canvasCore.js';
@@ -499,6 +499,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'commute', pos: B(16, 0, 8, 6), props: { routes: [R(1, 'Universidad', 'transit')], look: 'list' } },
       { kind: 'commute', pos: M(0, 6, 'w'), props: { routes: [R(1, 'Universidad', 'transit')] } },
       { kind: 'market', pos: M(12, 6, 'w'), props: { coins: [{ id: 'bitcoin', currency: 'eur' }], layout: 'big', range: '7d' } },
+    ],
+  },
+  // the "Google Maps" line on each surface (four cards, the most a screen holds): one route large on glass, a list on
+  // a solid card, the pill with no surface over the photo, a line on a light card of its own colour
+  commuteSurfaces: {
+    canvas: { background: 'photo', dim: 0.2 },
+    items: [
+      { kind: 'commute', pos: M(0, 0, 'm'), props: { routes: [R(0, 'Trabajo')] } },
+      { kind: 'commute', pos: M(8, 0, 'w'), props: { routes: COMMUTE_ROUTES.slice(0, 2) }, style: { surface: 'solid' } },
+      { kind: 'commute', pos: M(20, 0, 'xs'), props: { routes: [R(1, 'Universidad', 'transit')] }, style: { surface: 'none' } },
+      { kind: 'commute', pos: B(8, 4, 8, 1), props: { routes: [R(0, 'Trabajo')] }, style: { surface: 'solid', color: '#f2c94c' } },
     ],
   },
   // Calendar grid lines (#29): Suaves (the look it always had), Marcadas, Fuertes in a colour of its own, and a week;

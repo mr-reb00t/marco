@@ -7,6 +7,7 @@ import { formatTime } from '../../shared/i18n';
 import { ApiError, getJSON } from '../api';
 import { ctx } from '../ctx';
 import { isPreview, withScreen } from '../identity';
+import { googleMapsAttr, inkGoogleMapsAttr } from './googleMapsAttr';
 
 const RETRY_MS = 60_000;
 const SVG = 'http://www.w3.org/2000/svg';
@@ -287,6 +288,14 @@ export class CommuteCard {
     }
 
     this.el.appendChild(list);
+    // times from Google: "Google Maps" under them, at the bottom right (it stays when rows are cut: it is not in the list)
+    if (activeRoutes.some((r) => r.ok && Number(r.durationSec) > 0)) {
+      const foot = el('div', 'cw-attr');
+      const a = googleMapsAttr();
+      foot.appendChild(a);
+      this.el.appendChild(foot);
+      inkGoogleMapsAttr(a, this.el);
+    }
     this.fit();
   }
 

@@ -4,12 +4,13 @@
 // light card is checked against the card's own surface laid over a dark photo, the worst case: secondary text at
 // least 4.5:1, tertiary at least 3:1, and no text shadow on dark text (it blurs it). Probes of the small texts that
 // carried dark-glass colours (a clock's seconds, the chance of rain, the date's weekday, a countdown's day) are put in
-// a light card and checked the same way (skipped without a browser).
+// a light card and checked the same way. The "Google Maps" line under travel times needs 4.5:1 too (skipped without a
+// browser).
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { findChrome, launchChrome, startWeb } from './browser.js';
 
-const SHOTS = ['show.home', 'show.data', 'show.bento', 'kinds', 'clocks', 'household', 'controls', 'lights', 'ha', 'media', 'sidebar', 'commute'];
+const SHOTS = ['show.home', 'show.data', 'show.bento', 'kinds', 'clocks', 'household', 'controls', 'lights', 'ha', 'media', 'sidebar', 'commute', 'commuteSurfaces'];
 
 // in the page: the text of the light cards, each with its contrast against the card over a dark photo
 const SAMPLE = `(() => {
@@ -93,13 +94,15 @@ const SAMPLE = `(() => {
       if (!flat) continue;
       const fill = el instanceof SVGElement ? s.fill : s.color;
       const probeOf = el.closest('.cv-contrast-probe') ? PROBES.find((p) => el.matches(p[2])) : null;
-      const need = probeOf ? probeOf[3] : fill === fg2 ? 4.5 : fill === fg3 ? 3 : 0;
+      // "Google Maps" under travel times: Google asks for 4.5:1 at the least, whatever ink it takes
+      const gm = el.matches('.gm-attr');
+      const need = probeOf ? probeOf[3] : gm ? 4.5 : fill === fg2 ? 4.5 : fill === fg3 ? 3 : 0;
       if (!need) continue;
       const c = parse(fill);
       if (!c) continue;
       const k = ratio(over(c, bg), bg);
       out.checked++;
-      if (k < need) out.bad.push(where + ' "' + txt + '" ' + (probeOf ? probeOf[0] : fill === fg2 ? 'secondary' : 'tertiary') + ' ' + fill + ': ' + k.toFixed(2) + ':1 < ' + need);
+      if (k < need) out.bad.push(where + ' "' + txt + '" ' + (probeOf ? probeOf[0] : gm ? 'Google Maps' : fill === fg2 ? 'secondary' : 'tertiary') + ' ' + fill + ': ' + k.toFixed(2) + ':1 < ' + need);
     }
   }
   return out;

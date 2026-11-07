@@ -8,6 +8,9 @@
 //   line   one line per route (the compact look and the sidebar); one at a time in a box one cell high
 //   pill   the time and a dot, centred (the smallest box)
 // 'auto' (the default) picks one from the box and the number of routes, as Cripto and Valor do.
+// Whenever a time from Google is drawn, "Google Maps" goes under it (googleMapsAttr.ts): in its own row at the bottom
+// (with the "updated" note of old times beside it), inline at the end of a one-cell-high line, centred under the pill.
+// It is never one of the things a design gives up to fit, and its size is fixed (rem), so shrinking the text keeps it.
 import type { CommuteMode, CommuteResponse, CommuteRouteResult, DisplayCanvasItem, DisplayCommuteCardProps } from '../../../shared/types';
 import { delayMinutes, formatDistance, formatDurationParts } from '../../../../server/core/commuteCore.js';
 import { formatTime, LOCALES } from '../../../shared/i18n';
@@ -16,12 +19,13 @@ import { isPreview } from '../../identity';
 import { demoCommute } from '../../mockCommute';
 import { g, HA_ICON } from '../ha/haIcons';
 import { ago } from '../ha/haui';
+import { googleMapsAttr, inkGoogleMapsAttr } from '../googleMapsAttr';
 import { bigType, fitWidth, typeCap } from './clock';
 import { cut, dropRow, ladder, sideways, staleFoot } from './data';
 import type { AdapterBox, AdapterEnv, CanvasAdapter } from './types';
 
 type Look = 'focus' | 'list' | 'cols' | 'lines' | 'line' | 'pill';
-const LOOK_CLASSES = ['is-focus', 'is-list', 'is-cols', 'is-lines', 'is-line', 'is-pill', 'is-wide', 'is-across', 'is-stale', 'no-name'];
+const LOOK_CLASSES = ['is-focus', 'is-list', 'is-cols', 'is-lines', 'is-line', 'is-pill', 'is-wide', 'is-across', 'is-stale', 'no-name', 'has-end'];
 type Route = CommuteRouteResult & { label: string };
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: string): HTMLElementTagNameMap[K] {
@@ -173,6 +177,8 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   let idx = 0;
   let turnAt = Date.now();
   let turning = 0;
+  /** A time from Google is drawn: the attribution goes with it. */
+  let google = false;
 
   const props = () => env.item().props as unknown as DisplayCommuteCardProps;
 
@@ -238,6 +244,25 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   };
 
   const note = (text: string) => root.appendChild(el('span', 'cv-dt-note', text));
+  const attr = () => googleMapsAttr('cv-cm-attr');
+  /** The bottom row: the note of old times (it may go to fit) and the attribution (it never goes); null when empty. */
+  const endRow = (stale: string): HTMLElement | null => {
+    if (!stale && !google) return null;
+    const e = el('div', 'cv-cm-end');
+    if (stale) e.appendChild(staleFoot(stale));
+    if (google) e.appendChild(attr());
+    return e;
+  };
+  const addEnd = (stale: string) => {
+    const e = endRow(stale);
+    if (e) root.appendChild(e);
+    root.classList.toggle('has-end', !!e);
+  };
+  /** A step: the note of old times goes (the attribution stays). */
+  const dropFoot = () => {
+    root.querySelector('.cv-dt-foot')?.remove();
+    root.querySelector('.cv-cm-end:empty')?.remove();
+  };
   /** The name of a card that shows its routes in turn may end in "…" (data.ts CLIP leaves .is-soft out). */
   const softName = () => (turning > 1 ? 'cv-cm-name is-soft' : 'cv-cm-name');
 
@@ -255,6 +280,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     root.style.setProperty('--dk', '1');
     root.style.removeProperty('--wk');
     turning = 0;
+    google = false;
     if (!p.routes?.length) return note(ctx.t('cvSetup'));
     if (d === undefined) return note(ctx.t('dtLoading'));
     if (d === null) {
@@ -268,6 +294,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       if (isPreview) note(ctx.t('commuteNoRoutes'));
       return;
     }
+    google = rs.some((r) => r.ok && !!r.durationSec);
     const look = lookOf(rs.length);
     root.classList.add(`is-${look}`);
     const one = look === 'focus' || look === 'pill' || look === 'line';
@@ -299,6 +326,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       const tag = el('span', 'cv-dt-range is-pill cv-cm-sample', ctx.t('commuteSample'));
       root.appendChild(tag);
     }
+    inkGoogleMapsAttr(root.querySelector<HTMLElement>('.gm-attr'), root);
   };
 
   // ---------------------------------------------------------------------------------------------- focus
@@ -345,7 +373,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     if (meta.childElementCount) right.appendChild(meta);
     body.append(left, right);
     root.append(head, body);
-    if (stale) root.appendChild(staleFoot(stale));
+    addEnd(stale);
     if (!b) return;
     // the type as large as the box allows (the Valor card's rule), then whatever does not fit goes, in this order
     const wk0 = fitWidth(root, left.firstElementChild as HTMLElement, bigType(root, b, wide ? 15 : 22, scale, wide ? 34 : 20, typeCap(root)));
@@ -381,6 +409,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       for (let i = 0; i < n; i++) dots.appendChild(el('i', i === idx ? 'on' : ''));
       root.appendChild(dots);
     }
+    if (google) root.appendChild(attr());
     if (stale) root.classList.add('is-stale');
     if (!box) return;
     const wk0 = fitWidth(root, mid, bigType(root, box, 15, scale, 15, typeCap(root)));
@@ -419,7 +448,9 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
   };
 
   const drawLine = (r: Route) => {
-    root.appendChild(lineRow(r));
+    const row = lineRow(r);
+    if (google) row.appendChild(attr());
+    root.appendChild(row);
     if (!box) return;
     // as large as the box's height allows, then smaller before anything goes; the name goes last, and never while the
     // card shows its routes in turn (it is what says which one is on)
@@ -444,10 +475,10 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     if (across) list.style.gridTemplateColumns = `repeat(${rs.length}, minmax(0, 1fr))`;
     for (const r of rs) list.appendChild(lineRow(r));
     root.appendChild(list);
-    if (stale) root.appendChild(staleFoot(stale));
+    addEnd(stale);
     if (!b) return;
     floorNames(root);
-    fit(root, [() => root.querySelector('.cv-dt-foot')?.remove(), dropRow(root, list, '.cv-cm-ln')]);
+    fit(root, [dropFoot, dropRow(root, list, '.cv-cm-ln')]);
     // the text smaller before the names go, and the names only when one route is left
     const one = list.childElementCount < 2;
     stages(root, 1, [
@@ -500,7 +531,7 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       list.appendChild(row);
     }
     root.appendChild(list);
-    if (stale) root.appendChild(staleFoot(stale));
+    addEnd(stale);
     if (!box) return { rows: rs.length, k: 1, meta };
     const lmetaCut = () => [...root.querySelectorAll('.cv-cm-lmeta')].some(over);
     fit(root, [
@@ -577,12 +608,12 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
       list.appendChild(col);
     }
     root.appendChild(list);
-    if (stale) root.appendChild(staleFoot(stale));
+    addEnd(stale);
     if (!box) return;
     // ("vuelta" goes before a name ends in "…")
     if (namesCut(root)) root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove());
     ladder(root, [
-      () => root.querySelector('.cv-dt-foot')?.remove(),
+      dropFoot,
       () => root.querySelectorAll('.cv-cm-eta').forEach((x) => x.remove()),
       sideways(root, () => root.querySelectorAll('.cv-cm-back').forEach((x) => x.remove())),
       () => root.style.setProperty('--dk', '0.85'),

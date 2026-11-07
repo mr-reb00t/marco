@@ -2,7 +2,9 @@
 // every design (one route large, wide, a list, columns, lines, one line, the time alone) in the fixtures commute,
 // commuteLines, commuteSide, commuteStates and commutePortrait, dark and light; nothing cramped or cut; the traffic
 // always in words ("+5 min"), never by colour alone; the states (no key, old times, no route); and the page never holds
-// an address. Then every named size of the card. Skipped without Chrome.
+// an address. Every card that draws a time from Google carries "Google Maps" under it, whole, inside the card, at
+// 12 px on a 1080-line screen (1.2rem), weight 400, in one of Google's colours; none on a card with no time. Then every
+// named size of the card. Skipped without Chrome.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -21,6 +23,28 @@ const CARDS = `(() => [...document.querySelectorAll('.cv-item[data-kind="commute
     empty: e.classList.contains('is-empty'),
   };
 }))()`;
+// the attribution of each card: what a card with a time from Google must carry (googleMapsAttr.ts)
+const ATTR = `(() => {
+  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+  return [...document.querySelectorAll('.cv-item[data-kind="commute"]')].filter((e) => e.offsetWidth).map((e) => {
+    const b = e.querySelector('.cv-body');
+    const card = e.querySelector('.cv-card') || e;
+    const cr = card.getBoundingClientRect();
+    const timed = [...b.querySelectorAll('.cv-cm-num, .cv-cm-dur')].some((x) => /\\d/.test(x.textContent));
+    const attrs = [...b.querySelectorAll('.gm-attr')].map((a) => {
+      const r = a.getBoundingClientRect();
+      const s = getComputedStyle(a);
+      return {
+        text: a.textContent, translate: a.getAttribute('translate'), size: parseFloat(s.fontSize) / rem, weight: s.fontWeight,
+        color: s.color, shown: s.display !== 'none' && s.visibility !== 'hidden' && Number(s.opacity) === 1 && r.width > 0,
+        inside: r.left >= cr.left - 0.5 && r.right <= cr.right + 0.5 && r.top >= cr.top - 0.5 && r.bottom <= cr.bottom + 0.5,
+        whole: a.scrollWidth <= a.clientWidth + 1 || a.scrollWidth <= Math.ceil(r.width) + 1,
+      };
+    });
+    return { timed, attrs };
+  });
+})()`;
+const GM_COLORS = ['rgb(255, 255, 255)', 'rgb(31, 31, 31)', 'rgb(94, 94, 94)'];
 const settle = 'document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1500)))';
 
 test('the display never talks to Google, and the card reads no address', () => {
@@ -51,8 +75,9 @@ describe('Trayectos in a browser', { skip: !chrome && 'no Chrome' }, () => {
       await p.eval(settle);
       const fit = await p.eval(CHECK);
       const cards = await p.eval(CARDS);
+      const attr = await p.eval(ATTR);
       const html = await p.eval('document.documentElement.outerHTML');
-      return { fit, cards, html };
+      return { fit, cards, attr, html };
     } finally {
       await p.close();
     }
@@ -62,16 +87,37 @@ describe('Trayectos in a browser', { skip: !chrome && 'no Chrome' }, () => {
       assert.equal(c.cramped, false, `${what}: ${c.cells} cramped`);
       assert.deepEqual(c.cut, [], `${what}: ${c.cells} cut`);
     }
+    attributed(r, what);
+  };
+  /** One "Google Maps" on each card with a time, as Google asks; none on a card with no time from Google. */
+  const attributed = (r, what) => {
+    for (const [i, c] of r.attr.entries()) {
+      if (!c.timed) {
+        assert.equal(c.attrs.length, 0, `${what} #${i}: attribution without a time`);
+        continue;
+      }
+      assert.equal(c.attrs.length, 1, `${what} #${i}: ${c.attrs.length} attributions`);
+      const a = c.attrs[0];
+      assert.equal(a.text, 'Google Maps', what);
+      assert.equal(a.translate, 'no', what);
+      assert.ok(a.shown, `${what} #${i}: attribution hidden`);
+      assert.ok(a.inside, `${what} #${i}: attribution outside its card`);
+      assert.ok(a.whole, `${what} #${i}: attribution cut`);
+      assert.ok(a.size >= 1.2 - 0.001, `${what} #${i}: attribution at ${a.size.toFixed(2)}rem`);
+      assert.equal(a.weight, '400', what);
+      assert.ok(GM_COLORS.includes(a.color), `${what} #${i}: attribution in ${a.color}`);
+    }
   };
 
   test('every design, dark and light, landscape and portrait: fits, says the traffic in words, never an address', { timeout: 300_000 }, async () => {
     const seen = new Set();
     const text = [];
-    for (const [shot, size] of [['commute'], ['commuteLines'], ['commuteSide'], ['commuteStates'], ['commutePortrait', { width: 1080, height: 1920 }]]) {
+    for (const [shot, size] of [['commute'], ['commuteLines'], ['commuteSide'], ['commuteStates'], ['commuteSurfaces'], ['commutePortrait', { width: 1080, height: 1920 }]]) {
       for (const theme of ['dark', 'light']) {
         const r = await look(`shot=${shot}&theme=${theme}`, size);
         fits(r, `${shot} ${theme}`);
         assert.ok(r.cards.length >= 3, `${shot}: ${r.cards.length} cards`);
+        assert.ok(r.attr.filter((c) => c.timed).length >= 2, `${shot}: cards with a time`);
         for (const c of r.cards) for (const l of c.looks) seen.add(l);
         for (const c of r.cards) text.push(c.text);
         // the traffic of a car is a chip with its minutes (or "Fluido"): the colour is never alone

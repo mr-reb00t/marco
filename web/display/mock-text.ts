@@ -89,6 +89,8 @@ export const DEMO_MORE: Record<string, [string, string, string]> = {
   'Ballet': ['Ballet', 'Ballet', 'Balet'],
   'Scouts': ['Scouting', 'Spejder', 'Harcerze'],
   'Gym': ['Sportschool', 'Fitness', 'Siłownia'],
+  'University': ['Universiteit', 'Universitet', 'Uniwersytet'],
+  'Airport': ['Luchthaven', 'Lufthavn', 'Lotnisko'],
   'Dinner at grandma\'s': ['Eten bij oma', 'Aftensmad hos mormor', 'Obiad u babci'],
   'Book club': ['Leesclub', 'Læseklub', 'Klub książki'],
   'Call with Dad': ['Papa bellen', 'Opkald med far', 'Rozmowa z tatą'],

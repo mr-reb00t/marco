@@ -178,6 +178,24 @@
 #app.preset-canvas .cv-cm-fail { color: var(--fg-2); font-size: 1.5em; font-weight: 700; white-space: nowrap; }
 /* the preview of a card not saved yet: made-up times, said in the corner */
 #app.preset-canvas .cv-cm-sample { position: absolute; top: 0.7rem; right: 0.9rem; font-size: calc(1.2rem * var(--cv-scale, 1)); z-index: 1; }
+/* "Google Maps" under the times (Google's terms for its route times without its map: the text as it is, never
+   translated, weight 400, at least 12 px on a 1080-line screen, which is 1.2rem; white, #1F1F1F or #5E5E5E). Its size
+   is fixed: the card's text may shrink to fit, the attribution never does, and it is never one of the things that go.
+   The bottom row holds it at the right, with the note of old times on the left. */
+#app.preset-canvas .cv-cm-end { flex: none; display: flex; align-items: baseline; gap: 1.2rem; margin-top: auto; min-width: 0; }
+#app.preset-canvas .cv-cm-end > .cv-dt-foot { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+#app.preset-canvas .gm-attr {
+  flex: none; margin-left: auto; font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; font-style: normal; letter-spacing: normal;
+  text-transform: none; line-height: 1.2; white-space: nowrap; color: #fff; opacity: 1;
+}
+/* on a light card (the ink is dark, widgets/googleMapsAttr.ts): Google's grey on a light solid card, its near-black on
+   glass and on a card of its own colour */
+#app.preset-canvas .gm-attr[data-ink='dark'] { color: #1f1f1f; }
+.theme-light #app.preset-canvas .cv-card.is-solid:not(.has-own) .gm-attr[data-ink='dark'] { color: #5e5e5e; }
+/* the focus design keeps its route centred in the room above the row */
+#app.preset-canvas .cv-cm.is-focus.has-end > .cv-cm-head { margin-top: auto; }
+#app.preset-canvas .cv-cm.is-pill > .gm-attr { margin: 0.1rem auto 0; }
+#app.preset-canvas .cv-cm-ln > .gm-attr { margin-left: 0; padding-left: 0.9rem; align-self: center; }
 
 /* one route large: its mode and name, the time in the Valor card's figures, the traffic and the arrival, how much of
    the time is the traffic (a car), the road and the distance; side by side in a wide box */

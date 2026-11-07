@@ -191,6 +191,25 @@ export function mockConfig(show?: string): DisplayConfig {
     cfg.widgets = [...(cfg.widgets ?? []), ...vw];
     if (vw.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
   }
+  // ?cw=n:place:corner:size,... commute widgets (#42) with the first n (1 to 3) of three made-up routes (place
+  // corner|side|full; the times are widgets/commute.ts demoCommute). A 'full' one picks the Widget layout.
+  if (q.get('cw')) {
+    const routes = [
+      { id: 'cr_demo_work', name: L('Work', 'Trabajo', 'Trabalho'), mode: 'driving' as const },
+      { id: 'cr_demo_uni', name: L('University', 'Universidad', 'Universidade'), mode: 'transit' as const },
+      { id: 'cr_demo_air', name: L('Airport', 'Aeropuerto', 'Aeroporto'), mode: 'driving' as const },
+    ];
+    const cw = q.get('cw')!.split(',').map((spec, i) => {
+      const [n = '2', place = 'corner', corner = 'br', size = 'm'] = spec.split(':');
+      return {
+        id: `w_cw${i}`, type: 'commute' as const, name: '', place: place as 'corner' | 'side' | 'full', corner: corner as 'tl' | 'tr' | 'bl' | 'br',
+        size: size as 's' | 'm' | 'l', refreshSec: 0, fit: 'contain' as const, bust: false, src: '', via: 'direct' as const, v: `cw${i}`,
+        commute: { units: 'auto' as const, refreshMin: 10, showRouteSummary: true, showArrival: true, routes: routes.slice(0, Math.min(3, Math.max(1, Number(n) || 2))) },
+      };
+    });
+    cfg.widgets = [...(cfg.widgets ?? []), ...cw];
+    if (cw.some((w) => w.place === 'full')) cfg.layout.preset = 'widget';
+  }
   // ?preset=canvas: a Personalizado screen (&shot=<fixture>, web/display/mockCanvas.ts), with the message and the to-do
   // list on so their cards have something to show
   if (q.get('preset') === 'canvas') {
