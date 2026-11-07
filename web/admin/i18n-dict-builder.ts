@@ -1843,6 +1843,7 @@ const ROWS: [string, string, string, string, string][] = [
   ['Falta el destino', 'Destination missing', 'Falta o destino', 'Bestemming ontbreekt', 'Destination mangler'],
   ['Escribe las direcciones', 'Write the addresses', 'Escreve as moradas', 'Vul de adressen in', 'Skriv adresserne'],
   ['Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.', 'Too many routes are in use right now. Try again in a few minutes.', 'Há demasiadas rotas em uso agora. Tenta de novo daqui a uns minutos.', 'Er zijn nu te veel routes in gebruik. Probeer het over een paar minuten opnieuw.', 'Der er for mange ruter i brug lige nu. Prøv igen om et par minutter.'],
+  ['Demasiadas pruebas seguidas. Espera un minuto y vuelve a probar.', 'Too many tests in a row. Wait a minute and try again.', 'Demasiados testes seguidos. Espera um minuto e tenta de novo.', 'Te veel tests achter elkaar. Wacht een minuut en probeer het opnieuw.', 'For mange test i træk. Vent et minut, og prøv igen.'],
 ];
 
 export const ROWS_BUILDER: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

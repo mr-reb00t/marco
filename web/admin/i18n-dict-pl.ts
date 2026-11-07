@@ -3194,6 +3194,7 @@ export const PL: Record<string, string> = {
   'Falta el destino': 'Brak celu',
   'Escribe las direcciones': 'Wpisz adresy',
   'Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.': 'Zbyt wiele tras jest teraz w użyciu. Spróbuj ponownie za kilka minut.',
+  'Demasiadas pruebas seguidas. Espera un minuto y vuelve a probar.': 'Zbyt wiele testów pod rząd. Odczekaj minutę i spróbuj ponownie.',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

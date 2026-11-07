@@ -185,7 +185,7 @@
 #app.preset-canvas .cv-cm-end { flex: none; display: flex; align-items: baseline; gap: 1.2rem; margin-top: auto; min-width: 0; }
 #app.preset-canvas .cv-cm-end > .cv-dt-foot { flex: 1 1 auto; min-width: 0; margin-top: 0; }
 #app.preset-canvas .gm-attr {
-  flex: none; margin-left: auto; font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; font-style: normal; letter-spacing: normal;
+  flex: none; margin-left: auto; font-family: var(--font-ui); font-size: max(12px, 1.2rem); font-weight: 400; font-style: normal; letter-spacing: normal;
   text-transform: none; line-height: 1.2; white-space: nowrap; color: #fff; opacity: 1;
 }
 /* on a light card (the ink is dark, widgets/googleMapsAttr.ts): Google's grey on a light solid card, its near-black on

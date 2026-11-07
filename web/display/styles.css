@@ -2262,7 +2262,7 @@ html.widget-only.theme-light .cw--side { --cw-bg: rgb(20 24 32 / 0.9) !important
    1080-line screen; white on the dark panels, Google's grey on a white one). Outside the list, so it stays when rows
    are cut. */
 .cw-attr { flex: none; display: flex; justify-content: flex-end; margin-top: calc(var(--cw-scale) * -0.3rem); }
-.cw .gm-attr { font-family: var(--font-ui); font-size: 1.2rem; font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; line-height: 1.2; white-space: nowrap; color: #fff; text-shadow: none; }
+.cw .gm-attr { font-family: var(--font-ui); font-size: max(12px, 1.2rem); font-weight: 400; font-style: normal; letter-spacing: normal; text-transform: none; line-height: 1.2; white-space: nowrap; color: #fff; text-shadow: none; }
 .cw .gm-attr[data-ink='dark'] { color: #1f1f1f; }
 .theme-light #app:not(.is-kids) .cw:not(.cw--side) .gm-attr[data-ink='dark'] { color: #5e5e5e; }
 .cw-list { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }

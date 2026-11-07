@@ -456,10 +456,12 @@ export function commuteAdapter(item0: DisplayCanvasItem): CanvasAdapter {
     // card shows its routes in turn (it is what says which one is on)
     const k = Math.max(0.8, Math.min(3, (box.h * 0.45) / (box.rem * 1.6)));
     floorNames(root);
+    // ("Google Maps" takes room on this one line: the chip says "+5" and the way back goes before the text gets smaller)
     stages(root, k, [
+      [k, null],
+      [k, dropAll(root, '.cv-cm-back')],
+      [k, () => shortChips(root)],
       [0.8, null],
-      [0.8, dropAll(root, '.cv-cm-back')],
-      [0.65, () => shortChips(root)],
       [0.5, dropAll(root, '.cv-cm-dur .u')],
       ...(turning > 1 ? [] : [[0.5, () => root.classList.add('no-name')] as [number, () => void]]),
       [0.4, null],

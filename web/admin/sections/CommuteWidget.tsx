@@ -44,6 +44,8 @@ const ERROR_TEXT: Record<string, string> = {
   bad_response: 'Respuesta no válida de Google Maps.',
   invalid_route: 'Escribe el origen y el destino.',
   busy: 'Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.',
+  // (Marco's own limit on tests, not Google's)
+  too_many: 'Demasiadas pruebas seguidas. Espera un minuto y vuelve a probar.',
 };
 
 /**
