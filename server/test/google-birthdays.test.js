@@ -119,6 +119,11 @@ test('events of a screen: Marco\'s own entry wins over Google\'s, only while Mar
     screen.calendar.sourceIds = ['c_g'];
     const only = await getEvents({ from: '2026-03-01', to: '2026-03-31', screen });
     assert.deepEqual(only.events.map((e) => e.title), ['Ana Prado', 'Luis Prado']);
+    // private mode shows the Google calendar more than Marco's list: Google's entry stays, so Ana is not hidden
+    const more = await previewEvents({ from: '2026-03-01', to: '2026-03-31', overrides: { birthdays: { ...store.getConfig().birthdays, privacy: 'hide' } } });
+    assert.deepEqual(more.events.map((e) => [e.sourceId, e.title]), [['c_g', 'Ana Prado'], ['c_g', 'Luis Prado']]);
+    const same = await previewEvents({ from: '2026-03-01', to: '2026-03-31', overrides: { birthdays: { ...store.getConfig().birthdays, privacy: 'busy' } } });
+    assert.deepEqual(same.events.map((e) => [e.sourceId, e.title]), [['birthdays', 'Ana Prado'], ['c_g', 'Luis Prado']]);
   } finally {
     globalThis.fetch = realFetch;
     fs.rmSync(dir, { recursive: true, force: true });

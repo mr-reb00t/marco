@@ -92,13 +92,14 @@ export function isHttpUrl(s: string, allowWebcal = false): boolean {
 }
 
 /**
- * A Google Calendar secret iCal address (calendar.google.com/calendar/ical/<id>/private-<key>/basic.ics). Google
- * leaves the Google Contacts birthdays out of it (#43). Public addresses (the holiday feeds) do not count.
+ * A Google Calendar secret iCal address (calendar.google.com/calendar/ical/<id>/private-<key>/basic.ics, or the older
+ * www.google.com/calendar/ical/... that still works). Google leaves the Google Contacts birthdays out of it (#43).
+ * Public addresses (the holiday feeds) do not count.
  */
 export function isGoogleIcalUrl(s: string): boolean {
   try {
     const u = new URL(s.trim());
-    if (!['http:', 'https:', 'webcal:'].includes(u.protocol) || u.hostname.toLowerCase() !== 'calendar.google.com') return false;
+    if (!['http:', 'https:', 'webcal:'].includes(u.protocol) || !['calendar.google.com', 'www.google.com'].includes(u.hostname.toLowerCase())) return false;
     return /^\/calendar\/ical\/[^/]+\/private-[^/]+\/basic\.ics$/i.test(u.pathname);
   } catch {
     return false;

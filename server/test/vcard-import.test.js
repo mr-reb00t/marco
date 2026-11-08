@@ -123,6 +123,22 @@ test('dates: 29 February is a birthday, 31 April is not, years that cannot be a 
   assert.deepEqual(d(`${YEAR}-01-02`), { month: 1, day: 2, year: YEAR });
 });
 
+test('broken files: a card without END, a stray soft break, a time after a space, ZWJ and invisible marks', () => {
+  // a missing END:VCARD does not swallow the cards after it
+  let r = parse(bytes(crlf(['BEGIN:VCARD', 'FN:Ana Prado', 'BDAY:1990-01-01', ...card('FN:Bea Gil', 'BDAY:1991-02-02'), ...card('FN:Ciro Sanz', 'BDAY:1992-03-03')])));
+  assert.equal(r.cards, 3);
+  assert.deepEqual(r.contacts.map((c) => c.name), ['Ana Prado', 'Bea Gil', 'Ciro Sanz']);
+  // a 2.1 AGENT card inside another still counts once
+  r = parse(bytes(crlf(['BEGIN:VCARD', 'VERSION:2.1', 'FN:Dora Ruiz', 'AGENT:', ...card('FN:Asistente', 'BDAY:1970-01-01'), 'BDAY:1980-04-04', 'END:VCARD', ...card('FN:Eva Mora', 'BDAY:--05-05')])));
+  assert.deepEqual(r.contacts.map((c) => [c.name, c.bday?.month]), [['Dora Ruiz', 4], ['Eva Mora', 5]]);
+  // a quoted-printable name ending in a stray "=" stops at END:VCARD and at the next property
+  r = parse(bytes(crlf(['BEGIN:VCARD', 'VERSION:2.1', 'FN;ENCODING=QUOTED-PRINTABLE:Ana=', 'END:VCARD', ...card('FN;ENCODING=QUOTED-PRINTABLE:Bea=', 'BDAY:1991-02-02')])));
+  assert.deepEqual(r.contacts, [{ name: 'Ana', bday: null, problem: 'noBday' }, { name: 'Bea', bday: { month: 2, day: 2, year: 1991 } }]);
+  assert.deepEqual(vc.parseBday('1990-03-14 10:00', {}, YEAR), { month: 3, day: 14, year: 1990 });
+  r = parse(bytes(crlf([...card('FN:Ana \u200e\u202bFamilia\u202c 👨\u200d👩\u200d👧', 'BDAY:--06-06'), ...card('FN:نیک\u200cنام', 'BDAY:--07-07')])));
+  assert.deepEqual(r.contacts.map((c) => c.name), ['Ana Familia 👨\u200d👩\u200d👧', 'نیک\u200cنام']);
+});
+
 test('a file with too many contacts stops at the cap', () => {
   const many = Array.from({ length: 5001 }, (_, i) => card(`FN:Persona ${i}`, 'BDAY:--01-01').join('\r\n')).join('\r\n');
   const r = parse(bytes(many));
@@ -172,11 +188,12 @@ test('import plan: new and already listed rows, repeats in the file, long names,
   assert.equal(vc.planBirthdayImport({ contacts: [{ name: emojiName, bday: { month: 1, day: 1, year: null } }], cards: 1, capped: false }, []).rows[0].name, 'a'.repeat(79));
 });
 
-test('Google secret iCal address: only the private one, only on calendar.google.com', () => {
+test('Google secret iCal address: only the private one, only on calendar.google.com (or the older www.google.com)', () => {
   const ok = [
     'https://calendar.google.com/calendar/ical/ana.prado%40gmail.com/private-0123456789abcdef0123456789abcdef/basic.ics',
     'webcal://calendar.google.com/calendar/ical/ana.prado@gmail.com/private-abc/basic.ics',
     '  HTTPS://Calendar.Google.com/calendar/ical/abc123%40group.calendar.google.com/private-xyz/basic.ics ',
+    'https://www.google.com/calendar/ical/ana.prado%40gmail.com/private-abc/basic.ics',
   ];
   for (const u of ok) assert.equal(util.isGoogleIcalUrl(u), true, u);
   const no = [
@@ -184,6 +201,8 @@ test('Google secret iCal address: only the private one, only on calendar.google.
     'https://calendar.google.com/calendar/embed?src=ana.prado%40gmail.com',
     'https://evil.example/calendar.google.com/calendar/ical/a/private-b/basic.ics',
     'https://calendar.google.com.evil.example/calendar/ical/a/private-b/basic.ics',
+    'https://www.google.com/calendar/ical/es.spain%23holiday%40group.v.calendar.google.com/public/basic.ics',
+    'https://google.com/calendar/ical/a/private-b/basic.ics',
     'https://p01-caldav.icloud.com/published/2/abc',
     'ftp://calendar.google.com/calendar/ical/a/private-b/basic.ics',
     'not a url',

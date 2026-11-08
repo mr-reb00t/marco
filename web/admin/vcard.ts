@@ -71,9 +71,12 @@ function splitUnescaped(s: string, sep: string): string[] {
 }
 
 const unescape = (s: string) => s.replace(/\\([\\,;:nN])/g, (_, c) => (c === 'n' || c === 'N' ? ' ' : c));
+// Control characters become spaces; marks that only steer direction or are invisible (zero width space, LRM, RLM,
+// bidi embeddings and isolates, BOM) are dropped. ZWNJ and ZWJ stay: emoji sequences and some scripts need them.
 const cleanName = (s: string) =>
   s
-    .replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩﻿]/g, ' ')
+    .replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ')
+    .replace(/[\u200b\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -113,7 +116,7 @@ function parseProp(line: string): Prop | null {
   return { name, params, value: line.slice(i + 1) };
 }
 
-const WANTED = new Set(['BEGIN', 'END', 'FN', 'N', 'BDAY']);
+const WANTED = new Set(['BEGIN', 'END', 'FN', 'N', 'BDAY', 'AGENT']);
 const isQpHead = (line: string) => {
   const colon = line.indexOf(':');
   return /quoted-printable/i.test(colon < 0 ? line : line.slice(0, colon));
@@ -125,7 +128,7 @@ const isQpHead = (line: string) => {
  */
 export function parseBday(value: string, params: Record<string, string> = {}, thisYear = new Date().getFullYear()): VcardDate | null {
   if (/^text$/i.test(params.VALUE ?? '')) return null;
-  const v = value.trim().replace(/T.*$/i, '');
+  const v = value.trim().replace(/[T ].*$/i, '');
   let year: number | null = null;
   let month: number;
   let day: number;
@@ -161,6 +164,7 @@ export function parseVcards(data: Uint8Array | string, max = VCARD_MAX_CONTACTS,
   const out: VcardParse = { contacts: [], cards: 0, capped: false };
   let card: { fn: string; n: string; bday: string | null; bdayParams: Record<string, string> } | null = null;
   let depth = 0;
+  let afterAgent = false;
 
   const textValue = (p: Prop) => {
     const charset = (p.params.CHARSET ?? '').toLowerCase();
@@ -181,8 +185,16 @@ export function parseVcards(data: Uint8Array | string, max = VCARD_MAX_CONTACTS,
   const handle = (line: string) => {
     const p = parseProp(line);
     if (!p) return;
+    const agent = afterAgent;
+    afterAgent = p.name === 'AGENT' && !p.value.trim();
     if (p.name === 'BEGIN' && /^vcard$/i.test(p.value.trim())) {
-      if (depth++ > 0) return; // a vCard nested in another (2.1 AGENT): only the outer one counts
+      // a vCard nested in another (2.1 AGENT, right after an empty AGENT line): only the outer one counts
+      if (depth > 1 || (depth === 1 && agent)) {
+        depth++;
+        return;
+      }
+      finish(); // the card before had no END:VCARD
+      depth = 1;
       if (out.cards >= max) {
         out.capped = true;
         return 'stop';
@@ -219,7 +231,8 @@ export function parseVcards(data: Uint8Array | string, max = VCARD_MAX_CONTACTS,
     return false;
   };
   for (const line of text.split(/\r\n|\n|\r/)) {
-    if (pending && softBreak) {
+    // a soft break before a card's END or a new property is a stray "=": the value ends there
+    if (pending && softBreak && !/^(BEGIN|END):VCARD\s*$/i.test(line) && !/^[A-Za-z][\w-]*(\.[\w-]+)?[;:]/.test(line)) {
       if (parts) parts.push(line);
       softBreak = line.endsWith('=');
       if (parts && softBreak) parts[parts.length - 1] = line.slice(0, -1);
@@ -235,6 +248,7 @@ export function parseVcards(data: Uint8Array | string, max = VCARD_MAX_CONTACTS,
     pending = true;
     qp = isQpHead(line);
     parts = WANTED.has(head) ? [line] : null;
+    if (!parts) afterAgent = false;
     softBreak = qp && line.endsWith('=');
     if (parts && softBreak) parts[0] = line.slice(0, -1);
   }

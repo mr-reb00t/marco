@@ -18,6 +18,7 @@ import { getConfig, paths } from './store.js';
 import { defaultScreen, screenSourceIds } from './core/screens.js';
 import { logActivity } from './activity.js';
 import { LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from './core/defaults.js';
+import { sourcePrivacyMode } from './core/privacy.js';
 
 const DAY = 86_400_000;
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -368,21 +369,29 @@ async function ensureSources(sources, window) {
 /** Name and day of a birthday, for telling the same person apart from another (the title as tidied for 🎂). */
 const birthdayKey = (name, day) => `${fold(tidyTitleWhy(name, { source: { kind: 'birthdays' } }).title).trim()}|${day}`;
 
+/** Keys of a Marco birthday instance. A 29 February birthday also matches 1 March in other years (Google does not say
+ * which of 28 February and 1 March it uses). */
+function ownBirthdayKeys(r, leap) {
+  const keys = [birthdayKey(r.title, r.start)];
+  if (leap.has(r.uid) && r.start.endsWith('-02-28')) keys.push(birthdayKey(r.title, addDays(r.start, 1)));
+  return keys;
+}
+const leapIds = (items) => new Set(items.filter((b) => b.month === 2 && b.day === 29).map((b) => b.id));
+
 /**
  * Google Contacts birthdays (kind 'birthdays' in a Google source) of a person and day already in Marco's own birthday
- * list are left out: Marco's entry stays, with the age (#43). A 29 February birthday matches 28 February and 1 March
- * in other years (Google does not say which one it uses). Exported for tests.
+ * list are left out: Marco's entry stays, with the age (#43). Exported for tests.
  */
 export function dropOwnBirthdays(events, items, { from, to }) {
   if (!items?.length) return events;
   const own = new Set();
-  const leap = new Set(items.filter((b) => b.month === 2 && b.day === 29).map((b) => b.id));
-  for (const r of expandBirthdays(items, { from, to, showAge: false })) {
-    own.add(birthdayKey(r.title, r.start));
-    if (leap.has(r.uid) && r.start.endsWith('-02-28')) own.add(birthdayKey(r.title, addDays(r.start, 1)));
-  }
+  const leap = leapIds(items);
+  for (const r of expandBirthdays(items, { from, to, showAge: false })) for (const k of ownBirthdayKeys(r, leap)) own.add(k);
   return events.filter((e) => !(e.kind === 'birthdays' && e.allDay && own.has(birthdayKey(e.originalTitle ?? e.title, e.start))));
 }
+
+/** How much of a calendar private mode shows, for picking which copy of a birthday stays. */
+const SHOWN = { hide: 0, busy: 1, keep: 2 };
 
 /** Build detailed (see buildSourceEvents `detail`) sorted events for the picked sources. */
 function computeDetailed(cfg, picked, { from, to, lang }) {
@@ -395,12 +404,20 @@ function computeDetailed(cfg, picked, { from, to, lang }) {
   const toDate = new Date(zonedMidnight(addDays(to, 1), tz).getTime() + DAY);
   const events = [];
   const errors = [];
+  // Marco's own entry of a birthday Google also has wins, unless private mode shows that Google calendar more than
+  // the birthday list: then the Google one stays and Marco's is left out, so private mode cannot hide the person.
+  const bdayWindow = { from: addDays(from, -1), to: addDays(to, 1) };
+  const ownShown = SHOWN[sourcePrivacyMode(cfg, BIRTHDAYS_SOURCE_ID)];
+  const fromGoogle = new Set();
   for (const s of picked.remote) {
     const e = cache.get(s.id);
     if (!e || e.key !== sourceKey(s)) continue;
     try {
       let evs = buildSourceEvents(rawForSource(s, e, fromDate, toDate), s, opts);
-      if (picked.birthdays && s.type === 'google') evs = dropOwnBirthdays(evs, cfg.birthdays.items, { from: addDays(from, -1), to: addDays(to, 1) });
+      if (picked.birthdays && s.type === 'google') {
+        if (SHOWN[sourcePrivacyMode(cfg, s.id)] <= ownShown) evs = dropOwnBirthdays(evs, cfg.birthdays.items, bdayWindow);
+        else for (const ev of evs) if (ev.kind === 'birthdays' && ev.allDay) fromGoogle.add(birthdayKey(ev.originalTitle ?? ev.title, ev.start));
+      }
       events.push(...evs);
     } catch (err) {
       console.warn(`[calendars] ${s.name} (${s.id}) build failed: ${err.message}`);
@@ -411,7 +428,11 @@ function computeDetailed(cfg, picked, { from, to, lang }) {
     events.push(...buildSourceEvents(expandLocalEvents(cfg.localEvents.items, { from, to, tz }), localSource(cfg), opts));
   }
   if (picked.birthdays) {
-    const raws = expandBirthdays(cfg.birthdays.items, { from: addDays(from, -1), to: addDays(to, 1), showAge: cfg.birthdays.showAge });
+    let raws = expandBirthdays(cfg.birthdays.items, { ...bdayWindow, showAge: cfg.birthdays.showAge });
+    if (fromGoogle.size) {
+      const leap = leapIds(cfg.birthdays.items);
+      raws = raws.filter((r) => !ownBirthdayKeys(r, leap).some((k) => fromGoogle.has(k)));
+    }
     events.push(...buildSourceEvents(raws, birthdaysSource(cfg), opts));
   }
   return { events: sortEvents(events, tz), errors };

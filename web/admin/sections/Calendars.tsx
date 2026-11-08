@@ -234,12 +234,10 @@ function SourceRow({
         )}
         {src.type === 'ics' && isGoogleIcalUrl(src.url ?? '') && (
           <Callout kind="info">
-            {googleCanConnect
-              ? t('La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, vincula tu cuenta de Google en Cuentas vinculadas o importa tus contactos en Cumpleaños.')
-              : t('La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, importa tus contactos en Cumpleaños.')}{' '}
+            {t('La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos:')}{' '}
             {googleCanConnect && (
               <>
-                <a href="#/calendars/cal-accounts">{t('Cuentas vinculadas')}</a>
+                <a href="#/calendars/cal-accounts">{t('Vincular tu cuenta de Google')}</a>
                 {' · '}
               </>
             )}

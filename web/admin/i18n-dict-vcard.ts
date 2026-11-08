@@ -87,20 +87,29 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Zmieści się jeszcze {n} urodzin (maksymalnie {max}). Odznacz kilka, aby kontynuować.',
   ],
   [
-    'La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, vincula tu cuenta de Google en Cuentas vinculadas o importa tus contactos en Cumpleaños.',
-    'Google’s secret address leaves out the birthdays from Google Contacts. To see them, link your Google account in Linked accounts or import your contacts in Birthdays.',
-    'O endereço secreto do Google não inclui os aniversários do Google Contactos. Para os veres, liga a tua conta Google em Contas ligadas ou importa os teus contactos em Aniversários.',
-    'Het geheime adres van Google bevat de verjaardagen uit Google Contacten niet. Koppel je Google-account bij Gekoppelde accounts of importeer je contacten bij Verjaardagen om ze te zien.',
-    'Googles hemmelige adresse indeholder ikke fødselsdagene fra Google Kontakter. Tilknyt din Google-konto under Tilknyttede konti, eller importér dine kontakter under Fødselsdage for at se dem.',
-    'Tajny adres Google nie zawiera urodzin z Kontaktów Google. Aby je zobaczyć, połącz konto Google w sekcji Połączone konta albo zaimportuj kontakty w sekcji Urodziny.',
+    'La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos:',
+    'Google’s secret address leaves out the birthdays from Google Contacts. To see them:',
+    'O endereço secreto do Google não inclui os aniversários do Google Contactos. Para os veres:',
+    'Het geheime adres van Google bevat de verjaardagen uit Google Contacten niet. Om ze te zien:',
+    'Googles hemmelige adresse indeholder ikke fødselsdagene fra Google Kontakter. Sådan ser du dem:',
+    'Tajny adres Google nie zawiera urodzin z Kontaktów Google. Aby je zobaczyć:',
+  ],
+  ['Vincular tu cuenta de Google', 'Link your Google account', 'Ligar a tua conta Google', 'Je Google-account koppelen', 'Tilknyt din Google-konto', 'Połącz konto Google'],
+  [
+    'Solo caben {n} cumpleaños más (máximo {max}): se han marcado los {n} primeros.',
+    'Only {n} more birthdays fit (at most {max}): the first {n} are ticked.',
+    'Só cabem mais {n} aniversários (máximo {max}): foram marcados os {n} primeiros.',
+    'Er passen nog maar {n} verjaardagen bij (hoogstens {max}): de eerste {n} zijn aangevinkt.',
+    'Der er kun plads til {n} fødselsdage mere (højst {max}): de første {n} er valgt.',
+    'Zmieści się jeszcze tylko {n} urodzin (maksymalnie {max}): zaznaczono pierwsze {n}.',
   ],
   [
-    'La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, importa tus contactos en Cumpleaños.',
-    'Google’s secret address leaves out the birthdays from Google Contacts. To see them, import your contacts in Birthdays.',
-    'O endereço secreto do Google não inclui os aniversários do Google Contactos. Para os veres, importa os teus contactos em Aniversários.',
-    'Het geheime adres van Google bevat de verjaardagen uit Google Contacten niet. Importeer je contacten bij Verjaardagen om ze te zien.',
-    'Googles hemmelige adresse indeholder ikke fødselsdagene fra Google Kontakter. Importér dine kontakter under Fødselsdage for at se dem.',
-    'Tajny adres Google nie zawiera urodzin z Kontaktów Google. Aby je zobaczyć, zaimportuj kontakty w sekcji Urodziny.',
+    'La lista está llena (máximo {max}): no cabe ningún cumpleaños más.',
+    'The list is full (at most {max}): no more birthdays fit.',
+    'A lista está cheia (máximo {max}): não cabe mais nenhum aniversário.',
+    'De lijst is vol (hoogstens {max}): er passen geen verjaardagen meer bij.',
+    'Listen er fuld (højst {max}): der er ikke plads til flere fødselsdage.',
+    'Lista jest pełna (maksymalnie {max}): nie zmieszczą się już żadne urodziny.',
   ],
 ];
 
@@ -121,6 +130,15 @@ const ONE: [string, string, string, string, string, string, string][] = [
     'Der er plads til 1 fødselsdag mere (højst {max}). Fravælg nogle for at fortsætte.',
     'Zmieszczą się jeszcze jedne urodziny (maksymalnie {max}). Odznacz kilka, aby kontynuować.',
   ],
+  [
+    'Solo caben {n} cumpleaños más (máximo {max}): se han marcado los {n} primeros.',
+    'Solo cabe 1 cumpleaños más (máximo {max}): se ha marcado el primero.',
+    'Only 1 more birthday fits (at most {max}): the first one is ticked.',
+    'Só cabe mais 1 aniversário (máximo {max}): foi marcado o primeiro.',
+    'Er past nog maar 1 verjaardag bij (hoogstens {max}): de eerste is aangevinkt.',
+    'Der er kun plads til 1 fødselsdag mere (højst {max}): den første er valgt.',
+    'Zmieszczą się jeszcze tylko jedne urodziny (maksymalnie {max}): zaznaczono pierwsze.',
+  ],
 ];
 
 /** Polish "few" forms (2-4, 22-24…). */
@@ -129,6 +147,7 @@ const FEW: [string, string][] = [
   ['{n} contactos leídos', 'Odczytano {n} kontakty'],
   ['Solo se han leído los primeros {n} contactos.', 'Odczytano tylko pierwsze {n} kontakty.'],
   ['Caben {n} cumpleaños más (máximo {max}). Desmarca algunos para seguir.', 'Zmieszczą się jeszcze {n} urodziny (maksymalnie {max}). Odznacz kilka, aby kontynuować.'],
+  ['Solo caben {n} cumpleaños más (máximo {max}): se han marcado los {n} primeros.', 'Zmieszczą się jeszcze tylko {n} urodziny (maksymalnie {max}): zaznaczono pierwsze {n}.'],
 ];
 
 export const ROWS_VCARD: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

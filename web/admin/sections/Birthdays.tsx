@@ -169,6 +169,8 @@ function VcardDialog({ existing, room, onClose, onAdd }: { existing: Birthday[];
     setPicked(new Set());
     setError(msg);
   };
+  // new rows ticked: all of them, or the first ones that fit
+  const firstNew = (p: ImportPlan) => new Set(p.rows.filter((r) => r.status === 'new').slice(0, room).map((r) => r.key));
   const read = async (list: File[]) => {
     if (!list.length) return;
     setError('');
@@ -189,7 +191,7 @@ function VcardDialog({ existing, room, onClose, onAdd }: { existing: Birthday[];
       setPlan(p);
       setCards(all.cards);
       setFiles(list.length === 1 ? list[0].name : list.map((f) => f.name).join(', '));
-      setPicked(new Set(p.rows.filter((r) => r.status === 'new').map((r) => r.key)));
+      setPicked(firstNew(p));
       setQ('');
     } catch {
       fail(t('No se pudo leer el archivo.'));
@@ -305,7 +307,7 @@ function VcardDialog({ existing, room, onClose, onAdd }: { existing: Birthday[];
             ) : (
               <>
                 <div class="vcf-bar">
-                  <button type="button" class="link-btn" disabled={plan.fresh === 0} onClick={() => setPicked(new Set(plan.rows.filter((r) => r.status === 'new').map((r) => r.key)))}>
+                  <button type="button" class="link-btn" disabled={plan.fresh === 0} onClick={() => setPicked(firstNew(plan))}>
                     {t('Seleccionar todos')}
                   </button>
                   <button type="button" class="link-btn" disabled={picked.size === 0} onClick={() => setPicked(new Set())}>
@@ -339,6 +341,13 @@ function VcardDialog({ existing, room, onClose, onAdd }: { existing: Birthday[];
                 </ul>
                 {plan.truncated > 0 && <div class="muted small">{t('{n} nombres acortados a {max} letras', { n: plan.truncated, max: BIRTHDAY_NAME_MAX })}</div>}
               </>
+            )}
+            {!over && plan.fresh > room && (
+              <Callout kind={room ? 'info' : 'warn'}>
+                {room
+                  ? t('Solo caben {n} cumpleaños más (máximo {max}): se han marcado los {n} primeros.', { n: room, max: limit('birthdays') ?? existing.length + room })
+                  : t('La lista está llena (máximo {max}): no cabe ningún cumpleaños más.', { max: limit('birthdays') ?? existing.length })}
+              </Callout>
             )}
             {over && <Callout kind="warn">{t('Caben {n} cumpleaños más (máximo {max}). Desmarca algunos para seguir.', { n: room, max: limit('birthdays') ?? existing.length + room })}</Callout>}
           </div>
