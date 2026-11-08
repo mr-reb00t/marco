@@ -91,6 +91,20 @@ export function isHttpUrl(s: string, allowWebcal = false): boolean {
   }
 }
 
+/**
+ * A Google Calendar secret iCal address (calendar.google.com/calendar/ical/<id>/private-<key>/basic.ics). Google
+ * leaves the Google Contacts birthdays out of it (#43). Public addresses (the holiday feeds) do not count.
+ */
+export function isGoogleIcalUrl(s: string): boolean {
+  try {
+    const u = new URL(s.trim());
+    if (!['http:', 'https:', 'webcal:'].includes(u.protocol) || u.hostname.toLowerCase() !== 'calendar.google.com') return false;
+    return /^\/calendar\/ical\/[^/]+\/private-[^/]+\/basic\.ics$/i.test(u.pathname);
+  } catch {
+    return false;
+  }
+}
+
 /** Public holiday iCal feeds (Google's public holiday calendars), by ISO country code. Name = Spanish i18n key. */
 export const HOLIDAY_PRESETS: { cc: string; flag: string; name: string; url: string }[] = [
   { cc: 'PT', flag: '🇵🇹', name: 'Festivos de Portugal', url: 'https://calendar.google.com/calendar/ical/es.portuguese.official%23holiday%40group.v.calendar.google.com/public/basic.ics' },

@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { request } from './lib/http.js';
 import { addDays, isoWithOffset, localDate, zonedMidnight, daysBetween } from './core/lib/tz.js';
-import { hash } from './lib/text.js';
+import { fold, hash } from './lib/text.js';
 import { t } from './core/lib/i18n.js';
 import { parseIcsText, expandEvents } from './ics.js';
 import { matchRule, normalizeAirbnbTitle, tidyTitleWhy, translateHoliday, KIND_EMOJI } from './rules.js';
@@ -194,11 +194,18 @@ export function sourceStatus() {
   ]);
 }
 
-/** Google event → raw instance */
-function googleToRaw(it) {
+/**
+ * Google Contacts birthdays come as eventType 'birthday' in the primary calendar (#43). Google stores anniversaries and
+ * custom dates the same way; only birthdays get the birthday look.
+ */
+const isGoogleBirthday = (it) => it.eventType === 'birthday' && [undefined, 'birthday', 'self'].includes(it.birthdayProperties?.type);
+
+/** Google event → raw instance (`kind: 'birthdays'` for a Google Contacts birthday). Exported for tests. */
+export function googleToRaw(it) {
   if (it.status === 'cancelled') return null;
   const allDay = Boolean(it.start?.date);
   const raw = { uid: it.id, title: it.summary || '', description: it.description || '', location: it.location || '', allDay };
+  if (isGoogleBirthday(it)) raw.kind = 'birthdays';
   if (allDay) {
     raw.start = it.start.date;
     raw.end = it.end?.date && it.end.date > it.start.date ? it.end.date : addDays(it.start.date, 1);
@@ -226,13 +233,14 @@ function toWire(e) {
  * Pipeline per event: kind normalisation → event rules (hide → rename → style) → decoration.
  * Pure apart from config-free args; exported for tests.
  *
- * Emoji: raw item emoji (local/birthday) > style rule > icon rule > source/section emoji > kind default.
+ * Emoji: raw item emoji (local/birthday) > style rule > icon rule > source/section emoji > kind default. A raw item
+ * with a kind of its own (a Google Contacts birthday) takes that kind and `birthdayEmoji` instead of the source's.
  * Color: raw item color > style rule > icon rule > source/section color.
  *
  * With `detail: true` hidden events are kept and every event carries `hidden`, `originalTitle`, `applied`,
  * `iconRuleId`, `countdown`, `itemId` (used by the admin preview and countdowns); otherwise wire CalEvents.
  */
-export function buildSourceEvents(raws, source, { rules, eventRules = [], from, to, tz, lang, detail = false, tidyBirthdays = true }) {
+export function buildSourceEvents(raws, source, { rules, eventRules = [], from, to, tz, lang, detail = false, tidyBirthdays = true, birthdayEmoji = '' }) {
   const fromMs = zonedMidnight(from, tz).getTime();
   const toExclDate = addDays(to, 1);
   const toMs = zonedMidnight(toExclDate, tz).getTime();
@@ -263,14 +271,16 @@ export function buildSourceEvents(raws, source, { rules, eventRules = [], from, 
     const style = ruled.style;
     const icon = matchRule(rules, `${r.title} ${title}`, description);
     // An emoji already present in the feed's own title (e.g. a property-management tool's "🏠 Guest") beats keyword rules.
-    const emoji = r.emoji || style?.emoji || titleEmoji || icon?.emoji || source.emoji || KIND_EMOJI[source.kind] || '';
+    const kind = r.kind || source.kind;
+    const ownKind = kind !== source.kind;
+    const emoji = r.emoji || style?.emoji || titleEmoji || icon?.emoji || (ownKind ? birthdayEmoji || KIND_EMOJI[kind] : source.emoji || KIND_EMOJI[source.kind]) || '';
     const color = r.color || style?.color || icon?.color || source.color;
     const iconUsed = icon && ((!r.emoji && !style?.emoji && !titleEmoji && icon.emoji) || (!r.color && !style?.color && icon.color));
     // Un-shout ALL CAPS and drop "Cumple de…" when 🎂 already says it (unless birthdays.tidyTitles is off), unless the
     // user renamed it explicitly. `titleWhy` tells the admin preview why the title changed.
     let titleWhy = title !== originalTitle ? 'rule' : null;
     if (!titleWhy) {
-      const tidy = tidyTitleWhy(title, { rule: icon, source, emoji, birthdayNames: tidyBirthdays });
+      const tidy = tidyTitleWhy(title, { rule: icon, source: ownKind ? { ...source, kind } : source, emoji, birthdayNames: tidyBirthdays });
       if (tidy.title) {
         title = tidy.title;
         titleWhy = tidy.why;
@@ -293,7 +303,7 @@ export function buildSourceEvents(raws, source, { rules, eventRules = [], from, 
     seen.add(id);
     const ev = {
       id, sourceId: source.id, title, start, end, allDay: r.allDay,
-      location, color, emoji, kind: source.kind, multiDay,
+      location, color, emoji, kind, multiDay,
     };
     if (source.type === 'local' && description) ev.description = String(description).slice(0, 1000);
     if (r.age !== undefined) ev.age = r.age;
@@ -355,10 +365,32 @@ async function ensureSources(sources, window) {
   }));
 }
 
+/** Name and day of a birthday, for telling the same person apart from another (the title as tidied for 🎂). */
+const birthdayKey = (name, day) => `${fold(tidyTitleWhy(name, { source: { kind: 'birthdays' } }).title).trim()}|${day}`;
+
+/**
+ * Google Contacts birthdays (kind 'birthdays' in a Google source) of a person and day already in Marco's own birthday
+ * list are left out: Marco's entry stays, with the age (#43). A 29 February birthday matches 28 February and 1 March
+ * in other years (Google does not say which one it uses). Exported for tests.
+ */
+export function dropOwnBirthdays(events, items, { from, to }) {
+  if (!items?.length) return events;
+  const own = new Set();
+  const leap = new Set(items.filter((b) => b.month === 2 && b.day === 29).map((b) => b.id));
+  for (const r of expandBirthdays(items, { from, to, showAge: false })) {
+    own.add(birthdayKey(r.title, r.start));
+    if (leap.has(r.uid) && r.start.endsWith('-02-28')) own.add(birthdayKey(r.title, addDays(r.start, 1)));
+  }
+  return events.filter((e) => !(e.kind === 'birthdays' && e.allDay && own.has(birthdayKey(e.originalTitle ?? e.title, e.start))));
+}
+
 /** Build detailed (see buildSourceEvents `detail`) sorted events for the picked sources. */
 function computeDetailed(cfg, picked, { from, to, lang }) {
   const tz = cfg.datetime.timezone;
-  const opts = { rules: cfg.calendar.iconRules, eventRules: cfg.eventRules.items, from, to, tz, lang, detail: true, tidyBirthdays: cfg.birthdays.tidyTitles !== false };
+  const opts = {
+    rules: cfg.calendar.iconRules, eventRules: cfg.eventRules.items, from, to, tz, lang, detail: true,
+    tidyBirthdays: cfg.birthdays.tidyTitles !== false, birthdayEmoji: cfg.birthdays.emoji || KIND_EMOJI.birthdays,
+  };
   const fromDate = new Date(zonedMidnight(from, tz).getTime() - DAY);
   const toDate = new Date(zonedMidnight(addDays(to, 1), tz).getTime() + DAY);
   const events = [];
@@ -367,7 +399,9 @@ function computeDetailed(cfg, picked, { from, to, lang }) {
     const e = cache.get(s.id);
     if (!e || e.key !== sourceKey(s)) continue;
     try {
-      events.push(...buildSourceEvents(rawForSource(s, e, fromDate, toDate), s, opts));
+      let evs = buildSourceEvents(rawForSource(s, e, fromDate, toDate), s, opts);
+      if (picked.birthdays && s.type === 'google') evs = dropOwnBirthdays(evs, cfg.birthdays.items, { from: addDays(from, -1), to: addDays(to, 1) });
+      events.push(...evs);
     } catch (err) {
       console.warn(`[calendars] ${s.name} (${s.id}) build failed: ${err.message}`);
       errors.push({ sourceId: s.id, message: 'parse_failed' });

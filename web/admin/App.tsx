@@ -733,6 +733,7 @@ export function App() {
       { id: 'a-identify', group: gActions, icon: 'target', label: t('Identificar pantallas'), keywords: 'identify nombre', run: () => displayCommand('identify') },
       { id: 'a-new-screen', group: gActions, icon: 'plus', label: t('Nueva pantalla'), keywords: 'screen create crear', run: run('screens', 'new') },
       { id: 'a-new-bday', group: gActions, icon: 'cake', label: t('Añadir cumpleaños'), keywords: 'birthday add', run: run('birthdays', 'add') },
+      { id: 'a-vcard-bday', group: gActions, icon: 'users', label: t('Importar cumpleaños de tus contactos'), keywords: 'birthday vcf vcard contacts contactos import', run: run('birthdays', 'vcard') },
       { id: 'a-new-event', group: gActions, icon: 'plus', label: t('Nuevo evento local'), keywords: 'event add crear', run: run('local', 'add') },
       { id: 'a-new-countdown', group: gActions, icon: 'hourglass', label: t('Nueva cuenta atrás'), keywords: 'countdown add', run: run('countdowns', 'add') },
       { id: 'a-new-rule', group: gActions, icon: 'filter', label: t('Nueva regla de filtro'), keywords: 'hide rename filter', run: run('filters', 'add') },

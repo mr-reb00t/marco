@@ -2090,6 +2090,59 @@ h1 .scope {
   gap: 4px 12px;
   font-size: 13px;
 }
+/* birthdays from a contacts file (Birthdays.tsx VcardDialog) */
+.vcf-drop__text {
+  min-width: 0;
+}
+.vcf-drop__text strong {
+  overflow-wrap: anywhere;
+}
+.vcf-howto {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.vcf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: 13px;
+}
+.vcf-bar .muted {
+  margin-left: auto;
+}
+.vcf-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13.5px;
+}
+.vcf-row {
+  padding: 6px 10px;
+  min-width: 0;
+}
+/* a long name is cut with an ellipsis instead of widening the dialog (its min-content width stays small) */
+.vcf-row .gcal__name {
+  width: 0;
+}
+.vcf-row__date {
+  flex: none;
+  white-space: nowrap;
+}
+.vcf-row.is-dim {
+  cursor: default;
+}
 .csv-result__errs {
   display: flex;
   flex-direction: column;

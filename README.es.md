@@ -128,8 +128,9 @@ color de la foto, transparencia, desenfoque y borde de luz:
 - **Emojis automáticos:** 🎂 cumpleaños, ✈️ vuelos, 🩺 médico, 🎒 colegio, ⚽ deporte, 🍽️ cenas, 💼 reuniones, 🏖️
   vacaciones, 🚗 coche, 🐾 veterinario y más, a partir de reglas de palabras clave editables (35 categorías con unas
   1000 palabras clave en inglés, español, portugués, neerlandés, danés y polaco de serie).
-- **Cumpleaños con edad:** "🎂 Abuela Isabel (72)", desde un calendario de cumpleaños o introducidos en la
-  administración. Los títulos de tus calendarios se quedan solo con el nombre ("Cumpleaños de Ana" sale como
+- **Cumpleaños con edad:** "🎂 Abuela Isabel (72)", desde un calendario de cumpleaños, introducidos en la
+  administración, importados de un archivo de contactos (.vcf de Google Contactos, iCloud u Outlook) o de Google
+  Contactos con una cuenta de Google vinculada. Los títulos de tus calendarios se quedan solo con el nombre ("Cumpleaños de Ana" sale como
   "🎂 Ana"); desactiva *Ordenar los títulos de cumpleaños* para dejarlos como vienen.
 - **Fuentes de alquiler vacacional** (el "Reserved" de Airbnb, Booking o herramientas de gestión de alojamientos que
   publican títulos como `🏠 Guest - 4p+1m` y líneas de descripción `Adults/Children/Infants`): barras de entrada →
@@ -184,7 +185,7 @@ color de la foto, transparencia, desenfoque y borde de luz:
   calendario), festivos predefinidos, y por calendario: color, emoji, tipo (general / alquiler vacacional /
   cumpleaños / festivos) y frecuencia de actualización.
 - **Eventos locales** (puntuales o que se repiten cada semana / mes / año, con excepciones) y **cumpleaños** (con
-  importación desde CSV).
+  importación desde CSV y desde un archivo de contactos).
 - **Filtros y cambios:** oculta ("Not available"), renombra o fuerza el emoji/color de una serie, con una vista previa
   en directo de los próximos 14 días. **Reglas de iconos** con un probador. **Cuentas atrás**.
 - **Galería de fotos:** arrastrar y soltar, optimización en el navegador (rotación EXIF, redimensionado, miniaturas),
@@ -985,6 +986,9 @@ localhost).
 calendario → *Integrar el calendario* → **Dirección secreta en formato iCal** (*Secret address in iCal format*). Añade
 esa URL como fuente **iCal**. No necesitas ningún proyecto de Google Cloud; sin embargo, Google actualiza esta fuente
 con retraso (de minutos a horas) y cualquiera que tenga la URL puede leer el calendario: trátala como una contraseña.
+Esta dirección no incluye los cumpleaños de Google Contactos: vincula la cuenta (opción A o B) o importa tus contactos
+en *Cumpleaños → Importar contactos* (un archivo .vcf exportado desde contacts.google.com; se lee en tu navegador y no
+se sube a ningún sitio).
 
 ### 3. Elige tus calendarios
 
@@ -992,6 +996,9 @@ con retraso (de minutos a horas) y cualquiera que tenga la URL puede leer el cal
 quieres mostrar. Cada uno se convierte en una fuente a la que puedes cambiar el nombre y asignar un emoji, un color y un
 **tipo**: p. ej., un calendario que solo contiene cumpleaños → tipo *Cumpleaños* (🎂 y edades), un calendario de
 festivos → *Festivos*. Puedes vincular varias cuentas de Google.
+Los cumpleaños de tus contactos de Google llegan con el calendario principal y se ven con el emoji de cumpleaños. Si la
+misma persona y el mismo día están también en la lista *Cumpleaños* de Marco, esa pantalla muestra solo la de Marco
+(que tiene la edad).
 
 **Para entrar en la administración** se usa la contraseña del servidor. Google es solo para los calendarios: "Iniciar
 sesión con Google" está desactivado en un servidor de casa. Si de verdad lo quieres (por ejemplo para quitar la

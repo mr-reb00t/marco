@@ -52,6 +52,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Eventos locales', route: 'local', anchor: 'local-list', keywords: 'local events eventos familia recurrente repetir crear evento' },
   { label: 'Cumpleaños', route: 'birthdays', anchor: 'bday-list', keywords: 'birthday aniversário cumple edad age' },
   { label: 'Importar cumpleaños (CSV)', route: 'birthdays', anchor: 'bday-list', keywords: 'csv import pegar paste' },
+  { label: 'Importar cumpleaños de tus contactos (vCard)', route: 'birthdays', anchor: 'bday-list', keywords: 'vcf vcard contacts contactos contacten kontakter kontakty google icloud outlook android import' },
   { label: 'Mostrar la edad en los cumpleaños', route: 'birthdays', anchor: 'bday-settings', keywords: 'age edad idade show' },
   { label: 'Ordenar los títulos de cumpleaños', route: 'birthdays', anchor: 'bday-settings', keywords: 'birthday title titulo título nombre name tidy google' },
   { label: 'Ocultar eventos por palabra clave', route: 'filters', anchor: 'flt-rules', keywords: 'hide filter ocultar no disponible blocked' },

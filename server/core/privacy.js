@@ -55,10 +55,12 @@ export function privatizeEvents(events, cfg, lang) {
     const mode = sourcePrivacyMode(cfg, e.sourceId);
     if (mode === 'keep') { out.push(e); continue; }
     if (mode === 'hide') continue;
+    // A Google Contacts birthday in a calendar shown as busy is busy time like the rest of it, not a birthday (#43).
+    const kind = e.kind === 'birthdays' ? cfg.calendar.sources.find((x) => x.id === e.sourceId)?.kind || e.kind : e.kind;
     out.push({
       id: e.id, sourceId: e.sourceId, title: word, start: e.start, end: e.end, allDay: e.allDay,
       location: '', color: sourceColor(cfg, e.sourceId, e.color), emoji: e.kind === 'airbnb' && e.emoji === '🚪' ? '🚪' : '',
-      kind: e.kind, multiDay: e.multiDay, busy: true,
+      kind, multiDay: e.multiDay, busy: true,
     });
   }
   return out;

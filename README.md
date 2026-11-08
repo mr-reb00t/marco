@@ -124,8 +124,9 @@ transparency, blur and a light edge:
 - **Automatic emoji:** 🎂 birthdays, ✈️ flights, 🩺 doctor, 🎒 school, ⚽ sports, 🍽️ dinners, 💼 meetings, 🏖️
   holidays, 🚗 car, 🐾 vet and more, from editable keyword rules (35 categories with about 1,000 keywords in English,
   Spanish, Portuguese, Dutch, Danish and Polish out of the box).
-- **Birthdays with age:** "🎂 Grandma Isabel (72)", from a birthdays calendar or entered in the admin. Titles
-  from your calendars are tidied to just the name ("Astrid's Birthday" shows as "🎂 Astrid"); turn off *Tidy birthday
+- **Birthdays with age:** "🎂 Grandma Isabel (72)", from a birthdays calendar, entered in the admin, imported from a
+  contacts file (.vcf from Google Contacts, iCloud or Outlook) or from Google Contacts through a linked Google
+  account. Titles from your calendars are tidied to just the name ("Astrid's Birthday" shows as "🎂 Astrid"); turn off *Tidy birthday
   titles* to keep them as they are.
 - **Vacation-rental feeds** (Airbnb "Reserved", Booking, or property-management tools that publish titles like
   `🏠 Guest - 4p+1m` and `Adults/Children/Infants` description lines): check-in → check-out bars across the days,
@@ -175,7 +176,7 @@ transparency, blur and a light edge:
   quick actions (refresh, identify, night mode, send an alert).
 - **Calendars:** iCal/ICS URLs (including `webcal://` and self-signed HTTPS), **Google Calendar** through OAuth,
   **Outlook / Microsoft 365**, **Apple iCloud** (a guide to get the calendar's public link), public holiday presets, per-calendar colour, emoji, type (general / vacation rental / birthdays / holidays) and refresh rate.
-- **Local events** (one-off or repeating weekly / monthly / yearly, with exceptions) and **birthdays** (with CSV import).
+- **Local events** (one-off or repeating weekly / monthly / yearly, with exceptions) and **birthdays** (with CSV and contacts-file import).
 - **Filters and overrides:** hide ("Not available"), rename, or force emoji/colour for a series, with a live preview of
   the next 14 days. **Icon rules** with a tester. **Countdowns**.
 - **Photo gallery:** drag and drop, in-browser optimisation (EXIF rotation, resize, thumbnails), iPhone **HEIC**
@@ -938,13 +939,17 @@ normally at `http://<server-ip>:3000/admin/` (only linking a Google account need
 **Option C: no OAuth, the secret iCal address.** In Google Calendar on the web → ⚙️ *Settings* → pick the calendar →
 *Integrate calendar* → **Secret address in iCal format**. Add that URL as an **iCal** source. No Google Cloud project
 needed; however Google refreshes this feed with a delay (minutes to hours) and anyone with the URL can read the
-calendar, so treat it like a password.
+calendar, so treat it like a password. This address leaves out the birthdays from Google Contacts: link the account
+(Option A or B) or import your contacts in *Birthdays → Import contacts* (a .vcf file exported from
+contacts.google.com; it is read in your browser and never uploaded).
 
 ### 3. Pick your calendars
 
 **Admin → Calendars → Google accounts → Link account**, accept the permissions, then tick the calendars to show.
 Each one becomes a source you can rename and give an emoji, colour and **type**: e.g. a calendar that only contains
 birthdays → type *Birthdays* (🎂 and ages), a holiday calendar → *Holidays*. You can link several Google accounts.
+The birthdays of your Google Contacts come with the primary calendar and show with the birthday emoji. When the same
+person and day is also in Marco's own *Birthdays* list, that screen shows only Marco's entry (it has the age).
 
 **Signing in to the admin** uses the server's password. Google is for calendars only: "Sign in with Google" is off
 on a home server. If you really want it (for example to turn the password off), set `MARCO_GOOGLE_LOGIN=1` in `.env`,

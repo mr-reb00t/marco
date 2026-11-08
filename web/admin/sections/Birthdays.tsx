@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import type { Birthday, BirthdayCsvResult } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { confirmDialog, toast } from '../components/feedback';
@@ -11,6 +11,7 @@ import { PrivacyModeField } from './Privacy';
 import { LimitNote } from '../components/LimitNote';
 import { takeIntent } from '../intent';
 import { daysInMonth, normalize, uid } from '../util';
+import { BIRTHDAY_NAME_MAX, parseVcards, planBirthdayImport, VCARD_MAX_BYTES, VCARD_MAX_CONTACTS, type ImportPlan, type ImportRow, type VcardParse } from '../vcard';
 import type { SectionProps } from './common';
 
 /** Client-side fallback of the server CSV parser (docs/ARCHITECTURE.md), used if the endpoint is unavailable. */
@@ -137,6 +138,216 @@ function CsvDialog({ existing, onClose, onAdd }: { existing: Birthday[]; onClose
   );
 }
 
+/** Where each service keeps its contacts export (Spanish keys; the services' own menu names per language). */
+const VCF_HOWTO = [
+  'Google Contactos: en contacts.google.com, «Exportar» y elige «vCard (para Contactos de iOS)».',
+  'iCloud: en icloud.com/contacts, selecciona los contactos, abre el menú ⋯ y elige «Exportar vCard».',
+  'Outlook: abre el contacto y usa «Archivo» → «Guardar como» → vCard. Puedes elegir varios archivos .vcf a la vez.',
+  'Android: app Contactos → «Gestionar contactos» → «Exportar».',
+];
+
+/**
+ * Birthdays from a contacts file (#43). The .vcf is read here (web/admin/vcard.ts) and never uploaded: only the rows
+ * the owner ticks go into the draft. `room` is how many more fit (plan or validator limit).
+ */
+function VcardDialog({ existing, room, onClose, onAdd }: { existing: Birthday[]; room: number; onClose: () => void; onAdd: (rows: ImportRow[]) => void }) {
+  const [plan, setPlan] = useState<ImportPlan | null>(null);
+  const [cards, setCards] = useState(0);
+  const [files, setFiles] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [drag, setDrag] = useState(false);
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [q, setQ] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const months = monthNames('short');
+
+  /** A file that cannot be used: what was read before goes too, so nothing from it can be added. */
+  const fail = (msg: string) => {
+    setPlan(null);
+    setFiles('');
+    setPicked(new Set());
+    setError(msg);
+  };
+  const read = async (list: File[]) => {
+    if (!list.length) return;
+    setError('');
+    if (list.reduce((n, f) => n + f.size, 0) > VCARD_MAX_BYTES) return fail(t('El archivo pesa demasiado (máximo {n} MB).', { n: VCARD_MAX_BYTES / 1024 / 1024 }));
+    setBusy(true);
+    try {
+      // Outlook saves one .vcf per contact: every chosen file is read, up to the contact cap in all
+      const all: VcardParse = { contacts: [], cards: 0, capped: false };
+      for (const f of list) {
+        const r = parseVcards(new Uint8Array(await f.arrayBuffer()), VCARD_MAX_CONTACTS - all.cards);
+        all.contacts.push(...r.contacts);
+        all.cards += r.cards;
+        all.capped ||= r.capped;
+        if (all.capped) break;
+      }
+      if (!all.cards) return fail(t('No es un archivo de contactos (.vcf).'));
+      const p = planBirthdayImport(all, existing);
+      setPlan(p);
+      setCards(all.cards);
+      setFiles(list.length === 1 ? list[0].name : list.map((f) => f.name).join(', '));
+      setPicked(new Set(p.rows.filter((r) => r.status === 'new').map((r) => r.key)));
+      setQ('');
+    } catch {
+      fail(t('No se pudo leer el archivo.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const nq = normalize(q);
+  const rows = plan ? plan.rows.filter((r) => !nq || normalize(r.name).includes(nq)) : [];
+  const over = picked.size > room;
+  const toggle = (key: string, on: boolean) =>
+    setPicked((s) => {
+      const n = new Set(s);
+      if (on) n.add(key);
+      else n.delete(key);
+      return n;
+    });
+  const skipped = plan
+    ? [
+        plan.skipped.noBday > 0 && t('{n} sin fecha de cumpleaños', { n: plan.skipped.noBday }),
+        plan.skipped.badBday > 0 && t('{n} con una fecha que no se entiende', { n: plan.skipped.badBday }),
+        plan.skipped.noName > 0 && t('{n} sin nombre', { n: plan.skipped.noName }),
+      ].filter(Boolean)
+    : [];
+
+  return (
+    <Modal
+      title={t('Importar cumpleaños de tus contactos')}
+      icon="users"
+      size="lg"
+      autoFocus={false}
+      onClose={onClose}
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            {t('Cancelar')}
+          </Button>
+          <Button variant="primary" icon="plus" disabled={!plan || picked.size === 0 || over} onClick={() => plan && onAdd(plan.rows.filter((r) => picked.has(r.key)))}>
+            {plan ? t('Añadir {n} cumpleaños', { n: picked.size }) : t('Añadir cumpleaños')}
+          </Button>
+        </>
+      }
+    >
+      <div class="stack">
+        <p class="muted small">{t('Elige un archivo de contactos (.vcf). Se lee en este navegador y no se envía a ningún sitio: solo se guardan los cumpleaños que añadas.')}</p>
+        <div
+          class={`dropzone dropzone--sm ${drag ? 'is-drag' : ''}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => fileRef.current?.click()}
+          onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), fileRef.current?.click())}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDrag(true);
+          }}
+          onDragLeave={() => setDrag(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDrag(false);
+            void read([...(e.dataTransfer?.files ?? [])]);
+          }}
+        >
+          <span class="dropzone__icon">{busy ? <span class="spinner" /> : <Icon name="upload" size={20} />}</span>
+          <div class="vcf-drop__text">
+            <strong>{files || t('Elegir archivo .vcf')}</strong>
+            <div class="muted small">{t('o suéltalo aquí')}</div>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".vcf,.vcard,text/vcard,text/x-vcard"
+            multiple
+            hidden
+            onChange={(e) => {
+              void read([...(e.currentTarget.files ?? [])]);
+              e.currentTarget.value = '';
+            }}
+          />
+        </div>
+        {error && <Callout kind="error">{error}</Callout>}
+        {!plan && (
+          <details class="pair-alt tunnel-guide">
+            <summary>
+              <Icon name="info" size={16} />
+              <span>{t('Cómo exportar tus contactos')}</span>
+              <Icon name="chevron" size={16} class="tunnel-guide__chev" />
+            </summary>
+            <ul class="vcf-howto">
+              {VCF_HOWTO.map((s) => (
+                <li>{t(s)}</li>
+              ))}
+            </ul>
+          </details>
+        )}
+        {plan && (
+          <div class="csv-result">
+            <div class="csv-result__sum">
+              <span>{t('{n} contactos leídos', { n: cards })}</span>
+              <span>{t('{n} con cumpleaños', { n: plan.found })}</span>
+              <span class="ok-text">
+                <Icon name="check" size={14} /> {t('{n} nuevos', { n: plan.fresh })}
+              </span>
+              {plan.existing > 0 && <span class="muted">{t('{n} ya están en la lista', { n: plan.existing })}</span>}
+              {plan.inFile > 0 && <span class="muted">{t('{n} repetidos en el archivo', { n: plan.inFile })}</span>}
+            </div>
+            {skipped.length > 0 && <div class="muted small">{skipped.join(' · ')}</div>}
+            {plan.capped && <Callout kind="warn">{t('Solo se han leído los primeros {n} contactos.', { n: VCARD_MAX_CONTACTS })}</Callout>}
+            {plan.rows.length === 0 ? (
+              <Callout kind="info">
+                <strong>{t('No hay ningún cumpleaños en este archivo.')}</strong> {t('Los contactos sin fecha de cumpleaños no se importan.')}
+              </Callout>
+            ) : (
+              <>
+                <div class="vcf-bar">
+                  <button type="button" class="link-btn" disabled={plan.fresh === 0} onClick={() => setPicked(new Set(plan.rows.filter((r) => r.status === 'new').map((r) => r.key)))}>
+                    {t('Seleccionar todos')}
+                  </button>
+                  <button type="button" class="link-btn" disabled={picked.size === 0} onClick={() => setPicked(new Set())}>
+                    {t('Desmarcar todos')}
+                  </button>
+                  <span class="muted small">{t('{n} seleccionados', { n: picked.size })}</span>
+                </div>
+                {plan.rows.length > 8 && <SearchInput value={q} onValue={setQ} placeholder={t('Buscar persona…')} />}
+                <ul class="vcf-list">
+                  {rows.map((r) => {
+                    const old = r.status === 'existing';
+                    const on = !old && picked.has(r.key);
+                    return (
+                      <li key={r.key}>
+                        <label class={`gcal vcf-row ${on ? 'is-on' : ''} ${old ? 'is-dim' : ''}`}>
+                          <input type="checkbox" checked={on} disabled={old} onChange={(e) => toggle(r.key, e.currentTarget.checked)} />
+                          <span class="check-box">
+                            <Icon name="check" size={12} />
+                          </span>
+                          <span class="gcal__name">{r.name}</span>
+                          <span class="vcf-row__date muted small" title={r.yearDropped ? t('Año descartado: no parece un año de nacimiento') : undefined}>
+                            {r.day} {months[r.month - 1]}
+                            {r.year ? ` ${r.year}` : ` · ${t('sin año')}`}
+                          </span>
+                          {old && <span class="badge badge--soft">{t('Ya en la lista')}</span>}
+                        </label>
+                      </li>
+                    );
+                  })}
+                  {q && rows.length === 0 && <li class="muted small">{t('Sin resultados')}</li>}
+                </ul>
+                {plan.truncated > 0 && <div class="muted small">{t('{n} nombres acortados a {max} letras', { n: plan.truncated, max: BIRTHDAY_NAME_MAX })}</div>}
+              </>
+            )}
+            {over && <Callout kind="warn">{t('Caben {n} cumpleaños más (máximo {max}). Desmarca algunos para seguir.', { n: room, max: limit('birthdays') ?? existing.length + room })}</Callout>}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 function DayMonth({ day, month, onChange, error }: { day: number; month: number; onChange: (d: number, m: number) => void; error?: boolean }) {
   const months = monthNames('short');
   return (
@@ -169,6 +380,7 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
   const [sort, setSort] = useState<'next' | 'name' | 'month'>('next');
   const [q, setQ] = useState('');
   const [csv, setCsv] = useState(false);
+  const [vcf, setVcf] = useState(() => takeIntent('birthdays', 'vcard'));
   const [name, setName] = useState('');
   const [day, setDay] = useState(Number(today.slice(8)));
   const [month, setMonth] = useState(Number(today.slice(5, 7)));
@@ -219,6 +431,9 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
       <PageHeader title={t('Cumpleaños')} desc={t('Se muestran cada año en el calendario. Si indicas el año de nacimiento, la pantalla muestra la edad: “🎂 María (34)”.')}>
         <Button icon="upload" disabled={atMax} onClick={() => setCsv(true)}>
           {t('Importar CSV')}
+        </Button>
+        <Button icon="users" disabled={atMax} onClick={() => setVcf(true)}>
+          {t('Importar contactos')}
         </Button>
       </PageHeader>
 
@@ -297,7 +512,7 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
         {bd.items.length > 8 && <SearchInput value={q} onValue={setQ} placeholder={t('Buscar persona…')} />}
         {bd.items.length === 0 ? (
           <Empty icon="cake" title={t('Aún no hay cumpleaños')}>
-            {t('Añádelos uno a uno o pega una lista con “Importar CSV”.')}
+            {t('Añádelos uno a uno, pega una lista con “Importar CSV” o tráelos de tus contactos con “Importar contactos”.')}
           </Empty>
         ) : (
           <div class="bday-table">
@@ -342,6 +557,19 @@ export function BirthdaysSection({ full, setFull, errors, cfg }: SectionProps) {
             setCsv(false);
             toast(t('{n} cumpleaños añadidos · guarda para publicarlos', { n: added.length }), added.length ? 'ok' : 'info');
             if (added.length < items.length) toast(t('Has llegado al máximo ({max}).', { max: limit('birthdays') ?? bd.items.length }), 'info');
+          }}
+        />
+      )}
+      {vcf && (
+        <VcardDialog
+          existing={bd.items}
+          room={Math.max(0, (limit('birthdays') ?? Infinity) - bd.items.length)}
+          onClose={() => setVcf(false)}
+          onAdd={(rows) => {
+            const items = rows.map((r) => ({ id: uid('b'), name: r.name, day: r.day, month: r.month, year: r.year, emoji: '' }));
+            setFull((d) => void d.birthdays.items.push(...items));
+            setVcf(false);
+            toast(t('{n} cumpleaños añadidos · guarda para publicarlos', { n: items.length }), 'ok');
           }}
         />
       )}

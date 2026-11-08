@@ -15,6 +15,7 @@ import { DA_SPOTIFY } from './i18n-dict-spotify';
 import { DA_DECOR } from './i18n-dict-decor';
 import { DA_GROUP } from './i18n-dict-group';
 import { DA_PHOTOSOURCE } from './i18n-dict-photosource';
+import { DA_SINGULAR_VCARD, DA_VCARD } from './i18n-dict-vcard';
 
 /** Every admin row but the Familia ones. */
 export const DA: Record<string, string> = {
@@ -31,6 +32,7 @@ export const DA: Record<string, string> = {
   ...DA_DECOR,
   ...DA_GROUP,
   ...DA_PHOTOSOURCE,
+  ...DA_VCARD,
   '(ninguno)': '(ingen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du bruger den første adgangskode. Skift den: indtil da godtages den kun fra dit lokale netværk.',
   'Sesiones': 'Sessioner',
@@ -2205,6 +2207,7 @@ export const DA: Record<string, string> = {
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */
 export const DA_SINGULAR: Record<string, string> = {
   ...DA_SINGULAR_BUILDER,
+  ...DA_SINGULAR_VCARD,
   'Funciona: {n} eventos en los próximos meses': 'Virker: 1 begivenhed de kommende måneder',
   'Timbre enviado a {n} pantallas': 'Dørklokken er sendt til 1 skærm',
   '{n} fotos': '1 billede',

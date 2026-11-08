@@ -2,6 +2,7 @@ import { SINGULAR4 } from './i18n-dict4';
 import { SINGULAR12 } from './i18n-dict12';
 import { SINGULAR_FAMILY } from './i18n-dict-family';
 import { SINGULAR_BUILDER } from './i18n-dict-builder';
+import { SINGULAR_VCARD } from './i18n-dict-vcard';
 // Singular forms for count strings (used by t() when vars.n === 1): Spanish key → [es, en, pt].
 export const SINGULAR: Record<string, [string, string, string]> = {
   'Funciona: {n} eventos en los próximos meses': ['Funciona: 1 evento en los próximos meses', 'Works: 1 event in the coming months', 'Funciona: 1 evento nos próximos meses'],
@@ -55,4 +56,5 @@ export const SINGULAR: Record<string, [string, string, string]> = {
   ...SINGULAR12,
   ...SINGULAR_FAMILY,
   ...SINGULAR_BUILDER,
+  ...SINGULAR_VCARD,
 };

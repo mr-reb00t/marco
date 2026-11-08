@@ -29,7 +29,8 @@ import { LimitNote } from '../components/LimitNote';
 import { AgendaDaysField, EventStyleField, WeeksField } from '../components/PlannerFields';
 import { WeekdaysField } from '../components/ShownDaysField';
 import { t } from '../i18n';
-import { allSourceOptions, builtinNameClashes, guessKind, HOLIDAY_PRESETS, isHttpUrl, KIND_EMOJI, moveItem, SWATCHES, uid } from '../util';
+import { allSourceOptions, builtinNameClashes, guessKind, HOLIDAY_PRESETS, isGoogleIcalUrl, isHttpUrl, KIND_EMOJI, moveItem, SWATCHES, uid } from '../util';
+import { setIntent } from '../intent';
 import type { SectionProps } from './common';
 import { ICloudGuide, icloudUrl } from './ICloudGuide';
 
@@ -129,6 +130,7 @@ function SourceRow({
   remove,
   move,
   reorder,
+  googleCanConnect,
 }: {
   src: Source;
   index: number;
@@ -138,6 +140,8 @@ function SourceRow({
   remove: () => void;
   move: (from: number, to: number) => void;
   reorder: ReturnType<typeof useReorder>;
+  /** this server can link a Google account (the hint for Google's secret address says so) */
+  googleCanConnect: boolean;
 }) {
   const [test, setTest] = useState<{ loading: boolean; res?: TestIcsResponse }>({ loading: false });
   const p = `source.${src.id}`;
@@ -227,6 +231,22 @@ function SourceRow({
             <span class="muted">{src.googleAccount}</span>
             <span class="mono small muted">{src.googleCalendarId}</span>
           </div>
+        )}
+        {src.type === 'ics' && isGoogleIcalUrl(src.url ?? '') && (
+          <Callout kind="info">
+            {googleCanConnect
+              ? t('La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, vincula tu cuenta de Google en Cuentas vinculadas o importa tus contactos en Cumpleaños.')
+              : t('La dirección secreta de Google no incluye los cumpleaños de Google Contactos. Para verlos, importa tus contactos en Cumpleaños.')}{' '}
+            {googleCanConnect && (
+              <>
+                <a href="#/calendars/cal-accounts">{t('Cuentas vinculadas')}</a>
+                {' · '}
+              </>
+            )}
+            <a href="#/birthdays" onClick={() => setIntent('birthdays', 'vcard')}>
+              {t('Importar contactos')}
+            </a>
+          </Callout>
         )}
         <div class="src__opts">
           <label class="mini-field">
@@ -668,6 +688,7 @@ export function CalendarsSection(props: SectionProps) {
   const reorder = useReorder(move);
 
   const atMax = atLimit('sources', sources.length);
+  const googleCanConnect = googleProvider(props.me).configured;
   const addIcs = (name = '', url = '', kind: SourceKind = 'generic') => set((d) => pushIcs(d, name, url, kind));
 
   const removeSource = async (s: Source) => {
@@ -723,6 +744,7 @@ export function CalendarsSection(props: SectionProps) {
                 errors={errors}
                 reorder={reorder}
                 move={move}
+                googleCanConnect={googleCanConnect}
                 remove={() => removeSource(s)}
                 update={(fn) =>
                   set((d) => {

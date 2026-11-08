@@ -215,6 +215,8 @@ Error codes the admin translates (`web/admin/apiErrors.ts`), read from `code` fi
 `details[].message` with one of these codes is translated too. Any other error shows the server's own text.
 
 `CalEvent`: `{ id, sourceId, title, start, end, allDay, location, color, emoji, kind, multiDay, age?, busy? }`.
+`kind` is the calendar's, except for a Google Contacts birthday from a linked Google account: `kind: "birthdays"` with
+the Google calendar as `sourceId` and no `age` (Google gives no year).
 `start`/`end` are ISO strings with offset, or `YYYY-MM-DD` for all-day events (`end` exclusive). `busy: true` marks a
 privacy-mode block: `title` is "Busy" in the screen's language, `location` and `emoji` are empty, `color` is the
 calendar's.
@@ -1067,7 +1069,7 @@ Per screen, for when you have guests. The rules live in `server/core/privacy.js`
 
 - `busy`: the event keeps its id, start, end, all-day flag, kind and the calendar's colour; the title becomes "Busy"
   in the screen's language (Busy / Ocupado / Ocupado); location, description, emoji and age are removed. A rental
-  checkout marker keeps its 🚪.
+  checkout marker keeps its 🚪. A Google Contacts birthday takes its calendar's kind (it is busy time like the rest).
 - `hide`: the event is left out.
 - `keep`: unchanged.
 - Countdowns: manual ones stay; those from events or birthdays stay only when their calendar is `keep`.

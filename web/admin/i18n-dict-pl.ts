@@ -8,6 +8,7 @@ import { PL_SPOTIFY } from './i18n-dict-spotify';
 import { PL_DECOR } from './i18n-dict-decor';
 import { PL_GROUP } from './i18n-dict-group';
 import { PL_PHOTOSOURCE } from './i18n-dict-photosource';
+import { PL_FEW_VCARD, PL_SINGULAR_VCARD, PL_VCARD } from './i18n-dict-vcard';
 
 /** Every admin row but the Familia ones. */
 export const PL: Record<string, string> = {
@@ -16,6 +17,7 @@ export const PL: Record<string, string> = {
   ...PL_DECOR,
   ...PL_GROUP,
   ...PL_PHOTOSOURCE,
+  ...PL_VCARD,
   '(ninguno)': '(brak)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Używasz hasła początkowego. Zmień je: do tego czasu działa tylko z sieci lokalnej.',
   'Sesiones': 'Sesje',
@@ -3199,6 +3201,7 @@ export const PL: Record<string, string> = {
 
 /** Singular forms (n = 1): Spanish key → Polish. */
 export const PL_SINGULAR: Record<string, string> = {
+  ...PL_SINGULAR_VCARD,
   'cumple {n}': 'kończy 1 rok',
   '{n} archivos ignorados (solo JPG, PNG o WebP de hasta 100 MB)': '1 plik pominięty (tylko JPG, PNG lub WebP do 100 MB)',
   '{n} días': '1 dzień',
@@ -3271,6 +3274,7 @@ export const PL_SINGULAR: Record<string, string> = {
 
 /** "Few" forms (2-4, 22-24…): Spanish key → Polish. A count key missing here uses its row in PL. */
 export const PL_FEW: Record<string, string> = {
+  ...PL_FEW_VCARD,
   'cumple {n}': 'kończy {n} lata',
   'Una Rotativa tiene al menos {n} tarjetas.': 'Karta rotująca ma co najmniej {n} karty.',
   'Hacen falta al menos {n} lugares.': 'Potrzebne są co najmniej {n} miejsca.',

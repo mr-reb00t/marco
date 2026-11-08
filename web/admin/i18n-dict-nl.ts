@@ -15,6 +15,7 @@ import { NL_SPOTIFY } from './i18n-dict-spotify';
 import { NL_DECOR } from './i18n-dict-decor';
 import { NL_GROUP } from './i18n-dict-group';
 import { NL_PHOTOSOURCE } from './i18n-dict-photosource';
+import { NL_SINGULAR_VCARD, NL_VCARD } from './i18n-dict-vcard';
 
 /** Every admin row but the Familia ones. */
 export const NL: Record<string, string> = {
@@ -31,6 +32,7 @@ export const NL: Record<string, string> = {
   ...NL_DECOR,
   ...NL_GROUP,
   ...NL_PHOTOSOURCE,
+  ...NL_VCARD,
   '(ninguno)': '(geen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Je gebruikt het startwachtwoord. Wijzig het: tot dan wordt het alleen vanuit je lokale netwerk geaccepteerd.',
   'Sesiones': 'Sessies',
@@ -2205,6 +2207,7 @@ export const NL: Record<string, string> = {
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */
 export const NL_SINGULAR: Record<string, string> = {
   ...NL_SINGULAR_BUILDER,
+  ...NL_SINGULAR_VCARD,
   'Funciona: {n} eventos en los próximos meses': 'Werkt: 1 afspraak in de komende maanden',
   'Timbre enviado a {n} pantallas': 'Deurbel naar 1 scherm gestuurd',
   '{n} fotos': '1 foto',
