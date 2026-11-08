@@ -6,12 +6,12 @@ All notable changes to this project are documented here. The format is based on
 ## [0.40.0] - 2026-11-08
 
 ### Added
-- *Cumpleaños > Importar contactos* reads birthdays from a contacts file (.vcf) exported from Google Contacts, iCloud,
+- *Birthdays > Import contacts* reads birthdays from a contacts file (.vcf) exported from Google Contacts, iCloud,
   Outlook or a phone (#43, thanks to @emdeex). The file is read in the browser and never uploaded. A preview shows
   who is new, who is already in the list and who has no birthday, and you pick who to add. Years that are missing or
   are placeholders (such as 1604) are left out, and names are matched ignoring case and accents.
 - Adding a Google Calendar secret iCal address shows a note: Google leaves the Google Contacts birthdays out of it,
-  and the note links to *Importar contactos* and, where the server offers it, to linking a Google account.
+  and the note links to *Import contacts* and, where the server offers it, to linking a Google account.
 
 ### Changed
 - A linked Google account shows Google Contacts birthdays as birthdays, with the birthday emoji and a tidied name.
