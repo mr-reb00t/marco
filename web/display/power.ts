@@ -3,7 +3,8 @@
 // (server/test/kiosk-power.test.js).
 //
 // - A card on a browser that did not open Marco at localhost (another device, or the Pi showing the server by its
-//   network address) never asks the server: it says it only works on the Pi that runs Marco.
+//   network address), or that has no kiosk key (identity.ts kioskKey: only the browser deploy/kiosk.sh opens gets
+//   one), never asks the server: it says it only works on the Pi that runs Marco.
 // - The first tap arms the card for CONFIRM_MS; only a second tap within that time sends the request, so a brush of
 //   the hand never closes the kiosk or powers the Pi off.
 
@@ -11,7 +12,7 @@ export type PowerAction = 'exit' | 'off';
 
 /** What the card shows. */
 export type PowerUi =
-  | 'remote' // not opened at localhost: only on the Pi that runs Marco
+  | 'remote' // not the kiosk at localhost: only on the Pi that runs Marco
   | 'checking' // the first answer of GET /api/display/power is on its way
   | 'unavailable' // this install cannot do it (no runtime folder: Docker, no systemd), or the server says no
   | 'disabled' // Apagar before `sudo marco power on`

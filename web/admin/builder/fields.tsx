@@ -84,10 +84,10 @@ const navSvg = (name: string) => (
 );
 
 /** "Icono" of a navigation card: one of the built-in icons, an emoji, or none (the card's default icon). */
-function NavIconField({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+function NavIconField({ value, onChange, label, hint }: { value: string; onChange: (v: string) => void; label: string; hint?: string }) {
   const builtIn = value.startsWith('i:') ? value.slice(2) : '';
   return (
-    <Field label={label} hint={t('Sin icono: el de siempre (una flecha, o la casa para Inicio).')}>
+    <Field label={label} hint={hint ?? t('Sin icono: el de siempre (una flecha, o la casa para Inicio).')}>
       <div class="bld-navicons" role="group">
         {NAV_ICONS.map((n) => (
           <button type="button" class={`bld-chip bld-navicon ${builtIn === n ? 'is-on' : ''}`} aria-pressed={builtIn === n} aria-label={n} title={n} onClick={() => onChange(builtIn === n ? '' : `i:${n}`)}>
@@ -483,7 +483,7 @@ export function ContentFields({ item, env, put, nested = false }: { item: Canvas
               <HaIconPicker value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} />
             </Field>
           );
-        if (s.type === 'navIcon') return <NavIconField value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} label={t(s.label)} />;
+        if (s.type === 'navIcon') return <NavIconField value={String(p.icon ?? '')} onChange={(v) => put('icon', v)} label={t(s.label)} hint={s.hint ? t(s.hint) : undefined} />;
         if (s.type === 'interval') {
           const cur = Number(p[s.k]) || 60;
           return (

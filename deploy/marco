@@ -8,7 +8,7 @@
 #                           (`marco update --requested` is run by marco-update.service for an update started in the admin)
 #   marco url               admin address and the private link of every screen, with QR codes
 #   marco version           installed version and the latest release
-#   marco power on|off|status  whether the "Apagar" (Shut down) card on a screen of this device may power it off
+#   marco power on|off|status  whether the "Shut down" card on a screen of this device may power it off
 #   marco uninstall [--purge]  remove Marco; your data is kept unless you add --purge
 set -euo pipefail
 
@@ -65,7 +65,7 @@ cmd_status() {
     if curl -fsS --max-time 3 "http://127.0.0.1:$(port)/api/health" >/dev/null 2>&1; then echo "  Health:   ok"
     else echo "  Health:   ${C_RE}not answering${C_0} on port $(port)"; fi
     echo "  Admin:    http://$(lan_ip):$(port)/admin/"
-    echo "  Apagar:   $(power_state)"
+    echo "  Power:    $(power_state)"
   fi
   if [ "$MARCO_MODE" != server ]; then
     if pgrep -u "$MARCO_USER" -f 'marco-kiosk|deploy/kiosk.sh' >/dev/null 2>&1; then echo "  Kiosk:    running"
@@ -119,7 +119,7 @@ cmd_url() {
   done <<< "$lines"
 }
 
-# The "Apagar" (Shut down) card: on when marco-power.path runs (install.sh install_power_units).
+# The "Shut down" card: on when marco-power.path runs (install.sh install_power_units).
 power_state() {
   if systemctl is-active --quiet marco-power.path 2>/dev/null; then echo "on (the Shut down card may power off this device)"
   elif [ -f /etc/systemd/system/marco-power.path ]; then echo "${C_RE}installed but not running${C_0} (sudo marco power on)"
@@ -130,7 +130,7 @@ cmd_power() {
   need_server
   case "${1:-status}" in
     on|off) installer --power-units "$1" ;;
-    status) echo "Apagar card: $(power_state)" ;;
+    status) echo "Shut down card: $(power_state)" ;;
     *) die "Usage: marco power on|off|status" ;;
   esac
 }

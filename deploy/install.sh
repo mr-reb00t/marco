@@ -11,7 +11,7 @@
 #   ./deploy/install.sh --url "http://localhost:3000/d/<key>"           # all-in-one, but show another screen
 #   ./deploy/install.sh --user pi                # user that runs the service and the desktop session
 #   ./deploy/install.sh --skip-apt               # do not install system packages
-#   ./deploy/install.sh --power-button           # the "Apagar" card on a screen of this device may power it off
+#   ./deploy/install.sh --power-button           # the "Shut down" card on a screen of this device may power it off
 #   ./deploy/install.sh --dry-run                # print the actions, change nothing
 #
 # This is a thin wrapper around ../install.sh (the same installer as the one-liner) with --source <this checkout>.

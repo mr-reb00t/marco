@@ -5,7 +5,7 @@ import type {
   CountdownsResponse, DisplayConfig, DisplayHeartbeat, EventsResponse, FamilyDisplayState, HealthResponse, HeartbeatResponse, NewsResponse,
   PhotosResponse, PollResponse, WeatherResponse,
 } from '../shared/types';
-import { authHeaders, withScreen, withTarget } from './identity';
+import { authHeaders, kioskKey, withScreen, withTarget } from './identity';
 import { early, takeSeed } from './boot';
 
 export class ApiError extends Error {
@@ -101,13 +101,14 @@ export const api = {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, done }),
     }, 15000),
   /** "Salir del kiosko" / "Apagar" (server/routes/power.js): what the card `item` can do on this install. */
+  // Both carry the kiosk key (identity.ts kioskKey): the server answers only the kiosk browser of its own computer.
   powerStatus: (item: string) =>
-    getJSON<{ action: 'exit' | 'off'; ready: boolean; reason?: string }>(withScreen(`/api/display/power?item=${encodeURIComponent(item)}`), 8000),
+    send<{ action: 'exit' | 'off'; ready: boolean; reason?: string }>(withScreen(`/api/display/power?item=${encodeURIComponent(item)}`), { headers: { 'X-Marco-Kiosk': kioskKey } }, 8000),
   /** The second tap: ask the server to close the kiosk or power off. Never throws: { status, error } (0 = no answer). */
   powerAsk: async (item: string, action: 'exit' | 'off'): Promise<{ status: number; error: string }> => {
     try {
       const r = await fetch(withScreen('/api/display/power'), {
-        method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(8000), headers: { Accept: 'application/json', 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify({ item, action }),
+        method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(8000), headers: { Accept: 'application/json', 'content-type': 'application/json', ...authHeaders(), 'X-Marco-Kiosk': kioskKey }, body: JSON.stringify({ item, action }),
       });
       let error = '';
       try {

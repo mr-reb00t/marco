@@ -20,8 +20,9 @@
 # (its systemd RuntimeDirectory, readable by everyone, emptied at every boot). When that number changes while Chromium
 # runs, this script closes Chromium and does not open it again: the kiosk comes back at the next login or reboot, or
 # from the menu entry "Marco" (kiosk.sh --open). The number is only compared, never run or used for anything else. A desktop that starts
-# this script again by itself (LXDE-pi's @ lines) finds it closed for that number ($XDG_RUNTIME_DIR, cleared at logout)
-# and exits at once.
+# this script again by itself (LXDE-pi's @ lines) finds it closed for that number and login session
+# ($XDG_RUNTIME_DIR, cleared at logout) and exits at once.
+# Only this browser may use those cards: it gets the server's kiosk key (data/secrets.json) in the URL fragment (#kp=).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -61,28 +62,42 @@ if ! flock -n 9; then
   exit 0
 fi
 
-# --- Closed from the screen ----------------------------------------------------------
-MARCO_RUN_DIR="${MARCO_RUN_DIR:-/run/marco}"
-# The server's last "Salir del kiosko": digits only ('' when there is none).
-token() { head -c 32 "$MARCO_RUN_DIR/kiosk-exit" 2>/dev/null | tr -cd '0-9' || true; }
-CLOSED="$LOCK_DIR/marco-kiosk.closed"
-# --open (the menu entry "Marco"): opened by hand, so a close asked earlier no longer holds it back
-if [ "${1:-}" = --open ]; then rm -f "$CLOSED"; fi
-if [ -s "$CLOSED" ]; then
-  t="$(token)"
-  if [ -n "$t" ] && [ "$(head -c 32 "$CLOSED" 2>/dev/null | tr -cd '0-9' || true)" = "$t" ]; then
-    log "Closed from the screen; it opens again at the next login (or from the menu: Marco)."
-    exit 0
-  fi
-fi
-# A request from before this start (an earlier session) does not count: only a new number does.
-BASE="$(token)"
-
 # --- Log -------------------------------------------------------------------------
 # Started from a desktop autostart (wayfire, LXDE-pi, XDG) the output would go nowhere or to ~/.xsession-errors:
 # write it to the kiosk log (`marco logs` on a kiosk-only device). Run by hand in a terminal it stays there.
 KIOSK_LOG="${KIOSK_LOG:-/tmp/marco-kiosk.log}"
 if [ ! -t 1 ]; then exec >"$KIOSK_LOG" 2>&1; fi
+
+# --- Closed from the screen ----------------------------------------------------------
+# (after the log redirect, so what it says lands in the kiosk log; after the lock, so one kiosk decides)
+MARCO_RUN_DIR="${MARCO_RUN_DIR:-/run/marco}"
+# The server's last "Salir del kiosko": digits only ('' when there is none).
+token() { head -c 32 "$MARCO_RUN_DIR/kiosk-exit" 2>/dev/null | tr -cd '0-9' || true; }
+# The marker of a close from the screen: in the session's own runtime folder (gone at logout), else in this user's
+# home (never /tmp, where another user could leave one). It holds the number and the login session, so it only
+# keeps the kiosk closed for the rest of that session, even when the runtime folder outlives a logout.
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then CLOSED="$XDG_RUNTIME_DIR/marco-kiosk.closed"
+else mkdir -p "$HOME/.cache"; CLOSED="$HOME/.cache/marco-kiosk.closed"; fi
+SESSION_TAG="$(printf '%s' "${XDG_SESSION_ID:-}" | tr -cd 'A-Za-z0-9_-')"
+closed_for() { [ -n "$1" ] && [ "$(head -c 100 "$CLOSED" 2>/dev/null | tr -cd '0-9A-Za-z_ -' || true)" = "$1 $SESSION_TAG" ]; }
+# --open (the menu entry "Marco"): opened by hand, so a close asked earlier no longer holds it back
+if [ "${1:-}" = --open ]; then rm -f "$CLOSED"; fi
+if [ -s "$CLOSED" ] && closed_for "$(token)"; then
+  log "Closed from the screen; it opens again at the next login (or from the menu: Marco)."
+  exit 0
+fi
+# A request from before this start (an earlier session) does not count: only a new number does.
+BASE="$(token)"
+# A new number: close Chromium (when it runs), note it for this session and stop.
+closed_now() {
+  local t
+  t="$(token)"
+  [ -n "$t" ] && [ "$t" != "$BASE" ] || return 1
+  log "Exit asked from the screen: Chromium closes. It opens again at the next login (or from the menu: Marco)."
+  if [ -n "${1:-}" ]; then close_browser "$1"; fi
+  (umask 077; printf '%s %s' "$t" "$SESSION_TAG" > "$CLOSED")
+  exit 0
+}
 
 # --- Browser --------------------------------------------------------------------
 BROWSER=""
@@ -144,6 +159,16 @@ done
 # With private display access a keyless http://localhost URL only shows a pairing code, and this incognito browser
 # forgets pairings when it restarts. On an all-in-one install the server's data folder is on this machine (and owned
 # by this user): use the screen's private link from it, unless KIOSK_URL already carries a key (/d/<key>).
+# The server's data folder on this machine (MARCO_DATA_DIR, else DATA_DIR in the app's .env, else <app>/data).
+data_dir() {
+  local data="${MARCO_DATA_DIR:-}"
+  if [ -z "$data" ] && [ -f "$APP_DIR/.env" ]; then
+    data="$(grep -E '^DATA_DIR=' "$APP_DIR/.env" | tail -n1 | cut -d= -f2- | tr -d '"'"'"' ' || true)"
+  fi
+  data="${data:-$APP_DIR/data}"
+  case "$data" in /*) ;; *) data="$APP_DIR/$data" ;; esac
+  printf '%s' "$data"
+}
 local_link() {
   case "$KIOSK_URL" in
     http://localhost:*|http://localhost/*|http://127.0.0.1:*|http://127.0.0.1/*) ;;
@@ -151,12 +176,8 @@ local_link() {
   esac
   case "$KIOSK_URL" in *"/d/"*) return 1 ;; esac
   command -v node >/dev/null 2>&1 || return 1
-  local data="${MARCO_DATA_DIR:-}"
-  if [ -z "$data" ] && [ -f "$APP_DIR/.env" ]; then
-    data="$(grep -E '^DATA_DIR=' "$APP_DIR/.env" | tail -n1 | cut -d= -f2- | tr -d '"'"'"' ' || true)"
-  fi
-  data="${data:-$APP_DIR/data}"
-  case "$data" in /*) ;; *) data="$APP_DIR/$data" ;; esac
+  local data
+  data="$(data_dir)"
   [ -r "$data/secrets.json" ] && [ -r "$data/config.json" ] || return 1
   node -e '
     const fs = require("fs"), path = require("path");
@@ -176,8 +197,26 @@ local_link() {
     process.stdout.write(u.toString());
   ' "$data" "$KIOSK_URL" 2>/dev/null
 }
-# The kiosk log never shows the key.
-redact_url() { printf '%s' "$1" | sed -E 's|/d/[^/?#]+|/d/<private-link>|'; }
+# The kiosk key (data/secrets.json kioskToken, server/power.js): with it, the "Salir del kiosko" and "Apagar" cards
+# of this browser work. Only for a local URL, from the same data folder as the private link. In the URL fragment, so
+# it is never sent in a request or logged by the server; the page keeps it for this browser session.
+kiosk_key() {
+  case "$URL" in
+    http://localhost:*|http://localhost/*|http://127.0.0.1:*|http://127.0.0.1/*) ;;
+    *) return 1 ;;
+  esac
+  command -v node >/dev/null 2>&1 || return 1
+  local data
+  data="$(data_dir)"
+  [ -r "$data/secrets.json" ] || return 1
+  node -e '
+    const sec = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+    if (typeof sec.kioskToken !== "string" || !/^[A-Za-z0-9_-]{43}$/.test(sec.kioskToken)) process.exit(1);
+    process.stdout.write(sec.kioskToken);
+  ' "$data/secrets.json" 2>/dev/null
+}
+# The kiosk log never shows the key or the kiosk key.
+redact_url() { printf '%s' "$1" | sed -E -e 's|/d/[^/?#]+|/d/<private-link>|' -e 's|#kp=[^&]*|#kp=<kiosk-key>|'; }
 
 # --- Chromium flags ----------------------------------------------------------------
 PROFILE_DIR="$HOME/.cache/marco-kiosk"
@@ -237,18 +276,15 @@ while true; do
   # Resolved on every launch, so a regenerated link is picked up when Chromium restarts.
   URL="$(local_link || true)"
   URL="${URL:-$KIOSK_URL}"
+  case "$URL" in *'#'*) ;; *) KP="$(kiosk_key || true)"; if [ -n "$KP" ]; then URL="$URL#kp=$KP"; fi ;; esac
+  # asked while the server was starting or between two launches: do not open it at all
+  closed_now || true
   log "Launching $BROWSER -> $(redact_url "$URL")"
   start_ts=$(date +%s)
   "$BROWSER" "${FLAGS[@]}" "${EXTRA[@]}" "$URL" </dev/null >/dev/null 2>&1 9>&- &
   CPID=$!
   while kill -0 "$CPID" 2>/dev/null; do
-    t="$(token)"
-    if [ -n "$t" ] && [ "$t" != "$BASE" ]; then
-      log "Exit asked from the screen: closing Chromium. It opens again at the next login (or from the menu: Marco)."
-      close_browser "$CPID"
-      (umask 077; printf '%s' "$t" > "$CLOSED")
-      exit 0
-    fi
+    closed_now "$CPID" || true
     sleep 2
   done
   wait "$CPID" 2>/dev/null || true

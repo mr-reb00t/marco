@@ -878,10 +878,13 @@ amber and a bar runs out), so a hand brushing the screen does nothing.
 
   Until then the card says how to turn it on.
 
-They only work on an **all-in-one** Pi, on the screen the kiosk opens at `http://localhost:<port>/` (the default). A
-phone, another screen, or the Pi showing the server by its network address get a card that says it only works on the
-Pi that runs Marco, and the server refuses the request anyway: it must come straight from that machine (not through a
-reverse proxy), from the screen's own page, for a card that screen shows now. Each use is in the activity log. They are
+They only work on an **all-in-one** Pi, in the kiosk browser the installer sets up, which opens
+`http://localhost:<port>/` (the default; keep `KIOSK_URL` on `localhost`). The kiosk script hands that browser a key
+the server keeps in its data folder, and the server only answers requests that carry it, come straight from that
+machine (not through a reverse proxy) and are for a card that screen shows now. A phone, another screen, a desktop
+browser, the Pi showing the server by its network address, or someone using a copy of the display link through a
+proxy or port forward get nothing; the card says it only works on the Pi that runs Marco. Each use is in the activity
+log. After updating from an older version, restart the Pi once so the kiosk picks this up. They are
 not in Marco Cloud, and not available in Docker (the server there cannot reach the host). After *Exit kiosk* the screen
 does not blank by itself until the next login, because the kiosk turned that off when it started.
 

@@ -6,12 +6,15 @@
 //   - this computer, straight (lib/net.js sameMachineDirect: a loopback socket, no proxy header, Host localhost,
 //     127.0.0.1 or [::1]); a POST also from a page of that same origin (sameOrigin), never a sandboxed web widget or
 //     another site in the same browser;
+//   - the kiosk browser itself: X-Marco-Kiosk is the kiosk key (server/power.js), which only deploy/kiosk.sh hands to
+//     the page. A proxy or port forward on this computer that adds no header of its own, or another program on it,
+//     does not have it;
 //   - a display the server trusts, on a screen with "Permitir tocar en la pantalla" on and not private, that shows that
 //     very card now (not hidden, its schedule and its condition on);
 //   - a few requests a minute per action; a second request soon after an accepted one changes nothing.
 // Unknown, not shown, private or no touch: 404. Refused requests leave no activity entry; accepted ones do.
 import { Router } from 'express';
-import { getConfig } from '../store.js';
+import { getConfig, getSecrets } from '../store.js';
 import { requestScreen } from '../displayAccess.js';
 import { screenPrivacy } from '../privacy.js';
 import { trustedDisplay } from '../family.js';
@@ -19,18 +22,22 @@ import { hiddenItems } from '../canvasConditions.js';
 import { CANVAS_ID_RE, POWER_KINDS, powerCardOf } from '../core/canvasCore.js';
 import { sameMachineDirect, sameOrigin } from '../lib/net.js';
 import { logActivity } from '../activity.js';
-import { powerLimiter, powerUnitPresent, requestKioskExit, requestPoweroff, runDir } from '../power.js';
+import { kioskKeyMatches, poweroffStale, powerLimiter, powerUnitPresent, requestKioskExit, requestPoweroff, runDir } from '../power.js';
 import { jsonOnly } from './family.js';
 
 const ACTIONS = Object.keys(POWER_KINDS);
 const ACTIVITY = { exit: 'display.kiosk_exit', off: 'display.poweroff' };
 
 /**
- * `deps` (tests): requestKioskExit(dir, now), requestPoweroff(dir), unitPresent(), runDir(), now(), delayMs (the wait
- * between the answer and the request, so the answer and the log entry go out first).
+ * `deps` (tests): requestKioskExit(dir, now), requestPoweroff(dir), unitPresent(), runDir(), poweroffStale(dir, now),
+ * kioskKey(), now(), delayMs (the wait between the answer and the request, so the answer and the log entry go out
+ * first).
  */
 export function powerRouter(deps = {}) {
-  const d = { requestKioskExit, requestPoweroff, unitPresent: () => powerUnitPresent(), runDir: () => runDir(), now: () => Date.now(), delayMs: 300, ...deps };
+  const d = {
+    requestKioskExit, requestPoweroff, poweroffStale, unitPresent: () => powerUnitPresent(), runDir: () => runDir(),
+    kioskKey: () => getSecrets()?.kioskToken, now: () => Date.now(), delayMs: 300, ...deps,
+  };
   const limits = powerLimiter();
   const r = Router();
 
@@ -50,10 +57,20 @@ export function powerRouter(deps = {}) {
     return null;
   };
 
-  /** Whether this install can do `action` now ('' = yes). */
-  const unavailable = (action) => {
-    if (!d.runDir()) return 'no_runtime';
-    if (action === 'off' && !d.unitPresent()) return 'not_enabled';
+  /** The request comes from the kiosk browser that deploy/kiosk.sh opened (it carries the kiosk key). */
+  const fromKiosk = (req) => kioskKeyMatches(req.get('x-marco-kiosk'), d.kioskKey());
+
+  /**
+   * Whether this install can do `action` now ('' = yes). A power-off asked earlier that nothing took (the path unit
+   * is installed but stopped) means it is not on: that request is dropped.
+   */
+  const unavailable = (action, now) => {
+    const dir = d.runDir();
+    if (!dir) return 'no_runtime';
+    if (action === 'off' && (!d.unitPresent() || d.poweroffStale(dir, now))) {
+      limits.forget('off');
+      return 'not_enabled';
+    }
     return '';
   };
 
@@ -61,9 +78,10 @@ export function powerRouter(deps = {}) {
   r.get('/display/power', (req, res) => {
     res.set('cache-control', 'no-store');
     if (!sameMachineDirect(req)) return res.status(403).json({ error: 'not_local' });
+    if (!fromKiosk(req)) return res.status(403).json({ error: 'not_kiosk' });
     const found = cardOf(req, req.query.item);
     if (!found) return res.status(404).json({ error: 'not_found' });
-    const why = unavailable(found.action);
+    const why = unavailable(found.action, d.now());
     res.json({ action: found.action, ready: !why, ...(why ? { reason: why } : {}) });
   });
 
@@ -74,6 +92,7 @@ export function powerRouter(deps = {}) {
     const action = typeof b.action === 'string' && ACTIONS.includes(b.action) ? b.action : '';
     if (!action || typeof b.item !== 'string') return res.status(400).json({ error: 'invalid' });
     if (!sameMachineDirect(req) || !sameOrigin(req)) return res.status(403).json({ error: 'not_local' });
+    if (!fromKiosk(req)) return res.status(403).json({ error: 'not_kiosk' });
     const found = cardOf(req, b.item, action);
     if (!found) return res.status(404).json({ error: 'not_found' });
     const now = d.now();
@@ -82,9 +101,9 @@ export function powerRouter(deps = {}) {
       res.set('retry-after', String(tried.retryAfter));
       return res.status(429).json({ error: 'rate_limited' });
     }
-    if (limits.already(action, now)) return res.status(202).json({ ok: true, already: true });
-    const why = unavailable(action);
+    const why = unavailable(action, now);
     if (why) return res.status(409).json({ error: why });
+    if (limits.already(action, now)) return res.status(202).json({ ok: true, already: true });
     const dir = d.runDir();
     limits.accepted(action, now);
     const { screen } = found;

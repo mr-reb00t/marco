@@ -62,14 +62,16 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'nav.button', pos: B(18, 12, 6, 4), props: { target: 's_agenda', label: 'Agenda', icon: '📅', show: 'both' } },
     ],
   },
-  // "Salir del kiosko" and "Apagar" (self-hosted only), in each of their looks: the demo draws them ready and a tap only
-  // shows the confirmation (widgets/canvas/nav.ts powerButton never asks a server here)
+  // "Salir del kiosko" (glass) and "Apagar" (solid; one of each per screen, self-hosted only) next to an "Ir a pantalla"
+  // with no card: the demo draws them ready and a tap only shows the confirmation (widgets/canvas/nav.ts powerButton
+  // never asks a server here)
   power: {
     canvas: { background: 'ambient', touch: true },
     items: [
       { kind: 'clock.digital', pos: M(0, 0, 'm') },
-      { kind: 'nav.kiosk', pos: M(8, 0, 'w') },
-      { kind: 'nav.poweroff', pos: M(14, 0, 'w'), props: { icon: 'i:power' } },
+      { kind: 'nav.kiosk', pos: B(8, 0, 6, 2) },
+      { kind: 'nav.poweroff', pos: B(14, 0, 6, 2), props: { icon: 'i:power' }, style: { surface: 'solid' } },
+      { kind: 'nav.button', pos: B(20, 0, 4, 2), props: { target: 's_agenda', icon: 'i:calendar' }, style: { surface: 'none' } },
       { kind: 'calendar.agenda', pos: M(0, 6, 't'), props: { days: 4 } },
     ],
   },

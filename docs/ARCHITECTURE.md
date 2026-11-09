@@ -955,9 +955,12 @@ computer that runs the server (feature `kioskPower`, self-hosted only). The rout
   while Chromium runs and compares it with the number it found when it started. A new number makes it close Chromium
   (its process, then every process of that user with the kiosk's `--user-data-dir`, since `chromium-browser` on
   Raspberry Pi OS is a wrapper script) and exit without starting it again. Nothing it reads is run, and neither side
-  needs to delete the other's file. It writes the number to `$XDG_RUNTIME_DIR/marco-kiosk.closed` (0600, gone at
-  logout) and exits at once when started again for the same number, because LXDE-pi restarts `@` autostart lines that
-  exit. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
+  needs to delete the other's file. It writes the number and `$XDG_SESSION_ID` to
+  `$XDG_RUNTIME_DIR/marco-kiosk.closed` (0600, gone at logout; `~/.cache` when there is no runtime folder, never `/tmp`)
+  and exits at once when started again in the same login session for the same number, because LXDE-pi restarts `@`
+  autostart lines that exit. A new session (the runtime folder can outlive a logout while an SSH session is open) opens
+  it again. The number is also checked just before each launch, so a request during the health wait or a relaunch
+  back-off does not open Chromium for two seconds. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
   by hand. The kiosk had stopped `swayidle` when it started, so the desktop does not blank until the next login.
 - **Apagar.** The server creates `/run/marco/poweroff` with `O_EXCL` (an existing one means "already asked").
   `marco-power.path` (`PathExists=/run/marco/poweroff`) starts `marco-power.service`, a root oneshot whose
@@ -966,9 +969,20 @@ computer that runs the server (feature `kioskPower`, self-hosted only). The rout
   the installer, from its own text, when the owner allows it (`--power-button`, the question of an all-in-one install,
   `sudo marco power on`; `MARCO_POWER` in `/etc/marco.conf` keeps the choice across updates) and removed by
   `--no-power-button`, `sudo marco power off` and `--uninstall`. `marco power on` writes to `/etc`, so it stops under
-  the read-only overlay like the installer. The server reads whether `marco-power.path` exists (`/etc` is readable
-  under `ProtectSystem=full`) to tell the card `not_enabled`.
-- **Who may ask.** Only a browser on that computer: the socket's own loopback address, no proxy header, a loopback
+  the read-only overlay like the installer. The server reads whether `marco-power.path` exists and is enabled
+  (its `multi-user.target.wants` link; `/etc` is readable under `ProtectSystem=full`) to tell the card `not_enabled`.
+  A `poweroff` file still there 10 seconds after it was made means the unit is not running: the server removes it and
+  answers `not_enabled`, and `marco power on|off` remove any left over, so a later `marco power on` never powers off at
+  once.
+- **The kiosk key.** The checks below cannot tell the kiosk from a proxy or port forward on the same machine that adds
+  no header (`proxy_pass` with no `proxy_set_header`, `ssh -L`, socat), nor from another program there. So the server
+  keeps a random key (`kioskToken` in `data/secrets.json`, 0600, never in an export), `deploy/kiosk.sh` reads it from
+  the data folder as it reads the screen's private link (same user on an all-in-one install) and puts it in the URL
+  fragment (`#kp=`), which a browser never sends. The page moves it to `sessionStorage` and sends it as
+  `X-Marco-Kiosk` to these two routes only. It sits in Chromium's command line, which other local users can read with
+  `ps`, so on a Pi shared with accounts you do not trust, leave the Shut down card off. A kiosk run by a user who cannot read the data folder gets no key
+  and the cards say they only work on the Pi that runs Marco.
+- **Who may ask.** Only the kiosk browser on that computer: the kiosk key, the socket's own loopback address, no proxy header, a loopback
   `Host` (DNS rebinding), and for the POST a same-origin `Origin` (a sandboxed web widget sends `null`, another site
   its own) with a JSON body (a preflight for any cross-origin page). On top: the display access, a trusted display, the
   screen's touch switch, not private, and the card shown on that screen now. An all-in-one Pi whose kiosk opens the

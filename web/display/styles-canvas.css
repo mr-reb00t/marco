@@ -877,8 +877,8 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-nav-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #app.preset-canvas .cv-nav-btn.is-on { background: rgb(var(--accent-rgb, 255 90 78) / 0.2); }
 #app.preset-canvas .cv-nav-btn.is-pressed { background: rgb(var(--accent-rgb, 255 90 78) / 0.32); transform: scale(0.97); }
-/* "Salir del kiosko" and "Apagar" (powerButton): armed by a first tap (amber, a bar running out), asked (a spinner),
-   or muted with a short line on why it does nothing here */
+/* "Salir del kiosko" and "Apagar" (powerButton): armed by a first tap (amber, a bar running out), asked (the icon
+   pulses), or muted with a short line on why it does nothing here */
 #app.preset-canvas .cv-nav-power { position: relative; }
 #app.preset-canvas .cv-nav-tx { min-width: 0; max-width: 100%; display: flex; flex-direction: column; align-items: inherit; gap: 0.15em; overflow: hidden; }
 #app.preset-canvas .cv-nav.is-line .cv-nav-tx { align-items: flex-start; text-align: left; }
@@ -886,23 +886,32 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-nav-tx:has(.cv-nav-note) .cv-nav-t { font-size: 0.75em; }
 #app.preset-canvas .cv-nav-tx > * { max-width: 100%; }
 #app.preset-canvas .cv-nav-note { font-size: 0.5em; font-weight: 500; line-height: 1.2; opacity: 0.85; white-space: normal; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* no card behind it: the note on a small dark pill, so it reads on any background */
+#app.preset-canvas .cv-card.is-none .cv-nav-note { opacity: 1; color: #fff; background: rgb(0 0 0 / 0.55); padding: 0.2em 0.6em; border-radius: 0.7em; text-shadow: none; }
 #app.preset-canvas .cv-nav-btn.is-muted { cursor: default; }
 #app.preset-canvas .cv-nav-btn.is-muted .cv-nav-ico, #app.preset-canvas .cv-nav-btn.is-muted .cv-nav-t { opacity: 0.5; }
 #app.preset-canvas .cv-nav-btn.is-muted .cv-nav-ico.is-svg { color: currentColor; }
 #app.preset-canvas .cv-nav-btn.is-confirm { background: rgb(255 179 64 / 0.3); box-shadow: inset 0 0 0 0.18em rgb(255 179 64 / 0.95); }
 #app.preset-canvas .cv-nav-btn.is-confirm .cv-nav-ico.is-svg { color: #ffb340; }
+.theme-light #app.preset-canvas .cv-nav-btn.is-confirm .cv-nav-ico.is-svg { color: #b26a00; }
+/* the time left for the second tap: inside the amber border, in the text colour so it shows on the amber */
 #app.preset-canvas .cv-nav-btn.is-confirm::after {
-  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 0.22em; background: #ffb340; transform-origin: left center;
+  content: ''; position: absolute; left: 0.18em; right: 0.18em; bottom: 0.18em; height: 0.35em; border-radius: 0.2em;
+  background: currentColor; opacity: 0.8; transform-origin: left center;
   animation: cv-pw-run var(--cv-confirm-ms, 4000ms) linear forwards;
 }
 @keyframes cv-pw-run { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-#app.preset-canvas .cv-nav-btn.is-working .cv-nav-ico { animation: cv-pw-spin 1.1s linear infinite; }
+#app.preset-canvas .cv-nav-btn.is-working .cv-nav-ico { animation: cv-pw-pulse 1.2s ease-in-out infinite alternate; }
 #app.preset-canvas .cv-nav-btn.is-working { cursor: progress; }
 #app.preset-canvas .cv-nav-btn.is-error { background: rgb(255 90 78 / 0.18); }
-@keyframes cv-pw-spin { to { transform: rotate(360deg); } }
+@keyframes cv-pw-pulse { from { opacity: 1; } to { opacity: 0.3; } }
 @media (prefers-reduced-motion: reduce) {
   #app.preset-canvas .cv-nav-btn.is-working .cv-nav-ico { animation: none; opacity: 0.6; }
 }
+/* too narrow for icon and words, in a state that needs the words (why it does nothing, "tap again"): the words */
+#app.preset-canvas .cv-nav.is-narrow .cv-nav-power.is-both:is(.is-muted, .is-confirm, .is-working, .is-error) { font-size: calc(min(22cqh, 15cqw) * var(--cv-scale, 1) * var(--nk, 1)); padding: 0 0.35em; }
+#app.preset-canvas .cv-nav.is-narrow .cv-nav-power.is-both:is(.is-muted, .is-confirm, .is-working, .is-error) .cv-nav-ico { display: none; }
+#app.preset-canvas .cv-nav.is-narrow .cv-nav-power.is-both:is(.is-confirm, .is-working, .is-error) .cv-nav-t { display: block; white-space: normal; }
 @media (hover: hover) { #app.preset-canvas .cv-nav-btn:not(.is-inert):hover { background: rgb(var(--accent-rgb, 255 90 78) / 0.14); } }
 #app.preset-canvas .cv-nav-btn:focus-visible { outline: 0.25rem solid var(--accent, #ff5a4e); outline-offset: -0.25rem; }
 /* the progress card: the screen's name and the time left over dots (the step on fills up) or a thin bar */

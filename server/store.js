@@ -182,6 +182,9 @@ function loadSecrets() {
   s.data ??= {}; // { stocksKey } (Finnhub) for the stocks card (server/dataFeeds.js)
   if (!Array.isArray(s.apiTokens)) s.apiTokens = []; // webhook tokens (hashed), see docs/ARCHITECTURE.md
   if (!s.sessionSecret) s.sessionSecret = crypto.randomBytes(32).toString('hex');
+  // The kiosk key (server/power.js): deploy/kiosk.sh reads it here and only that browser may use the kiosk and power
+  // cards. Never exported (core/backupsCore.js exportSecrets lists what is).
+  if (!/^[A-Za-z0-9_-]{43}$/.test(String(s.kioskToken || ''))) s.kioskToken = crypto.randomBytes(32).toString('base64url');
   writeFileAtomic(paths.secrets, JSON.stringify(s, null, 2), 0o600);
   return s;
 }

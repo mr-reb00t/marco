@@ -918,11 +918,14 @@ segundos (la tarjeta se pone ámbar y una barra se va acabando), así que rozar 
 
   Hasta entonces la tarjeta explica cómo activarla.
 
-Solo funcionan en una Pi **todo en uno**, en la pantalla que el kiosco abre en `http://localhost:<puerto>/` (lo normal).
-Un móvil, otra pantalla o la Pi mostrando el servidor por su dirección de red ven una tarjeta que dice que solo funciona
-en la Pi que ejecuta Marco, y el servidor rechaza la petición de todos modos: tiene que llegar directamente desde esa
-máquina (no a través de un proxy inverso), desde la página de la propia pantalla y para una tarjeta que esa pantalla
-muestra en ese momento. Cada uso queda en el registro de actividad. No están en Marco Cloud ni en Docker (desde ahí el
+Solo funcionan en una Pi **todo en uno**, en el navegador del kiosco que configura el instalador, que abre
+`http://localhost:<puerto>/` (lo normal; deja `KIOSK_URL` en `localhost`). El script del kiosco le pasa a ese navegador
+una clave que el servidor guarda en su carpeta de datos, y el servidor solo atiende peticiones que la llevan, que llegan
+directamente desde esa máquina (no a través de un proxy inverso) y que son para una tarjeta que esa pantalla muestra en
+ese momento. Un móvil, otra pantalla, un navegador del escritorio, la Pi mostrando el servidor por su dirección de red o
+alguien con una copia del enlace de la pantalla a través de un proxy o un reenvío de puertos no consiguen nada; la
+tarjeta dice que solo funciona en la Pi que ejecuta Marco. Cada uso queda en el registro de actividad. Si actualizas
+desde una versión anterior, reinicia la Pi una vez para que el kiosco lo recoja. No están en Marco Cloud ni en Docker (desde ahí el
 servidor no llega al equipo). Después de *Salir del kiosko* la pantalla no se apaga sola hasta el siguiente inicio de
 sesión, porque el kiosco lo desactivó al arrancar.
 

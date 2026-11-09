@@ -13,6 +13,7 @@
 // - Text goes in as text (textContent), the built-in icons are static SVG markup.
 import { ctx } from '../../ctx';
 import { api } from '../../api';
+import { kioskKey } from '../../identity';
 import { isPreview } from '../../identity';
 import { CONFIRM_MS, ERROR_MS, POWER_RECHECK_MS, loopbackHost, planTap, settle, uiOfAnswer, uiOfStatus, type PowerAction, type PowerUi } from '../../power';
 import type { AdapterBox, AdapterEnv, CanvasAdapter, NavProgress } from './types';
@@ -170,8 +171,11 @@ const pauseButton = navButton({
   tap: (env, p) => env.nav.pause(Number(p.returnMin ?? 5)),
 });
 
-/** How long a card that asked shows "Cerrando..." / "Apagando..." before it is a button again (the page normally goes first). */
-const WORKING_MAX_MS = 90_000;
+/**
+ * How long a card that asked shows "Cerrando..." / "Apagando..." before it is a button again (the page normally goes
+ * first). Short for the kiosk: when it is still here, the kiosk script did not close it (an older one still running).
+ */
+const WORKING_MAX_MS: Record<PowerAction, number> = { exit: 20_000, off: 90_000 };
 
 /** The words of a power card in each state (display i18n keys). */
 const POWER_TEXT: Record<PowerAction, { label: string; confirm: string; working: string; icon: string }> = {
@@ -190,7 +194,9 @@ function powerButton(action: PowerAction): () => CanvasAdapter {
     let btn: HTMLButtonElement | null = null;
     // the admin's preview and the demo: drawn ready, a tap only shows the confirmation, nothing is asked
     const fake = isPreview || ctx.params.get('demo') === '1';
-    const remote = !fake && !loopbackHost(location.hostname);
+    // not the kiosk browser of the computer that runs Marco (another device, the Pi by its network address, a browser
+    // that did not get the kiosk key from deploy/kiosk.sh): it says so and never asks
+    const remote = !fake && (!loopbackHost(location.hostname) || !kioskKey);
     let ui: PowerUi = fake ? 'idle' : remote ? 'remote' : 'checking';
     let since = 0;
     let armedAt = 0;
@@ -208,7 +214,7 @@ function powerButton(action: PowerAction): () => CanvasAdapter {
       timer = null;
       // the armed card and an error go back to idle by themselves; a fake "working" too (the preview), and a real one
       // whose page is still here long after (the kiosk script did not close it): it asks again what it can do
-      const wait = next === 'confirm' ? CONFIRM_MS : next === 'error' ? ERROR_MS : next === 'working' ? (fake ? 2500 : WORKING_MAX_MS) : 0;
+      const wait = next === 'confirm' ? CONFIRM_MS : next === 'error' ? ERROR_MS : next === 'working' ? (fake ? 2500 : WORKING_MAX_MS[action]) : 0;
       if (wait) {
         timer = setTimeout(() => {
           timer = null;
@@ -259,19 +265,23 @@ function powerButton(action: PowerAction): () => CanvasAdapter {
       root.textContent = '';
       btn = null;
       if (hidden()) return;
-      const show = p.show === 'icon' || p.show === 'text' ? p.show : 'both';
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = `cv-nav-btn cv-nav-power is-${show} is-${ui}`;
       const own = String(p.label || '').trim() || ctx.t(words.label);
       const label = ui === 'confirm' ? ctx.t(words.confirm) : ui === 'working' ? ctx.t(words.working) : ui === 'error' ? ctx.t(errorText) : own;
       const note = ui === 'remote' ? ctx.t('navPowerLocalOnly') : ui === 'unavailable' ? ctx.t('navPowerUnavailable') : ui === 'disabled' ? ctx.t('navPowerEnable') : '';
       const muted = !!note;
+      // an icon-only card still says why it does nothing, or what the next tap does (a touch screen shows no tooltip)
+      const says = muted || ui === 'confirm' || ui === 'working' || ui === 'error';
+      const chosen = p.show === 'icon' || p.show === 'text' ? p.show : 'both';
+      const show = chosen === 'icon' && says ? 'both' : chosen;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `cv-nav-btn cv-nav-power is-${show} is-${ui}`;
       const icon = String(p.icon || '').trim() || words.icon;
       if (show !== 'text') b.appendChild(iconEl(icon));
       if (show !== 'icon') {
         const tx = Object.assign(document.createElement('span'), { className: 'cv-nav-tx' });
-        tx.appendChild(Object.assign(document.createElement('span'), { className: 'cv-nav-t', textContent: label }));
+        // icon only and muted: the reason alone, not the name the owner chose to hide
+        if (!(chosen === 'icon' && muted)) tx.appendChild(Object.assign(document.createElement('span'), { className: 'cv-nav-t', textContent: label }));
         if (note) tx.appendChild(Object.assign(document.createElement('span'), { className: 'cv-nav-note', textContent: note }));
         b.appendChild(tx);
       }

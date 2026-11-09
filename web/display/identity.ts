@@ -70,6 +70,35 @@ export function clearCaches(): void {
   } catch { /* ignore */ }
 }
 
+const KIOSK_SS = 'marco.kioskKey';
+/**
+ * The kiosk key (server/power.js): deploy/kiosk.sh opens the page with #kp=<key>, only in the kiosk browser of the
+ * computer that runs Marco. Kept in sessionStorage (this browser session only, so a reload or "Ir a pantalla" keeps
+ * it) and taken out of the address. '' anywhere else: the "Salir del kiosko" and "Apagar" cards then say they only
+ * work there. Never in the preview.
+ */
+export const kioskKey = ((): string => {
+  if (isPreview) return '';
+  const ok = (v: string) => /^[A-Za-z0-9_-]{43}$/.test(v);
+  const m = /(?:^#|&)kp=([A-Za-z0-9_-]{43})(?:&|$)/.exec(location.hash);
+  if (m) {
+    try {
+      sessionStorage.setItem(KIOSK_SS, m[1]);
+    } catch { /* storage disabled: kept for this page only */ }
+    try {
+      const rest = location.hash.replace(/(^#|&)kp=[^&]*/, '$1').replace(/^#&/, '#').replace(/&$/, '');
+      history.replaceState(history.state, '', `${location.pathname}${location.search}${rest === '#' ? '' : rest}`);
+    } catch { /* the address keeps it */ }
+    return m[1];
+  }
+  try {
+    const v = sessionStorage.getItem(KIOSK_SS) || '';
+    return ok(v) ? v : '';
+  } catch {
+    return '';
+  }
+})();
+
 /** Request headers carrying the credential (fetch). */
 export const authHeaders = (): Record<string, string> => (credential ? { 'X-Marco-Key': credential } : {});
 

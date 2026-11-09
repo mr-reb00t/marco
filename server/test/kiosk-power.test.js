@@ -14,7 +14,7 @@ import {
 } from '../core/canvasCore.js';
 import { FEATURE_KEYS, selfHostedFeatures } from '../capabilities.js';
 import { sameMachineDirect, sameOrigin } from '../lib/net.js';
-import { POWER_PER_MINUTE, powerLimiter, powerUnitPresent, requestKioskExit, requestPoweroff, runDir } from '../power.js';
+import { KIOSK_KEY_RE, POWEROFF_STALE_MS, POWER_PER_MINUTE, kioskKeyMatches, newKioskKey, poweroffStale, powerLimiter, powerUnitPresent, requestKioskExit, requestPoweroff, runDir } from '../power.js';
 import * as store from '../store.js';
 import { defaultConfig } from '../core/defaults.js';
 import { validateConfig } from '../core/validate.js';
@@ -135,7 +135,13 @@ test('power.js: the runtime folder, the kiosk token and the power-off file', () 
     assert.equal(runDir({ RUNTIME_DIRECTORY: dir }), dir);
     assert.equal(runDir({ RUNTIME_DIRECTORY: `${dir}:/run/other` }), dir);
     assert.equal(runDir({ MARCO_RUN_DIR: dir, RUNTIME_DIRECTORY: '/nonexistent' }), dir);
-    assert.equal(powerUnitPresent({ MARCO_POWER_UNIT: path.join(dir, 'marco-power.path') }), false);
+    const unit = path.join(dir, 'marco-power.path');
+    assert.equal(powerUnitPresent({ MARCO_POWER_UNIT: unit }), false);
+    fs.writeFileSync(unit, '[Path]\n');
+    assert.equal(powerUnitPresent({ MARCO_POWER_UNIT: unit }), false, 'installed but not enabled');
+    fs.mkdirSync(path.join(dir, 'multi-user.target.wants'));
+    fs.symlinkSync(unit, path.join(dir, 'multi-user.target.wants', 'marco-power.path'));
+    assert.equal(powerUnitPresent({ MARCO_POWER_UNIT: unit }), true);
 
     requestKioskExit(dir, 1_700_000_000_123);
     const file = path.join(dir, 'kiosk-exit');
@@ -148,12 +154,32 @@ test('power.js: the runtime folder, the kiosk token and the power-off file', () 
     assert.deepEqual(requestPoweroff(dir), { already: false });
     assert.equal(fs.readFileSync(path.join(dir, 'poweroff'), 'utf8'), '');
     assert.deepEqual(requestPoweroff(dir), { already: true });
+    // a request nothing took (the unit is stopped): stale after a while, and removed
+    const off = path.join(dir, 'poweroff');
+    const made = fs.statSync(off).mtimeMs;
+    assert.equal(poweroffStale(dir, made + POWEROFF_STALE_MS - 100), false);
+    assert.ok(fs.existsSync(off));
+    assert.equal(poweroffStale(dir, made + POWEROFF_STALE_MS + 100), true);
+    assert.ok(!fs.existsSync(off), 'a later `marco power on` does not power off at once');
+    assert.equal(poweroffStale(dir, made + 10 ** 9), false, 'no request: not stale');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('powerLimiter: six tries a minute per action, one accepted every 30 s, a power-off for good', () => {
+test('the kiosk key: 32 random bytes, compared whole', () => {
+  const k = newKioskKey();
+  assert.match(k, KIOSK_KEY_RE);
+  assert.notEqual(newKioskKey(), k);
+  assert.equal(kioskKeyMatches(k, k), true);
+  assert.equal(kioskKeyMatches(`${k}x`, k), false);
+  assert.equal(kioskKeyMatches(k.slice(0, -1), k), false);
+  assert.equal(kioskKeyMatches(undefined, k), false);
+  assert.equal(kioskKeyMatches('', ''), false, 'no key kept: nothing matches');
+  assert.equal(kioskKeyMatches('short', 'short'), false);
+});
+
+test('powerLimiter: six tries a minute per action, one accepted every 30 s', () => {
   const l = powerLimiter();
   for (let i = 0; i < POWER_PER_MINUTE; i++) assert.deepEqual(l.try('exit', 1000 + i), { ok: true });
   const r = l.try('exit', 2000);
@@ -164,7 +190,8 @@ test('powerLimiter: six tries a minute per action, one accepted every 30 s, a po
   assert.equal(l.already('exit', 99_000), true);
   assert.equal(l.already('exit', 100_001), false);
   l.accepted('off', 70_000);
-  assert.equal(l.already('off', 10_000_000), true);
+  assert.equal(l.already('off', 99_000), true);
+  assert.equal(l.already('off', 100_001), false, 'a power-off that nothing took is caught by poweroffStale, not kept for good');
 });
 
 // ---- the route -------------------------------------------------------------------------------------------------
@@ -217,10 +244,13 @@ async function withServer(fn, { mut = () => {}, unit = true, run = true } = {}) 
   const app = createApp({ version: 'test', dist, power });
   const server = await new Promise((resolve) => { const sv = app.listen(0, '127.0.0.1', () => resolve(sv)); });
   const host = `127.0.0.1:${server.address().port}`;
-  const call = async (method, url, { body, headers = {}, raw } = {}) => {
+  const kioskKey = store.getSecrets().kioskToken;
+  assert.match(kioskKey, KIOSK_KEY_RE, 'made at start');
+  // the kiosk browser sends its key; `kiosk: false` is any other client on this machine
+  const call = async (method, url, { body, headers = {}, raw, kiosk = true } = {}) => {
     const r = await realFetch(`http://${host}${url}`, {
       method,
-      headers: { ...(body !== undefined || raw !== undefined ? { 'content-type': 'application/json', origin: `http://${host}` } : {}), ...headers },
+      headers: { ...(kiosk ? { 'x-marco-kiosk': kioskKey } : {}), ...(body !== undefined || raw !== undefined ? { 'content-type': 'application/json', origin: `http://${host}` } : {}), ...headers },
       body: raw !== undefined ? raw : body !== undefined ? JSON.stringify(body) : undefined,
     });
     const text = await r.text();
@@ -235,7 +265,7 @@ async function withServer(fn, { mut = () => {}, unit = true, run = true } = {}) 
     return (r.headers.getSetCookie?.() || []).map((x) => x.split(';')[0]).join('; ');
   };
   try {
-    await fn({ call, calls, host, runFolder, keyOf, login, tick: (ms) => { clock += ms; } });
+    await fn({ call, calls, host, runFolder, keyOf, login, kioskKey, tick: (ms) => { clock += ms; } });
   } finally {
     closeAll();
     server.closeAllConnections?.();
@@ -309,19 +339,35 @@ test('route: a second tap closes the kiosk once, logs it, and a burst is refused
   });
 });
 
-test('route: the power-off asks once, for good; without the unit or a runtime folder it says why', async () => {
+test('route: the power-off asks once; a request nothing took, no unit or no runtime folder: it says why', async () => {
   await withServer(async ({ call, calls, runFolder, tick }) => {
     const ask = () => call('POST', '/api/display/power', { body: { item: 'cv_power001', action: 'off' } });
     assert.equal((await ask()).status, 202);
     await wait(30);
     assert.deepEqual(calls, [['off', runFolder]]);
     assert.deepEqual(listActivity({ type: 'display.poweroff' }).items[0].data, { screen: 'living-room', item: 'cv_power001' });
-    tick(600_000);
+    tick(10_000);
     const later = await ask();
     assert.equal(later.status, 202);
     assert.equal(later.json.already, true);
     await wait(30);
     assert.equal(calls.length, 1);
+    // the unit is installed but stopped: the request file is still there long after (the test clock is ahead of its
+    // mtime). The card says it is not on, and the file goes, so a later `marco power on` does not power off at once.
+    const off = path.join(runFolder, 'poweroff');
+    fs.writeFileSync(off, '');
+    tick(30_000);
+    const stale = await ask();
+    assert.equal(stale.status, 409, stale.text);
+    assert.equal(stale.json.error, 'not_enabled');
+    assert.ok(!fs.existsSync(off));
+    fs.writeFileSync(off, '');
+    assert.deepEqual((await call('GET', '/api/display/power?item=cv_power001')).json, { action: 'off', ready: false, reason: 'not_enabled' });
+    assert.ok(!fs.existsSync(off));
+    // nothing left: it asks again
+    assert.equal((await ask()).status, 202);
+    await wait(30);
+    assert.equal(calls.length, 2);
   });
   await withServer(async ({ call, calls }) => {
     const r = await call('POST', '/api/display/power', { body: { item: 'cv_power001', action: 'off' } });
@@ -368,6 +414,25 @@ test('route: what a POST needs (JSON, the same origin, this machine, the card on
     await wait(30);
     assert.equal(calls.length, 0);
     assert.equal(listActivity({ type: 'display.kiosk_exit' }).items.length, 0);
+  });
+});
+
+test('route: only the kiosk browser (its key), whatever is in front of the server on this machine', async () => {
+  await withServer(async ({ call, calls, host, kioskKey }) => {
+    // a bare proxy_pass, ssh -L or socat on this machine: loopback, no proxy header, a localhost Host, a forged Origin
+    const g = await call('GET', '/api/display/power?item=cv_kiosk001', { kiosk: false });
+    assert.equal(g.status, 403);
+    assert.equal(g.json.error, 'not_kiosk');
+    const p = await call('POST', '/api/display/power', { body: { item: 'cv_power001', action: 'off' }, kiosk: false, headers: { origin: `http://${host}` } });
+    assert.equal(p.status, 403);
+    assert.equal(p.json.error, 'not_kiosk');
+    for (const bad of ['', 'x'.repeat(43), `${kioskKey}=`, kioskKey.toLowerCase() === kioskKey ? kioskKey.toUpperCase() : kioskKey.toLowerCase()]) {
+      assert.equal((await call('POST', '/api/display/power', { body: { item: 'cv_kiosk001', action: 'exit' }, kiosk: false, headers: { 'x-marco-kiosk': bad } })).status, 403, bad);
+    }
+    await wait(30);
+    assert.equal(calls.length, 0);
+    assert.equal(listActivity({ type: 'display.poweroff' }).items.length, 0);
+    assert.equal((await call('POST', '/api/display/power', { body: { item: 'cv_kiosk001', action: 'exit' } })).status, 202, 'with the key');
   });
 });
 
@@ -440,7 +505,7 @@ test('display: a first tap arms the card, a second one within the time asks, the
 test('display: the preview and the demo never ask the server; a page not at localhost never does either', () => {
   const src = fs.readFileSync(path.join(ROOT, 'web/display/widgets/canvas/nav.ts'), 'utf8');
   assert.match(src, /const fake = isPreview \|\| ctx\.params\.get\('demo'\) === '1';/);
-  assert.match(src, /const remote = !fake && !loopbackHost\(location\.hostname\);/);
+  assert.match(src, /const remote = !fake && \(!loopbackHost\(location\.hostname\) \|\| !kioskKey\);/);
   assert.match(src, /if \(fake \|\| remote \|\| busy \|\| gone \|\| hidden\(\)\) return;/);
   assert.match(src, /set\('working'\);\n\s+if \(fake\) return;/);
 });
@@ -451,16 +516,19 @@ const has = (cmd) => spawnSync('bash', ['-c', `command -v ${cmd}`]).status === 0
 const shellOk = has('bash') && has('flock') && has('pkill') && has('pgrep');
 
 /** kiosk.sh with a fake Chromium (a bash loop that keeps its flags), no server wait, temp folders. */
-function kioskRun(t) {
+function kioskRun(t, { env: more = {}, curl = 'exit 0' } = {}) {
   const fake = path.join(t, 'bin');
   fs.mkdirSync(fake, { recursive: true });
-  fs.writeFileSync(path.join(fake, 'chromium-browser'), `#!/usr/bin/env bash\necho $$ >> "${t}/browser.pids"\nwhile :; do sleep 0.2; done\n`, { mode: 0o755 });
-  fs.writeFileSync(path.join(fake, 'curl'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  // the fake browser keeps its pid and its last argument (the URL)
+  fs.writeFileSync(path.join(fake, 'chromium-browser'), `#!/usr/bin/env bash\necho $$ >> "${t}/browser.pids"\nprintf '%s\\n' "\${@: -1}" >> "${t}/browser.urls"\nwhile :; do sleep 0.2; done\n`, { mode: 0o755 });
+  fs.writeFileSync(path.join(fake, 'curl'), `#!/bin/sh\n${curl}\n`, { mode: 0o755 });
   for (const d of ['run', 'xdg', 'home']) fs.mkdirSync(path.join(t, d), { recursive: true });
   const env = {
-    PATH: `${fake}:/usr/bin:/bin`, HOME: path.join(t, 'home'), XDG_RUNTIME_DIR: path.join(t, 'xdg'), MARCO_RUN_DIR: path.join(t, 'run'),
+    PATH: `${fake}:${path.dirname(process.execPath)}:/usr/bin:/bin`, HOME: path.join(t, 'home'), XDG_RUNTIME_DIR: path.join(t, 'xdg'), MARCO_RUN_DIR: path.join(t, 'run'),
     KIOSK_URL: 'http://127.0.0.1:9/', KIOSK_WAIT_SEC: '0', KIOSK_LOG: path.join(t, 'kiosk.log'), PORT: '9', MARCO_DATA_DIR: path.join(t, 'nodata'), KIOSK_CLIENT: 'test',
+    ...more,
   };
+  for (const [k, v] of Object.entries(env)) if (v === undefined) delete env[k];
   const p = spawn('bash', [path.join(ROOT, 'deploy/kiosk.sh')], { env, stdio: 'ignore' });
   const done = new Promise((resolve) => p.on('exit', (code) => resolve(code)));
   return { p, done };
@@ -502,7 +570,7 @@ test('kiosk.sh: a new token closes the browser for good; an old one does not; st
     const code = await Promise.race([a.done, wait(10_000).then(() => 'timeout')]);
     assert.equal(code, 0);
     assert.ok(await until(() => !alive(pid), 3000), 'the browser is gone');
-    assert.equal(fs.readFileSync(path.join(t, 'xdg', 'marco-kiosk.closed'), 'utf8'), '2000');
+    assert.equal(fs.readFileSync(path.join(t, 'xdg', 'marco-kiosk.closed'), 'utf8'), '2000 ', 'the number and the (here empty) login session');
     assert.equal(fs.statSync(path.join(t, 'xdg', 'marco-kiosk.closed')).mode & 0o077, 0);
     assert.ok(!fs.existsSync(path.join(t, 'pwned')) && !fs.existsSync(path.join(ROOT, 'pwned')));
     assert.match(fs.readFileSync(path.join(t, 'kiosk.log'), 'utf8'), /Exit asked from the screen/);
@@ -511,11 +579,10 @@ test('kiosk.sh: a new token closes the browser for good; an old one does not; st
     runs.push(b.p);
     assert.equal(await Promise.race([b.done, wait(5000).then(() => 'timeout')]), 0);
     assert.equal(pidsOf(t).length, 1, 'no second browser');
-    // the next request, after a login (marker gone): it opens again
-    fs.rmSync(path.join(t, 'xdg', 'marco-kiosk.closed'));
-    const c = kioskRun(t);
+    // another login session while the runtime folder stayed (an SSH session kept it): it opens again
+    const c = kioskRun(t, { env: { XDG_SESSION_ID: 'c7' } });
     runs.push(c.p);
-    assert.ok(await until(() => pidsOf(t).length === 2), 'opens again after a new login');
+    assert.ok(await until(() => pidsOf(t).length === 2), 'opens again in a new login session');
     c.p.kill('SIGTERM');
     await Promise.race([c.done, wait(5000)]);
   } finally {
@@ -556,6 +623,55 @@ test('kiosk.sh --open (the menu entry) opens it again after a close from the scr
   }
 });
 
+test('kiosk.sh: a request while it waits for the server keeps Chromium closed; no runtime folder: the marker in ~/.cache', { skip: !shellOk && 'needs bash, flock, pkill', timeout: 30_000 }, async () => {
+  const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-kiosk-wait-'));
+  let a = null;
+  try {
+    fs.mkdirSync(path.join(t, 'run'), { recursive: true });
+    fs.writeFileSync(path.join(t, 'run', 'kiosk-exit'), '1000');
+    // the health check is where the request lands: the server answers once it wrote a new number
+    a = kioskRun(t, { env: { XDG_RUNTIME_DIR: undefined, KIOSK_WAIT_SEC: '5' }, curl: `printf 4000 > "${t}/run/kiosk-exit"; exit 0` });
+    assert.equal(await Promise.race([a.done, wait(10_000).then(() => 'timeout')]), 0);
+    assert.equal(pidsOf(t).length, 0, 'Chromium never opened');
+    assert.equal(fs.readFileSync(path.join(t, 'home', '.cache', 'marco-kiosk.closed'), 'utf8'), '4000 ');
+  } finally {
+    if (a && a.p.exitCode === null) a.p.kill('SIGKILL');
+    for (const pid of pidsOf(t)) if (alive(pid)) process.kill(pid, 'SIGKILL');
+    fs.rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test('kiosk.sh: the kiosk key goes to the page in the URL fragment, never in the log', { skip: !shellOk && 'needs bash, flock, pkill', timeout: 30_000 }, async () => {
+  const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-kiosk-key-'));
+  let a = null;
+  try {
+    const key = newKioskKey();
+    fs.mkdirSync(path.join(t, 'data'), { recursive: true });
+    fs.writeFileSync(path.join(t, 'data', 'secrets.json'), JSON.stringify({ kioskToken: key }));
+    fs.writeFileSync(path.join(t, 'data', 'config.json'), JSON.stringify({ security: { displayAccess: 'open' } }));
+    a = kioskRun(t, { env: { MARCO_DATA_DIR: path.join(t, 'data') } });
+    assert.ok(await until(() => pidsOf(t).length === 1), 'the browser starts');
+    assert.equal(fs.readFileSync(path.join(t, 'browser.urls'), 'utf8').trim(), `http://127.0.0.1:9/?client=test#kp=${key}`);
+    const log = fs.readFileSync(path.join(t, 'kiosk.log'), 'utf8');
+    assert.ok(!log.includes(key), log);
+    assert.match(log, /#kp=<kiosk-key>/);
+    a.p.kill('SIGTERM');
+    await Promise.race([a.done, wait(5000)]);
+    // a server on another machine never gets it
+    fs.rmSync(path.join(t, 'browser.urls'));
+    fs.rmSync(path.join(t, 'browser.pids'));
+    a = kioskRun(t, { env: { MARCO_DATA_DIR: path.join(t, 'data'), KIOSK_URL: 'http://192.0.2.10:9/' } });
+    assert.ok(await until(() => fs.existsSync(path.join(t, 'browser.urls'))), 'the browser starts');
+    assert.equal(fs.readFileSync(path.join(t, 'browser.urls'), 'utf8').trim(), 'http://192.0.2.10:9/?client=test');
+  } finally {
+    if (a && a.p.exitCode === null) a.p.kill('SIGTERM');
+    await wait(300);
+    if (a && a.p.exitCode === null) a.p.kill('SIGKILL');
+    for (const pid of pidsOf(t)) if (alive(pid)) process.kill(pid, 'SIGKILL');
+    fs.rmSync(t, { recursive: true, force: true });
+  }
+});
+
 // ---- the installer -------------------------------------------------------------------------------------------
 
 test('installer: the power-off units only with --power-button, and nothing in them is read from the request', () => {
@@ -566,6 +682,11 @@ test('installer: the power-off units only with --power-button, and nothing in th
   // off unless the owner says so: no flag and no terminal (curl | bash --yes, marco update) leaves it off
   assert.match(src, /choose_power\(\) \{\n {2}\[ -z "\$POWER" \] \|\| return 0\n {2}POWER=0\n {2}if \[ "\$MODE" = all \] && interactive; then/);
   assert.match(src, /remove_update_units\n {2}remove_power_units\n {2}remove_kiosk/);
+  // a request left from a tap while the unit was stopped never powers off at `marco power on`
+  assert.match(src, /run rm -f \/run\/marco\/poweroff\n {2}if \[ "\$SYSTEMD" = 1 \]; then\n {4}run systemctl daemon-reload\n {4}run systemctl enable --now "\$POWER_UNIT.path"/);
+  assert.match(src, /run rm -f "\/etc\/systemd\/system\/\$POWER_UNIT.path" "\/etc\/systemd\/system\/\$POWER_UNIT.service" \/run\/marco\/poweroff/);
+  // the answer to the question is applied like a flag, also on an install that is up to date
+  assert.match(src, /confirm_no "Allow that card to power off this device\?"; then POWER=1; fi\n(?: {4}#.*\n)* {4}POWER_FLAG=1/);
   const unit = fs.readFileSync(path.join(ROOT, 'deploy/marco.service'), 'utf8');
   assert.match(unit, /^RuntimeDirectory=marco$/m);
   assert.match(unit, /^RuntimeDirectoryMode=0755$/m);

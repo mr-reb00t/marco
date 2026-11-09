@@ -22,7 +22,7 @@
 #   --yes, -y                 Do not ask; use the defaults (uninstall needs it when there is no terminal)
 #   --dry-run                 Print every action and change nothing
 #   --skip-apt                Do not install system packages
-#   --power-button            Let the "Apagar" (Shut down) card on a screen of this device power it off (asked in an
+#   --power-button            Let the "Shut down" card on a screen of this device power it off (asked in an
 #                             all-in-one install; off by default). Later: sudo marco power on|off
 #   --no-power-button         Do not (removes the permission if an earlier install gave it)
 #   -h, --help                Show this help
@@ -35,7 +35,7 @@
 #   /etc/marco.conf      what was installed and where (read by the `marco` command)
 #   /usr/local/bin/marco command line: marco status | logs | restart | update | url | version | power | uninstall
 #   /etc/systemd/system/marco-update.{path,service}   updates started from the admin (release installs)
-#   /etc/systemd/system/marco-power.{path,service}    only with --power-button: the "Apagar" card powers off the device
+#   /etc/systemd/system/marco-power.{path,service}    only with --power-button: the "Shut down" card powers off the device
 set -euo pipefail
 
 MARCO_REPO="${MARCO_REPO:-mr-reb00t/marco}"
@@ -67,7 +67,7 @@ ACTION=install
 PURGE=0
 SKIP_APT=0
 FORCE=0
-POWER=""                                      # 1: the "Apagar" card may power off this device; 0: not; "": ask / keep
+POWER=""                                      # 1: the "Shut down" card may power off this device; 0: not; "": ask / keep
 POWER_FLAG=0                                  # 1: POWER came from --power-button / --no-power-button
 SOURCE_DIR=""                                 # --source <checkout>: build and run a local git checkout in place
 TARBALL_URL="${MARCO_TARBALL_URL:-}"          # testing: install this tarball (its .sha256 must sit next to it)
@@ -792,7 +792,7 @@ install_cli() {
   } | put_file "$CONF" 644 root
 }
 
-# The "Apagar" (Shut down) card of a screen on this device. The server runs with NoNewPrivileges, so it cannot use sudo
+# The "Shut down" card of a screen on this device. The server runs with NoNewPrivileges, so it cannot use sudo
 # or polkit: it creates /run/marco/poweroff (its RuntimeDirectory, deploy/marco.service; emptied at every boot), and
 # marco-power.path starts marco-power.service, which deletes that file and powers off. Nothing in the file is read, so
 # all the server can ask for is "power off now". Only written when the owner says so (--power-button, the question of
@@ -801,8 +801,10 @@ choose_power() {
   [ -z "$POWER" ] || return 0
   POWER=0
   if [ "$MODE" = all ] && interactive; then
-    echo "A screen of this device can have an \"Apagar\" (Shut down) card that powers it off after a second tap." > "$TTY"
+    echo "A screen of this device can have a \"Shut down\" card that powers it off after a second tap." > "$TTY"
     if confirm_no "Allow that card to power off this device?"; then POWER=1; fi
+    # an answer, like a flag: applied even when the install is already up to date
+    POWER_FLAG=1
   fi
 }
 
@@ -813,7 +815,7 @@ install_power_units() {
     return 0
   fi
   cat <<EOF | put_file "/etc/systemd/system/$POWER_UNIT.path" 644 root
-# Written by the Marco installer (--power-button, sudo marco power on): the "Apagar" card on a screen of this device.
+# Written by the Marco installer (--power-button, sudo marco power on): the "Shut down" card on a screen of this device.
 # The Marco server creates /run/marco/poweroff and this unit starts $POWER_UNIT.service. Turn it off: sudo marco power off
 [Unit]
 Description=Marco: watch for a power-off asked from a screen
@@ -826,7 +828,7 @@ Unit=$POWER_UNIT.service
 WantedBy=multi-user.target
 EOF
   cat <<EOF | put_file "/etc/systemd/system/$POWER_UNIT.service" 644 root
-# Written by the Marco installer: powers this device off when the "Apagar" card of a screen asked for it. The request
+# Written by the Marco installer: powers this device off when the "Shut down" card of a screen asked for it. The request
 # file is deleted first and never read.
 [Unit]
 Description=Marco: power off asked from a screen
@@ -837,19 +839,21 @@ ExecStartPre=/bin/rm -f /run/marco/poweroff
 ExecStart=/usr/bin/systemctl --no-block poweroff
 SyslogIdentifier=$POWER_UNIT
 EOF
+  # a request left from before (a tap while the unit was stopped) must not power off the device right now
+  run rm -f /run/marco/poweroff
   if [ "$SYSTEMD" = 1 ]; then
     run systemctl daemon-reload
-    run systemctl enable --now "$POWER_UNIT.path" --quiet || warn "Could not start $POWER_UNIT.path: the Apagar card cannot power off this device."
+    run systemctl enable --now "$POWER_UNIT.path" --quiet || warn "Could not start $POWER_UNIT.path: the Shut down card cannot power off this device."
   fi
-  ok "Apagar card: on ($POWER_UNIT.path). Turn it off: sudo marco power off"
+  ok "Shut down card: on ($POWER_UNIT.path). Turn it off: sudo marco power off"
 }
 
 remove_power_units() {
   [ -f "/etc/systemd/system/$POWER_UNIT.path" ] || [ -f "/etc/systemd/system/$POWER_UNIT.service" ] || return 0
   if [ "$SYSTEMD" = 1 ]; then run systemctl disable --now "$POWER_UNIT.path" --quiet || true; fi
-  run rm -f "/etc/systemd/system/$POWER_UNIT.path" "/etc/systemd/system/$POWER_UNIT.service"
+  run rm -f "/etc/systemd/system/$POWER_UNIT.path" "/etc/systemd/system/$POWER_UNIT.service" /run/marco/poweroff
   if [ "$SYSTEMD" = 1 ]; then run systemctl daemon-reload; fi
-  ok "Apagar card: off"
+  ok "Shut down card: off"
 }
 
 apply_power_units() {
@@ -865,11 +869,11 @@ set_conf_power() {
 # sudo marco power on|off: the units and the setting only. Both write to /etc, so not under the read-only overlay.
 do_power() {
   [ -r "$CONF" ] || die "Marco is not installed here ($CONF not found)."
-  [ "$MODE" != kiosk ] || die "This device only shows a screen: the Apagar card powers off the computer that runs the Marco server. Run this there."
+  [ "$MODE" != kiosk ] || die "This device only shows a screen: the Shut down card powers off the computer that runs the Marco server. Run this there."
   check_overlay
   apply_power_units
   set_conf_power
-  if [ "$POWER" = 1 ] && [ "$SYSTEMD" = 0 ]; then warn "systemd is not running here: the Apagar card cannot power off this device."; fi
+  if [ "$POWER" = 1 ] && [ "$SYSTEMD" = 0 ]; then warn "systemd is not running here: the Shut down card cannot power off this device."; fi
   return 0
 }
 
@@ -1335,7 +1339,7 @@ main() {
   echo "  Source:   $(source_label)"
   if [ "${SAVED_LINK:-0}" = 1 ]; then echo "  Link:     the one saved in $RUN_HOME/.config/marco/kiosk.env"; fi
   if [ -n "$KIOSK_URL" ]; then echo "  Link:     $(printf '%s' "$KIOSK_URL" | sed -E 's|/d/[^/?#]+|/d/<private link>|')"; fi
-  if [ "$MODE" != kiosk ]; then echo "  Apagar:   $([ "$POWER" = 1 ] && echo "the Shut down card may power off this device" || echo "off (turn on later: sudo marco power on)")"; fi
+  if [ "$MODE" != kiosk ]; then echo "  Power:    $([ "$POWER" = 1 ] && echo "the Shut down card may power off this device" || echo "off (turn on later: sudo marco power on)")"; fi
   if [ "$DRY" = 1 ]; then echo "  Dry run:  nothing will be changed"; fi
   echo
 

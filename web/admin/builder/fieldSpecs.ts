@@ -14,7 +14,7 @@ export type Spec =
   /** "Ir a pantalla": one of the household's screens, or Inicio */
   | { k: 'target'; type: 'screen'; label: string }
   /** an emoji, or one of the built-in icons of the navigation cards (canvasCore NAV_ICONS, 'i:<name>') */
-  | { k: 'icon'; type: 'navIcon'; label: string }
+  | { k: 'icon'; type: 'navIcon'; label: string; hint?: string }
   /** a Home Assistant icon (canvasCore HA_ICONS) or '' for the automatic one */
   | { k: 'icon'; type: 'haIcon'; label: string }
   | { k: string; type: 'num'; label: string; min: number; max: number; step?: number; unit?: 'days' | 'sec' | 'n' | 'min' | 'pct' }
@@ -158,17 +158,17 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
   ],
   'nav.kiosk': [
     NAV_SHOW_FIELD,
-    { k: 'icon', type: 'navIcon', label: 'Icono' },
+    { k: 'icon', type: 'navIcon', label: 'Icono', hint: 'Sin icono: el de siempre.' },
     { k: 'label', type: 'text', label: 'Texto', max: 40, hint: 'Vacío: Salir del kiosko.' },
     { type: 'note', text: 'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.' },
-    { type: 'note', text: 'Solo funciona en la pantalla conectada al Pi que ejecuta Marco, abierta en localhost. Necesita Permitir tocar en la pantalla.' },
+    { type: 'note', text: 'Solo funciona en el kiosko del Pi que ejecuta Marco, el navegador de pantalla completa que abre el instalador. Necesita Permitir tocar en la pantalla.' },
   ],
   'nav.poweroff': [
     NAV_SHOW_FIELD,
-    { k: 'icon', type: 'navIcon', label: 'Icono' },
+    { k: 'icon', type: 'navIcon', label: 'Icono', hint: 'Sin icono: el de siempre.' },
     { k: 'label', type: 'text', label: 'Texto', max: 40, hint: 'Vacío: Apagar.' },
     { type: 'note', text: 'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.' },
-    { type: 'note', text: 'Solo funciona en la pantalla conectada al Pi que ejecuta Marco, abierta en localhost. Necesita Permitir tocar en la pantalla.' },
+    { type: 'note', text: 'Solo funciona en el kiosko del Pi que ejecuta Marco, el navegador de pantalla completa que abre el instalador. Necesita Permitir tocar en la pantalla.' },
   ],
   'nav.progress': [
     { k: 'style', type: 'seg', label: 'Estilo', opts: [{ v: 'dots', l: 'Puntos' }, { v: 'bar', l: 'Barra' }] },
