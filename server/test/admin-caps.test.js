@@ -52,7 +52,7 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(old.edition, 'self-hosted');
   assert.equal(old.features, null);
   // accountMenu, microsoftCalendar, updates, feedback, privacy and the doorbell only exist on servers that say so
-  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute'].includes(k), k);
+  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower'].includes(k), k);
   // carousels: on for this server, off for servers that do not say so (they would drop config.carousels)
   assert.equal(hasFeature(selfHosted(), 'carousels'), true);
   assert.equal(hasFeature(capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: true } }), 'carousels'), false);
@@ -88,6 +88,10 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(hasFeature(sh, 'commute'), false, 'an older self-hosted server has no /api/display/commute');
   const { commute: _cm, ...cloudNoCommute } = cloudHealth().features;
   assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: cloudNoCommute }), 'commute'), false, 'Marco Cloud until it says so');
+  // Salir del kiosko and Apagar: self-hosted servers that have /api/display/power; never Marco Cloud
+  assert.equal(hasFeature(selfHosted(), 'kioskPower'), true);
+  assert.equal(hasFeature(sh, 'kioskPower'), false, 'an older self-hosted server has no /api/display/power');
+  assert.equal(hasFeature(capsFrom({ ...cloudHealth(), features: { ...cloudHealth().features, kioskPower: false } }), 'kioskPower'), false);
   const sh2 = capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: false } });
   assert.equal(hasFeature(sh2, 'news'), false, 'an explicit false is off everywhere');
 });

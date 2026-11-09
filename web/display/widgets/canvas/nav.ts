@@ -7,9 +7,14 @@
 //   empty); the admin's preview always draws them, and a tap there only lights the button up.
 // - The progress card needs no touch: it shows the steps of the carousel this display runs, which one is on and how
 //   much time it has left. On a display with no carousel it is empty; the preview draws a made-up one.
+// - "Salir del kiosko" and "Apagar" (powerButton) need touch too, and act on the Pi that runs Marco: a display opened
+//   elsewhere says so and never asks; the first tap arms the card and only a second one within a few seconds sends
+//   the request (web/display/power.ts, server/routes/power.js). The preview and the demo never ask anything.
 // - Text goes in as text (textContent), the built-in icons are static SVG markup.
 import { ctx } from '../../ctx';
+import { api } from '../../api';
 import { isPreview } from '../../identity';
+import { CONFIRM_MS, ERROR_MS, POWER_RECHECK_MS, loopbackHost, planTap, settle, uiOfAnswer, uiOfStatus, type PowerAction, type PowerUi } from '../../power';
 import type { AdapterBox, AdapterEnv, CanvasAdapter, NavProgress } from './types';
 
 type Props = Record<string, any>;
@@ -26,6 +31,8 @@ const ICON_PATHS: Record<string, string> = {
   star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z',
   photo: 'M3 5h18v14H3z M3 16l5-5 4 4 3-3 6 6 M15.5 9.5a1.5 1.5 0 1 0 0-.01',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
+  exit: 'M15 4h4v16h-4 M10 8l-4 4 4 4 M6 12h10',
+  power: 'M12 3v8 M6.3 6.3a8 8 0 1 0 11.4 0',
 };
 
 function iconEl(icon: string): HTMLElement {
@@ -163,6 +170,160 @@ const pauseButton = navButton({
   tap: (env, p) => env.nav.pause(Number(p.returnMin ?? 5)),
 });
 
+/** How long a card that asked shows "Cerrando..." / "Apagando..." before it is a button again (the page normally goes first). */
+const WORKING_MAX_MS = 90_000;
+
+/** The words of a power card in each state (display i18n keys). */
+const POWER_TEXT: Record<PowerAction, { label: string; confirm: string; working: string; icon: string }> = {
+  exit: { label: 'navExit', confirm: 'navExitConfirm', working: 'navExiting', icon: 'i:exit' },
+  off: { label: 'navPower', confirm: 'navPowerConfirm', working: 'navPowering', icon: 'i:power' },
+};
+
+/**
+ * "Salir del kiosko" (action 'exit') and "Apagar" ('off'): asks the server whether it can (GET /api/display/power, again
+ * on a config change and every few minutes), then a tap arms it and a second tap asks (POST).
+ */
+function powerButton(action: PowerAction): () => CanvasAdapter {
+  return () => {
+    let env: AdapterEnv;
+    let root: HTMLElement;
+    let btn: HTMLButtonElement | null = null;
+    // the admin's preview and the demo: drawn ready, a tap only shows the confirmation, nothing is asked
+    const fake = isPreview || ctx.params.get('demo') === '1';
+    const remote = !fake && !loopbackHost(location.hostname);
+    let ui: PowerUi = fake ? 'idle' : remote ? 'remote' : 'checking';
+    let since = 0;
+    let armedAt = 0;
+    let busy = false;
+    let gone = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let every: ReturnType<typeof setInterval> | null = null;
+    let errorText = 'navPowerFailed';
+    const hidden = () => !env.nav.shows();
+    const set = (next: PowerUi) => {
+      if (gone) return;
+      ui = next;
+      since = Date.now();
+      if (timer) clearTimeout(timer);
+      timer = null;
+      // the armed card and an error go back to idle by themselves; a fake "working" too (the preview), and a real one
+      // whose page is still here long after (the kiosk script did not close it): it asks again what it can do
+      const wait = next === 'confirm' ? CONFIRM_MS : next === 'error' ? ERROR_MS : next === 'working' ? (fake ? 2500 : WORKING_MAX_MS) : 0;
+      if (wait) {
+        timer = setTimeout(() => {
+          timer = null;
+          if (ui !== 'working') return set(settle(ui, Date.now(), since));
+          set('idle');
+          check();
+        }, wait + 50);
+      }
+      render();
+    };
+    const check = () => {
+      if (fake || remote || busy || gone || hidden()) return;
+      // a card in the middle of a tap, or one already asked, keeps its state
+      if (ui === 'confirm' || ui === 'working' || ui === 'error') return;
+      busy = true;
+      api.powerStatus(env.item().id).then(
+        (r) => set(r.action === action ? uiOfStatus(r) : 'unavailable'),
+        (e) => {
+          const status = Number((e as { status?: number })?.status) || 0;
+          // no answer: what it showed stays (a first check that fails says it is not available for now)
+          if (status) set(uiOfStatus(status));
+          else if (ui === 'checking') set('unavailable');
+        },
+      ).finally(() => {
+        busy = false;
+      });
+    };
+    const tap = () => {
+      if (!isPreview && !env.nav.live()) return;
+      const p = planTap(ui, Date.now(), armedAt);
+      armedAt = p.armedAt;
+      if (!p.send) {
+        if (p.state !== ui || p.state === 'confirm') set(p.state);
+        return;
+      }
+      set('working');
+      if (fake) return;
+      void api.powerAsk(env.item().id, action).then(({ status, error }) => {
+        const next = uiOfAnswer(status, error);
+        errorText = status === 429 ? 'navPowerWait' : 'navPowerFailed';
+        if (next !== 'working') set(next);
+      });
+    };
+    const render = () => {
+      if (!root) return;
+      const p = env.item().props as Props;
+      const words = POWER_TEXT[action];
+      root.textContent = '';
+      btn = null;
+      if (hidden()) return;
+      const show = p.show === 'icon' || p.show === 'text' ? p.show : 'both';
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `cv-nav-btn cv-nav-power is-${show} is-${ui}`;
+      const own = String(p.label || '').trim() || ctx.t(words.label);
+      const label = ui === 'confirm' ? ctx.t(words.confirm) : ui === 'working' ? ctx.t(words.working) : ui === 'error' ? ctx.t(errorText) : own;
+      const note = ui === 'remote' ? ctx.t('navPowerLocalOnly') : ui === 'unavailable' ? ctx.t('navPowerUnavailable') : ui === 'disabled' ? ctx.t('navPowerEnable') : '';
+      const muted = !!note;
+      const icon = String(p.icon || '').trim() || words.icon;
+      if (show !== 'text') b.appendChild(iconEl(icon));
+      if (show !== 'icon') {
+        const tx = Object.assign(document.createElement('span'), { className: 'cv-nav-tx' });
+        tx.appendChild(Object.assign(document.createElement('span'), { className: 'cv-nav-t', textContent: label }));
+        if (note) tx.appendChild(Object.assign(document.createElement('span'), { className: 'cv-nav-note', textContent: note }));
+        b.appendChild(tx);
+      }
+      b.setAttribute('aria-label', note ? `${own}. ${note}` : label);
+      if (note) b.title = note;
+      b.classList.toggle('is-muted', muted);
+      b.classList.toggle('is-confirm', ui === 'confirm');
+      b.classList.toggle('is-inert', muted || ui === 'checking' || ui === 'working' || (!isPreview && !env.nav.live()));
+      if (ui === 'confirm') b.style.setProperty('--cv-confirm-ms', `${CONFIRM_MS}ms`);
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!muted && ui !== 'checking' && ui !== 'working') flash(b);
+        tap();
+      });
+      root.appendChild(b);
+      btn = b;
+      fitLabel(b);
+    };
+    return {
+      mount(r, e) {
+        root = r;
+        env = e;
+        root.classList.add('cv-nav', 'cv-nav-pw');
+        render();
+        check();
+        if (!fake && !remote) every = setInterval(check, POWER_RECHECK_MS);
+      },
+      update: () => {
+        render();
+        check();
+      },
+      layout(box) {
+        shape(root, box);
+        fitLabel(btn);
+      },
+      data(topic) {
+        if (topic === 'config') {
+          render();
+          check();
+        } else if (hidden() !== !btn) render();
+      },
+      empty: () => hidden(),
+      destroy() {
+        gone = true;
+        if (timer) clearTimeout(timer);
+        if (every) clearInterval(every);
+        root.textContent = '';
+      },
+    };
+  };
+}
+
 /** What the admin's preview shows on the progress card (no carousel there): four steps, the second one on. */
 function previewProgress(now: number): NavProgress {
   return { steps: [1, 2, 3, 4].map((n) => ({ name: ctx.t('navStep', { n }) })), index: 1, startsAt: now - 12_000, endsAt: now + 18_000, paused: false, visiting: false, now };
@@ -265,4 +426,6 @@ export const NAV_ADAPTERS: Record<string, () => CanvasAdapter> = {
   'nav.button': goButton,
   'nav.pause': pauseButton,
   'nav.progress': progress,
+  'nav.kiosk': powerButton('exit'),
+  'nav.poweroff': powerButton('off'),
 };

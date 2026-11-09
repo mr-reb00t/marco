@@ -31,6 +31,9 @@ const SHOT = {
   'nav.button': 'nav',
   'nav.pause': 'nav&carousel=1&nav=1&stepSec=600',
   'nav.progress': 'nav&carousel=1&nav=1&stepSec=600',
+  // Salir del kiosko and Apagar: the demo draws them ready (it never asks a server)
+  'nav.kiosk': 'power',
+  'nav.poweroff': 'power',
 };
 // where the largest text is not the one to follow: the thermostat's temperature is sized by its dial (the room the
 // other lines leave), so its name is measured; a saved widget switches to its compact drawing when a larger text
@@ -41,7 +44,7 @@ const LAST = new Set(['widget']);
 // box holds it, so 150 % is never smaller than 100 % and never cramped
 // cards that already fill their box at 100 % (the navigation buttons, the flip clock; the lists, the forecasts, the message and the next
 // event grown to a box larger than their content): 150 % may not grow them further, it must not shrink them
-const FILLS = new Set(['nav.button', 'nav.pause', 'clock.flip', 'announcement', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
+const FILLS = new Set(['nav.button', 'nav.pause', 'nav.kiosk', 'nav.poweroff', 'clock.flip', 'announcement', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
 const shotOf = (kind) => {
   if (SHOT[kind]) return SHOT[kind];
   const sizes = CANVAS_KINDS[kind].sizes;

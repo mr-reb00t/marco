@@ -481,9 +481,15 @@ test('flexible sizes: W and H steppers, the corner handle (nearest legal box, ne
   assert.equal(M.spanForBox({ size: 'row', w: 2, h: 1 }, 'landscape'), 2);
 });
 
-test('palette on Marco Cloud: the Home Assistant cards and HTML propio are out of the edition, the Casa group has nothing else', ts, () => {
+test('palette on Marco Cloud: the Home Assistant cards, HTML propio and the kiosk and power cards are out of the edition, the Casa group has nothing else', ts, () => {
   const away = K.PALETTE_KINDS.filter((k) => K.outOfEdition(k, { cloud: true }));
-  assert.deepEqual(away.sort(), [...K.PALETTE_KINDS.filter((k) => k.startsWith('ha.')), 'html'].sort());
+  assert.deepEqual(away.sort(), [...K.PALETTE_KINDS.filter((k) => k.startsWith('ha.')), 'html', 'nav.kiosk', 'nav.poweroff'].sort());
+  // Salir del kiosko and Apagar: self-hosted servers that say kioskPower, never Marco Cloud
+  for (const k of ['nav.kiosk', 'nav.poweroff']) {
+    assert.equal(K.lockOf(k, { cloud: false, allowed: CANVAS_KIND_IDS, kioskPower: true }), null, k);
+    assert.equal(K.lockOf(k, { cloud: false, allowed: CANVAS_KIND_IDS, kioskPower: false }), 'No disponible en este servidor', k);
+    assert.equal(K.lockOf(k, { cloud: true, allowed: CLOUD_CANVAS_KINDS, kioskPower: false }), 'Solo en Marco instalado en casa', k);
+  }
   // Trayectos needs the commute feature (travel times from Google with the owner's own key, on either server)
   const all = { cloud: false, allowed: CANVAS_KIND_IDS };
   assert.equal(K.lockOf('commute', { ...all, commute: true }), null);

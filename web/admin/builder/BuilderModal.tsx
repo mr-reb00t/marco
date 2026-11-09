@@ -828,6 +828,7 @@ export function BuilderModal(props: SectionProps & { onClose: () => void; startW
               stocks={has('stockQuotes')}
               spotify={has('spotify')}
               commute={has('commute')}
+              kioskPower={has('kioskPower')}
               stage={stageApi}
               onAdd={addSpec}
               onPlace={(spec) => {

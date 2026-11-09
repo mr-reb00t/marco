@@ -26,6 +26,7 @@ const P: Record<string, string> = {
   refresh: 'M20 11a8 8 0 0 0-14.9-3.9L4 9 M4 4v5h5 M4 13a8 8 0 0 0 14.9 3.9L20 15 M20 20v-5h-5',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   logout: 'M15 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4 M10 16l-4-4 4-4 M6 12h11',
+  power: 'M12 3v8 M6.3 6.3a8 8 0 1 0 11.4 0',
   plus: 'M12 5v14 M5 12h14',
   trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6',
   up: 'M12 19V5 M6 11l6-6 6 6',

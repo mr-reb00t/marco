@@ -20,6 +20,10 @@ Restart=always
 RestartSec=5
 # Bounded memory so Chromium on the same Pi has room
 Environment=NODE_OPTIONS=--max-old-space-size=256
+# /run/marco (owned by @USER@, readable by everyone, gone at every boot): the "Salir del kiosko" and "Apagar" cards
+# leave their requests there for deploy/kiosk.sh and marco-power.path (server/power.js)
+RuntimeDirectory=marco
+RuntimeDirectoryMode=0755
 # Basic hardening
 NoNewPrivileges=true
 PrivateTmp=true

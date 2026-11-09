@@ -22,6 +22,9 @@
 #   --yes, -y                 Do not ask; use the defaults (uninstall needs it when there is no terminal)
 #   --dry-run                 Print every action and change nothing
 #   --skip-apt                Do not install system packages
+#   --power-button            Let the "Apagar" (Shut down) card on a screen of this device power it off (asked in an
+#                             all-in-one install; off by default). Later: sudo marco power on|off
+#   --no-power-button         Do not (removes the permission if an earlier install gave it)
 #   -h, --help                Show this help
 #
 # Layout (release installs):
@@ -30,8 +33,9 @@
 #   <dir>/data/          config, secrets, photos, backups (kept on update and on uninstall without --purge)
 #   <dir>/.env           settings (port, secrets), see .env.example
 #   /etc/marco.conf      what was installed and where (read by the `marco` command)
-#   /usr/local/bin/marco command line: marco status | logs | restart | update | url | version | uninstall
+#   /usr/local/bin/marco command line: marco status | logs | restart | update | url | version | power | uninstall
 #   /etc/systemd/system/marco-update.{path,service}   updates started from the admin (release installs)
+#   /etc/systemd/system/marco-power.{path,service}    only with --power-button: the "Apagar" card powers off the device
 set -euo pipefail
 
 MARCO_REPO="${MARCO_REPO:-mr-reb00t/marco}"
@@ -44,6 +48,7 @@ NODE_MAJOR=22
 NODE_MIN=20
 SERVICE=marco
 UPDATE_UNIT=marco-update
+POWER_UNIT=marco-power
 CONF=/etc/marco.conf
 CLI=/usr/local/bin/marco
 LIBDIR=/usr/local/lib/marco
@@ -62,6 +67,8 @@ ACTION=install
 PURGE=0
 SKIP_APT=0
 FORCE=0
+POWER=""                                      # 1: the "Apagar" card may power off this device; 0: not; "": ask / keep
+POWER_FLAG=0                                  # 1: POWER came from --power-button / --no-power-button
 SOURCE_DIR=""                                 # --source <checkout>: build and run a local git checkout in place
 TARBALL_URL="${MARCO_TARBALL_URL:-}"          # testing: install this tarball (its .sha256 must sit next to it)
 
@@ -337,11 +344,13 @@ CUR_GIT=0            # 1 when the running release was built from git (<version>-
 
 load_existing() {
   if [ -r "$CONF" ]; then
-    local c_dir c_mode c_user c_layout
+    local c_dir c_mode c_user c_layout c_power
     c_dir="$(sed -n 's/^MARCO_DIR=//p' "$CONF" | tail -n1)"; c_dir="$(eval "printf '%s' $c_dir")"
     c_mode="$(sed -n 's/^MARCO_MODE=//p' "$CONF" | tail -n1)"
     c_user="$(sed -n 's/^MARCO_USER=//p' "$CONF" | tail -n1)"; c_user="$(eval "printf '%s' $c_user")"
     c_layout="$(sed -n 's/^MARCO_LAYOUT=//p' "$CONF" | tail -n1)"
+    c_power="$(sed -n 's/^MARCO_POWER=//p' "$CONF" | tail -n1)"
+    case "$c_power" in 0|1) POWER="${POWER:-$c_power}" ;; esac
     DIR="${DIR:-$c_dir}"
     RUN_USER="${RUN_USER:-$c_user}"
     if [ -z "$MODE" ] && [ -n "$c_mode" ]; then MODE="$c_mode"; fi
@@ -779,7 +788,89 @@ install_cli() {
     echo "MARCO_NODE=$(printf '%q' "${NODE_BIN:-}")"
     echo "MARCO_REPO=$MARCO_REPO"
     if [ -n "$MARCO_RELEASES_URL" ]; then echo "MARCO_RELEASES_URL=$(printf '%q' "$MARCO_RELEASES_URL")"; fi
+    if [ "$MODE" != kiosk ]; then echo "MARCO_POWER=${POWER:-0}"; fi
   } | put_file "$CONF" 644 root
+}
+
+# The "Apagar" (Shut down) card of a screen on this device. The server runs with NoNewPrivileges, so it cannot use sudo
+# or polkit: it creates /run/marco/poweroff (its RuntimeDirectory, deploy/marco.service; emptied at every boot), and
+# marco-power.path starts marco-power.service, which deletes that file and powers off. Nothing in the file is read, so
+# all the server can ask for is "power off now". Only written when the owner says so (--power-button, the question of
+# an all-in-one install, `sudo marco power on`), and from here, never from files in the install folder.
+choose_power() {
+  [ -z "$POWER" ] || return 0
+  POWER=0
+  if [ "$MODE" = all ] && interactive; then
+    echo "A screen of this device can have an \"Apagar\" (Shut down) card that powers it off after a second tap." > "$TTY"
+    if confirm_no "Allow that card to power off this device?"; then POWER=1; fi
+  fi
+}
+
+install_power_units() {
+  if [ "$DRY" = 1 ]; then
+    plan "write /etc/systemd/system/$POWER_UNIT.path (watches /run/marco/poweroff) and $POWER_UNIT.service (runs systemctl poweroff as root)"
+    [ "$SYSTEMD" = 0 ] || plan "systemctl enable --now $POWER_UNIT.path"
+    return 0
+  fi
+  cat <<EOF | put_file "/etc/systemd/system/$POWER_UNIT.path" 644 root
+# Written by the Marco installer (--power-button, sudo marco power on): the "Apagar" card on a screen of this device.
+# The Marco server creates /run/marco/poweroff and this unit starts $POWER_UNIT.service. Turn it off: sudo marco power off
+[Unit]
+Description=Marco: watch for a power-off asked from a screen
+
+[Path]
+PathExists=/run/marco/poweroff
+Unit=$POWER_UNIT.service
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  cat <<EOF | put_file "/etc/systemd/system/$POWER_UNIT.service" 644 root
+# Written by the Marco installer: powers this device off when the "Apagar" card of a screen asked for it. The request
+# file is deleted first and never read.
+[Unit]
+Description=Marco: power off asked from a screen
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/rm -f /run/marco/poweroff
+ExecStart=/usr/bin/systemctl --no-block poweroff
+SyslogIdentifier=$POWER_UNIT
+EOF
+  if [ "$SYSTEMD" = 1 ]; then
+    run systemctl daemon-reload
+    run systemctl enable --now "$POWER_UNIT.path" --quiet || warn "Could not start $POWER_UNIT.path: the Apagar card cannot power off this device."
+  fi
+  ok "Apagar card: on ($POWER_UNIT.path). Turn it off: sudo marco power off"
+}
+
+remove_power_units() {
+  [ -f "/etc/systemd/system/$POWER_UNIT.path" ] || [ -f "/etc/systemd/system/$POWER_UNIT.service" ] || return 0
+  if [ "$SYSTEMD" = 1 ]; then run systemctl disable --now "$POWER_UNIT.path" --quiet || true; fi
+  run rm -f "/etc/systemd/system/$POWER_UNIT.path" "/etc/systemd/system/$POWER_UNIT.service"
+  if [ "$SYSTEMD" = 1 ]; then run systemctl daemon-reload; fi
+  ok "Apagar card: off"
+}
+
+apply_power_units() {
+  if [ "$POWER" = 1 ]; then install_power_units; else remove_power_units; fi
+}
+
+# MARCO_POWER in /etc/marco.conf, the other lines kept (sudo marco power on|off, an up-to-date install with a flag).
+set_conf_power() {
+  [ -r "$CONF" ] || return 0
+  { grep -v '^MARCO_POWER=' "$CONF" || true; echo "MARCO_POWER=${POWER:-0}"; } | put_file "$CONF" 644 root
+}
+
+# sudo marco power on|off: the units and the setting only. Both write to /etc, so not under the read-only overlay.
+do_power() {
+  [ -r "$CONF" ] || die "Marco is not installed here ($CONF not found)."
+  [ "$MODE" != kiosk ] || die "This device only shows a screen: the Apagar card powers off the computer that runs the Marco server. Run this there."
+  check_overlay
+  apply_power_units
+  set_conf_power
+  if [ "$POWER" = 1 ] && [ "$SYSTEMD" = 0 ]; then warn "systemd is not running here: the Apagar card cannot power off this device."; fi
+  return 0
 }
 
 # ---- Kiosk -----------------------------------------------------------------------------------------------
@@ -850,6 +941,9 @@ setup_kiosk() {
     printf '[Desktop Entry]\nType=Application\nName=Marco kiosk\nExec=%s\nX-GNOME-Autostart-enabled=true\n' "$kiosk_cmd" \
       | put_file "$RUN_HOME/.config/autostart/marco-kiosk.desktop" 644 "$RUN_USER"
   fi
+  # A menu entry ("Marco"), to open the kiosk again after the "Salir del kiosko" card closed it, without a keyboard
+  printf '[Desktop Entry]\nType=Application\nName=Marco\nComment=Show Marco full screen\nExec=%s\nIcon=video-display\nCategories=Utility;\nTerminal=false\n' "$kiosk_cmd --open" \
+    | put_file "$RUN_HOME/.local/share/applications/marco-kiosk.desktop" 644 "$RUN_USER"
   if have raspi-config; then
     info "Turning off screen blanking (raspi-config)..."
     run raspi-config nonint do_blanking 1 || warn "Could not turn off screen blanking"
@@ -873,7 +967,7 @@ remove_kiosk() {
   if [ -f "$f" ] && grep -q '^marco_kiosk' "$f"; then
     if [ "$DRY" = 1 ]; then plan "remove marco_kiosk from $f"; else as_user sed -i '/^marco_kiosk/d' "$f"; fi
   fi
-  for f in "$RUN_HOME/.config/autostart/marco-kiosk.desktop" "$RUN_HOME/.local/bin/marco-kiosk" "$RUN_HOME/.local/bin/marco-schedule"; do
+  for f in "$RUN_HOME/.config/autostart/marco-kiosk.desktop" "$RUN_HOME/.local/share/applications/marco-kiosk.desktop" "$RUN_HOME/.local/bin/marco-kiosk" "$RUN_HOME/.local/bin/marco-schedule"; do
     if [ -e "$f" ]; then run rm -f "$f"; fi
   done
   # The kiosk settings hold the private link: kept unless --purge
@@ -971,6 +1065,7 @@ do_install_release() {
   if [ -n "$old_unit" ]; then rm -f "$old_unit"; fi
   install_cli "$DIR/current"
   install_update_units
+  apply_power_units
   prune_releases
   if [ -n "$TRUSTED" ]; then rm -rf "$TRUSTED"; TRUSTED=""; fi
   if [ "$MODE" = all ]; then
@@ -1050,6 +1145,7 @@ do_install_checkout() {
   install_cli "$app"
   # A checkout is updated with git pull, by its owner: no updates from the admin.
   remove_update_units
+  apply_power_units
   if [ "$SYSTEMD" = 1 ]; then
     restart_service
     if wait_healthy; then ok "The server is up"; else warn "The server is not answering yet. Check: journalctl -u $SERVICE -n 50 --no-pager"; fi
@@ -1079,6 +1175,7 @@ do_uninstall() {
     ok "Service removed"
   fi
   remove_update_units
+  remove_power_units
   remove_kiosk
   if [ "$LAYOUT" = release ] && [ "$MODE" != kiosk ]; then
     if [ -L "$DIR/current" ]; then run rm -f "$DIR/current"; fi
@@ -1129,6 +1226,12 @@ parse_args() {
       --uninstall) ACTION=uninstall ;;
       --purge) PURGE=1 ;;
       --skip-apt) SKIP_APT=1 ;;
+      --power-button) POWER=1; POWER_FLAG=1 ;;
+      --no-power-button) POWER=0; POWER_FLAG=1 ;;
+      --power-units)
+        ACTION=power
+        case "${2:-}" in on) POWER=1 ;; off) POWER=0 ;; *) die "--power-units must be on or off" ;; esac
+        POWER_FLAG=1; shift ;;
       --force) FORCE=1 ;;
       --source) SOURCE_DIR="${2:-}"; shift ;;
       --source=*) SOURCE_DIR="${1#*=}" ;;
@@ -1193,12 +1296,19 @@ main() {
     do_uninstall
     return 0
   fi
+  if [ "$ACTION" = power ]; then
+    MODE="${MODE:-server}"
+    resolve_user
+    do_power
+    return 0
+  fi
   check_os
   if [ -n "$EXISTING" ] && [ -z "$MODE" ]; then MODE=server; fi
   choose_mode
   resolve_user
   detect_desktop
   inspect_dir
+  if [ "$MODE" != kiosk ]; then choose_power; fi
   if [ "$MODE" = kiosk ] && [ -z "$KIOSK_URL" ]; then
     if [ -r "$RUN_HOME/.config/marco/kiosk.env" ] && grep -q '^KIOSK_URL=' "$RUN_HOME/.config/marco/kiosk.env"; then
       SAVED_LINK=1
@@ -1225,6 +1335,7 @@ main() {
   echo "  Source:   $(source_label)"
   if [ "${SAVED_LINK:-0}" = 1 ]; then echo "  Link:     the one saved in $RUN_HOME/.config/marco/kiosk.env"; fi
   if [ -n "$KIOSK_URL" ]; then echo "  Link:     $(printf '%s' "$KIOSK_URL" | sed -E 's|/d/[^/?#]+|/d/<private link>|')"; fi
+  if [ "$MODE" != kiosk ]; then echo "  Apagar:   $([ "$POWER" = 1 ] && echo "the Shut down card may power off this device" || echo "off (turn on later: sudo marco power on)")"; fi
   if [ "$DRY" = 1 ]; then echo "  Dry run:  nothing will be changed"; fi
   echo
 
@@ -1238,6 +1349,11 @@ main() {
     # Installs updated by an installer older than the admin's update button get its units here.
     if [ "$MODE" != kiosk ] && [ ! -f "/etc/systemd/system/$UPDATE_UNIT.path" ] && { [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; }; then
       install_update_units
+    fi
+    # --power-button / --no-power-button on an install that is up to date: only that changes
+    if [ "$MODE" != kiosk ] && [ "$POWER_FLAG" = 1 ] && { [ "$DRY" = 1 ] || [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; }; then
+      apply_power_units
+      set_conf_power
     fi
     [ "$DRY" = 1 ] || exit 0
   fi

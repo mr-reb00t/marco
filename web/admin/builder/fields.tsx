@@ -74,6 +74,8 @@ const NAV_ICON_PATHS: Record<string, string> = {
   star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z',
   photo: 'M3 5h18v14H3z M3 16l5-5 4 4 3-3 6 6 M15.5 9.5a1.5 1.5 0 1 0 0-.01',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
+  exit: 'M15 4h4v16h-4 M10 8l-4 4 4 4 M6 12h10',
+  power: 'M12 3v8 M6.3 6.3a8 8 0 1 0 11.4 0',
 };
 const navSvg = (name: string) => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

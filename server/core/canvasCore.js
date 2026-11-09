@@ -485,11 +485,16 @@ function haIconOf(c, p, v) {
 }
 
 /** The built-in icons of the navigation cards ('i:<name>'); anything else in `icon` is an emoji. */
-export const NAV_ICONS = ['home', 'back', 'prev', 'next', 'grid', 'pause', 'play', 'star', 'photo', 'calendar'];
+export const NAV_ICONS = ['home', 'back', 'prev', 'next', 'grid', 'pause', 'play', 'star', 'photo', 'calendar', 'exit', 'power'];
 /** The target of "Ir a pantalla": a screen id, 'home' (the device's own screen or carousel) or '' (not chosen yet). */
 export const NAV_HOME = 'home';
 /** Kinds the "Permitir tocar en la pantalla" switch turns on (without it the display does not draw them). */
-export const NAV_TAP_KINDS = ['nav.button', 'nav.pause'];
+export const NAV_TAP_KINDS = ['nav.button', 'nav.pause', 'nav.kiosk', 'nav.poweroff'];
+/**
+ * "Salir del kiosko" and "Apagar" (self-hosted only, feature kioskPower): what each card asks the server for
+ * (POST /api/display/power { item, action }, routes/power.js). They act on the computer that runs the server.
+ */
+export const POWER_KINDS = { exit: 'nav.kiosk', off: 'nav.poweroff' };
 
 /**
  * The opaque id of a linked "now playing" account (sp_ and 10 to 24 lower case letters or digits for Spotify). The
@@ -803,6 +808,26 @@ export const CANVAS_KINDS = {
       icon: navIconOf(c, `${p}.icon`, x.icon),
       show: P.oneOf(c, `${p}.show`, x.show, 'both', NAV_SHOW),
       returnMin: P.num(c, `${p}.returnMin`, x.returnMin, NAV_RETURN_DEFAULT, 0, NAV_RETURN_MAX),
+    }),
+  },
+  // "Salir del kiosko" closes the kiosk browser and "Apagar" powers off the computer that runs Marco (routes/power.js:
+  // only from a browser on that computer, a second tap confirms). Self-hosted only: Marco Cloud has no device.
+  'nav.kiosk': {
+    cat: 'nav', sizes: ['row', 'xs', 's', 'w'], def: 'xs', cells: [1, 1, 6, 2], side: true, edition: 'local', feature: 'kioskPower', nav: true, taps: true, perScreen: 1,
+    defaults: () => ({ label: '', icon: '', show: 'both' }),
+    props: (c, p, x) => ({
+      label: P.str(c, `${p}.label`, x.label, '', 40),
+      icon: navIconOf(c, `${p}.icon`, x.icon),
+      show: P.oneOf(c, `${p}.show`, x.show, 'both', NAV_SHOW),
+    }),
+  },
+  'nav.poweroff': {
+    cat: 'nav', sizes: ['row', 'xs', 's', 'w'], def: 'xs', cells: [1, 1, 6, 2], side: true, edition: 'local', feature: 'kioskPower', nav: true, taps: true, perScreen: 1,
+    defaults: () => ({ label: '', icon: '', show: 'both' }),
+    props: (c, p, x) => ({
+      label: P.str(c, `${p}.label`, x.label, '', 40),
+      icon: navIconOf(c, `${p}.icon`, x.icon),
+      show: P.oneOf(c, `${p}.show`, x.show, 'both', NAV_SHOW),
     }),
   },
   'nav.progress': {
@@ -1640,6 +1665,8 @@ const FINE_MIN = {
   'spacer': [1, 1],
   'nav.button': [2, 1],
   'nav.pause': [2, 1],
+  'nav.kiosk': [2, 1],
+  'nav.poweroff': [2, 1],
   'nav.progress': [3, 1],
   'family.members': [4, 1],
   'family.routines': [4, 3],
@@ -2737,6 +2764,19 @@ export function commuteCardOf(screen, itemId, { now = new Date(), tz = 'UTC' } =
   if (screen?.layout?.preset !== 'canvas' || typeof itemId !== 'string' || !CANVAS_ID_RE.test(itemId)) return null;
   const it = canvasCards(screen.canvas?.items).find((x) => x.id === itemId);
   if (!it || it.kind !== 'commute' || it.hidden || !scheduleOn(it, now, tz)) return null;
+  return it;
+}
+
+/**
+ * The "Salir del kiosko" or "Apagar" card `itemId` (of `kind`, POWER_KINDS) of a screen, only while it shows: a
+ * Personalizado screen, the card not hidden by hand and its schedule on at `now` in `tz`. Else null. Touch, privacy
+ * and conditions are the route's to check on top (routes/power.js).
+ */
+export function powerCardOf(screen, itemId, kind, { now = new Date(), tz = 'UTC' } = {}) {
+  if (screen?.layout?.preset !== 'canvas' || typeof itemId !== 'string' || !CANVAS_ID_RE.test(itemId)) return null;
+  if (!Object.values(POWER_KINDS).includes(kind)) return null;
+  const it = canvasCards(screen.canvas?.items).find((x) => x.id === itemId);
+  if (!it || it.kind !== kind || it.hidden || !scheduleOn(it, now, tz)) return null;
   return it;
 }
 

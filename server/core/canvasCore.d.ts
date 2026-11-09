@@ -140,6 +140,7 @@ export const HA_ICONS: string[];
 export const TILE_SECOND_DOMAINS: string[];
 export const NAV_HOME: 'home';
 export const NAV_TAP_KINDS: CanvasKind[];
+export const POWER_KINDS: { exit: 'nav.kiosk'; off: 'nav.poweroff' };
 export function navTargets(screen: unknown): string[];
 export function canvasDataItems(screen: unknown, opts?: { now?: Date; tz?: string }): CanvasItem[];
 /** The "now playing" account ids a screen shows (its Sonando ahora cards, or screen.nowPlaying on other layouts). */
@@ -147,6 +148,7 @@ export function nowPlayingAccounts(screen: unknown, opts?: { now?: Date; tz?: st
 export const NOW_PLAYING_ACCOUNT_RE: RegExp;
 /** A screen's Trayectos card while it shows (not hidden, its schedule on), as saved (with its routes), or null. */
 export function commuteCardOf(screen: unknown, itemId: string, opts?: { now?: Date; tz?: string }): CanvasItem | null;
+export function powerCardOf(screen: unknown, itemId: string, kind: string, opts?: { now?: Date; tz?: string }): CanvasItem | null;
 
 type GridArg = CanvasGridId | string | null | undefined;
 export function sizeCells(size: CanvasSize | string, orientation?: Orientation | string, grid?: GridArg): [number, number];

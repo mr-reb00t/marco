@@ -934,3 +934,43 @@ photo routes, and the outbound address filter used by the unauthenticated setup 
 - **Testing the whole flow**: `MARCO_RELEASES_URL` (installer and `marco`, from `/etc/marco.conf` only) points at a
   server that answers like GitHub releases (`<url>/latest` redirects to `<url>/tag/v<x.y.z>`, packages at
   `<url>/download/v<x.y.z>/marco-<x.y.z>.tar.gz`).
+
+## Kiosk and power cards
+
+*Salir del kiosko* (`nav.kiosk`) and *Apagar* (`nav.poweroff`) are Personalizado navigation cards that act on the
+computer that runs the server (feature `kioskPower`, self-hosted only). The route, its checks and its answers are in
+[API.md](API.md#kiosk-and-power-cards); this is how the request crosses from the server to the kiosk and to root.
+
+- **Why not sudo or polkit.** `marco.service` runs with `NoNewPrivileges=true`, so `sudo` from the server always fails,
+  and dropping that line would weaken every install. On Raspberry Pi OS the desktop user (the service user of an
+  all-in-one install) already has `NOPASSWD: ALL`, so a narrow sudoers file would add nothing anyway. polkit rules
+  differ between Bullseye (`.pkla`) and Bookworm (JavaScript), and a power-off while someone is logged in needs a
+  second action. The server never starts a program for these cards.
+- **The runtime folder.** `marco.service` has `RuntimeDirectory=marco` (mode 0755): systemd creates `/run/marco`,
+  owned by the service user, sets `RUNTIME_DIRECTORY`, and empties it when the service stops and at every boot (tmpfs),
+  so a request never outlives a reboot. `MARCO_RUN_DIR` overrides it (tests). Docker and a server started by hand have
+  none: the cards say they are not available there (`409 no_runtime`).
+- **Salir del kiosko.** The server writes `Date.now()` to `/run/marco/kiosk-exit` (a temporary file renamed over it,
+  mode 0644). `deploy/kiosk.sh`, which runs as the desktop user, reads it with `head -c 32 | tr -cd 0-9` every 2 s
+  while Chromium runs and compares it with the number it found when it started. A new number makes it close Chromium
+  (its process, then every process of that user with the kiosk's `--user-data-dir`, since `chromium-browser` on
+  Raspberry Pi OS is a wrapper script) and exit without starting it again. Nothing it reads is run, and neither side
+  needs to delete the other's file. It writes the number to `$XDG_RUNTIME_DIR/marco-kiosk.closed` (0600, gone at
+  logout) and exits at once when started again for the same number, because LXDE-pi restarts `@` autostart lines that
+  exit. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
+  by hand. The kiosk had stopped `swayidle` when it started, so the desktop does not blank until the next login.
+- **Apagar.** The server creates `/run/marco/poweroff` with `O_EXCL` (an existing one means "already asked").
+  `marco-power.path` (`PathExists=/run/marco/poweroff`) starts `marco-power.service`, a root oneshot whose
+  `ExecStartPre=/bin/rm -f /run/marco/poweroff` removes it and whose `ExecStart=/usr/bin/systemctl --no-block poweroff`
+  is fixed: root never reads the file, so all the server can cause is "power off now". The units are written only by
+  the installer, from its own text, when the owner allows it (`--power-button`, the question of an all-in-one install,
+  `sudo marco power on`; `MARCO_POWER` in `/etc/marco.conf` keeps the choice across updates) and removed by
+  `--no-power-button`, `sudo marco power off` and `--uninstall`. `marco power on` writes to `/etc`, so it stops under
+  the read-only overlay like the installer. The server reads whether `marco-power.path` exists (`/etc` is readable
+  under `ProtectSystem=full`) to tell the card `not_enabled`.
+- **Who may ask.** Only a browser on that computer: the socket's own loopback address, no proxy header, a loopback
+  `Host` (DNS rebinding), and for the POST a same-origin `Origin` (a sandboxed web widget sends `null`, another site
+  its own) with a JSON body (a preflight for any cross-origin page). On top: the display access, a trusted display, the
+  screen's touch switch, not private, and the card shown on that screen now. An all-in-one Pi whose kiosk opens the
+  server by its network address (`KIOSK_URL=http://192.168.x.x:3000/...`) connects from that address, so the cards
+  say they only work on the Pi that runs Marco; the default `http://localhost:<port>/` works.

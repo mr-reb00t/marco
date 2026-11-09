@@ -89,6 +89,8 @@ export const KIND_META: Partial<Record<CanvasKind, KindMeta>> = {
   heading: { name: 'Sección', help: 'Un título con emoji para agrupar las tarjetas que tiene debajo.', icon: 'tag', words: 'título encabezado grupo', tags: 'sección título section heading title secção kop sectie sektion overskrift home assistant ha hass domótica smart home sekcja tytuł nagłówek' },
   'nav.button': { name: 'Ir a pantalla', help: 'Un botón que lleva a otra pantalla de casa, o de vuelta a la de siempre del dispositivo. Necesita tocar la pantalla.', icon: 'right', words: 'botón navegar pantalla inicio volver carrusel', tags: 'ir pantalla botón navegar inicio go screen button navigate home ir ecrã botão navegar início ga naar scherm knop navigeren start gå til skærm knap naviger przejdź ekran nawigacja przycisk' },
   'nav.pause': { name: 'Pausar carrusel', help: 'Un botón que para el carrusel en esta pantalla y lo deja seguir con otro toque.', icon: 'play', words: 'pausa parar carrusel', tags: 'pausar pausa parar carrusel pause stop carousel pausar carrossel pauzeren carrousel pause karrusel wstrzymaj pauza karuzela' },
+  'nav.kiosk': { name: 'Salir del kiosko', help: 'Un botón que cierra el navegador de pantalla completa en el Pi que ejecuta Marco. Pide un segundo toque.', icon: 'logout', words: 'salir cerrar kiosko navegador escritorio', tags: 'salir kiosko cerrar navegador escritorio exit kiosk close browser desktop sair quiosque fechar navegador kiosk afsluiten browser sluiten bureaublad afslut kiosk luk browser skrivebord wyjdź kiosk zamknij przeglądarkę pulpit' },
+  'nav.poweroff': { name: 'Apagar', help: 'Un botón que apaga el Pi que ejecuta Marco, si lo activas en el Pi. Pide un segundo toque.', icon: 'power', words: 'apagar pi raspberry energía', tags: 'apagar pi raspberry energía shut down power off pi raspberry desligar encerrar uitschakelen afsluiten zet uit sluk luk ned wyłącz zamknij system' },
   'nav.progress': { name: 'Progreso del carrusel', help: 'Qué pantalla del carrusel se ve y cuánto le queda, con puntos o una barra fina.', icon: 'more', words: 'puntos barra tiempo carrusel', tags: 'progreso puntos barra carrusel progress dots bar carousel progresso pontos barra carrossel voortgang punten balk carrousel fremskridt prikker bjælke karrusel postęp kropki pasek karuzela' },
   html: { name: 'HTML propio', help: 'Una tarjeta con tu propio HTML y CSS.', icon: 'code', words: 'css plantilla código', tags: 'html css plantilla código template code modelo sjabloon skabelon home assistant ha hass domótica smart home szablon kod' },
 };
@@ -126,7 +128,7 @@ export const AWAY_NOTE = 'Solo en la versión instalada en casa';
 export const outOfEdition = (k: CanvasKind, env: { cloud: boolean }): boolean => env.cloud && CANVAS_KINDS[k]?.edition === 'local';
 
 /** Why a kind cannot be added here (null: it can). Spanish t() keys. */
-export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean; commute?: boolean; photoBg?: boolean }): string | null {
+export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly string[]; stocks?: boolean; spotify?: boolean; commute?: boolean; kioskPower?: boolean; photoBg?: boolean }): string | null {
   const d = CANVAS_KINDS[k];
   if (!d) return 'No disponible en este servidor';
   if (env.cloud && d.edition === 'local') return 'Solo en Marco instalado en casa';
@@ -137,6 +139,8 @@ export function lockOf(k: CanvasKind, env: { cloud: boolean; allowed: readonly s
   if (k === 'nowplaying' && env.spotify === false) return 'No disponible en este servidor';
   // Trayectos asks Google with the owner's own key from the server (feature commute)
   if (k === 'commute' && env.commute === false) return 'No disponible en este servidor';
+  // Salir del kiosko and Apagar act on the computer that runs the server (feature kioskPower)
+  if ((k === 'nav.kiosk' || k === 'nav.poweroff') && env.kioskPower === false) return 'No disponible en este servidor';
   if (KIND_META[k]?.soon) return 'Llega en una próxima versión';
   // a photo card over the page's photo makes no sense (photoBg: the page's Fondo is Foto)
   if (k === 'photo' && env.photoBg) return 'Con el Fondo en Foto no se puede añadir. Cambia el Fondo de la pantalla a Animado o Color.';

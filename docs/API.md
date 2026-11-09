@@ -89,6 +89,8 @@ saved without `security` (old admin builds, backups or exports from before 0.3) 
 | `GET /api/photos?screen=&count=20&after=&for=` | `{ photos: [{ url, author?, title?, source: "stock"\|"gallery"\|"immich", file?, focusX?, focusY?, id?, takenAt?, place? }] }`. Immich photos (`background.source: "immich"`) have `id` (asset id), `takenAt` (`YYYY-MM-DD`, local date taken) and `place` (`"City, Country"`) and their `url` is `/media/immich/<id>?v=`; `after` may be an Immich `id` too, and with no Immich photo to show (not set up, no albums, unreachable with nothing cached) the answer is stock photos. Gallery photos follow the screen's `background.order` (`random` \| `newest` \| `name`); hidden photos are never returned. `after` = gallery `file` the display showed last: sequential orders continue right after it (wrapping around), `random` avoids starting with it. Without `after`, the server remembers where the previous batch for that screen ended. Falls back to stock when no gallery photo is in rotation. `rule` = a signature of the special background rule (`background.rules`, see [ARCHITECTURE.md](ARCHITECTURE.md)) that holds on the screen now, `""` without one: the photos are then that rule's (its gallery files still in rotation, or its Immich album), or the screen's source as usual when it has none to show. The rules themselves never reach a display. While private with *hide photos*: stock and `rule: ""`. `for` (#41): the photos of one *Personalizado* photo card (its id, a card inside a Rotativa too) or of the sidebar's photo (`sidebar`) on that screen, read from the card's saved `photoSource` (source, order, Immich albums, its own special backgrounds and `rule`); a card or sidebar on the screen's photos (`mode: "screen"`, or no block) gets the screen's list. The display never sends a source, a file or a URL. Cards with the same settings share the server's rotation memory (`after` works as above). `400 { error: "invalid_for" }` for an id that is not `sidebar` or 1 to 64 of `A-Za-z0-9_-`; `404 { error: "photo_card_not_found" }` when the screen shows no such photo card (another layout, hidden, not a photo card). Privacy with *hide photos* applies the same way. A server without the feature `photoSources` ignores `for` |
 | `GET /api/countdowns?screen=` | `{ generatedAt, today, hash, items: [{ id, title, emoji, color, date, days, origin, age? }] }`. An admin session is still accepted here in 0.5 for admin pages loaded before the update; the admin itself uses `GET /api/admin/countdowns` |
 | `POST /api/display/todo/toggle` | A tap on a Microsoft To Do task: `{ id, done }` (JSON, 2 KB at most; `id` is the task's opaque `ms_…` id from `todo.items`) → `{ ok: true }`, after the task is marked `completed` (or `notStarted`) at Microsoft. Only for a screen that shows the to-do list, has its touch setting on (`screens[].family.touch`), is not private, and a display that may tap (open mode: the local network): else `403 { code: "touch_off" }`. `404 { code: "not_found" }` for a task this server does not show now, `403 { code: "read_only" }` for an account that granted only `Tasks.Read`, `409 { code: "microsoft_reconnect" }`, `429 { code: "rate_limited" }` (shared with routine taps: 30 a minute per screen), `502 { code: "microsoft_unavailable" }`. Logged as `todo.task` (`{ task, list, done, screen }`) |
+| `GET /api/display/power?item=&screen=` | Whether the *Salir del kiosko* / *Apagar* card `item` can work on this install: `{ action: "exit" \| "off", ready, reason?: "no_runtime" \| "not_enabled" }`. Only from this very machine: `403 { error: "not_local" }` otherwise. `404 { error: "not_found" }` for a card the screen does not show now. See [Kiosk and power cards](#kiosk-and-power-cards) |
+| `POST /api/display/power` | The second tap on one of those cards: `{ item, action: "exit" \| "off" }` (JSON, 1 KB at most) → `202 { ok: true, already? }`. See [Kiosk and power cards](#kiosk-and-power-cards) |
 | `POST /api/display/heartbeat` | Body `DisplayHeartbeat` (≤ 4 kB: clientId, screen, version, resolution, dpr, webgl, night state, photo frame…) → `HeartbeatResponse` |
 | `GET /api/stream?screen=&client=&k=` | Server-Sent Events, see below |
 | `GET /api/display/poll?screen=&client=&cursor=&rev=&hidden=&preview=` | `PollResponse`: the same events as commands, for displays without a stream. See below |
@@ -125,7 +127,9 @@ The admin and the display read these fields to decide which sections, actions an
   `POST /api/admin/status/refresh`; the admin hides them when a server leaves it out), `photoSources` (a photo card or
   the sidebar's photo may have photos of its own, `GET /api/photos?for=`; the admin offers *Propias* only with it),
   `commute` (the `commute` widget type, `GET /api/display/commute`, `/api/admin/test/commute` and
-  `/api/admin/commute/key`, see [Commute times](#commute-times); Marco Cloud answers `false`). A self-hosted server turns all of them on, except
+  `/api/admin/commute/key`, see [Commute times](#commute-times); Marco Cloud answers `false`), `kioskPower` (the
+  *Salir del kiosko* and *Apagar* cards of Personalizado and `/api/display/power`, see
+  [Kiosk and power cards](#kiosk-and-power-cards); Marco Cloud answers `false`). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -169,9 +173,42 @@ The admin and the display read these fields to decide which sections, actions an
 Clients treat a response with no `features` field (servers older than 0.5.0) as having every feature on, except
 `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`, `carousels`,
 `immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings` and the
-newer opt-in keys (`screenBuilder`, `familyAccess`, `spotify`, `sourceRefresh`, `photoSources`, `commute`). A key missing
+newer opt-in keys (`screenBuilder`, `familyAccess`, `spotify`, `sourceRefresh`, `photoSources`, `commute`, `kioskPower`). A key missing
 from `features` counts as off only when `edition` is not `'self-hosted'`, and a missing opt-in key (the ones just
 listed) is always off.
+
+### Kiosk and power cards
+
+Two *Navegación* kinds of a Personalizado screen, self-hosted only (`edition: 'local'`, feature `kioskPower`), with the
+props of the other buttons (`label`, `icon`, `show`) and at most one of each per screen: `nav.kiosk` (*Salir del
+kiosko*) closes the kiosk browser and `nav.poweroff` (*Apagar*) powers off the computer that runs the server. Marco
+Cloud refuses both kinds in a config and draws them as `disabled: 'feature'`.
+
+The display draws them only with `canvas.taps` (touch on, not private, a trusted display), and asks nothing when it was
+not opened at `localhost`, `127.0.0.1` or `[::1]` (the card says it only works on the Pi that runs Marco). A first tap
+arms the card for 4 seconds; the second one sends the request. The admin preview and the demo never ask.
+
+`GET /api/display/power?item=` and `POST /api/display/power` answer only when all of these hold, in this order:
+
+- the request comes straight from this machine: the socket's own address is loopback (not `req.ip`, whatever
+  `TRUST_PROXY` says), there is no `Forwarded`, `X-Forwarded-For`, `X-Forwarded-Host`, `X-Forwarded-Proto`,
+  `X-Real-IP`, `Via`, `CF-Connecting-IP` or `True-Client-IP` header (a reverse proxy on the same machine connects from
+  127.0.0.1 too), and `Host` is `localhost`, `127.0.0.1` or `[::1]` with any port. Else `403 { error: "not_local" }`;
+- for the POST: `Content-Type: application/json` (else `415`), and `Origin` is exactly `http://<Host>` with
+  `Sec-Fetch-Site`, when sent, `same-origin` (a sandboxed web widget sends `Origin: null`). Else `403 not_local`;
+- the display access of every display request (a key or device token in private mode, `401` without it), a display the
+  server trusts, and a screen with *Permitir tocar en la pantalla* on that is not private and shows that card now (not
+  hidden, its schedule and its condition on). Else `404 { error: "not_found" }`.
+
+The POST then counts: at most 6 a minute per action (`429 { error: "rate_limited" }` with `Retry-After`). Within 30
+seconds of an accepted request (for `off`, ever after) it answers `202 { ok: true, already: true }` and does nothing.
+`409 { error: "no_runtime" }` when the server has no runtime folder (`RUNTIME_DIRECTORY` from systemd, or
+`MARCO_RUN_DIR`: Docker and a server started by hand have none) and `409 { error: "not_enabled" }` for `off` before
+`sudo marco power on`. An accepted request answers `202 { ok: true }`, is logged as `display.kiosk_exit` or
+`display.poweroff` (`{ screen, item }`, actor `display:<slug>`, level `warn`) and is carried out a moment later
+(server/power.js): the server writes a new number to `<runtime>/kiosk-exit`, which `deploy/kiosk.sh` watches, or
+creates `<runtime>/poweroff`, which `marco-power.path` watches. Refused requests are not logged. How the two sides
+work: [ARCHITECTURE.md](ARCHITECTURE.md#kiosk-and-power-cards).
 
 ### Account mode
 

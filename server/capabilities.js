@@ -14,6 +14,7 @@ export const FEATURE_KEYS = Object.freeze([
   'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich',
   'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder',
   'valueHooks', 'tokenScopes', 'stockQuotes', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute',
+  'kioskPower',
 ]);
 
 /** Feature flags of a self-hosted server: all on (`updates` too: the update banner and settings), Google and
@@ -37,7 +38,9 @@ export const FEATURE_KEYS = Object.freeze([
  *  downloads on Admin > Estado with server-side cooldowns (POST /api/admin/status/refresh, calendars.js refreshNow).
  *  `photoSources`: a Personalizado photo card or sidebar photo may have its own photos (GET /api/photos?for=,
  *  core/photoSource.js).
- *  `commute`: the commute widget, live travel times from Google with the owner's own Maps key (server/commute.js). */
+ *  `commute`: the commute widget, live travel times from Google with the owner's own Maps key (server/commute.js).
+ *  `kioskPower`: the "Salir del kiosko" and "Apagar" cards of Personalizado, for a screen on the computer that runs the
+ *  server (routes/power.js; whether this install can do them is GET /api/display/power's answer). */
 export function selfHostedFeatures() {
   const google = googleConfigured();
   const out = {};

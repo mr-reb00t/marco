@@ -14,6 +14,14 @@
 #                    (the default scale is 1, so the layout does not depend on the desktop's zoom setting)
 #   KIOSK_WAIT_SEC   Max seconds to wait for /api/health before opening anyway (default 120)
 #   KIOSK_LOG        Log file when not started from a terminal (default /tmp/marco-kiosk.log)
+#   MARCO_RUN_DIR    Where the Marco server asks the kiosk to close (default /run/marco, see below)
+#
+# "Salir del kiosko" (a card on a screen of this device): the server writes a new number to /run/marco/kiosk-exit
+# (its systemd RuntimeDirectory, readable by everyone, emptied at every boot). When that number changes while Chromium
+# runs, this script closes Chromium and does not open it again: the kiosk comes back at the next login or reboot, or
+# from the menu entry "Marco" (kiosk.sh --open). The number is only compared, never run or used for anything else. A desktop that starts
+# this script again by itself (LXDE-pi's @ lines) finds it closed for that number ($XDG_RUNTIME_DIR, cleared at logout)
+# and exits at once.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -52,6 +60,23 @@ if ! flock -n 9; then
   log "A kiosk is already running; exiting."
   exit 0
 fi
+
+# --- Closed from the screen ----------------------------------------------------------
+MARCO_RUN_DIR="${MARCO_RUN_DIR:-/run/marco}"
+# The server's last "Salir del kiosko": digits only ('' when there is none).
+token() { head -c 32 "$MARCO_RUN_DIR/kiosk-exit" 2>/dev/null | tr -cd '0-9' || true; }
+CLOSED="$LOCK_DIR/marco-kiosk.closed"
+# --open (the menu entry "Marco"): opened by hand, so a close asked earlier no longer holds it back
+if [ "${1:-}" = --open ]; then rm -f "$CLOSED"; fi
+if [ -s "$CLOSED" ]; then
+  t="$(token)"
+  if [ -n "$t" ] && [ "$(head -c 32 "$CLOSED" 2>/dev/null | tr -cd '0-9' || true)" = "$t" ]; then
+    log "Closed from the screen; it opens again at the next login (or from the menu: Marco)."
+    exit 0
+  fi
+fi
+# A request from before this start (an earlier session) does not count: only a new number does.
+BASE="$(token)"
 
 # --- Log -------------------------------------------------------------------------
 # Started from a desktop autostart (wayfire, LXDE-pi, XDG) the output would go nowhere or to ~/.xsession-errors:
@@ -193,6 +218,20 @@ EXTRA=( $KIOSK_EXTRA_ARGS )
 # --- Loop: relaunch Chromium if it exits or crashes ---------------------------------
 trap 'log "Exiting"; pkill -P $$ || true; exit 0' INT TERM
 
+# Chromium of Raspberry Pi OS is a wrapper script: the browser may not be the process started here, so every process
+# of this user that runs with the kiosk's own profile folder goes too.
+close_browser() {
+  local pid="$1" _
+  kill -TERM "$pid" 2>/dev/null || true
+  pkill -TERM -u "$(id -u)" -f -- "--user-data-dir=$PROFILE_DIR" 2>/dev/null || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if ! kill -0 "$pid" 2>/dev/null && ! pgrep -u "$(id -u)" -f -- "--user-data-dir=$PROFILE_DIR" >/dev/null 2>&1; then return 0; fi
+    sleep 0.5
+  done
+  kill -KILL "$pid" 2>/dev/null || true
+  pkill -KILL -u "$(id -u)" -f -- "--user-data-dir=$PROFILE_DIR" 2>/dev/null || true
+}
+
 fails=0
 while true; do
   # Resolved on every launch, so a regenerated link is picked up when Chromium restarts.
@@ -200,7 +239,19 @@ while true; do
   URL="${URL:-$KIOSK_URL}"
   log "Launching $BROWSER -> $(redact_url "$URL")"
   start_ts=$(date +%s)
-  "$BROWSER" "${FLAGS[@]}" "${EXTRA[@]}" "$URL" >/dev/null 2>&1 9>&- || true
+  "$BROWSER" "${FLAGS[@]}" "${EXTRA[@]}" "$URL" </dev/null >/dev/null 2>&1 9>&- &
+  CPID=$!
+  while kill -0 "$CPID" 2>/dev/null; do
+    t="$(token)"
+    if [ -n "$t" ] && [ "$t" != "$BASE" ]; then
+      log "Exit asked from the screen: closing Chromium. It opens again at the next login (or from the menu: Marco)."
+      close_browser "$CPID"
+      (umask 077; printf '%s' "$t" > "$CLOSED")
+      exit 0
+    fi
+    sleep 2
+  done
+  wait "$CPID" 2>/dev/null || true
   run_for=$(( $(date +%s) - start_ts ))
   if [ "$run_for" -lt 30 ]; then
     fails=$((fails + 1))

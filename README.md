@@ -312,6 +312,7 @@ Pass options after `bash -s --`, for example
 | `--update` | Update an existing install (the same as running the installer again) |
 | `--uninstall [--purge]` | Remove Marco; `--purge` also deletes the data folder (config, photos, backups) |
 | `--skip-apt` | Do not install system packages |
+| `--power-button`, `--no-power-button` | Let the *Shut down* card on a screen of this device power it off, or not (an all-in-one install asks; off by default). Later: `sudo marco power on\|off` |
 | `-h`, `--help` | Show the help |
 
 Run as root without `--user`, the server runs as `$SUDO_USER`; failing that, as the desktop auto-login user (modes
@@ -328,6 +329,8 @@ with a screen) or as a new `marco` system user (server only).
 /etc/marco.conf                 what was installed and where (read by the marco command)
 /usr/local/bin/marco            the marco command
 /etc/systemd/system/marco-update.path, marco-update.service   the admin's Update button (see Updates below)
+/etc/systemd/system/marco-power.path, marco-power.service     only with --power-button: the Shut down card
+/run/marco/                     where the Exit kiosk and Shut down cards leave their requests (emptied at every boot)
 ~/.config/marco/kiosk.env       kiosk settings (screen and all-in-one modes)
 ```
 
@@ -341,6 +344,7 @@ with a screen) or as a new `marco` system user (server only).
 | `marco update [--force]` | Install the latest release: checksum verified, switched in one step and rolled back if the new version does not start. It stops if GitHub cannot be reached and never installs an older version; `--force` reinstalls the same version or allows an older one |
 | `marco url` | Admin address and the private link of every screen, with QR codes |
 | `marco version` | Installed version and the latest release |
+| `marco power on\|off\|status` | Whether the *Shut down* card on a screen of this device may power it off (see [Exit kiosk and Shut down](#exit-kiosk-and-shut-down)) |
 | `marco uninstall [--purge]` | Remove Marco; your data is kept unless you add `--purge`. It asks first (the default answer is no); without a terminal it needs `--yes` |
 
 ### Updates
@@ -655,7 +659,9 @@ A few things worth knowing:
   places at once, as a list, a grid or a single row. Every place is fetched once and shared by all the screens.
 - **Touch screens:** the *Navigation* cards are buttons to another screen of the house (*Go to screen*, or *Home*),
   *Pause carousel* and *Carousel progress*. With touch on, a swipe left or right moves the carousel to the next or
-  the previous screen. After a few minutes without a touch the screen goes back to what it usually shows.
+  the previous screen. After a few minutes without a touch the screen goes back to what it usually shows. On an
+  all-in-one Pi, *Exit kiosk* and *Shut down* close the full screen browser or power the Pi off from the screen itself
+  ([Exit kiosk and Shut down](#exit-kiosk-and-shut-down)).
   Every carousel also has its own *Touch screens* settings, for any layout: *Swipe to change screen* (the screen
   you swipe to gets its full time, and only the TV you touch changes), *Press and hold to pause* (the screen stays
   while your finger does) and *Position dots* at the bottom, always or only on touch screens. A TV with no touch is
@@ -854,6 +860,30 @@ off screen blanking and hides the cursor. The link is never printed in full: the
 - **Slow Pi:** set the ambient effect to *none* and transition to *fade*, or use `?lite=1` in `KIOSK_URL`.
 
 Useful commands: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`.
+
+### Exit kiosk and Shut down
+
+Two *Navigation* cards of a custom screen let a touch screen leave the kiosk or power off the Pi without opening the
+admin. Both need *Allow touch on the screen*, and both ask for a second tap within a few seconds (the card turns
+amber and a bar runs out), so a hand brushing the screen does nothing.
+
+- **Exit kiosk** closes Chromium. The kiosk comes back after a reboot, at the next desktop login, or from the Pi's
+  menu (*Marco*).
+- **Shut down** powers the Pi off. It is off until you allow it on the Pi:
+
+  ```bash
+  sudo marco power on      # or install with --power-button; sudo marco power off to take it back
+  marco power status
+  ```
+
+  Until then the card says how to turn it on.
+
+They only work on an **all-in-one** Pi, on the screen the kiosk opens at `http://localhost:<port>/` (the default). A
+phone, another screen, or the Pi showing the server by its network address get a card that says it only works on the
+Pi that runs Marco, and the server refuses the request anyway: it must come straight from that machine (not through a
+reverse proxy), from the screen's own page, for a card that screen shows now. Each use is in the activity log. They are
+not in Marco Cloud, and not available in Docker (the server there cannot reach the host). After *Exit kiosk* the screen
+does not blank by itself until the next login, because the kiosk turned that off when it started.
 
 ## Connecting Google Calendar
 

@@ -87,6 +87,8 @@ export function Palette(props: {
   spotify?: boolean;
   /** false: no travel times on this server (no commute feature) */
   commute?: boolean;
+  /** false: Salir del kiosko and Apagar do nothing on this server (no kioskPower feature) */
+  kioskPower?: boolean;
   stage: { current: StageApi | null };
   /** add at the first free spot */
   onAdd: (spec: AddSpec) => void;
@@ -130,7 +132,7 @@ export function Palette(props: {
       });
     }
     return out;
-  }, [props.widgets, props.cloud, props.allowed, props.stocks, props.spotify, props.commute, photoBg]);
+  }, [props.widgets, props.cloud, props.allowed, props.stocks, props.spotify, props.commute, props.kioskPower, photoBg]);
 
   const nq = q.trim();
   const shown = nq ? tiles.filter((x) => matchesSearch(nq, { kind: x.spec.kind, name: x.name, help: x.help, group: x.group }, t)) : tiles;

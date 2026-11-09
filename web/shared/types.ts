@@ -1091,6 +1091,8 @@ export type CanvasKind =
   | 'rotator'
   // Navegación: touch screens go to another screen, pause the carousel or show where it is
   | 'nav.button' | 'nav.pause' | 'nav.progress'
+  // "Salir del kiosko" and "Apagar": the computer that runs Marco (self-hosted only, feature kioskPower)
+  | 'nav.kiosk' | 'nav.poweroff'
   // Familia y hogar: the family data the display already has (GET /api/display/family)
   | 'family.members' | 'family.routines' | 'family.points' | 'family.rewards' | 'family.chores'
   | 'meals.today' | 'meals.week' | 'birthdays' | 'highlights' | 'announcement'
@@ -2135,6 +2137,9 @@ export interface Features {
   /** The commute widget (type 'commute'): live travel times from Google with the owner's own key (server/commute.js,
    *  GET /api/display/commute, /api/admin/commute/key, /api/admin/test/commute). Absent = off. */
   commute: boolean;
+  /** The "Salir del kiosko" and "Apagar" cards of Personalizado: close the kiosk browser or power off the computer that
+   *  runs the server, from a screen on that computer (GET/POST /api/display/power). Absent = off. */
+  kioskPower: boolean;
 }
 
 export type FeatureName = keyof Features;
@@ -3394,6 +3399,8 @@ export type ActivityType =
   | 'display.device_updated'
   | 'display.device_revoked'
   | 'display.doorbell'
+  | 'display.kiosk_exit'
+  | 'display.poweroff'
   | 'family.chore'
   | 'family.redeemed'
   | 'family.points'

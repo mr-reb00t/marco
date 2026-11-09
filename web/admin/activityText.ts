@@ -143,6 +143,10 @@ export function describeActivity(e: ActivityEntry): { icon: IconName; text: stri
       return { icon: 'link', text: t('Enlace privado regenerado: {screen}', { screen: str(d.screen) }) + (Number(d.disconnected) ? ` · ${nScreens(Number(d.disconnected))}` : '') };
     case 'display.paired':
       return { icon: 'link', text: t('Pantalla vinculada: {name} → {screen}', { name: q(d.name), screen: str(d.screen) }) };
+    case 'display.kiosk_exit':
+      return { icon: 'logout', text: t('Kiosko cerrado desde la pantalla {screen}', { screen: str(d.screen) }) };
+    case 'display.poweroff':
+      return { icon: 'power', text: t('Apagado pedido desde la pantalla {screen}', { screen: str(d.screen) }) };
     case 'display.pair_failed':
       return { icon: 'alert', text: t('Código de vinculación incorrecto') };
     case 'display.device_updated':

@@ -329,6 +329,7 @@ Las opciones van después de `bash -s --`, por ejemplo
 | `--update` | Actualiza una instalación existente (lo mismo que volver a ejecutar el instalador) |
 | `--uninstall [--purge]` | Desinstala Marco; `--purge` borra también la carpeta de datos (configuración, fotos, copias) |
 | `--skip-apt` | No instala paquetes del sistema |
+| `--power-button`, `--no-power-button` | Deja que la tarjeta *Apagar* de una pantalla de este dispositivo lo apague, o no (la instalación todo en uno lo pregunta; desactivado por defecto). Más adelante: `sudo marco power on\|off` |
 | `-h`, `--help` | Muestra la ayuda |
 
 Si se ejecuta como root sin `--user`, el servidor se ejecuta como `$SUDO_USER`; si no lo hay, como el usuario con
@@ -346,6 +347,8 @@ inicio de sesión automático en el escritorio (modos con pantalla) o como un us
 /etc/marco.conf                 qué se instaló y dónde (lo lee el comando marco)
 /usr/local/bin/marco            el comando marco
 /etc/systemd/system/marco-update.path, marco-update.service   el botón Actualizar del panel (ver Actualizaciones)
+/etc/systemd/system/marco-power.path, marco-power.service     solo con --power-button: la tarjeta Apagar
+/run/marco/                     donde las tarjetas Salir del kiosko y Apagar dejan sus peticiones (se vacía al arrancar)
 ~/.config/marco/kiosk.env       ajustes del kiosco (modos pantalla y todo en uno)
 ```
 
@@ -359,6 +362,7 @@ inicio de sesión automático en el escritorio (modos con pantalla) o como un us
 | `marco update [--force]` | Instala la última versión: comprueba la suma, cambia de versión en un solo paso y vuelve atrás si la nueva no arranca. Se detiene si no puede llegar a GitHub y nunca instala una versión anterior; `--force` reinstala la misma versión o permite una anterior |
 | `marco url` | Dirección del panel y el enlace privado de cada pantalla, con códigos QR |
 | `marco version` | Versión instalada y la última publicada |
+| `marco power on\|off\|status` | Si la tarjeta *Apagar* de una pantalla de este dispositivo puede apagarlo (ver [Salir del kiosko y Apagar](#salir-del-kiosko-y-apagar)) |
 | `marco uninstall [--purge]` | Desinstala Marco; tus datos se conservan salvo que añadas `--purge`. Pregunta antes (la respuesta por defecto es no); sin terminal necesita `--yes` |
 
 ### Actualizaciones
@@ -693,7 +697,8 @@ Conviene saber:
 - **Pantallas táctiles:** las tarjetas de *Navegación* son botones a otra pantalla de la casa (*Ir a pantalla*, o
   *Inicio*), *Pausar carrusel* y *Progreso del carrusel*. Con el toque activado, deslizar a izquierda o derecha lleva
   el carrusel a la pantalla siguiente o a la anterior. Tras unos minutos sin tocarla, la pantalla vuelve a lo que
-  enseña normalmente.
+  enseña normalmente. En una Pi todo en uno, *Salir del kiosko* y *Apagar* cierran el navegador de pantalla completa o
+  apagan la Pi desde la propia pantalla ([Salir del kiosko y Apagar](#salir-del-kiosko-y-apagar)).
 - Los relojes y la tarjeta de fecha tienen su propio *Color de la hora* y *Color de la fecha*, y las gráficas (la
   curva de un sensor, cripto, el precio de la luz) van *Debajo* de las cifras o *De fondo* detrás de ellas.
 - Horizontal y vertical: la vista vertical se saca de la horizontal hasta que la cambias tú.
@@ -895,6 +900,31 @@ el registro del kiosco muestran `/d/<private link>`. En el modo de acceso **abie
 - **Pi lenta**: pon el efecto ambiental en *ninguno* y la transición en *fundido*, o usa `?lite=1` en `KIOSK_URL`.
 
 Comandos útiles: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`.
+
+### Salir del kiosko y Apagar
+
+Dos tarjetas de *Navegación* de una pantalla personalizada permiten salir del kiosko o apagar la Pi desde una pantalla
+táctil, sin abrir el panel. Las dos necesitan *Permitir tocar en la pantalla* y las dos piden un segundo toque en pocos
+segundos (la tarjeta se pone ámbar y una barra se va acabando), así que rozar la pantalla con la mano no hace nada.
+
+- **Salir del kiosko** cierra Chromium. El kiosco vuelve al reiniciar, al entrar otra vez en el escritorio o desde el
+  menú de la Pi (*Marco*).
+- **Apagar** apaga la Pi. Está desactivada hasta que lo permitas en la Pi:
+
+  ```bash
+  sudo marco power on      # o instala con --power-button; sudo marco power off para quitarlo
+  marco power status
+  ```
+
+  Hasta entonces la tarjeta explica cómo activarla.
+
+Solo funcionan en una Pi **todo en uno**, en la pantalla que el kiosco abre en `http://localhost:<puerto>/` (lo normal).
+Un móvil, otra pantalla o la Pi mostrando el servidor por su dirección de red ven una tarjeta que dice que solo funciona
+en la Pi que ejecuta Marco, y el servidor rechaza la petición de todos modos: tiene que llegar directamente desde esa
+máquina (no a través de un proxy inverso), desde la página de la propia pantalla y para una tarjeta que esa pantalla
+muestra en ese momento. Cada uso queda en el registro de actividad. No están en Marco Cloud ni en Docker (desde ahí el
+servidor no llega al equipo). Después de *Salir del kiosko* la pantalla no se apaga sola hasta el siguiente inicio de
+sesión, porque el kiosco lo desactivó al arrancar.
 
 ## Conectar Google Calendar
 

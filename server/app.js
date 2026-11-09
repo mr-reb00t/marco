@@ -8,6 +8,7 @@ import { sessionMiddleware, csrfGuard, loginHandler, logoutHandler, logoutAllHan
   googleLoginHandler, googleConnectHandler, googleCallbackHandler, microsoftConnectHandler, microsoftCallbackHandler, twoFactorLoginHandler } from './auth.js';
 import { twoFactorRouter } from './routes/twofactor.js';
 import { publicRouter, displayBootstrap } from './routes/public.js';
+import { powerRouter } from './routes/power.js';
 import { injectBoot } from './core/bootstrap.js';
 import { adminRouter } from './routes/admin.js';
 import { screensAdminRouter, displayPublicRouter } from './routes/screens.js';
@@ -91,9 +92,10 @@ export const DISPLAY_API_PATHS = ['/api/display', '/api/events', '/api/weather',
 
 /**
  * @param {{ version: string, dist?: string, updater?: object }} opts  dist = built frontend directory (default
- *   <repo>/dist); updater = update checker (server/updates.js; default: the server's own, created on first use)
+ *   <repo>/dist); updater = update checker (server/updates.js; default: the server's own, created on first use);
+ *   power = what the "Salir del kiosko" and "Apagar" cards call (routes/power.js; tests pass their own)
  */
-export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = null }) {
+export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = null, power = undefined }) {
   const app = express();
   app.disable('x-powered-by');
   // TRUST_PROXY: Express "trust proxy" value (default loopback). Set it to the address the reverse proxy connects
@@ -131,6 +133,7 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use('/api/hooks', express.json({ limit: '16kb' }));
   app.use(['/api/family', '/api/display/family', '/api/member'], express.json({ limit: '4kb' }));
   app.use('/api/display/todo', express.json({ limit: '2kb' }));
+  app.use('/api/display/power', express.json({ limit: '1kb' }));
   app.use(express.json({ limit: '1mb' }));
   app.use(['/api/admin', '/api/auth', '/api/setup'], csrfGuard({ multipartPaths: ['/photos', /^\/photos\/[^/]+\/thumb$/] }));
   // The phone dashboards of family access (/my): same origin only, JSON only, the token in a header.
@@ -172,6 +175,8 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   // family access (their own tokens, rate-limited) and the public (display) routers.
   app.use('/api', pairPublicRouter(), familyPublicRouter(), familyAccessMemberRouter());
   app.use('/api', displayPublicRouter(), eventsPublicRouter(), doorbellPublicRouter(), familyDisplayRouter(), haDisplayRouter(), valuesDisplayRouter(), dataDisplayRouter(), spotifyDisplayRouter());
+  // "Salir del kiosko" and "Apagar": only from a browser on this computer (routes/power.js)
+  app.use('/api', powerRouter(power));
   app.use('/api', publicRouter({ version }));
   app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 

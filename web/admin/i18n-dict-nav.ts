@@ -1,6 +1,6 @@
-// Personalizado "Navegación" (touch screens: go to another screen, pause the carousel, its progress, the swipe) and
-// the hint next to the animated background. Each row is [es, en, pt, nl, da]. ROWS_NAV feeds EN and PT
-// (i18n-dict.ts); NL_NAV and DA_NAV are spread into NL and DA.
+// Personalizado "Navegación" (touch screens: go to another screen, pause the carousel, its progress, the swipe, exit
+// the kiosk and shut down the Pi) and the hint next to the animated background. Each row is [es, en, pt, nl, da].
+// ROWS_NAV feeds EN and PT (i18n-dict.ts); NL_NAV and DA_NAV are spread into NL and DA.
 const ROWS: [string, string, string, string, string][] = [
   ['Navegación', 'Navigation', 'Navegação', 'Navigatie', 'Navigation'],
   ['Ir a pantalla', 'Go to screen', 'Ir para ecrã', 'Naar scherm', 'Gå til skærm'],
@@ -128,6 +128,83 @@ const ROWS: [string, string, string, string, string][] = [
     'Animationen (nordlys, partikler) vælges under Baggrund, i Stemningseffekt.',
   ],
   ['Ir a Efecto ambiental', 'Go to Ambient effect', 'Ir para Efeito ambiente', 'Naar Sfeereffect', 'Gå til Stemningseffekt'],
+  [
+    'Salir del kiosko',
+    'Exit kiosk',
+    'Sair do quiosque',
+    'Kiosk afsluiten',
+    'Afslut kiosk',
+  ],
+  [
+    'Apagar',
+    'Shut down',
+    'Desligar',
+    'Uitschakelen',
+    'Sluk',
+  ],
+  [
+    'Un botón que cierra el navegador de pantalla completa en el Pi que ejecuta Marco. Pide un segundo toque.',
+    'A button that closes the full screen browser on the Pi that runs Marco. It asks for a second tap.',
+    'Um botão que fecha o navegador em ecrã inteiro no Pi que executa o Marco. Pede um segundo toque.',
+    'Een knop die de schermvullende browser sluit op de Pi waarop Marco draait. Vraagt om een tweede tik.',
+    'En knap, der lukker fuldskærmsbrowseren på den Pi, der kører Marco. Beder om et tryk mere.',
+  ],
+  [
+    'Un botón que apaga el Pi que ejecuta Marco, si lo activas en el Pi. Pide un segundo toque.',
+    'A button that shuts down the Pi that runs Marco, once you turn it on there. It asks for a second tap.',
+    'Um botão que desliga o Pi que executa o Marco, se o ativar no Pi. Pede um segundo toque.',
+    'Een knop die de Pi waarop Marco draait uitschakelt, als je dat op de Pi aanzet. Vraagt om een tweede tik.',
+    'En knap, der slukker den Pi, der kører Marco, hvis du slår det til på Pi’en. Beder om et tryk mere.',
+  ],
+  [
+    'Vacío: Salir del kiosko.',
+    'Empty: Exit kiosk.',
+    'Vazio: Sair do quiosque.',
+    'Leeg: Kiosk afsluiten.',
+    'Tom: Afslut kiosk.',
+  ],
+  [
+    'Vacío: Apagar.',
+    'Empty: Shut down.',
+    'Vazio: Desligar.',
+    'Leeg: Uitschakelen.',
+    'Tom: Sluk.',
+  ],
+  [
+    'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.',
+    'Closes the full screen browser on the Pi that runs Marco. It comes back after a restart, at the next desktop login or from the Pi’s menu (Marco). It asks for a second tap.',
+    'Fecha o navegador em ecrã inteiro do Pi que executa o Marco. Volta ao reiniciar, ao entrar outra vez no ambiente de trabalho ou pelo menu do Pi (Marco). Pede um segundo toque.',
+    'Sluit de schermvullende browser op de Pi waarop Marco draait. Hij komt terug na een herstart, bij de volgende aanmelding op het bureaublad of via het menu van de Pi (Marco). Vraagt om een tweede tik.',
+    'Lukker fuldskærmsbrowseren på den Pi, der kører Marco. Den kommer igen efter en genstart, ved næste login på skrivebordet eller fra Pi’ens menu (Marco). Beder om et tryk mere.',
+  ],
+  [
+    'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.',
+    'Shuts down the Pi that runs Marco. First turn it on there with: sudo marco power on. It asks for a second tap.',
+    'Desliga o Pi que executa o Marco. Antes é preciso ativá-lo no Pi com: sudo marco power on. Pede um segundo toque.',
+    'Schakelt de Pi uit waarop Marco draait. Zet het eerst aan op de Pi met: sudo marco power on. Vraagt om een tweede tik.',
+    'Slukker den Pi, der kører Marco. Slå det først til på Pi’en med: sudo marco power on. Beder om et tryk mere.',
+  ],
+  [
+    'Solo funciona en la pantalla conectada al Pi que ejecuta Marco, abierta en localhost. Necesita Permitir tocar en la pantalla.',
+    'Only works on the screen connected to the Pi that runs Marco, opened at localhost. Needs Allow touch on the screen.',
+    'Só funciona no ecrã ligado ao Pi que executa o Marco, aberto em localhost. Precisa de Permitir tocar no ecrã.',
+    'Werkt alleen op het scherm dat aan de Pi met Marco hangt, geopend op localhost. Vereist ‘Aanraken op het scherm toestaan’.',
+    'Virker kun på skærmen, der er tilsluttet den Pi, der kører Marco, åbnet på localhost. Kræver »Tillad berøring på skærmen«.',
+  ],
+  [
+    'Kiosko cerrado desde la pantalla {screen}',
+    'Kiosk closed from the screen {screen}',
+    'Quiosque fechado a partir do ecrã {screen}',
+    'Kiosk afgesloten vanaf het scherm {screen}',
+    'Kiosk lukket fra skærmen {screen}',
+  ],
+  [
+    'Apagado pedido desde la pantalla {screen}',
+    'Shutdown asked from the screen {screen}',
+    'Desligar pedido a partir do ecrã {screen}',
+    'Uitschakelen gevraagd vanaf het scherm {screen}',
+    'Slukning bedt om fra skærmen {screen}',
+  ],
 ];
 
 export const ROWS_NAV: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

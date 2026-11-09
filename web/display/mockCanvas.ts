@@ -1,6 +1,6 @@
 // Demo layouts of the Personalizado screen (?demo=1&preset=canvas). &shot=<fixture> picks one (the screenshots and
 // the welcome flow use them): starter (default), todos, kinds, sidebar, portrait, flex, dense, home, ha, controls, features, tiles, smallest, binary, words, lights, data, confirm, cameras, clocks, calendars, media, html, family, nowplaying,
-// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, commute,
+// household, look, values, ink, places, motion, motion-group, motion-nest, groups, vehicles, vehicles-small, stocks, commute, power,
 // commuteLines, commutePortrait, commuteSide, commuteStates, commuteSurfaces, empty. Each goes through the same validation and projection as a saved screen (server/core/canvasCore.js),
 // so the demo shows what a server sends. Positions are in cells of the grid (24×16, 16×24).
 import type { CanvasConfig, CanvasItem, DisplayCanvas, DisplayConfig, DisplayValue } from '../shared/types';
@@ -60,6 +60,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'nav.button', pos: M(18, 10, 'row'), props: { target: 's_photos', icon: '🖼️' } },
       { kind: 'nav.progress', pos: M(6, 12, 'w'), props: { style: 'bar' } },
       { kind: 'nav.button', pos: B(18, 12, 6, 4), props: { target: 's_agenda', label: 'Agenda', icon: '📅', show: 'both' } },
+    ],
+  },
+  // "Salir del kiosko" and "Apagar" (self-hosted only), in each of their looks: the demo draws them ready and a tap only
+  // shows the confirmation (widgets/canvas/nav.ts powerButton never asks a server here)
+  power: {
+    canvas: { background: 'ambient', touch: true },
+    items: [
+      { kind: 'clock.digital', pos: M(0, 0, 'm') },
+      { kind: 'nav.kiosk', pos: M(8, 0, 'w') },
+      { kind: 'nav.poweroff', pos: M(14, 0, 'w'), props: { icon: 'i:power' } },
+      { kind: 'calendar.agenda', pos: M(0, 6, 't'), props: { days: 4 } },
     ],
   },
   // four to-do cards, each with its own lists, title, icon and filter (core todoCore.js; mock.ts adds the demo To Do

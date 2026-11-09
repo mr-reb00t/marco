@@ -156,6 +156,20 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     NAV_RETURN,
     { type: 'note', text: 'Solo se ve en los dispositivos que muestran un carrusel.' },
   ],
+  'nav.kiosk': [
+    NAV_SHOW_FIELD,
+    { k: 'icon', type: 'navIcon', label: 'Icono' },
+    { k: 'label', type: 'text', label: 'Texto', max: 40, hint: 'Vacío: Salir del kiosko.' },
+    { type: 'note', text: 'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.' },
+    { type: 'note', text: 'Solo funciona en la pantalla conectada al Pi que ejecuta Marco, abierta en localhost. Necesita Permitir tocar en la pantalla.' },
+  ],
+  'nav.poweroff': [
+    NAV_SHOW_FIELD,
+    { k: 'icon', type: 'navIcon', label: 'Icono' },
+    { k: 'label', type: 'text', label: 'Texto', max: 40, hint: 'Vacío: Apagar.' },
+    { type: 'note', text: 'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.' },
+    { type: 'note', text: 'Solo funciona en la pantalla conectada al Pi que ejecuta Marco, abierta en localhost. Necesita Permitir tocar en la pantalla.' },
+  ],
   'nav.progress': [
     { k: 'style', type: 'seg', label: 'Estilo', opts: [{ v: 'dots', l: 'Puntos' }, { v: 'bar', l: 'Barra' }] },
     { k: 'name', type: 'bool', label: 'Nombre de la pantalla' },

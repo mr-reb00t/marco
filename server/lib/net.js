@@ -213,6 +213,41 @@ export function publicOrigin() {
 }
 
 // ------------------------------------------------------------------------------------------------------------
+// Same machine, no proxy: the "Salir del kiosko" and "Apagar" cards (routes/power.js) act on the computer that runs
+// the server, so only a browser on that computer may use them. `req.ip` and `trust proxy` are not used: a proxy on
+// this machine (Caddy, nginx) connects from 127.0.0.1 too, so a request that carries any proxy header is refused.
+
+const PROXY_HEADERS = ['forwarded', 'x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-real-ip', 'via', 'cf-connecting-ip', 'true-client-ip'];
+const LOOPBACK_NAMES = new Set(['localhost', '127.0.0.1', '::1']);
+
+/** A loopback socket address (127.x, ::1, ::ffff:127.x). */
+const loopbackPeer = (addr) => {
+  const a = String(addr || '').replace(/^::ffff:/i, '');
+  return a === '::1' || (net.isIPv4(a) && a.startsWith('127.'));
+};
+
+/**
+ * The request comes straight from this machine: the socket's own address is loopback, no proxy header at all, and
+ * Host is localhost, 127.0.0.1 or [::1] (any port), so a name that resolves here (DNS rebinding) does not count.
+ */
+export function sameMachineDirect(req) {
+  if (!loopbackPeer(req?.socket?.remoteAddress)) return false;
+  if (PROXY_HEADERS.some((h) => req.headers?.[h] !== undefined)) return false;
+  return LOOPBACK_NAMES.has(hostnameOf(req.headers?.host));
+}
+
+/**
+ * A POST from a page of this very origin: Origin is exactly http://<Host> (a sandboxed frame sends "null", another
+ * site its own), and Sec-Fetch-Site, when the browser sends it, is same-origin.
+ */
+export function sameOrigin(req) {
+  const host = String(req?.headers?.host || '');
+  if (!host || req.headers?.origin !== `http://${host}`) return false;
+  const site = req.headers?.['sec-fetch-site'];
+  return site === undefined || site === 'same-origin';
+}
+
+// ------------------------------------------------------------------------------------------------------------
 // Outbound fetch filter (SSRF) for unauthenticated endpoints: no loopback, link-local (incl. cloud metadata
 // 169.254.169.254 / fd00:ec2::254), unspecified, multicast or the metadata names.
 

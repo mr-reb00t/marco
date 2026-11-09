@@ -100,6 +100,24 @@ export const api = {
     request<{ ok: boolean }>(withScreen('/api/display/todo/toggle', screen), {
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id, done }),
     }, 15000),
+  /** "Salir del kiosko" / "Apagar" (server/routes/power.js): what the card `item` can do on this install. */
+  powerStatus: (item: string) =>
+    getJSON<{ action: 'exit' | 'off'; ready: boolean; reason?: string }>(withScreen(`/api/display/power?item=${encodeURIComponent(item)}`), 8000),
+  /** The second tap: ask the server to close the kiosk or power off. Never throws: { status, error } (0 = no answer). */
+  powerAsk: async (item: string, action: 'exit' | 'off'): Promise<{ status: number; error: string }> => {
+    try {
+      const r = await fetch(withScreen('/api/display/power'), {
+        method: 'POST', cache: 'no-store', signal: AbortSignal.timeout(8000), headers: { Accept: 'application/json', 'content-type': 'application/json', ...authHeaders() }, body: JSON.stringify({ item, action }),
+      });
+      let error = '';
+      try {
+        error = String(((await r.json()) as { error?: string }).error || '');
+      } catch { /* not JSON */ }
+      return { status: r.status, error };
+    } catch {
+      return { status: 0, error: '' };
+    }
+  },
   health: () => getJSON<HealthResponse>('/api/health', 5000),
   /** `q` from stream.ts pollUrl (client, cursor, rev, hidden, preview). Asks for what the display is bound to. */
   poll: (q: string) => getJSON<PollResponse>(withTarget(`/api/display/poll?${q}`), 10000),
