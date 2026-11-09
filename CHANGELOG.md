@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.41.0] - 2026-11-09
+
+### Added
+- *Exit kiosk* and *Shut down* cards in the Navigation group of Custom screens, for a Raspberry Pi that runs Marco and
+  shows it on its own touch screen. Two taps close the full screen browser and leave the Pi's desktop (the kiosk comes
+  back at the next login or restart), or power the Pi off. The screen needs *Allow touch on the screen*.
+- *Shut down* is off by default. Turn it on with `--power-button` when installing or with `sudo marco power on`
+  later; until then the card says how. Restart the Pi once after updating so the kiosk picks up the change.
+- New health feature `kioskPower`. Marco Cloud does not offer it.
+
+### Security
+- The cards only work from the kiosk browser on the computer that runs Marco: the request has to come straight from
+  that computer (not through a proxy) and carry a key that only the kiosk script hands to the page. The screen must
+  show that card at that moment and not be private. Every accepted request goes to the activity log.
+- The server never runs a command itself. It leaves a request in `/run/marco` (emptied at every restart); a root
+  systemd unit, installed only when *Shut down* is turned on, runs a fixed power-off. Nothing in the request is read.
+
 ## [0.40.0] - 2026-11-08
 
 ### Added
