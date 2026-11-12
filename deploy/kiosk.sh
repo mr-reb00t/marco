@@ -53,6 +53,8 @@ ORIGIN="$(printf '%s' "$KIOSK_URL" | sed -E 's|^(https?://[^/?#]+).*|\1|')"
 HEALTH_URL="${ORIGIN}/api/health"
 
 log() { echo "[kiosk $(date '+%H:%M:%S')] $*"; }
+# A sleep that a stop (TERM) cuts short: bash runs its trap only after a foreground command ends.
+nap() { sleep "$1" 9>&- & wait $!; }
 
 # --- Single instance ------------------------------------------------------------
 LOCK_DIR="${XDG_RUNTIME_DIR:-/tmp}"
@@ -71,9 +73,14 @@ if [ ! -t 1 ]; then exec >"$KIOSK_LOG" 2>&1; fi
 # --- Menu entry --------------------------------------------------------------------
 # The menu entry "Marco" opens the kiosk again after a close from the screen. install.sh writes it (kiosk_menu_entry, the
 # same text), but an install updated by an older installer never got it: written here, in a desktop session, when it is
-# missing. One that is there is never replaced.
+# missing. One that is there is never replaced. Only on a device set up by install.sh (its config, or a Marco line in
+# the desktop's autostart), not for a copy run by hand from a checkout.
 MENU_ENTRY="$HOME/.local/share/applications/marco-kiosk.desktop"
-if [ ! -e "$MENU_ENTRY" ] && [ ! -L "$MENU_ENTRY" ] && { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; }; then
+installed() {
+  [ -e /etc/marco.conf ] || grep -qsE 'marco-kiosk|deploy/kiosk\.sh|marco_kiosk' "$HOME/.config/labwc/autostart" \
+    "$HOME/.config/lxsession/LXDE-pi/autostart" "$HOME/.config/wayfire.ini" "$HOME/.config/autostart/marco-kiosk.desktop"
+}
+if [ ! -e "$MENU_ENTRY" ] && [ ! -L "$MENU_ENTRY" ] && { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; } && installed; then
   if (umask 022; set -o noclobber; mkdir -p "$(dirname "$MENU_ENTRY")" \
       && printf '[Desktop Entry]\nType=Application\nName=Marco\nComment=Show Marco full screen\nExec=%s\nIcon=video-display\nCategories=Utility;\nTerminal=false\n' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}") --open" > "$MENU_ENTRY") 2>/dev/null; then
     log "Added the menu entry Marco ($MENU_ENTRY)."
@@ -163,7 +170,8 @@ until http_ok "$HEALTH_URL"; do
     log "Server not answering; opening anyway (the page retries by itself)."
     break
   fi
-  sleep 2
+  closed_now || true
+  nap 2
   waited=$((waited + 2))
 done
 
@@ -298,7 +306,7 @@ while true; do
   CPID=$!
   while kill -0 "$CPID" 2>/dev/null; do
     closed_now "$CPID" || true
-    sleep 2
+    nap 2
   done
   wait "$CPID" 2>/dev/null || true
   run_for=$(( $(date +%s) - start_ts ))
@@ -312,5 +320,5 @@ while true; do
   [ "$delay" -gt 60 ] && delay=60
   [ "$delay" -lt 3 ] && delay=3
   log "Chromium exited (ran ${run_for}s). Relaunching in ${delay}s..."
-  sleep "$delay"
+  for ((w = 0; w < delay; w++)); do closed_now || true; nap 1; done
 done

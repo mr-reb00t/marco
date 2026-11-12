@@ -58,7 +58,10 @@ export async function syncPhotoRules(now = new Date()) {
     const parts = [];
     for (const { key, block } of screenPhotoBlocks(s)) {
       if (key && !block.rules?.length) continue;
-      const r = backgroundRuleSig(await activeBackgroundRule(cfg, s, now, block.rules));
+      // with the rule's pace (#45): a save that only changes it reaches the display too (the batch's `rule` leaves
+      // it out, so the photo on screen stays)
+      const rule = await activeBackgroundRule(cfg, s, now, block.rules);
+      const r = backgroundRuleSig(rule) + (rule?.intervalSec ? `@${rule.intervalSec}` : '');
       parts.push(key ? `${key}:${r}` : r);
     }
     const sig = parts.join('|');

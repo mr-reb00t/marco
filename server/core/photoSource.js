@@ -109,23 +109,26 @@ export function sanitizePhotoSource(raw, { err = () => {}, path = 'photoSource',
 /** The block shows its own photos (not the screen's). */
 export const isOwnPhotoSource = (b) => isObj(b) && b.mode === 'own';
 
+/** A block's rules without their pace (#45): a new pace is not a new list, so the photo on screen stays. */
+const rulesForSig = (rules) => (Array.isArray(rules) ? rules.map(({ intervalSec, ...r }) => r) : []);
+
 /**
  * What decides a block's photo list: two blocks with the same signature get the same photos and share their rotation
- * memory on the server (photos.js). The weather effect and the mode play no part.
+ * memory on the server (photos.js). The weather effect, the mode and the rules' pace play no part.
  */
 export function photoSourceSig(b) {
-  return hash({ source: b?.source ?? 'stock', stockTopic: b?.stockTopic ?? '', order: b?.order ?? 'random', immich: b?.immich ?? null, rules: b?.rules ?? [] }, 12);
+  return hash({ source: b?.source ?? 'stock', stockTopic: b?.stockTopic ?? '', order: b?.order ?? 'random', immich: b?.immich ?? null, rules: rulesForSig(b?.rules) }, 12);
 }
 
 /**
  * A block as the display gets it: no rules (their words name events, /api/photos applies them), only whether it has
  * some (`special`, so it asks again when the day or the events change) and a signature of them (`rulesSig`, so an
- * edited rule is a new list).
+ * edited rule is a new list; its pace alone is not).
  */
 export function displayPhotoSource(b) {
   const { rules, ...rest } = b;
   const list = Array.isArray(rules) ? rules : [];
-  return { ...rest, special: list.length > 0, rulesSig: list.length ? hash(list, 12) : '' };
+  return { ...rest, special: list.length > 0, rulesSig: list.length ? hash(rulesForSig(list), 12) : '' };
 }
 
 /** Gallery files the rules of a list may show. */

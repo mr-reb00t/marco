@@ -96,12 +96,14 @@ describe('a special background with its own pace on a running display', { skip: 
     return s;
   };
   // the rule follows the screen's pace again (an admin save, which server/index.js announces to the displays)
-  const backToScreenPace = (idx) => {
+  const setPace = (idx, sec) => {
     const cfg = structuredClone(store.getConfig());
-    delete cfg.screens[idx].background.rules[0].intervalSec;
+    if (sec) cfg.screens[idx].background.rules[0].intervalSec = sec;
+    else delete cfg.screens[idx].background.rules[0].intervalSec;
     store.saveConfig(validateConfig(cfg).value);
     publish('config', { revision: store.getConfig().revision });
   };
+  const backToScreenPace = (idx) => setPace(idx, null);
 
   for (const [name, url, sel, idx] of [
     ['the Fondo', '?screen=living-room&lite=1', '.photo-area .ph-stack .ph', 0],
@@ -120,6 +122,32 @@ describe('a special background with its own pace on a running display', { skip: 
         const next = await until(p, sel, (s) => s.every === null && !!s.shown && s.shown !== first.shown, 30_000);
         assert.equal(next.every, null);
         assert.notEqual(next.shown, first.shown, 'the photo changed at the screen\'s pace');
+      } finally {
+        await p.close();
+      }
+    });
+  }
+
+  // A save that only changes the pace, 1.5 s after the display fetched its photos (a push, or the events of the same
+  // save): with no push for it (Marco Cloud), the display still asks again once 10 s have passed.
+  for (const [name, url, sel, idx] of [
+    ['the Fondo', '?screen=living-room&lite=1', '.photo-area .ph-stack .ph', 0],
+    ['a photo card on the screen\'s photos', '?screen=canvas&lite=1', '.cv-photo .cv-ph', 1],
+  ]) {
+    test(`${name}: a new pace saved right after a fetch is not missed`, async () => {
+      setPace(idx, 3600);
+      const p = await browser.page(`${web.url}/${url}`);
+      try {
+        const first = await until(p, sel, (s) => !!s.shown && s.every === 3600);
+        assert.equal(first.every, 3600);
+        await wait(2000);
+        publish('photos', {}, { screenIds: [store.getConfig().screens[idx].id] });
+        await wait(1500);
+        backToScreenPace(idx);
+        const next = await until(p, sel, (s) => s.every === null, 20_000);
+        assert.equal(next.every, null, 'the screen\'s pace again');
+        const moved = await until(p, sel, (s) => !!s.shown && s.shown !== first.shown, 35_000);
+        assert.notEqual(moved.shown, first.shown, 'the photo changed at the screen\'s pace');
       } finally {
         await p.close();
       }

@@ -17,14 +17,18 @@ const ics = (summary) => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//test//EN'
   'END:VCALENDAR', ''].join('\r\n');
 
 const feeds = { a: { status: 200, body: ics('Alpha') }, b: { status: 200, body: ics('Beta') } };
+// (a floating time, no TZID: read in the server's time zone)
+feeds.f = { status: 200, delay: 0, body: ics('Floating').replace('DTSTART:20261012T100000Z', 'DTSTART:20261012T100000').replace('DTEND:20261012T110000Z', 'DTEND:20261012T110000') };
 const W = { from: '2026-10-11', to: '2026-10-13' };
 let srv, dir, store, cal;
 
 test.before(async () => {
   srv = http.createServer((req, res) => {
     const f = feeds[req.url.slice(1, 2)];
-    res.writeHead(f.status, { 'content-type': 'text/calendar' });
-    res.end(f.status === 200 ? f.body : 'error');
+    setTimeout(() => {
+      res.writeHead(f.status, { 'content-type': 'text/calendar' });
+      res.end(f.status === 200 ? f.body : 'error');
+    }, f.delay || 0);
   });
   await new Promise((r) => srv.listen(0, '127.0.0.1', r));
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-memo-'));
@@ -100,4 +104,43 @@ test('a change in one calendar keeps the lists of the others', async () => {
   await refresh('a');
   assert.equal((await cal.getDetailedEvents(onlyB)).detailed, b1.detailed);
   assert.notEqual((await cal.getDetailedEvents(W)).detailed, all1.detailed);
+});
+
+test('an unchanged feed is not written to the disk cache again', async () => {
+  const file = fs.readdirSync(path.join(dir, 'cache')).find((f) => f.includes('c_b'));
+  assert.ok(file);
+  fs.writeFileSync(path.join(dir, 'cache', file), 'mark');
+  await refresh('b');
+  assert.equal(fs.readFileSync(path.join(dir, 'cache', file), 'utf8'), 'mark');
+  feeds.b.body = ics('Zeta');
+  await refresh('b');
+  assert.match(fs.readFileSync(path.join(dir, 'cache', file), 'utf8'), /Zeta/);
+});
+
+test('a time zone change while a download runs: floating times follow the new zone, then and later', async () => {
+  const tz = process.env.TZ;
+  const onlyF = { ...W, onlyIds: ['c_f'] };
+  try {
+    process.env.TZ = 'UTC';
+    store.updateConfig((c) => {
+      c.calendar.sources.push({ ...c.calendar.sources[0], id: 'c_f', name: 'f', url: c.calendar.sources[0].url.replace('/a.ics', '/f.ics') });
+    });
+    const start = async () => new Date((await cal.getDetailedEvents(onlyF)).detailed[0].start).toISOString();
+    assert.equal(await start(), '2026-10-12T10:00:00.000Z');
+    feeds.f.delay = 300;
+    const p = refresh('f');
+    await sleep(50);
+    process.env.TZ = 'Europe/Madrid';
+    store.updateConfig((c) => void (c.datetime.timezone = 'Europe/Madrid'));
+    cal.invalidateIcsParsing();
+    await p;
+    feeds.f.delay = 0;
+    assert.equal(await start(), '2026-10-12T08:00:00.000Z', '10:00 in Madrid');
+    await refresh('f');
+    assert.equal(await start(), '2026-10-12T08:00:00.000Z', 'and after the next refresh of the same text');
+  } finally {
+    process.env.TZ = tz;
+    store.updateConfig((c) => void (c.datetime.timezone = 'UTC'));
+    cal.invalidateIcsParsing();
+  }
 });

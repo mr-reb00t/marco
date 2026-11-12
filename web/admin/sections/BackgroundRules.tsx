@@ -111,7 +111,8 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
         </Button>
       }
     >
-      <RuleList rules={rules} write={write} errors={errors} errPrefix="background" sources={sources} privacy={!!cfg.privacy?.hidePhotos} every={cfg.background.intervalSec} />
+      {/* a Personalizado screen's cards and sidebar on the screen's photos keep their own pace: no number then */}
+      <RuleList rules={rules} write={write} errors={errors} errPrefix="background" sources={sources} privacy={!!cfg.privacy?.hidePhotos} every={cfg.layout.preset === 'canvas' ? undefined : cfg.background.intervalSec} />
     </Card>
   );
 }

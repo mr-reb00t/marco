@@ -13,10 +13,12 @@ const val = (v) => {
 };
 
 /** node-ical caches time zone names for good, and a name cut out of a feed keeps that whole feed in memory (#46):
- * each new name is first checked on a tiny calendar of our own. */
+ * each new name is first checked on a tiny calendar of our own. Lines are unfolded first, so a name split across two
+ * lines is found too. After 200 names (a feed full of made-up ones) the rest are not warmed: node-ical's cache has
+ * no limit of its own, so such a feed may still stay in memory. */
 const seenZones = new Set();
 function warmZones(text) {
-  for (const m of text.matchAll(/TZID[=:]"?([^":;\r\n]{1,80})/g)) {
+  for (const m of text.replace(/\r?\n[ \t]/g, '').matchAll(/TZID[=:]"?([^":;\r\n]{1,80})/g)) {
     const tz = Buffer.from(m[1], 'utf8').toString('utf8');
     if (seenZones.has(tz) || seenZones.size >= 200) continue;
     seenZones.add(tz);

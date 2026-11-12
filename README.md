@@ -1169,9 +1169,9 @@ asked again after each day's auction until tomorrow's are in, and never more oft
   the title, accents and capitals ignored, on the screen's calendars or the ones you pick; *Between two dates*, every
   year, also across New Year; *A single day*; *A birthday* from *Birthdays*), which photos (picked from the
   gallery, or an Immich album) and how often they change (*As usual*, the background's interval, or its own, for
-  example every hour). The first rule that matches wins; with none, the normal background. The server checks
-  the rules every minute in the server's time zone, so the screen changes at midnight or soon after an event is
-  added or removed. Privacy mode with *hide photos* still shows stock photos.
+  example every hour, counted from when the rule began or the screen loaded, not on the hour). The first rule that
+  matches wins; with none, the normal background. The server checks the rules every minute in the server's time
+  zone, so the screen changes at midnight or soon after an event is added or removed. Privacy mode with *hide photos* still shows stock photos.
 - **Photo order** (*Background*): *Random* (shuffled, without repeating the previous batch), *Newest first* or
   *By name*. The sequential orders continue where the screen left off and start over at the end.
 - **Choose which photos are shown**: every photo in the gallery has an eye toggle to take it out of the rotation (or

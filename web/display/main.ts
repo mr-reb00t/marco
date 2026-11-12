@@ -1337,14 +1337,26 @@ let photosAt = 0;
 let ruleDay = '';
 let ruleRev: number | null = null;
 
+/** A check asked within 10 s of the last list, done once they are up (0 = none waiting). */
+let bgRuleTimer: ReturnType<typeof setTimeout> | 0 = 0;
+
 /**
  * A screen with special backgrounds (#14, `background.special`): the rule that holds may change with the events, the
  * config or the day. A server that pushes a live `photos` event says so itself; Marco Cloud does not, so the display
  * asks for its photos again then (at most every 10 s, and never before its first list), and fetchPhotos changes the
- * photo at once when the rule changed.
+ * photo at once when the rule changed. A check asked sooner waits for the 10 s instead of being dropped: a save that
+ * only changes a rule's pace comes right after a fetch (the events of the same save), and would otherwise wait hours.
  */
 function checkBgRule(): void {
-  if (state.demo || !(ctx.cfg?.background?.special || ownPhotos.anySpecial()) || !photosAt || Date.now() - photosAt < 10_000) return;
+  if (state.demo || !(ctx.cfg?.background?.special || ownPhotos.anySpecial()) || !photosAt) return;
+  const soon = photosAt + 10_000 - Date.now();
+  if (soon > 0) {
+    bgRuleTimer ||= setTimeout(() => {
+      bgRuleTimer = 0;
+      checkBgRule();
+    }, soon);
+    return;
+  }
   void fetchPhotos();
   ownPhotos.refresh();
 }

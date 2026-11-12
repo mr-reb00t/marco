@@ -1220,9 +1220,10 @@ más a menudo de lo que permiten las fuentes.
   palabra del título, sin distinguir acentos ni mayúsculas, en los calendarios de la pantalla o en los que elijas;
   *Entre dos fechas*, cada año, también pasando por Año Nuevo; *Un solo día*; *Un cumpleaños* de *Cumpleaños*), qué
   fotos (elegidas de la galería, o un álbum de Immich) y cada cuánto cambian (*Como siempre*, el intervalo del fondo,
-  o el suyo, por ejemplo cada hora). Gana la primera regla que coincide; si ninguna coincide, el
-  fondo normal. El servidor revisa las reglas cada minuto en su zona horaria, así que la pantalla cambia a medianoche
-  o poco después de añadir o quitar un evento. El modo privado con *ocultar fotos* sigue mostrando fotos de stock.
+  o el suyo, por ejemplo cada hora, contando desde que empezó la regla o se cargó la pantalla, no a la hora en
+  punto). Gana la primera regla que coincide; si ninguna coincide, el fondo normal. El servidor revisa las reglas
+  cada minuto en su zona horaria, así que la pantalla cambia a medianoche o poco después de añadir o quitar un
+  evento. El modo privado con *ocultar fotos* sigue mostrando fotos de stock.
 - **Orden de las fotos** (*Fondo*): *Aleatorio* (al azar, sin repetir las fotos de la tanda anterior), *Más
   recientes primero* o *Por nombre*. Los órdenes secuenciales siguen donde lo dejó la pantalla y vuelven a empezar al
   terminar.

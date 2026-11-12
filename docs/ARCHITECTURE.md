@@ -285,7 +285,9 @@ Older single-screen (v1) configs are migrated automatically on load; the origina
 1. **Sources** visible on the screen (`screen.calendar.sourceIds`, `null` = all enabled + `local` + `birthdays`).
    Each remote source is fetched with its own cache (`refreshMin`); on failure the stale cache is served and the
    error is reported (`errors[]`, activity `source.error` / `source.recovered` on transitions). An ICS download
-   identical to the last one is not parsed again, and built event lists are kept until one of their calendars changes.
+   identical to the last one is not parsed again (unless the time zone changed since that parse, even while the
+   download ran) nor written to the disk cache again, and built event lists are kept until one of their calendars
+   changes.
    The owner can also download a source now from *Estado* (`refreshNow`, `POST /api/admin/status/refresh`): a forced
    fetch that shares an automatic fetch already running, limited by in-memory cooldowns (60 s per source, 120 s for
    *Descargar todos*), followed by a refresher run so displays hear about changed events at once.
@@ -594,10 +596,14 @@ QR code carry, so the code screen is in that language before sign-in). **Display
 - `photos`: `{ source: 'gallery', files }` (1 to 50 gallery file names) or `{ source: 'immich', albumId }`. Names that
   cannot be gallery files and calendars that no longer exist are dropped quietly; Marco Cloud refuses Immich rules.
 - `intervalSec` (#45, optional): seconds between its photos, 10 to 86400 like `background.intervalSec`; absent = the
-  pace of the screen, card or sidebar. It stays out of the rule's hash, so a new pace does not swap the photo on
-  screen. `/api/photos` sends it only while the batch is the rule's own photos; the slideshow (`widgets/photos.ts
+  pace of the screen, card or sidebar. It stays out of the rule's hash (`backgroundRuleSig`) and out of a photo
+  card's or the sidebar's `photoSourceSig` and `rulesSig`, so a new pace does not swap the photo on screen or restart
+  the rotation. `/api/photos` sends it only while the batch is the rule's own photos; the slideshow (`widgets/photos.ts
   setEvery`) and the photo card use it instead of their interval and set their timer again from now when it changes
-  (a rule begins, ends or is edited: a config save makes the display ask for its photos again).
+  (a rule begins, ends or is edited). What `syncPhotoRules` remembers telling each screen does hold the pace, so a
+  save that only changes it pushes `photos`; Marco Cloud does not push, and a display check asked within 10 s of the
+  last list (`checkBgRule`) runs once those 10 s are up instead of being dropped. On a Personalizado screen the
+  rule list says *As usual* without a number, since its cards and sidebar keep their own intervals.
 
 The matching is pure (`server/core/bgRules.js`, shared with Marco Cloud). The first rule that holds wins, checked
 in `datetime.timezone`; while the screen is private its events go through privacy mode first (a *busy* calendar has
@@ -966,18 +972,25 @@ computer that runs the server (feature `kioskPower`, self-hosted only). The rout
   and exits at once when started again in the same login session for the same number, because LXDE-pi restarts `@`
   autostart lines that exit. A new session (the runtime folder can outlive a logout while an SSH session is open) opens
   it again. The number is also checked just before each launch, so a request during the health wait or a relaunch
-  back-off does not open Chromium for two seconds. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
+  back-off does not open Chromium for two seconds. It is also checked during the health wait and the back-off, and
+  those sleeps run in the background behind `wait`, so a close or a TERM ends them at once. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
   by hand. The kiosk had stopped `swayidle` when it started, so the desktop does not blank until the next login.
-  `kiosk.sh` writes that menu entry itself at login when it is missing: `marco update` runs the stored installer of the
+  `kiosk.sh` writes that menu entry itself at login when it is missing, on a device the installer set up
+  (`/etc/marco.conf`, or a Marco line in the desktop's autostart): `marco update` runs the stored installer of the
   version it updates from, so an install updated from before 0.41.0 never got it. For the same reason an all-in-one
   update now hands the kiosk setup to the new version's installer (`install.sh --kiosk-setup`, falling back to its own
   `setup_kiosk` when the stored one does not know that option).
 - **`marco kiosk`.** Starts `kiosk.sh --open` again from a terminal, detached (`setsid -f`), as the desktop user and
   with that desktop session's variables: its own when run in a terminal of that desktop, otherwise the
-  `/proc/<pid>/environ` of a process of that user whose `XDG_SESSION_TYPE` is `wayland` or `x11`, otherwise a graphical
+  `/proc/<pid>/environ` of a process of that user whose `XDG_SESSION_TYPE` is `wayland` or `x11` (newest first, only
+  with its runtime folder at `/run/user/<uid>`, its Wayland socket or X socket still there and, with `loginctl`, its
+  session active or online, so a process left from an earlier login is skipped), otherwise a graphical
   `loginctl` session and its Wayland socket or X display. `XDG_SESSION_ID` has to be the desktop's, not the SSH login's:
   the closed marker holds it, and an LXDE-pi `@` line started again must match it. Nothing found: it says to log in to
-  the desktop or reboot. A running kiosk (its process or its lock) is left alone. `marco kiosk stop` on an all-in-one
+  the desktop or reboot. A running kiosk is left alone: its process is `bash` running the exact installed path (a
+  command line that only names the script, such as an editor, is not it), or its lock, which lives in a folder the
+  desktop user owns and so is only checked when it is a plain file and only opened as that user. `MARCO_CONF` (tests)
+  is ignored by root unless root owns the file and nobody else can write it. `marco kiosk stop` on an all-in-one
   device writes a new number to `/run/marco/kiosk-exit` as the service user, exactly as the card does; on a
   screen-only device it sends TERM to the kiosk script, which closes the browser on the way out (an LXDE-pi `@` line
   may then start it again).

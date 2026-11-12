@@ -30,6 +30,11 @@ const ICS_HEADERS = {
 /** sourceId → { key, fetchedAt, lastSuccess, ok, error, count, version, vevents | items, window } */
 const cache = new Map();
 const inflight = new Map();
+/**
+ * Moved up by invalidateIcsParsing: a parse made under an older value is never reused, even for the same text. A
+ * refresh that was downloading or parsing when the time zone changed holds a copy made before it (#46).
+ */
+let parseEpoch = 0;
 
 const sourceKey = (s) =>
   s.type === 'google' ? `google|${s.googleAccount}|${s.googleCalendarId}`
@@ -54,8 +59,10 @@ function loadDiskCache(source) {
 function saveDiskCache(source, payload) {
   try {
     fs.writeFileSync(cacheFile(source.id), JSON.stringify({ key: sourceKey(source), ...payload }));
+    return true;
   } catch (err) {
     console.warn('[calendars] disk cache write failed:', err.message);
+    return false;
   }
 }
 
@@ -79,12 +86,15 @@ async function doRefresh(source, needWindow) {
     if (source.type === 'ics') {
       const text = await fetchIcsText(source.url, source.insecureTls);
       const sig = hash(text);
-      // An unchanged download keeps its parse (#46). Anything that needs a new parse of the same text must reset
-      // `sig`, as invalidateIcsParsing does.
-      const vevents = sig === entry.sig && entry.vevents ? entry.vevents : await parseIcsText(text);
-      if (sig !== entry.sig) entry.version = (entry.version || 0) + 1;
-      Object.assign(entry, { vevents, sig, count: vevents.length });
-      saveDiskCache(source, { fetchedAt: entry.fetchedAt, text });
+      // An unchanged download keeps its parse (#46), unless the time zone changed since it was made (parseEpoch).
+      const epoch = parseEpoch;
+      const reuse = sig === entry.sig && entry.vevents && entry.epoch === epoch;
+      const vevents = reuse ? entry.vevents : await parseIcsText(text);
+      if (!reuse) entry.version = (entry.version || 0) + 1;
+      Object.assign(entry, { vevents, sig, epoch, count: vevents.length });
+      // the same text is already on disk: not written again (an SD card on a Pi); its fetchedAt there only decides
+      // whether the first refresh after a restart downloads at once
+      if (entry.diskSig !== sig && saveDiskCache(source, { fetchedAt: entry.fetchedAt, text })) entry.diskSig = sig;
     } else {
       const tz = getConfig().datetime.timezone;
       const w = defaultGoogleWindow(tz);
@@ -115,6 +125,8 @@ async function doRefresh(source, needWindow) {
     entry.ok = true;
     entry.error = null;
     entry.lastSuccess = entry.fetchedAt;
+    // the time zone changed while it parsed: parsed again at the next refresh, which is due now
+    if (entry.epoch !== undefined && entry.epoch !== parseEpoch) entry.fetchedAt = 0;
   } catch (err) {
     entry.ok = false;
     entry.error = err.message || String(err);
@@ -166,8 +178,11 @@ export function refreshSource(source, { force = false, window = null } = {}) {
   if (entry?.pendingText) {
     const text = entry.pendingText;
     delete entry.pendingText;
+    const epoch = parseEpoch;
     const p = parseIcsText(text).then((vevents) => {
-      Object.assign(entry, { vevents, count: vevents.length, sig: hash(text) });
+      const sig = hash(text);
+      Object.assign(entry, { vevents, count: vevents.length, sig, epoch, diskSig: sig });
+      if (epoch !== parseEpoch) entry.fetchedAt = 0;
       dropMemo(source.id);
     }).catch(() => {});
     inflight.set(source.id, p);
@@ -670,6 +685,7 @@ export async function testIcs(url, insecureTls = false, { guard = false } = {}) 
  * cached event lists are rebuilt.
  */
 export function invalidateIcsParsing() {
+  parseEpoch++;
   for (const entry of cache.values()) {
     if (!entry.vevents && !entry.pendingText) continue;
     entry.fetchedAt = 0;

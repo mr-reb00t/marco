@@ -13,7 +13,10 @@
 #   marco uninstall [--purge]  remove Marco; your data is kept unless you add --purge
 set -euo pipefail
 
-CONF="${MARCO_CONF:-/etc/marco.conf}"   # MARCO_CONF: testing only
+# MARCO_CONF: testing only. Root only reads one that root owns and nobody else can write: the file is run here.
+CONF=/etc/marco.conf
+if [ -n "${MARCO_CONF:-}" ] && { [ "$(id -u)" -ne 0 ] || { [ -f "$MARCO_CONF" ] && [ ! -L "$MARCO_CONF" ] && [ -O "$MARCO_CONF" ] \
+    && [ -z "$(find "$MARCO_CONF" -maxdepth 0 -perm /022 2>/dev/null)" ]; }; }; then CONF="$MARCO_CONF"; fi
 INSTALLER=/usr/local/lib/marco/install.sh
 SERVICE=marco
 
@@ -70,7 +73,7 @@ cmd_status() {
   fi
   if [ "$MARCO_MODE" != server ]; then
     if kiosk_running "$(user_rt)"; then echo "  Kiosk:    running"
-    elif [ -e "$(user_rt)/marco-kiosk.closed" ]; then echo "  Kiosk:    closed from the screen (start it again: marco kiosk)"
+    elif [ -e "$(user_rt)/marco-kiosk.closed" ]; then echo "  Kiosk:    closed (start it again: marco kiosk)"
     else echo "  Kiosk:    not running (start it: marco kiosk)"; fi
   fi
 }
@@ -140,7 +143,6 @@ cmd_power() {
 # ---- Kiosk -----------------------------------------------------------------------------------------------------
 # The kiosk (deploy/kiosk.sh, or ~/.local/bin/marco-kiosk on a screen-only device) runs in the desktop session of
 # MARCO_USER, started by its autostart. `marco kiosk` starts it again there, from a terminal on the device or over SSH.
-KIOSK_RE='(\.local/bin/marco-kiosk|deploy/kiosk\.sh)( |$)'
 RUN_DIR="${MARCO_RUN_DIR:-/run/marco}"
 owner_home() {
   if [ "$(id -un)" = "$MARCO_USER" ] && [ -n "${HOME:-}" ]; then printf '%s' "$HOME"
@@ -157,11 +159,20 @@ kiosk_cmd() {
     *) die "This device has no kiosk (server only)." ;;
   esac
 }
-# kiosk_running [runtime folder]: its process, or its lock (kiosk.sh holds <runtime folder>/marco-kiosk.lock)
+# The kiosk's own process: bash running the installed script (an editor or a shell that only names it is not it).
+kiosk_re() {
+  local re
+  re="$(kiosk_cmd | sed 's/[][\.*^$+?(){}|]/\\&/g')"
+  printf '^(/usr/bin/env )?(/bin/|/usr/bin/)?bash %s( |$)' "$re"
+}
+# kiosk_running [runtime folder]: its process, or its lock (kiosk.sh holds <runtime folder>/marco-kiosk.lock). That
+# folder belongs to the desktop user: the lock is only opened as that user, and only when it is a plain file.
 kiosk_running() {
-  pgrep -u "$MARCO_USER" -f "$KIOSK_RE" >/dev/null 2>&1 && return 0
+  pgrep -u "$MARCO_USER" -f "$(kiosk_re)" >/dev/null 2>&1 && return 0
   local lock="${1:-/tmp}/marco-kiosk.lock"
-  [ -r "$lock" ] && have flock && ! flock -n "$lock" true 2>/dev/null
+  [ -f "$lock" ] && [ ! -L "$lock" ] && have flock || return 1
+  if [ "$(id -u)" -eq 0 ] && [ "$(id -un)" != "$MARCO_USER" ]; then ! runuser -u "$MARCO_USER" -- flock -n "$lock" true 2>/dev/null
+  else ! flock -n "$lock" true 2>/dev/null; fi
 }
 
 # desktop_env: the desktop session of MARCO_USER (S_ID, S_WAYLAND, S_DISPLAY, S_XAUTH, S_RT, S_DBUS). The session id
@@ -177,8 +188,11 @@ desktop_env() {
     S_DBUS="${DBUS_SESSION_BUS_ADDRESS:-}"
     return 0
   fi
-  # 2. A process of that desktop (the panel, the file manager...) carries its environment
-  for pid in $(pgrep -u "$uid" 2>/dev/null || true); do
+  # 2. A process of that desktop (the panel, the file manager...) carries its environment. Newest first, and only one
+  # whose display is still there and whose session is still open: a process left from an earlier login is not it.
+  local live=0
+  if have loginctl && loginctl list-sessions --no-legend >/dev/null 2>&1; then live=1; fi
+  for pid in $(pgrep -u "$uid" 2>/dev/null | sort -rn || true); do
     e="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null)" || continue
     case "$(printf '%s\n' "$e" | sed -n 's/^XDG_SESSION_TYPE=//p' | head -n1)" in wayland|x11) ;; *) continue ;; esac
     S_WAYLAND="$(printf '%s\n' "$e" | sed -n 's/^WAYLAND_DISPLAY=//p' | head -n1)"
@@ -188,7 +202,20 @@ desktop_env() {
     S_XAUTH="$(printf '%s\n' "$e" | sed -n 's/^XAUTHORITY=//p' | head -n1)"
     S_RT="$(printf '%s\n' "$e" | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -n1)"
     S_DBUS="$(printf '%s\n' "$e" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n1)"
-    if [ -n "$S_WAYLAND" ]; then S_DISPLAY=""; S_XAUTH=""; fi
+    # (that environment is the user's own: its runtime folder is only taken where logind puts it)
+    case "$S_RT" in ""|"/run/user/$uid") ;; *) continue ;; esac
+    if [ -n "$S_WAYLAND" ]; then
+      S_DISPLAY=""; S_XAUTH=""
+      case "$S_WAYLAND" in /*) s="$S_WAYLAND" ;; *) s="${S_RT:-/run/user/$uid}/$S_WAYLAND" ;; esac
+    else
+      case "$S_DISPLAY" in :*) ;; *) continue ;; esac
+      s="${S_DISPLAY#:}"; s="/tmp/.X11-unix/X${s%%.*}"
+    fi
+    [ -S "$s" ] || continue
+    if [ "$live" = 1 ]; then
+      state="$( { [ -n "$S_ID" ] && loginctl show-session "$S_ID" -p State --value 2>/dev/null; } || true)"
+      case "$state" in active|online) ;; *) continue ;; esac
+    fi
     return 0
   done
   # 3. logind: a graphical session of that user, its display or Wayland socket
@@ -272,7 +299,7 @@ kiosk_stop() {
       || die "Could not write $RUN_DIR/kiosk-exit"
   else
     # a screen-only device: kiosk.sh closes the browser when it is stopped (a desktop that runs it again opens it again)
-    as_owner pkill -TERM -u "$MARCO_USER" -f "$KIOSK_RE" || true
+    as_owner pkill -TERM -u "$MARCO_USER" -f "$(kiosk_re)" || true
   fi
   for _ in $(seq 1 30); do
     if ! kiosk_running "$(user_rt)"; then echo "Kiosk closed. Open it again: marco kiosk"; return 0; fi

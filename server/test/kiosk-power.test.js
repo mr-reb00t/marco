@@ -672,11 +672,28 @@ test('kiosk.sh: the kiosk key goes to the page in the URL fragment, never in the
   }
 });
 
+test('kiosk.sh: a new token while it waits for the server closes it then, without opening the browser', { skip: !shellOk && 'needs bash, flock, pkill', timeout: 30_000 }, async () => {
+  const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-kiosk-wait-'));
+  let a = null;
+  try {
+    a = kioskRun(t, { env: { KIOSK_WAIT_SEC: '120', XDG_SESSION_ID: 'c3' }, curl: 'exit 7' });
+    await wait(1500);
+    fs.writeFileSync(path.join(t, 'run', 'kiosk-exit'), '7000');
+    const code = await Promise.race([a.done, wait(8000).then(() => 'still running')]);
+    assert.equal(code, 0);
+    assert.equal(pidsOf(t).length, 0, 'never opened');
+    assert.equal(fs.readFileSync(path.join(t, 'xdg', 'marco-kiosk.closed'), 'utf8'), '7000 c3');
+  } finally {
+    if (a && a.p.exitCode === null) a.p.kill('SIGKILL');
+    fs.rmSync(t, { recursive: true, force: true });
+  }
+});
+
 // The menu entry text: kiosk.sh writes the one install.sh writes (kiosk_menu_entry)
 const MENU_FMT_RE = /printf '(\[Desktop Entry\]\\nType=Application\\nName=Marco\\n[^']*)'/;
 const menuFmt = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8').match(MENU_FMT_RE)?.[1];
 
-test('kiosk.sh: writes the menu entry Marco when it is missing, in a desktop session only, never over one that is there', { skip: !shellOk && 'needs bash, flock, pkill', timeout: 30_000 }, async () => {
+test('kiosk.sh: writes the menu entry Marco when it is missing, in a desktop session set up by the installer only, never over one that is there', { skip: !shellOk && 'needs bash, flock, pkill', timeout: 30_000 }, async () => {
   const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-kiosk-menu-'));
   const entry = path.join(t, 'home', '.local', 'share', 'applications', 'marco-kiosk.desktop');
   let a = null;
@@ -691,6 +708,13 @@ test('kiosk.sh: writes the menu entry Marco when it is missing, in a desktop ses
     await stop();
     a = kioskRun(t, { env: { WAYLAND_DISPLAY: 'wayland-9' } });
     assert.ok(await until(() => pidsOf(t).length === 2), 'the browser starts');
+    if (!fs.existsSync('/etc/marco.conf')) assert.equal(fs.existsSync(entry), false, 'not set up by the installer (run from a checkout): no entry');
+    await stop();
+    fs.mkdirSync(path.join(t, 'home', '.config', 'labwc'), { recursive: true });
+    fs.writeFileSync(path.join(t, 'home', '.config', 'labwc', 'autostart'), `${path.join(ROOT, 'deploy/kiosk.sh')} >/tmp/marco-kiosk.log 2>&1 &\n`);
+    if (fs.existsSync(entry)) fs.rmSync(entry);
+    a = kioskRun(t, { env: { WAYLAND_DISPLAY: 'wayland-9' } });
+    assert.ok(await until(() => pidsOf(t).length === 3), 'the browser starts');
     const text = fs.readFileSync(entry, 'utf8');
     assert.match(text, /^\[Desktop Entry\]\nType=Application\nName=Marco\n/);
     assert.match(text, new RegExp(`^Exec=${path.join(ROOT, 'deploy/kiosk.sh').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} --open$`, 'm'));
@@ -699,7 +723,7 @@ test('kiosk.sh: writes the menu entry Marco when it is missing, in a desktop ses
     await stop();
     fs.writeFileSync(entry, 'mine');
     a = kioskRun(t, { env: { DISPLAY: ':0' } });
-    assert.ok(await until(() => pidsOf(t).length === 3), 'the browser starts');
+    assert.ok(await until(() => pidsOf(t).length === 4), 'the browser starts');
     assert.equal(fs.readFileSync(entry, 'utf8'), 'mine', 'one that is there is kept');
     await stop();
     assert.ok(menuFmt('install.sh') && menuFmt('install.sh') === menuFmt('deploy/kiosk.sh'), 'the same entry as the installer');
@@ -787,6 +811,61 @@ test('marco kiosk: no desktop session says what to do; a server-only install has
     assert.match(s.stderr, /no kiosk \(server only\)/);
   } finally {
     killUnder(t);
+    fs.rmSync(t, { recursive: true, force: true });
+  }
+});
+
+/** A process whose command line only names a path (an editor, a shell): `sleep` under another name. */
+const decoy = (cmdline) => spawn('bash', ['-c', 'exec -a "$0" sleep 60', cmdline], { stdio: 'ignore', detached: true });
+
+test('marco kiosk: a process that only names the kiosk script is not the kiosk; a screen-only stop closes the kiosk, nothing else', { skip: !cliOk && 'needs bash, flock, pkill, setsid', timeout: 60_000 }, async () => {
+  const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-cli-only-'));
+  const decoys = [];
+  try {
+    const marco = cliSetup(t, { WAYLAND_DISPLAY: 'wayland-9', XDG_SESSION_ID: 'c9' });
+    const cmd = path.join(t, 'home', '.local', 'bin', 'marco-kiosk');
+    fs.mkdirSync(path.dirname(cmd), { recursive: true });
+    fs.symlinkSync(path.join(ROOT, 'deploy/kiosk.sh'), cmd);
+    fs.writeFileSync(path.join(t, 'marco.conf'), `MARCO_MODE=kiosk\nMARCO_DIR=${t}/marco\nMARCO_USER=${os.userInfo().username}\n`);
+    decoys.push(decoy(`bash ${t}/elsewhere/deploy/kiosk.sh`), decoy(`nano ${cmd}`), decoy(`less ${cmd}x`));
+    await wait(300);
+    let r = marco('kiosk');
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Kiosk started on wayland-9/);
+    assert.ok(await until(() => pidsOf(t).length === 1), 'the browser starts');
+    const [pid] = pidsOf(t);
+    assert.match(marco('status').stdout, /Kiosk: {4}running/);
+    const t0 = Date.now();
+    r = marco('kiosk', 'stop');
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Kiosk closed/);
+    assert.ok(Date.now() - t0 < 10_000, 'TERM ends a wait at once');
+    assert.ok(await until(() => !alive(pid), 3000), 'the browser is gone');
+    for (const d of decoys) assert.ok(alive(d.pid), 'a process that only names the script is left alone');
+    // a lock that is not a plain file (a FIFO would block an open) is never opened
+    fs.rmSync(path.join(t, 'xdg', 'marco-kiosk.lock'), { force: true });
+    assert.equal(spawnSync('mkfifo', [path.join(t, 'xdg', 'marco-kiosk.lock')]).status, 0);
+    r = marco('status');
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /Kiosk: {4}not running/);
+  } finally {
+    for (const d of decoys) d.kill('SIGKILL');
+    killUnder(t);
+    fs.rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test('marco: root only reads a MARCO_CONF that root owns and nobody else can write', { skip: (!shellOk || process.getuid?.() !== 0 || fs.existsSync('/etc/marco.conf')) && 'needs bash, root, no /etc/marco.conf', timeout: 30_000 }, () => {
+  const t = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-cli-conf-'));
+  try {
+    const marco = cliSetup(t);
+    fs.chmodSync(path.join(t, 'marco.conf'), 0o644);
+    assert.doesNotMatch(marco('status').stderr, /not installed/);
+    fs.chmodSync(path.join(t, 'marco.conf'), 0o666);
+    const r = marco('status');
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /Marco is not installed here \(\/etc\/marco\.conf not found\)/);
+  } finally {
     fs.rmSync(t, { recursive: true, force: true });
   }
 });

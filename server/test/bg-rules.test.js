@@ -14,6 +14,7 @@ import {
   backgroundRuleSig, eventOnDay, inYearlyRange, matchBackgroundRule, ruleGalleryFiles, sanitizeBackgroundRules, MAX_BG_RULES, MAX_BG_RULE_PHOTOS,
 } from '../core/bgRules.js';
 import { displayConfig } from '../core/screens.js';
+import { displayPhotoSource, photoSourceSig } from '../core/photoSource.js';
 import { ensurePassword, hashPassword, _resetLoginLimits } from '../auth.js';
 import { createApp } from '../app.js';
 import { closeAll } from '../sse.js';
@@ -409,6 +410,43 @@ test('displays of a screen whose active rule changes get a photos event, the oth
     // the next day (midnight): the year range still holds, so no change
     assert.deepEqual(await syncPhotoRules(new Date(Date.now() + 86400_000)), []);
   });
+});
+
+test('a save that only changes the pace of the active rule gets a photos event; the photo signature stays (#45)', async () => {
+  await withServer(async ({ call, login, photosOf }) => {
+    const cookie = await login();
+    const cfg = (await call('GET', '/api/admin/config', { cookie })).json;
+    cfg.screens[0].background.rules = [{ ...cfg.screens[0].background.rules[1], intervalSec: 3600 }];
+    assert.equal((await call('PUT', '/api/admin/config', { cookie, body: cfg })).status, 200);
+    await syncPhotoRules();
+    const before = await photosOf('living-room');
+    assert.equal(before.intervalSec, 3600);
+    assert.deepEqual(await syncPhotoRules(), [], 'nothing changed');
+    // every 10 minutes instead of every hour, nothing else
+    const next = (await call('GET', '/api/admin/config', { cookie })).json;
+    next.screens[0].background.rules[0].intervalSec = 600;
+    assert.equal((await call('PUT', '/api/admin/config', { cookie, body: next })).status, 200);
+    assert.deepEqual(await syncPhotoRules(), ['s_main']);
+    const after = await photosOf('living-room');
+    assert.equal(after.intervalSec, 600);
+    assert.equal(after.rule, before.rule, 'the same rule: the photo on screen is not swapped');
+    // back to the screen's pace
+    delete next.screens[0].background.rules[0].intervalSec;
+    next.revision = (await call('GET', '/api/admin/config', { cookie })).json.revision;
+    assert.equal((await call('PUT', '/api/admin/config', { cookie, body: next })).status, 200);
+    assert.deepEqual(await syncPhotoRules(), ['s_main']);
+  });
+});
+
+test('a photo card\'s own rules: their pace is not a new list (photoSourceSig, rulesSig) (#45)', () => {
+  const rules = [rule('r_y', { type: 'range', from: '01-01', to: '12-31' }, ['year.jpg'])];
+  const own = { mode: 'own', source: 'stock', stockTopic: 'nature', order: 'random', immich: null, weatherFx: 'off', rules };
+  const paced = { ...own, rules: [{ ...rules[0], intervalSec: 3600 }] };
+  assert.equal(photoSourceSig(paced), photoSourceSig(own));
+  assert.equal(displayPhotoSource(paced).rulesSig, displayPhotoSource(own).rulesSig);
+  const other = { ...own, rules: [{ ...rules[0], photos: { source: 'gallery', files: ['other.jpg'] } }] };
+  assert.notEqual(photoSourceSig(other), photoSourceSig(own), 'another photo is a new list');
+  assert.notEqual(displayPhotoSource(other).rulesSig, displayPhotoSource(own).rulesSig);
 });
 
 test('ruleGalleryFiles lists the gallery files of every rule of a screen', () => {
