@@ -56,7 +56,9 @@ export async function launchChrome(bin = findChrome()) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'marco-chrome-'));
   const proc = spawn(bin, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--mute-audio',
-    '--hide-scrollbars', '--force-device-scale-factor=1', '--remote-debugging-port=0', `--user-data-dir=${dir}`, 'about:blank',
+    '--hide-scrollbars', '--force-device-scale-factor=1', '--remote-debugging-port=0', `--user-data-dir=${dir}`,
+    // only this machine: a demo photo from the internet (picsum.photos) fails at once instead of hanging a test offline
+    '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost', 'about:blank',
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
   // a test that forgets to close its browser (or a run ended by --test-force-exit) never leaves Chrome behind: it
   // goes with this process, by its own PID
