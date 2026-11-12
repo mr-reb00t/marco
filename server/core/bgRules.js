@@ -1,7 +1,8 @@
 // Special backgrounds ("Fondos especiales", #14): per screen, an ordered list of rules that swap the screen's photos
 // for others on some days. A rule is a "when" (an event today whose title has a word, a yearly date range, one yearly
-// date, someone's birthday) and the photos to show (gallery files or one Immich album). The first rule that matches
-// wins; with none, the screen's normal background. Pure: the validator, server/photoRules.js and Marco Cloud use it.
+// date, someone's birthday), the photos to show (gallery files or one Immich album) and, optionally, how often they
+// change (intervalSec, #45; none = the screen's pace). The first rule that matches wins; with none, the screen's
+// normal background. Pure: the validator, server/photoRules.js and Marco Cloud use it.
 import { addDays, localDate } from './lib/tz.js';
 import { fold, hash, randomId } from './lib/text.js';
 import { isGalleryFile } from './imageInfo.js';
@@ -14,6 +15,8 @@ export const BG_RULE_SOURCES = ['gallery', 'immich'];
 export const MAX_BG_RULES = 30;
 export const MAX_BG_RULE_PHOTOS = 50;
 export const MAX_BG_RULE_TEXT = 120;
+const MIN_RULE_INTERVAL = 10;
+const MAX_RULE_INTERVAL = 86400;
 const MAX_RULE_CALENDARS = 60;
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
 const MONTH_DAY = /^(\d{2})-(\d{2})$/;
@@ -95,7 +98,15 @@ export function sanitizeBackgroundRules(raw, { err = () => {}, path = 'backgroun
       if (!files.length) err(`${p}.photos.files`, 'at least one photo');
       photos = { source, files };
     }
-    out.push({ id, when, photos });
+    // how often its photos change (#45); none = as the screen, card or sidebar
+    let intervalSec;
+    if (r.intervalSec !== undefined && r.intervalSec !== null && r.intervalSec !== '') {
+      const v = typeof r.intervalSec === 'string' ? Number(r.intervalSec) : r.intervalSec;
+      if (typeof v !== 'number' || !Number.isFinite(v)) err(`${p}.intervalSec`, 'expected number');
+      else if (v < MIN_RULE_INTERVAL || v > MAX_RULE_INTERVAL) err(`${p}.intervalSec`, `must be between ${MIN_RULE_INTERVAL} and ${MAX_RULE_INTERVAL}`);
+      else intervalSec = Math.round(v);
+    }
+    out.push({ id, when, photos, ...(intervalSec ? { intervalSec } : {}) });
   });
   return out;
 }

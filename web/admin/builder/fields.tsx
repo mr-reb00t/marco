@@ -431,7 +431,7 @@ export function ContentFields({ item, env, put, nested = false }: { item: Canvas
           );
         if (s.type === 'group') return <h4 class="bld-h">{t(s.label)}</h4>;
         if (s.type === 'rotatorCards') return isLoneGroup(item) ? <LoneGroupCards item={item} env={env} put={put} /> : <RotatorCards item={item} env={env} put={put} />;
-        if (s.type === 'photoSource') return env.photos ? <PhotoSourceFields card value={p.photoSource} env={env.photos} put={(v) => put('photoSource', v)} /> : null;
+        if (s.type === 'photoSource') return env.photos ? <PhotoSourceFields card value={p.photoSource} env={env.photos} put={(v) => put('photoSource', v)} every={Number(p.intervalSec) || 60} /> : null;
         if (s.type === 'todoView') return <TodoViewFields value={p} lists={env.todoLists ?? []} onChange={(k, v, merge) => put(k, v, merge ? `${item.id}.${k}` : undefined)} />;
         if (s.type === 'note' && s.top && nested) return null;
         if (s.type === 'note')

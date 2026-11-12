@@ -412,14 +412,23 @@ async function rulePhotos(rule, bg, order, n, key, after) {
  * nothing in rotation, or an Immich source with no photos (not set up, no albums, unreachable with nothing cached),
  * falls back to stock.
  */
-export async function getPhotos(count = 20, bg = defaultScreen(getConfig()).background, { key = '', after = '', rule = null } = {}) {
+export async function getPhotos(count = 20, bg = defaultScreen(getConfig()).background, opts = {}) {
+  return (await photoBatch(count, bg, opts)).photos;
+}
+
+/** getPhotos plus `fromRule`: true when the batch is the rule's own photos (so its interval applies, #45). */
+export async function photoBatch(count = 20, bg = defaultScreen(getConfig()).background, { key = '', after = '', rule = null } = {}) {
   count = Math.max(1, Math.min(100, count | 0 || 20));
   const order = PHOTO_ORDERS.includes(bg.order) ? bg.order : 'random';
   key = String(key || 'default');
   if (rule) {
     const p = await rulePhotos(rule, bg, order, count, key, String(after || ''));
-    if (p.length) return p;
+    if (p.length) return { photos: p, fromRule: true };
   }
+  return { photos: await sourcePhotos(count, bg, order, key, String(after || '')), fromRule: false };
+}
+
+async function sourcePhotos(count, bg, order, key, after) {
   if (bg.source === 'immich') {
     const p = await pickImmich(bg, order, count, key, IMMICH_ID_RE.test(after) ? after.toLowerCase() : '');
     return p.length ? p : stockPhotos(count);

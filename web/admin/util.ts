@@ -201,6 +201,7 @@ export function validateConfig(c: AppConfig, caps: Caps = currentCaps()): Errors
   for (const r of b.rules ?? []) {
     if (r.when.type === 'event' && !r.when.text.trim()) e[`background.rules.${r.id}.text`] = 'Obligatorio';
     if (r.photos.source === 'gallery' ? !r.photos.files.length : !r.photos.albumId) e[`background.rules.${r.id}.photos`] = 'Elige al menos una foto';
+    if (r.intervalSec != null && !(r.intervalSec >= 10)) e[`background.rules.${r.id}.interval`] = 'Mínimo 10 s';
   }
   const cal = c.calendar;
   if (cal.weeks !== 'auto' && !(cal.weeks >= 1 && cal.weeks <= 6)) e['calendar.weeks'] = 'Entre 1 y 6';

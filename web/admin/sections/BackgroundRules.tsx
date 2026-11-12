@@ -9,6 +9,7 @@ import { SourcePicker } from '../components/SourcePicker';
 import { Button, Callout, Card, Empty, Modal, ReorderButtons, Segmented, Select, TextInput, useReorder } from '../components/ui';
 import { has } from '../caps';
 import { locale, t } from '../i18n';
+import { INTERVALS, intervalLabel, intervalsWith } from '../intervals';
 import { allSourceOptions, moveItem, uid } from '../util';
 import type { SectionProps } from './common';
 
@@ -110,7 +111,7 @@ export function BackgroundRulesCard({ cfg, set, errors, full }: Pick<SectionProp
         </Button>
       }
     >
-      <RuleList rules={rules} write={write} errors={errors} errPrefix="background" sources={sources} privacy={!!cfg.privacy?.hidePhotos} />
+      <RuleList rules={rules} write={write} errors={errors} errPrefix="background" sources={sources} privacy={!!cfg.privacy?.hidePhotos} every={cfg.background.intervalSec} />
     </Card>
   );
 }
@@ -124,9 +125,9 @@ export function newRule(): BackgroundRule {
  * The rules of a list (the screen's Fondo, or a photo card's or the sidebar's own photos, #41), each with its "when"
  * and its photos, in the order they are checked. `write` replaces the list; `errors` with `errPrefix` ('background';
  * none in the builder); `sources` = the calendars an event rule may pick; `inline`: an add button under the list
- * (the builder; the Fondo card has it in its header).
+ * (the builder; the Fondo card has it in its header); `every` = the pace a rule without one of its own follows (#45).
  */
-export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, privacy = false, inline = false }: {
+export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, privacy = false, inline = false, every }: {
   rules: BackgroundRule[];
   write: (fn: (list: BackgroundRule[]) => BackgroundRule[]) => void;
   errors?: Record<string, string>;
@@ -134,6 +135,7 @@ export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, p
   sources: { id: string; name: string; color: string; emoji: string }[];
   privacy?: boolean;
   inline?: boolean;
+  every?: number;
 }) {
   const galleryOn = has('gallery');
   const immichOn = has('immich');
@@ -258,10 +260,20 @@ export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, p
                     ) : (
                       <Callout kind="warn">{t('{name} no está disponible aquí. Elige otra opción.', { name: 'Immich' })}</Callout>
                     )}
+                    <span class="muted small">{t('Cambiar foto cada')}</span>
+                    <Select<number | ''>
+                      error={!!err('interval')}
+                      value={r.intervalSec ?? ''}
+                      options={[
+                        { value: '', label: every ? t('Como siempre ({interval})', { interval: intervalLabel(every) }) : t('Como siempre') },
+                        ...(r.intervalSec ? intervalsWith(r.intervalSec) : INTERVALS).map((v) => ({ value: v, label: intervalLabel(v) })),
+                      ]}
+                      onChange={(v) => upd(r.id, (x) => (v === '' ? void delete x.intervalSec : void (x.intervalSec = v)))}
+                    />
                   </div>
-                  {(err('text') || err('photos')) && (
+                  {(err('text') || err('photos') || err('interval')) && (
                     <div class="field__error">
-                      <Icon name="alert" size={13} /> {t(err('text') || err('photos') || '')}
+                      <Icon name="alert" size={13} /> {t(err('text') || err('photos') || err('interval') || '')}
                     </div>
                   )}
                 </div>

@@ -3130,6 +3130,8 @@ export const PL: Record<string, string> = {
   'Tiempo en varias ciudades': 'Pogoda w kilku miastach',
   'El tiempo de ahora en dos a ocho lugares.': 'Bieżąca pogoda w dwóch do ośmiu miejscach.',
   'Fondos especiales': 'Specjalne tła',
+  'Como siempre ({interval})': 'Jak zawsze ({interval})',
+  'Como siempre': 'Jak zawsze',
   'Otras fotos en fechas señaladas o cuando hay cierto evento. Gana la primera regla que coincide; si ninguna coincide, se usa el fondo normal.': 'Inne zdjęcia w ważne dni lub gdy jest określone wydarzenie. Wygrywa pierwsza pasująca reguła; gdy żadna nie pasuje, pokazywane jest zwykłe tło.',
   'Añadir regla': 'Dodaj regułę',
   'Por ejemplo, fotos de Navidad del 1 al 31 de diciembre, o de la playa los días con un evento «Vacaciones».': 'Na przykład świąteczne zdjęcia od 1 do 31 grudnia albo zdjęcia z plaży w dni z wydarzeniem „Wakacje”.',

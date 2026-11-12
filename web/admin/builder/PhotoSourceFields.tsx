@@ -19,8 +19,11 @@ export interface PhotoSourceEnv {
   privacy?: boolean;
 }
 
-/** `card`: a photo card (its weather effect starts off); else the sidebar's photo. `put` stores the whole block. */
-export function PhotoSourceFields({ value, card, env, put }: { value: PhotoSource | undefined; card: boolean; env: PhotoSourceEnv; put: (v: PhotoSource) => void }) {
+/**
+ * `card`: a photo card (its weather effect starts off); else the sidebar's photo. `put` stores the whole block.
+ * `every`: how often its photo changes, the pace of a special background without one of its own (#45).
+ */
+export function PhotoSourceFields({ value, card, env, put, every }: { value: PhotoSource | undefined; card: boolean; env: PhotoSourceEnv; put: (v: PhotoSource) => void; every?: number }) {
   const own = value?.mode === 'own';
   // "Propias" only where the server serves a card's own photos (a block already own keeps showing, so it can go back)
   if (!has('photoSources') && !own) return null;
@@ -50,7 +53,7 @@ export function PhotoSourceFields({ value, card, env, put }: { value: PhotoSourc
         <>
           <PhotoPickFields value={value} edit={(fn) => edit((x) => fn(x))} privacy={env.privacy} />
           <h4 class="bld-h">{t('Fondos especiales')}</h4>
-          <RuleList inline rules={value.rules} write={(fn) => edit((x) => void (x.rules = fn(x.rules)))} sources={env.ruleSources} privacy={env.privacy} />
+          <RuleList inline rules={value.rules} write={(fn) => edit((x) => void (x.rules = fn(x.rules)))} sources={env.ruleSources} privacy={env.privacy} every={every} />
           <WeatherFxField card={card} label={t('Efecto del tiempo')} value={value.weatherFx} onChange={(v) => edit((x) => void (x.weatherFx = v))} />
         </>
       )}

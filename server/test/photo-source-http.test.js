@@ -179,6 +179,21 @@ test('privacy with "hide photos": stock for a card too; its special background a
   });
 });
 
+test('?for=<card>: the pace of its own special background while its photos show (#45)', async () => {
+  const today = new Date();
+  await withServer(async ({ photos }) => {
+    const r = (await photos('&for=cv_carda001')).json;
+    assert.deepEqual(r.photos.map((p) => p.file), ['xmas.jpg']);
+    assert.equal(r.intervalSec, 3600);
+    // card B has no rules, the screen neither
+    assert.equal('intervalSec' in (await photos('&for=cv_cardb001')).json, false);
+    assert.equal('intervalSec' in (await photos('')).json, false);
+  }, (c) => {
+    c.localEvents.items = [{ id: 'l_xmas', title: 'Cena de Navidad', allDay: true, date: localDate(today, c.datetime.timezone), endDate: localDate(today, c.datetime.timezone) }];
+    c.screens[0].canvas.items[0].props.photoSource.rules = [{ id: 'bg_x', when: { type: 'event', text: 'navidad', calendars: [] }, photos: { source: 'gallery', files: ['xmas.jpg'] }, intervalSec: 3600 }];
+  });
+});
+
 test('displays of a screen get a photos event when the special background of one of its cards changes', async () => {
   const today = new Date();
   await withServer(async ({ call, login, keyOf }) => {

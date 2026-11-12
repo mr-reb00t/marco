@@ -28,6 +28,8 @@ const ROWS: [string, string, string, string, string][] = [
   ['Cuando alguien de Cumpleaños cumple años hoy.', 'When someone in Birthdays has a birthday today.', 'Quando alguém de Aniversários faz anos hoje.', 'Als iemand uit Verjaardagen vandaag jarig is.', 'Når nogen fra Fødselsdage har fødselsdag i dag.'],
   ['Elegir fotos', 'Choose photos', 'Escolher fotos', 'Foto’s kiezen', 'Vælg billeder'],
   ['Elige un álbum', 'Choose an album', 'Escolhe um álbum', 'Kies een album', 'Vælg et album'],
+  ['Como siempre ({interval})', 'As usual ({interval})', 'Como sempre ({interval})', 'Zoals altijd ({interval})', 'Som altid ({interval})'],
+  ['Como siempre', 'As usual', 'Como sempre', 'Zoals altijd', 'Som altid'],
   ['Elegidas: {count} de {max}', 'Chosen: {count} of {max}', 'Escolhidas: {count} de {max}', 'Gekozen: {count} van {max}', 'Valgt: {count} af {max}'],
   ['No hay fotos en la galería', 'There are no photos in the gallery', 'Não há fotos na galeria', 'Er staan geen foto’s in de galerij', 'Der er ingen billeder i galleriet'],
   ['Sube fotos en Galería', 'Upload photos in Gallery', 'Carrega fotos em Galeria', 'Upload foto’s bij Galerij', 'Upload billeder under Galleri'],

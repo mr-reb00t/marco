@@ -103,6 +103,8 @@ export class Photos {
   /** when the timer fires (ms) and with which interval it was set (s) */
   private dueAt = 0;
   private dueSec = 0;
+  /** the pace of the special background whose photos show now (PhotosResponse.intervalSec, #45); null = the screen's */
+  private ruleEvery: number | null = null;
   /** When a carousel changes screen next (local ms, null = not by time), so a photo change never lands on it (main.ts). */
   switchAt: (() => number | null) | null = null;
   private loading = false;
@@ -157,6 +159,18 @@ export class Photos {
     return !!this.glLayer && b.transition === 'webgl';
   }
 
+  /** Seconds between photos: the active special background's own pace, else the configured one. */
+  private every(b: Pick<BackgroundConfig, 'intervalSec'>): number {
+    return this.ruleEvery ?? b.intervalSec;
+  }
+
+  /** The pace the last photos response asked for (null = as configured); a new one restarts the timer from now. */
+  setEvery(sec: number | null): void {
+    this.ruleEvery = sec && sec >= 10 ? sec : null;
+    if (this.glLayer) this.glLayer.interval = this.every(ctx.cfg.background);
+    this.schedule();
+  }
+
   applyConfig(): void {
     const b = ctx.cfg.background;
     const gl = this.usingGL;
@@ -165,7 +179,7 @@ export class Photos {
     if (this.glLayer) {
       this.glLayer.enabled = gl && b.enabled;
       this.glLayer.brightness = b.brightness;
-      this.glLayer.interval = b.intervalSec;
+      this.glLayer.interval = this.every(b);
       this.glLayer.cover = b.cover;
     }
     // the portrait option changed: show the photo on screen again with the new framing
@@ -270,7 +284,7 @@ export class Photos {
       this.timer = null;
       return;
     }
-    const sec = b.intervalSec;
+    const sec = this.every(b);
     if (!restart && this.timer && sec === this.dueSec && this.dueAt > now) return;
     let at = now + sec * 1000;
     const sw = this.switchAt?.() ?? null;
@@ -495,7 +509,7 @@ export class Photos {
       const bgUrl = composed?.url || img.src;
       if (composed?.url) node._blob = composed.url;
       node.style.backgroundImage = `url("${bgUrl.replace(/"/g, '%22')}")`;
-      node.style.setProperty('--kb-dur', `${b.intervalSec + 6}s`);
+      node.style.setProperty('--kb-dur', `${this.every(b) + 6}s`);
       node.style.setProperty('--kb-x', `${(Math.random() * 2 - 1).toFixed(2)}%`);
       node.style.setProperty('--kb-y', `${(Math.random() * 2 - 1).toFixed(2)}%`);
       const fw = composed?.w ?? img.naturalWidth, fh = composed?.h ?? img.naturalHeight;

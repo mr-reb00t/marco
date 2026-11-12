@@ -583,7 +583,7 @@ QR code carry, so the code screen is in that language before sign-in). **Display
 ## Special backgrounds
 
 `background.rules` (#14, at most 30 per screen) swaps a screen's photos for others on some days. A rule is
-`{ id, when, photos }`:
+`{ id, when, photos, intervalSec? }`:
 
 - `when`: `{ type: 'event', text, calendars }` (an event today whose title contains `text`, or any of its parts
   separated by commas, up to 120 characters, accents and case ignored; `calendars` = source ids, `[]` = the calendars the screen shows, even with its calendar
@@ -592,6 +592,11 @@ QR code carry, so the code screen is in that language before sign-in). **Display
   `birthdays.items` today, with that calendar on).
 - `photos`: `{ source: 'gallery', files }` (1 to 50 gallery file names) or `{ source: 'immich', albumId }`. Names that
   cannot be gallery files and calendars that no longer exist are dropped quietly; Marco Cloud refuses Immich rules.
+- `intervalSec` (#45, optional): seconds between its photos, 10 to 86400 like `background.intervalSec`; absent = the
+  pace of the screen, card or sidebar. It stays out of the rule's hash, so a new pace does not swap the photo on
+  screen. `/api/photos` sends it only while the batch is the rule's own photos; the slideshow (`widgets/photos.ts
+  setEvery`) and the photo card use it instead of their interval and set their timer again from now when it changes
+  (a rule begins, ends or is edited: a config save makes the display ask for its photos again).
 
 The matching is pure (`server/core/bgRules.js`, shared with Marco Cloud). The first rule that holds wins, checked
 in `datetime.timezone`; while the screen is private its events go through privacy mode first (a *busy* calendar has

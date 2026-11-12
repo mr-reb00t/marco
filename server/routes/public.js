@@ -13,7 +13,7 @@ import { CANVAS_ID_RE, commuteCardOf } from '../core/canvasCore.js';
 import { hiddenItems } from '../canvasConditions.js';
 import { getGridTariffs } from '../tariffs.js';
 import { gridCompany } from '../core/tariffsCore.js';
-import { getPhotos } from '../photos.js';
+import { photoBatch } from '../photos.js';
 import { activeBackgroundRule } from '../photoRules.js';
 import { backgroundRuleSig } from '../core/bgRules.js';
 import { sseHandler } from '../sse.js';
@@ -244,8 +244,9 @@ export function publicRouter({ version }) {
       // a special background rule that holds now (core/bgRules.js) brings its own photos; privacy still wins.
       // `rule` is only a signature, so the display knows when to change the photo at once (never the rule itself).
       const rule = hide ? null : await activeBackgroundRule(cfg, screen, new Date(), t.rules);
-      const photos = await getPhotos(Number(req.query.count) || 20, background, { key: hide ? `${t.key}|private` : t.key, after: hide ? '' : after, rule });
-      res.json({ photos, rule: backgroundRuleSig(rule) });
+      const { photos, fromRule } = await photoBatch(Number(req.query.count) || 20, background, { key: hide ? `${t.key}|private` : t.key, after: hide ? '' : after, rule });
+      // while the rule's own photos show, its pace (#45): only a number, never the rule
+      res.json({ photos, rule: backgroundRuleSig(rule), ...(fromRule && rule.intervalSec ? { intervalSec: rule.intervalSec } : {}) });
     } catch (err) {
       next(err);
     }

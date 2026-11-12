@@ -458,6 +458,8 @@ export interface BackgroundRule {
   id: string;
   when: BackgroundRuleWhen;
   photos: BackgroundRulePhotos;
+  /** Seconds between its photos (10 to 86400, #45); absent = the pace of the screen, card or sidebar. */
+  intervalSec?: number;
 }
 
 export interface CalendarSource {
@@ -2052,6 +2054,8 @@ export interface PhotosResponse {
   /** Signature of the special background rule that holds on the screen ('' or absent = none). It changes when another
    *  rule takes over or the rule is edited, so the display replaces the photo on screen at once. Never the rule itself. */
   rule?: string;
+  /** Seconds between photos while the rule's own photos show and it sets its own pace (#45); absent = as configured. */
+  intervalSec?: number;
 }
 
 /** Feature flags in GET /api/health. A self-hosted server turns them all on except googleCalendar and googleLogin

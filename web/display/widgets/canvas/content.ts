@@ -200,8 +200,11 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     fx ??= mountCardWeather(root);
     fx.set(env.weatherFx(), b!.weatherFx);
   };
-  // "Cambiar de foto cada": 10 s to a day, as the screen's Fondo (a day is far below the largest setTimeout delay)
-  const everyMs = () => Math.min(86400, Math.max(10, Number((env.item().props as Props).intervalSec) || 60)) * 1000;
+  // "Cambiar de foto cada": 10 s to a day, as the screen's Fondo (a day is far below the largest setTimeout delay); a
+  // special background with a pace of its own sets it while its photos show (#45)
+  const everyMs = () => Math.min(86400, Math.max(10, Number(resp()?.intervalSec ?? (env.item().props as Props).intervalSec) || 60)) * 1000;
+  // the pace the timer was set with: a new one (a rule began, ended or was edited) sets it again from now
+  let timerMs = 0;
   const show = () => {
     const photos = list();
     if (timer) clearTimeout(timer);
@@ -259,7 +262,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     // a gallery photo carries the display's credential (?k=): an <img> sends no header, and without it a screen on a
     // private link or a paired device gets 401 and the card stays black (only an admin session's cookie got through)
     img.src = mediaUrl(p.url);
-    timer = setTimeout(show, everyMs());
+    timerMs = everyMs();
+    timer = setTimeout(show, timerMs);
   };
   // its "Oscurecer foto" (0 to 0.6, styles-canvas.css)
   const shade = () => {
@@ -270,6 +274,11 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
   const onList = () => {
     const sig = list().map((p) => p.url).join('|');
     const src = srcOf(ownBlock());
+    if (timer && cur && everyMs() !== timerMs) {
+      clearTimeout(timer);
+      timerMs = everyMs();
+      timer = setTimeout(show, timerMs);
+    }
     if (sig === listSig) return;
     listSig = sig;
     // a new batch: from its start at the next change (the photo on screen stays until then)

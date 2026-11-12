@@ -2300,7 +2300,10 @@ on('countdowns', () => {
 });
 on('photos', (s) => {
   canvasView.onData('photos');
-  if (s.photos) photos.setList(s.photos.photos || []);
+  if (s.photos) {
+    photos.setEvery(s.photos.intervalSec ?? null);
+    photos.setList(s.photos.photos || []);
+  }
 });
 on('family', () => {
   canvasView.onData('family');

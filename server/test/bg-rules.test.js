@@ -171,6 +171,40 @@ test('validation: caps, bad dates and empty words refused, unknown photos and ca
   assert.deepEqual(many, ['too many items (max 30)']);
 });
 
+test('a rule may set how often its photos change (#45); without one it stays as it was', () => {
+  const errs = [];
+  const err = (p, m) => errs.push(`${p}: ${m}`);
+  const yr = { type: 'range', from: '11-01', to: '11-05' };
+  const out = sanitizeBackgroundRules([
+    rule('a', yr),
+    { ...rule('b', yr), intervalSec: 3600 },
+    { ...rule('c', yr), intervalSec: 3600.4 },
+    { ...rule('d', yr), intervalSec: null },
+  ], { err });
+  assert.deepEqual(errs, []);
+  assert.deepEqual(Object.keys(out[0]), ['id', 'when', 'photos']);
+  assert.equal(out[1].intervalSec, 3600);
+  assert.equal(out[2].intervalSec, 3600);
+  assert.equal('intervalSec' in out[3], false);
+  const bad = [];
+  sanitizeBackgroundRules([5, 90000, 'x'].map((v, i) => ({ ...rule(`r${i}`, yr), intervalSec: v })), { err: (p, m) => bad.push(`${p}: ${m}`) });
+  assert.deepEqual(bad, [
+    'background.rules[0].intervalSec: must be between 10 and 86400',
+    'background.rules[1].intervalSec: must be between 10 and 86400',
+    'background.rules[2].intervalSec: expected number',
+  ]);
+  // the signature leaves the pace out: saved rules keep theirs, and a new pace does not swap the photo on screen
+  assert.equal(backgroundRuleSig(out[1]), backgroundRuleSig({ ...out[1], intervalSec: undefined }));
+  assert.equal(backgroundRuleSig({ ...out[1], intervalSec: 60 }), backgroundRuleSig(out[1]));
+  // kept by the config validator (a card's own rules: photo-source-http.test.js), never sent in the display config
+  const c = defaultConfig();
+  c.screens[0].background.rules = [{ ...rule('r1', yr), intervalSec: 3600 }];
+  const v = validateConfig(c);
+  assert.deepEqual(v.errors, []);
+  assert.equal(v.value.screens[0].background.rules[0].intervalSec, 3600);
+  assert.equal('rules' in displayConfig(v.value, v.value.screens[0]).background, false);
+});
+
 test('the config validator keeps the rules of each screen; Marco Cloud (no Immich) refuses Immich rules', () => {
   const c = defaultConfig();
   c.screens[0].background.rules = [rule('r1', { type: 'event', text: 'Navidad', calendars: ['birthdays', 'c_gone'] })];
@@ -306,6 +340,31 @@ test('/api/photos: a rule whose photos are all gone falls back to the normal bac
     assert.equal((await call('PUT', '/api/admin/config', { cookie, body: cfg })).status, 200);
     const r = await photosOf('living-room');
     assert.ok(r.photos.length > 0 && r.photos.every((p) => p.source === 'stock'));
+  });
+});
+
+test('/api/photos: a rule with a pace of its own sends it, only while its own photos show (#45)', async () => {
+  await withServer(async ({ call, login, photosOf }) => {
+    // no pace of its own: no field
+    assert.equal('intervalSec' in await photosOf('living-room'), false);
+    const cookie = await login();
+    const cfg = (await call('GET', '/api/admin/config', { cookie })).json;
+    // (a range rule: the events memo is keyed by config revision and outlives the store of an earlier test)
+    cfg.screens[0].background.rules = [{ ...cfg.screens[0].background.rules[1], intervalSec: 3600 }];
+    cfg.screens[1].background.rules = [{ ...rule('r_gone', { type: 'range', from: '01-01', to: '12-31' }, ['gone.jpg']), intervalSec: 3600 }];
+    assert.equal((await call('PUT', '/api/admin/config', { cookie, body: cfg })).status, 200);
+    const r = await photosOf('living-room');
+    assert.deepEqual(r.photos.map((p) => p.file), ['year.jpg']);
+    assert.equal(r.intervalSec, 3600);
+    // its photos are all gone: the normal background at its normal pace
+    const g = await photosOf('guest');
+    assert.ok(g.photos.every((p) => p.source === 'stock'));
+    assert.equal('intervalSec' in g, false);
+    // privacy mode with "hide photos": stock, no rule, no pace
+    assert.equal((await call('POST', '/api/admin/privacy', { cookie, body: { mode: 'on', hours: 2, screens: ['living-room'] } })).status, 200);
+    const p = await photosOf('living-room');
+    assert.equal(p.rule, '');
+    assert.equal('intervalSec' in p, false);
   });
 });
 

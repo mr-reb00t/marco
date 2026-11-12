@@ -323,7 +323,7 @@ function PagePanel(p: InspectorProps) {
           {/* the sidebar's own photo (#41): how often it changes and how dark, from the screen's Fondo until set here */}
           {cv.sidebar.fill === 'photo' && !backdrop && cv.background !== 'photo' && (
             <>
-              {p.env.photos && <PhotoSourceFields card={false} value={cv.sidebar.photoSource as PhotoSource | undefined} env={p.env.photos} put={(v) => set((c) => void (c.sidebar.photoSource = v))} />}
+              {p.env.photos && <PhotoSourceFields card={false} value={cv.sidebar.photoSource as PhotoSource | undefined} env={p.env.photos} put={(v) => set((c) => void (c.sidebar.photoSource = v))} every={cv.sidebar.intervalSec ?? p.photoInterval} />}
               <Field label={t('Cambiar foto cada')} hint={p.env.photos && (cv.sidebar.photoSource?.mode === 'own' || has('photoSources')) ? undefined : `${photoSourceText(p.photoSource)} ${t('Se cambian en la sección Fondo de esta pantalla.')}`}>
                 <Select
                   value={cv.sidebar.intervalSec ?? p.photoInterval}
