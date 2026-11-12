@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import v8 from 'node:v8';
+import vm from 'node:vm';
 import { parseIcsText, expandEvents } from '../ics.js';
 import { buildSourceEvents, sortEvents, eventsHash } from '../calendars.js';
 import { zonedMidnight, addDays } from '../core/lib/tz.js';
@@ -135,4 +137,32 @@ test('pathological RRULEs are bounded (MINUTELY → base occurrence, instance ca
   assert.equal(raws.filter((r) => r.uid === 'm1').length, 1);
   assert.equal(raws.filter((r) => r.uid === 's1').length, 1);
   assert.ok(raws.filter((r) => r.uid === 'h1').length <= 2000);
+});
+
+test('a parsed feed is not kept alive by node-ical time zone names (#46)', async () => {
+  v8.setFlagsFromString('--expose-gc');
+  const gc = vm.runInNewContext('gc');
+  const mem = () => { 'ab'.match(/a/); gc(); const m = process.memoryUsage(); return m.heapUsed + m.external; };
+  const feed = () => {
+    const pad = 'Descripción ñ 日本 '.repeat(40);
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0'];
+    for (let i = 0; i < 12000; i++) {
+      lines.push('BEGIN:VEVENT', `UID:e${i}`, 'DTSTAMP:20261001T000000Z', 'DTSTART;TZID=America/Argentina/Ushuaia:20261012T100000',
+        `SUMMARY:x${i}`, `DESCRIPTION:${pad}`, 'END:VEVENT');
+    }
+    lines.push('END:VCALENDAR', '');
+    return lines.join('\r\n');
+  };
+  // the text is made and dropped inside a helper, so this async function holds no reference to it across awaits
+  const parse = async () => {
+    const text = feed();
+    return { count: (await parseIcsText(text)).length, size: text.length * 2 };
+  };
+  const before = mem();
+  const { count, size } = await parse();
+  assert.equal(count, 12000);
+  await new Promise((r) => setTimeout(r, 0));
+  // without the warm-up the whole text (about 20 MB) stays on Node 22, where it lives on the heap; with it, well under 1 MB
+  const grew = mem() - before;
+  assert.ok(grew < size / 2, `retained ${grew} bytes of a ${size} byte feed`);
 });

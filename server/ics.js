@@ -12,8 +12,23 @@ const val = (v) => {
   return String(v);
 };
 
+/** node-ical caches time zone names for good, and a name cut out of a feed keeps that whole feed in memory (#46):
+ * each new name is first checked on a tiny calendar of our own. */
+const seenZones = new Set();
+function warmZones(text) {
+  for (const m of text.matchAll(/TZID[=:]"?([^":;\r\n]{1,80})/g)) {
+    const tz = Buffer.from(m[1], 'utf8').toString('utf8');
+    if (seenZones.has(tz) || seenZones.size >= 200) continue;
+    seenZones.add(tz);
+    try {
+      ical.sync.parseICS(`BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:z\r\nDTSTART;TZID=${tz}:20260101T000000\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`);
+    } catch { /* ignore */ }
+  }
+}
+
 export async function parseIcsText(text) {
   if (!/BEGIN:VCALENDAR/i.test(text)) throw new Error('Not an iCalendar file (missing BEGIN:VCALENDAR)');
+  warmZones(text);
   const data = await ical.async.parseICS(text);
   return Object.values(data).filter((c) => c && c.type === 'VEVENT' && c.start);
 }

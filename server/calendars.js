@@ -78,8 +78,10 @@ async function doRefresh(source, needWindow) {
   try {
     if (source.type === 'ics') {
       const text = await fetchIcsText(source.url, source.insecureTls);
-      const vevents = await parseIcsText(text);
       const sig = hash(text);
+      // An unchanged download keeps its parse (#46). Anything that needs a new parse of the same text must reset
+      // `sig`, as invalidateIcsParsing does.
+      const vevents = sig === entry.sig && entry.vevents ? entry.vevents : await parseIcsText(text);
       if (sig !== entry.sig) entry.version = (entry.version || 0) + 1;
       Object.assign(entry, { vevents, sig, count: vevents.length });
       saveDiskCache(source, { fetchedAt: entry.fetchedAt, text });
@@ -122,6 +124,8 @@ async function doRefresh(source, needWindow) {
   }
   logTransition(source, prev && prev.key === key ? prev.ok : undefined, entry);
   cache.set(source.id, entry);
+  // A failed refresh or an unchanged feed keeps the same generation, and with it the built event lists.
+  if (genOf(prev) !== genOf(entry)) dropMemo(source.id);
   return entry;
 }
 
@@ -164,6 +168,7 @@ export function refreshSource(source, { force = false, window = null } = {}) {
     delete entry.pendingText;
     const p = parseIcsText(text).then((vevents) => {
       Object.assign(entry, { vevents, count: vevents.length, sig: hash(text) });
+      dropMemo(source.id);
     }).catch(() => {});
     inflight.set(source.id, p);
     p.finally(() => inflight.delete(source.id));
@@ -439,6 +444,12 @@ function computeDetailed(cfg, picked, { from, to, lang }) {
 }
 
 const memo = new Map();
+/** Memo entries of a source are dropped as soon as its data changes (#46): an old list can never be served again
+ * and its titles can keep the whole downloaded ICS text alive. */
+function dropMemo(sourceId) {
+  for (const [k, hit] of memo) if (hit.sourceIds.includes(sourceId)) memo.delete(k);
+}
+const genOf = (e) => (e ? `${e.key}|${e.version}|${e.sig}` : '');
 const memoKeyOf = (cfg, picked, from, to, lang) => [
   from, to, cfg.datetime.timezone, lang, cfg.revision, picked.local ? 'L' : '', picked.birthdays ? 'B' : '',
   ...picked.remote.map((s) => `${s.id}:${cache.get(s.id)?.version}:${cache.get(s.id)?.sig}`),
@@ -457,7 +468,10 @@ export async function getDetailedEvents({ from, to, screen = null, onlyIds = nul
   if (!hit) {
     const { events, errors } = computeDetailed(cfg, picked, { from, to, lang });
     const wire = events.filter((e) => !e.hidden).map(toWire);
-    hit = { detailed: events, wire, buildErrors: errors, hash: eventsHash(wire), generatedAt: new Date().toISOString() };
+    hit = {
+      detailed: events, wire, buildErrors: errors, hash: eventsHash(wire), generatedAt: new Date().toISOString(),
+      sourceIds: picked.remote.map((s) => s.id),
+    };
     memo.set(key, hit);
     if (memo.size > 30) memo.delete(memo.keys().next().value);
   }
@@ -530,7 +544,11 @@ export async function refreshAll({ force = false } = {}) {
   await Promise.allSettled(sources.map((s) => capRefresh(refreshSource(s, { force }))));
   // drop cache entries of removed sources
   const ids = new Set(cfg.calendar.sources.map((s) => s.id));
-  for (const id of cache.keys()) if (!ids.has(id)) cache.delete(id);
+  for (const id of cache.keys()) {
+    if (ids.has(id)) continue;
+    cache.delete(id);
+    dropMemo(id);
+  }
   try {
     for (const f of fs.readdirSync(paths.cache)) {
       const m = /^src_(.+)\.json$/.exec(f);
@@ -660,4 +678,5 @@ export function invalidateIcsParsing() {
     // from the old parse would otherwise stay cached.
     entry.sig = null;
   }
+  memo.clear();
 }

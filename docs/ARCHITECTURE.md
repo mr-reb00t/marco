@@ -284,7 +284,8 @@ Older single-screen (v1) configs are migrated automatically on load; the origina
 
 1. **Sources** visible on the screen (`screen.calendar.sourceIds`, `null` = all enabled + `local` + `birthdays`).
    Each remote source is fetched with its own cache (`refreshMin`); on failure the stale cache is served and the
-   error is reported (`errors[]`, activity `source.error` / `source.recovered` on transitions).
+   error is reported (`errors[]`, activity `source.error` / `source.recovered` on transitions). An ICS download
+   identical to the last one is not parsed again, and built event lists are kept until one of their calendars changes.
    The owner can also download a source now from *Estado* (`refreshNow`, `POST /api/admin/status/refresh`): a forced
    fetch that shares an automatic fetch already running, limited by in-memory cooldowns (60 s per source, 120 s for
    *Descargar todos*), followed by a refresher run so displays hear about changed events at once.
