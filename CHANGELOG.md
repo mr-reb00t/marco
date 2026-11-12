@@ -3,6 +3,23 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.42.0] - 2026-11-12
+
+### Added
+- A special background (*Background > Special backgrounds*) can have its own *Change photo every*, so a date, a date
+  range or an event can go through an album or gallery photos every hour, for example, while it lasts (#45, thanks to
+  @aswormboy). *As usual* keeps the screen's normal interval. Photo cards on Custom screens follow it too.
+- `marco kiosk` opens the kiosk again from a terminal on the Pi or over SSH, after *Exit kiosk* or whenever it is
+  closed; `marco kiosk stop` closes it (#44). `marco status` says how to start it when it is not running.
+
+### Fixed
+- Installs updated from 0.40 never got the "Marco" entry in the Pi menu that opens the kiosk again. The kiosk now adds
+  it at login when it is missing (#44).
+- Memory: a calendar's cached event lists are dropped as soon as its feed changes, instead of keeping up to 30 old
+  generations, each able to hold the whole downloaded feed. Time zone names from a feed no longer keep that feed in
+  memory either. An unchanged feed is not parsed or written to disk again. On a 128 MB heap with a 3 MB feed, memory
+  now stays flat where it ran out before (#46, thanks to @emdeex for the analysis).
+
 ## [0.41.0] - 2026-11-09
 
 ### Added
