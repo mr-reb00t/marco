@@ -3064,7 +3064,7 @@ export const PL: Record<string, string> = {
   'Dos toques apagan el Pi que ejecuta Marco, si lo activas en el Pi.': 'Dwa dotknięcia wyłączają Pi, na którym działa Marco, jeśli włączysz to na Pi.',
   'Vacío: Salir del kiosko.': 'Puste: Wyjdź z kiosku.',
   'Vacío: Apagar.': 'Puste: Wyłącz.',
-  'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.': 'Zamyka przeglądarkę pełnoekranową na Pi, na którym działa Marco. Wraca po ponownym uruchomieniu, przy następnym logowaniu do pulpitu lub z menu Pi (Marco). Wymaga drugiego dotknięcia.',
+  'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio, desde el menú del Pi (Marco) o con el comando marco kiosk. Pide un segundo toque.': 'Zamyka przeglądarkę pełnoekranową na Pi, na którym działa Marco. Wraca po ponownym uruchomieniu, przy następnym logowaniu do pulpitu, z menu Pi (Marco) lub poleceniem marco kiosk. Wymaga drugiego dotknięcia.',
   'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.': 'Wyłącza Pi, na którym działa Marco. Najpierw włącz to na Pi poleceniem: sudo marco power on. Wymaga drugiego dotknięcia.',
   'Solo funciona en el kiosko del Pi que ejecuta Marco, el navegador de pantalla completa que abre el instalador. Necesita Permitir tocar en la pantalla.': 'Działa tylko w kiosku na Pi, na którym działa Marco, czyli w przeglądarce pełnoekranowej, którą ustawia instalator. Wymaga opcji „Pozwól dotykać ekranu”.',
   'Cierre del kiosko pedido desde la pantalla {screen}': 'Zamknięcie kiosku zlecone z ekranu {screen}',

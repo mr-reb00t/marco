@@ -160,7 +160,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     NAV_SHOW_FIELD,
     { k: 'icon', type: 'navIcon', label: 'Icono', hint: 'Sin icono: el de siempre.' },
     { k: 'label', type: 'text', label: 'Texto', max: 40, hint: 'Vacío: Salir del kiosko.' },
-    { type: 'note', text: 'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.' },
+    { type: 'note', text: 'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio, desde el menú del Pi (Marco) o con el comando marco kiosk. Pide un segundo toque.' },
     { type: 'note', text: 'Solo funciona en el kiosko del Pi que ejecuta Marco, el navegador de pantalla completa que abre el instalador. Necesita Permitir tocar en la pantalla.' },
   ],
   'nav.poweroff': [

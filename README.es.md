@@ -363,6 +363,7 @@ inicio de sesión automático en el escritorio (modos con pantalla) o como un us
 | `marco url` | Dirección del panel y el enlace privado de cada pantalla, con códigos QR |
 | `marco version` | Versión instalada y la última publicada |
 | `marco power on\|off\|status` | Si la tarjeta *Apagar* de una pantalla de este dispositivo puede apagarlo (ver [Salir del kiosko y Apagar](#salir-del-kiosko-y-apagar)) |
+| `marco kiosk [start\|stop]` | Abre otra vez el kiosco en la sesión de escritorio, tras *Salir del kiosko* o si se cerró; `stop` lo cierra. Funciona desde un terminal en la Pi o por SSH mientras el escritorio tiene la sesión iniciada |
 | `marco uninstall [--purge]` | Desinstala Marco; tus datos se conservan salvo que añadas `--purge`. Pregunta antes (la respuesta por defecto es no); sin terminal necesita `--yes` |
 
 ### Actualizaciones
@@ -887,7 +888,8 @@ el registro del kiosco muestran `/d/<private link>`. En el modo de acceso **abie
   `KIOSK_EXTRA_ARGS`). Tras *Regenerar enlace*, vuelve a ejecutar el instalador con `--url <enlace nuevo>` (o pon el
   enlace nuevo en `KIOSK_URL`). El registro es `/tmp/marco-kiosk.log` (`marco logs` en una Pi solo kiosco). El script
   espera al servidor, reinicia Chromium si se cierra y añade `client=<hostname>` para que el dispositivo conserve su
-  nombre en *Pantallas conectadas*.
+  nombre en *Pantallas conectadas*. Tras editar `kiosk.env`, `marco kiosk stop` y luego `marco kiosk` lo aplican sin
+  reiniciar.
 - **¿Demasiado grande o demasiado pequeño?** Chromium arranca con escala 1, sea cual sea el zoom del escritorio.
   Añade `KIOSK_EXTRA_ARGS="--force-device-scale-factor=0.8"` (o `1.25`) a `kiosk.env`. La pantalla también tiene un
   ajuste de escala de texto por pantalla.
@@ -899,7 +901,7 @@ el registro del kiosco muestran `/d/<private link>`. En el modo de acceso **abie
   simplemente usa el modo noche con atenuación desde la administración.
 - **Pi lenta**: pon el efecto ambiental en *ninguno* y la transición en *fundido*, o usa `?lite=1` en `KIOSK_URL`.
 
-Comandos útiles: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`.
+Comandos útiles: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`, `marco kiosk`.
 
 ### Salir del kiosko y Apagar
 
@@ -907,8 +909,9 @@ Dos tarjetas de *Navegación* de una pantalla personalizada permiten salir del k
 táctil, sin abrir el panel. Las dos necesitan *Permitir tocar en la pantalla* y las dos piden un segundo toque en pocos
 segundos (la tarjeta se pone ámbar y una barra se va acabando), así que rozar la pantalla con la mano no hace nada.
 
-- **Salir del kiosko** cierra Chromium. El kiosco vuelve al reiniciar, al entrar otra vez en el escritorio o desde el
-  menú de la Pi (*Marco*).
+- **Salir del kiosko** cierra Chromium. El kiosco vuelve al reiniciar, al entrar otra vez en el escritorio, desde el
+  menú de la Pi (la entrada *Marco*) o con el comando `marco kiosk` en un terminal (en la Pi, o por SSH mientras el
+  escritorio tiene la sesión iniciada). El comando va en minúsculas: `marco kiosk`, no `Marco`.
 - **Apagar** apaga la Pi. Está desactivada hasta que lo permitas en la Pi:
 
   ```bash

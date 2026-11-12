@@ -33,7 +33,7 @@
 #   <dir>/data/          config, secrets, photos, backups (kept on update and on uninstall without --purge)
 #   <dir>/.env           settings (port, secrets), see .env.example
 #   /etc/marco.conf      what was installed and where (read by the `marco` command)
-#   /usr/local/bin/marco command line: marco status | logs | restart | update | url | version | power | uninstall
+#   /usr/local/bin/marco command line: marco status | logs | restart | update | url | version | power | kiosk | uninstall
 #   /etc/systemd/system/marco-update.{path,service}   updates started from the admin (release installs)
 #   /etc/systemd/system/marco-power.{path,service}    only with --power-button: the "Shut down" card powers off the device
 set -euo pipefail
@@ -69,6 +69,7 @@ SKIP_APT=0
 FORCE=0
 POWER=""                                      # 1: the "Shut down" card may power off this device; 0: not; "": ask / keep
 POWER_FLAG=0                                  # 1: POWER came from --power-button / --no-power-button
+KIOSK_SETUP=""                                # --kiosk-setup <kiosk command>: only set up the kiosk (run by an update)
 SOURCE_DIR=""                                 # --source <checkout>: build and run a local git checkout in place
 TARBALL_URL="${MARCO_TARBALL_URL:-}"          # testing: install this tarball (its .sha256 must sit next to it)
 
@@ -945,9 +946,7 @@ setup_kiosk() {
     printf '[Desktop Entry]\nType=Application\nName=Marco kiosk\nExec=%s\nX-GNOME-Autostart-enabled=true\n' "$kiosk_cmd" \
       | put_file "$RUN_HOME/.config/autostart/marco-kiosk.desktop" 644 "$RUN_USER"
   fi
-  # A menu entry ("Marco"), to open the kiosk again after the "Salir del kiosko" card closed it, without a keyboard
-  printf '[Desktop Entry]\nType=Application\nName=Marco\nComment=Show Marco full screen\nExec=%s\nIcon=video-display\nCategories=Utility;\nTerminal=false\n' "$kiosk_cmd --open" \
-    | put_file "$RUN_HOME/.local/share/applications/marco-kiosk.desktop" 644 "$RUN_USER"
+  kiosk_menu_entry "$kiosk_cmd"
   if have raspi-config; then
     info "Turning off screen blanking (raspi-config)..."
     run raspi-config nonint do_blanking 1 || warn "Could not turn off screen blanking"
@@ -957,6 +956,29 @@ setup_kiosk() {
   else
     warn "Enable automatic login to the desktop and turn off screen blanking in your desktop settings."
   fi
+}
+
+# A menu entry ("Marco"), to open the kiosk again after the "Salir del kiosko" card closed it, without a keyboard.
+# deploy/kiosk.sh writes the same text when it is missing (an install updated by an installer older than the entry).
+kiosk_menu_entry() {
+  printf '[Desktop Entry]\nType=Application\nName=Marco\nComment=Show Marco full screen\nExec=%s\nIcon=video-display\nCategories=Utility;\nTerminal=false\n' "$1 --open" \
+    | put_file "$RUN_HOME/.local/share/applications/marco-kiosk.desktop" 644 "$RUN_USER"
+}
+
+# The kiosk of an all-in-one install, set up by the installer of the version just installed: `marco update` runs the
+# stored installer of the version it updates from, and its setup_kiosk would leave out whatever the new one adds.
+# The stored installer was replaced by install_cli; one that does not know --kiosk-setup (an older version installed
+# with --force) leaves it to this one.
+setup_kiosk_current() {
+  local kiosk_cmd="$1"
+  if [ "$DRY" = 0 ] && grep -q '^ *--kiosk-setup)' "$LIBDIR/install.sh" 2>/dev/null; then
+    local args=(--kiosk-setup "$kiosk_cmd" --dir "$DIR" --user "$RUN_USER" --mode "$MODE" --yes)
+    if [ -n "$KIOSK_URL" ]; then args+=(--url "$KIOSK_URL"); fi
+    if [ -n "$PORT" ]; then args+=(--port "$PORT"); fi
+    run bash "$LIBDIR/install.sh" "${args[@]}" && return 0
+    warn "The kiosk setup of the new version failed; setting it up with this installer."
+  fi
+  setup_kiosk "$kiosk_cmd"
 }
 
 remove_kiosk() {
@@ -1005,11 +1027,12 @@ summary() {
     echo "  This screen will show: $(printf '%s' "${link:-the link in ~/.config/marco/kiosk.env}" | sed -E 's|/d/[^/?#]+|/d/<private link>|')"
   fi
   if [ "$MODE" != server ]; then
-    echo "  The kiosk starts with the desktop session: reboot to start it (sudo reboot)."
+    echo "  The kiosk starts with the desktop session: reboot to start it (sudo reboot), or run: marco kiosk"
     echo "  Kiosk log: /tmp/marco-kiosk.log, settings: ~/.config/marco/kiosk.env"
   fi
   echo
-  echo "  Commands: marco status | marco logs -f | marco restart | marco update | marco url | marco uninstall"
+  if [ "$MODE" = server ]; then echo "  Commands: marco status | marco logs -f | marco restart | marco update | marco url | marco uninstall"
+  else echo "  Commands: marco status | marco logs -f | marco restart | marco update | marco url | marco kiosk | marco uninstall"; fi
   if [ "$SYSTEMD" = 0 ] && [ "$MODE" != kiosk ]; then
     echo
     echo "  systemd is not running here. Start the server by hand:"
@@ -1074,7 +1097,7 @@ do_install_release() {
   if [ -n "$TRUSTED" ]; then rm -rf "$TRUSTED"; TRUSTED=""; fi
   if [ "$MODE" = all ]; then
     run chmod +x "$DIR/current/deploy/kiosk.sh" "$DIR/current/deploy/screen-schedule.sh"
-    setup_kiosk "$DIR/current/deploy/kiosk.sh"
+    setup_kiosk_current "$DIR/current/deploy/kiosk.sh"
   fi
 }
 
@@ -1156,7 +1179,7 @@ do_install_checkout() {
   fi
   if [ "$MODE" = all ]; then
     run chmod +x "$app/deploy/kiosk.sh" "$app/deploy/screen-schedule.sh"
-    setup_kiosk "$app/deploy/kiosk.sh"
+    setup_kiosk_current "$app/deploy/kiosk.sh"
   fi
 }
 
@@ -1237,6 +1260,7 @@ parse_args() {
         case "${2:-}" in on) POWER=1 ;; off) POWER=0 ;; *) die "--power-units must be on or off" ;; esac
         POWER_FLAG=1; shift ;;
       --force) FORCE=1 ;;
+      --kiosk-setup) ACTION=kiosk-setup; KIOSK_SETUP="${2:-}"; shift ;;
       --source) SOURCE_DIR="${2:-}"; shift ;;
       --source=*) SOURCE_DIR="${1#*=}" ;;
       --tarball-url) TARBALL_URL="${2:-}"; shift ;;
@@ -1277,9 +1301,19 @@ choose_mode() {
 
 main() {
   parse_args "$@"
-  printf '\n%sMarco installer%s\n\n' "$C_B" "$C_0"
+  [ "$ACTION" = kiosk-setup ] || printf '\n%sMarco installer%s\n\n' "$C_B" "$C_0"
   load_existing
   detect
+  # --kiosk-setup <kiosk command>: run by an update (setup_kiosk_current), after the new version is installed
+  if [ "$ACTION" = kiosk-setup ]; then
+    [ "$MODE" = all ] || die "--kiosk-setup is for an all-in-one install"
+    case "$KIOSK_SETUP" in /*/deploy/kiosk.sh) [ -f "$KIOSK_SETUP" ] || die "$KIOSK_SETUP not found" ;; *) die "--kiosk-setup needs the path of deploy/kiosk.sh" ;; esac
+    resolve_user
+    detect_desktop
+    PORT="${PORT:-$(env_get "$DIR/.env" PORT)}"; PORT="${PORT:-3000}"
+    setup_kiosk "$KIOSK_SETUP"
+    return 0
+  fi
   if [ "$ACTION" = uninstall ]; then
     MODE="${MODE:-server}"
     resolve_user
@@ -1353,6 +1387,10 @@ main() {
     # Installs updated by an installer older than the admin's update button get its units here.
     if [ "$MODE" != kiosk ] && [ ! -f "/etc/systemd/system/$UPDATE_UNIT.path" ] && { [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; }; then
       install_update_units
+    fi
+    # The menu entry "Marco" (0.41.0) on an install updated by an older installer, which did not write it
+    if [ "$MODE" = all ] && [ ! -e "$RUN_HOME/.local/share/applications/marco-kiosk.desktop" ] && { [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; }; then
+      kiosk_menu_entry "$DIR/current/deploy/kiosk.sh"
     fi
     # --power-button / --no-power-button on an install that is up to date: only that changes
     if [ "$MODE" != kiosk ] && [ "$POWER_FLAG" = 1 ] && { [ "$DRY" = 1 ] || [ "$(id -u)" -eq 0 ] || sudo -n true 2>/dev/null; }; then

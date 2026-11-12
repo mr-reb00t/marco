@@ -18,10 +18,10 @@
 #
 # "Salir del kiosko" (a card on a screen of this device): the server writes a new number to /run/marco/kiosk-exit
 # (its systemd RuntimeDirectory, readable by everyone, emptied at every boot). When that number changes while Chromium
-# runs, this script closes Chromium and does not open it again: the kiosk comes back at the next login or reboot, or
-# from the menu entry "Marco" (kiosk.sh --open). The number is only compared, never run or used for anything else. A desktop that starts
-# this script again by itself (LXDE-pi's @ lines) finds it closed for that number and login session
-# ($XDG_RUNTIME_DIR, cleared at logout) and exits at once.
+# runs, this script closes Chromium and does not open it again: the kiosk comes back at the next login or reboot, from
+# the menu entry "Marco" or with `marco kiosk` (both run kiosk.sh --open). The number is only compared, never run or used
+# for anything else. A desktop that starts this script again by itself (LXDE-pi's @ lines) finds it closed for that
+# number and login session ($XDG_RUNTIME_DIR, cleared at logout) and exits at once.
 # Only this browser may use those cards: it gets the server's kiosk key (data/secrets.json) in the URL fragment (#kp=).
 set -euo pipefail
 
@@ -68,6 +68,18 @@ fi
 KIOSK_LOG="${KIOSK_LOG:-/tmp/marco-kiosk.log}"
 if [ ! -t 1 ]; then exec >"$KIOSK_LOG" 2>&1; fi
 
+# --- Menu entry --------------------------------------------------------------------
+# The menu entry "Marco" opens the kiosk again after a close from the screen. install.sh writes it (kiosk_menu_entry, the
+# same text), but an install updated by an older installer never got it: written here, in a desktop session, when it is
+# missing. One that is there is never replaced.
+MENU_ENTRY="$HOME/.local/share/applications/marco-kiosk.desktop"
+if [ ! -e "$MENU_ENTRY" ] && [ ! -L "$MENU_ENTRY" ] && { [ -n "${WAYLAND_DISPLAY:-}" ] || [ -n "${DISPLAY:-}" ]; }; then
+  if (umask 022; set -o noclobber; mkdir -p "$(dirname "$MENU_ENTRY")" \
+      && printf '[Desktop Entry]\nType=Application\nName=Marco\nComment=Show Marco full screen\nExec=%s\nIcon=video-display\nCategories=Utility;\nTerminal=false\n' "$SCRIPT_DIR/$(basename "${BASH_SOURCE[0]}") --open" > "$MENU_ENTRY") 2>/dev/null; then
+    log "Added the menu entry Marco ($MENU_ENTRY)."
+  fi
+fi
+
 # --- Closed from the screen ----------------------------------------------------------
 # (after the log redirect, so what it says lands in the kiosk log; after the lock, so one kiosk decides)
 MARCO_RUN_DIR="${MARCO_RUN_DIR:-/run/marco}"
@@ -80,10 +92,10 @@ if [ -n "${XDG_RUNTIME_DIR:-}" ]; then CLOSED="$XDG_RUNTIME_DIR/marco-kiosk.clos
 else mkdir -p "$HOME/.cache"; CLOSED="$HOME/.cache/marco-kiosk.closed"; fi
 SESSION_TAG="$(printf '%s' "${XDG_SESSION_ID:-}" | tr -cd 'A-Za-z0-9_-')"
 closed_for() { [ -n "$1" ] && [ "$(head -c 100 "$CLOSED" 2>/dev/null | tr -cd '0-9A-Za-z_ -' || true)" = "$1 $SESSION_TAG" ]; }
-# --open (the menu entry "Marco"): opened by hand, so a close asked earlier no longer holds it back
+# --open (the menu entry "Marco", `marco kiosk`): opened by hand, so a close asked earlier no longer holds it back
 if [ "${1:-}" = --open ]; then rm -f "$CLOSED"; fi
 if [ -s "$CLOSED" ] && closed_for "$(token)"; then
-  log "Closed from the screen; it opens again at the next login (or from the menu: Marco)."
+  log "Closed from the screen; it opens again at the next login, from the menu (Marco) or with: marco kiosk"
   exit 0
 fi
 # A request from before this start (an earlier session) does not count: only a new number does.
@@ -93,7 +105,7 @@ closed_now() {
   local t
   t="$(token)"
   [ -n "$t" ] && [ "$t" != "$BASE" ] || return 1
-  log "Exit asked from the screen: Chromium closes. It opens again at the next login (or from the menu: Marco)."
+  log "Exit asked from the screen: Chromium closes. It opens again at the next login, from the menu (Marco) or with: marco kiosk"
   if [ -n "${1:-}" ]; then close_browser "$1"; fi
   (umask 077; printf '%s %s' "$t" "$SESSION_TAG" > "$CLOSED")
   exit 0
@@ -255,7 +267,8 @@ fi
 EXTRA=( $KIOSK_EXTRA_ARGS )
 
 # --- Loop: relaunch Chromium if it exits or crashes ---------------------------------
-trap 'log "Exiting"; pkill -P $$ || true; exit 0' INT TERM
+# (marco kiosk stop on a screen-only device, a logout): the browser goes the same way as for a close from the screen
+trap 'log "Exiting"; if [ -n "${CPID:-}" ]; then close_browser "$CPID"; fi; pkill -P $$ || true; exit 0' INT TERM
 
 # Chromium of Raspberry Pi OS is a wrapper script: the browser may not be the process started here, so every process
 # of this user that runs with the kiosk's own profile folder goes too.

@@ -345,6 +345,7 @@ with a screen) or as a new `marco` system user (server only).
 | `marco url` | Admin address and the private link of every screen, with QR codes |
 | `marco version` | Installed version and the latest release |
 | `marco power on\|off\|status` | Whether the *Shut down* card on a screen of this device may power it off (see [Exit kiosk and Shut down](#exit-kiosk-and-shut-down)) |
+| `marco kiosk [start\|stop]` | Open the kiosk again in the desktop session, after *Exit kiosk* or when it was closed; `stop` closes it. Works from a terminal on the Pi or over SSH while the desktop is logged in |
 | `marco uninstall [--purge]` | Remove Marco; your data is kept unless you add `--purge`. It asks first (the default answer is no); without a terminal it needs `--yes` |
 
 ### Updates
@@ -847,7 +848,8 @@ off screen blanking and hides the cursor. The link is never printed in full: the
 - Kiosk settings live in `~/.config/marco/kiosk.env` (`KIOSK_URL`, `KIOSK_CLIENT`, `KIOSK_EXTRA_ARGS`). After
   *Regenerate link*, run the installer again with `--url <new link>` (or put the new link in `KIOSK_URL`). The log is
   `/tmp/marco-kiosk.log` (`marco logs` on a kiosk-only Pi). The script waits for the server, restarts Chromium if it
-  exits and adds `client=<hostname>` so the device keeps its name in *Connected displays*.
+  exits and adds `client=<hostname>` so the device keeps its name in *Connected displays*. After editing `kiosk.env`,
+  `marco kiosk stop` and then `marco kiosk` apply it without a reboot.
 - **Too big or too small?** Chromium starts at scale 1, whatever the desktop zoom is. Add
   `KIOSK_EXTRA_ARGS="--force-device-scale-factor=0.8"` (or `1.25`) to `kiosk.env`. The display also has a font-scale
   setting per screen.
@@ -859,7 +861,7 @@ off screen blanking and hides the cursor. The link is never printed in full: the
   night mode from the admin.
 - **Slow Pi:** set the ambient effect to *none* and transition to *fade*, or use `?lite=1` in `KIOSK_URL`.
 
-Useful commands: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`.
+Useful commands: `marco status`, `marco logs -f`, `marco restart`, `marco update`, `marco url`, `marco kiosk`.
 
 ### Exit kiosk and Shut down
 
@@ -867,8 +869,9 @@ Two *Navigation* cards of a custom screen let a touch screen leave the kiosk or 
 admin. Both need *Allow touch on the screen*, and both ask for a second tap within a few seconds (the card turns
 amber and a bar runs out), so a hand brushing the screen does nothing.
 
-- **Exit kiosk** closes Chromium. The kiosk comes back after a reboot, at the next desktop login, or from the Pi's
-  menu (*Marco*).
+- **Exit kiosk** closes Chromium. The kiosk comes back after a reboot, at the next desktop login, from the Pi's
+  menu (the *Marco* entry), or with the command `marco kiosk` in a terminal (on the Pi, or over SSH while the desktop
+  is logged in). The command is lowercase: `marco kiosk`, not `Marco`.
 - **Shut down** powers the Pi off. It is off until you allow it on the Pi:
 
   ```bash

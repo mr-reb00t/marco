@@ -172,11 +172,11 @@ const ROWS: [string, string, string, string, string][] = [
     'Tom: Sluk.',
   ],
   [
-    'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio o desde el menú del Pi (Marco). Pide un segundo toque.',
-    'Closes the full screen browser on the Pi that runs Marco. It comes back after a restart, at the next desktop login or from the Pi’s menu (Marco). It asks for a second tap.',
-    'Fecha o navegador em ecrã inteiro do Pi que executa o Marco. Volta ao reiniciar, ao entrar outra vez no ambiente de trabalho ou pelo menu do Pi (Marco). Pede um segundo toque.',
-    'Sluit de schermvullende browser op de Pi waarop Marco draait. Hij komt terug na een herstart, bij de volgende aanmelding op het bureaublad of via het menu van de Pi (Marco). Vraagt om een tweede tik.',
-    'Lukker fuldskærmsbrowseren på den Pi, der kører Marco. Den kommer igen efter en genstart, ved næste login på skrivebordet eller fra Pi’ens menu (Marco). Beder om et tryk mere.',
+    'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio, desde el menú del Pi (Marco) o con el comando marco kiosk. Pide un segundo toque.',
+    'Closes the full screen browser on the Pi that runs Marco. It comes back after a restart, at the next desktop login, from the Pi’s menu (Marco) or with the command marco kiosk. It asks for a second tap.',
+    'Fecha o navegador em ecrã inteiro do Pi que executa o Marco. Volta ao reiniciar, ao entrar outra vez no ambiente de trabalho, pelo menu do Pi (Marco) ou com o comando marco kiosk. Pede um segundo toque.',
+    'Sluit de schermvullende browser op de Pi waarop Marco draait. Hij komt terug na een herstart, bij de volgende aanmelding op het bureaublad, via het menu van de Pi (Marco) of met de opdracht marco kiosk. Vraagt om een tweede tik.',
+    'Lukker fuldskærmsbrowseren på den Pi, der kører Marco. Den kommer igen efter en genstart, ved næste login på skrivebordet, fra Pi’ens menu (Marco) eller med kommandoen marco kiosk. Beder om et tryk mere.',
   ],
   [
     'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.',

@@ -962,6 +962,19 @@ computer that runs the server (feature `kioskPower`, self-hosted only). The rout
   it again. The number is also checked just before each launch, so a request during the health wait or a relaunch
   back-off does not open Chromium for two seconds. The menu entry *Marco* (`~/.local/share/applications/marco-kiosk.desktop`, `kiosk.sh --open`) opens it again
   by hand. The kiosk had stopped `swayidle` when it started, so the desktop does not blank until the next login.
+  `kiosk.sh` writes that menu entry itself at login when it is missing: `marco update` runs the stored installer of the
+  version it updates from, so an install updated from before 0.41.0 never got it. For the same reason an all-in-one
+  update now hands the kiosk setup to the new version's installer (`install.sh --kiosk-setup`, falling back to its own
+  `setup_kiosk` when the stored one does not know that option).
+- **`marco kiosk`.** Starts `kiosk.sh --open` again from a terminal, detached (`setsid -f`), as the desktop user and
+  with that desktop session's variables: its own when run in a terminal of that desktop, otherwise the
+  `/proc/<pid>/environ` of a process of that user whose `XDG_SESSION_TYPE` is `wayland` or `x11`, otherwise a graphical
+  `loginctl` session and its Wayland socket or X display. `XDG_SESSION_ID` has to be the desktop's, not the SSH login's:
+  the closed marker holds it, and an LXDE-pi `@` line started again must match it. Nothing found: it says to log in to
+  the desktop or reboot. A running kiosk (its process or its lock) is left alone. `marco kiosk stop` on an all-in-one
+  device writes a new number to `/run/marco/kiosk-exit` as the service user, exactly as the card does; on a
+  screen-only device it sends TERM to the kiosk script, which closes the browser on the way out (an LXDE-pi `@` line
+  may then start it again).
 - **Apagar.** The server creates `/run/marco/poweroff` with `O_EXCL` (an existing one means "already asked").
   `marco-power.path` (`PathExists=/run/marco/poweroff`) starts `marco-power.service`, a root oneshot whose
   `ExecStartPre=/bin/rm -f /run/marco/poweroff` removes it and whose `ExecStart=/usr/bin/systemctl --no-block poweroff`
