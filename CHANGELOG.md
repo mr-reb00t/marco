@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## [0.42.0] - 2026-11-12
+## [0.42.0] - 2026-11-13
 
 ### Added
 - A special background (*Background > Special backgrounds*) can have its own *Change photo every*, so a date, a date
@@ -11,6 +11,8 @@ All notable changes to this project are documented here. The format is based on
   @aswormboy). *As usual* keeps the screen's normal interval. Photo cards on Custom screens follow it too.
 - `marco kiosk` opens the kiosk again from a terminal on the Pi or over SSH, after *Exit kiosk* or whenever it is
   closed; `marco kiosk stop` closes it (#44). `marco status` says how to start it when it is not running.
+- With three or more special backgrounds or icon rules, a rule's number is a list of positions: pick one and the rule
+  moves there in one step, instead of tapping the arrows again and again (#45).
 
 ### Fixed
 - Installs updated from 0.40 never got the "Marco" entry in the Pi menu that opens the kiosk again. The kiosk now adds
