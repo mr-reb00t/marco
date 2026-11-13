@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+// a small grey 16:9 PNG, the photo every image off this machine gets in tests
+const OFFLINE_PHOTO = 'iVBORw0KGgoAAAANSUhEUgAAABAAAAAJCAIAAAC0SDtlAAAAF0lEQVR42mOMymtiIAUwMZAIRjXQRAMARxYBXP/o5IYAAAAASUVORK5CYII=';
+
 const CANDIDATES = [
   process.env.CHROME_PATH,
   '/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium', '/usr/bin/chromium-browser',
@@ -57,7 +60,7 @@ export async function launchChrome(bin = findChrome()) {
   const proc = spawn(bin, [
     '--headless=new', '--no-sandbox', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--mute-audio',
     '--hide-scrollbars', '--force-device-scale-factor=1', '--remote-debugging-port=0', `--user-data-dir=${dir}`,
-    // only this machine: a demo photo from the internet (picsum.photos) fails at once instead of hanging a test offline
+    // only this machine: nothing reaches the internet (pages see the offline photo below instead of picsum.photos)
     '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost', 'about:blank',
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
   // a test that forgets to close its browser (or a run ended by --test-force-exit) never leaves Chrome behind: it
@@ -100,6 +103,8 @@ export async function launchChrome(bin = findChrome()) {
         waiting.delete(msg.id);
         if (msg.error) rej(new Error(msg.error.message));
         else res(msg.result);
+      } else if (msg.method === 'Fetch.requestPaused') {
+        offline(msg.params);
       } else if (msg.method) {
         events.push(msg);
         for (const w of [...listeners]) w(msg);
@@ -125,6 +130,17 @@ export async function launchChrome(bin = findChrome()) {
       };
       listeners.add(fn);
     });
+    // a request off this machine: an image gets the offline photo (so a photo card loads and shows its text the same
+    // with or without internet), anything else fails at once
+    const offline = ({ requestId, resourceType, request }) => {
+      const local = /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(request.url);
+      const done = local ? send('Fetch.continueRequest', { requestId }) : resourceType === 'Image'
+        ? send('Fetch.fulfillRequest', { requestId, responseCode: 200, body: OFFLINE_PHOTO, responseHeaders: [
+          { name: 'Content-Type', value: 'image/png' }, { name: 'Access-Control-Allow-Origin', value: '*' }] })
+        : send('Fetch.failRequest', { requestId, errorReason: 'InternetDisconnected' });
+      done.catch(() => undefined);
+    };
+    await send('Fetch.enable', { patterns: [{ urlPattern: 'http*://*' }] });
     await send('Page.enable');
     await send('Runtime.enable');
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
