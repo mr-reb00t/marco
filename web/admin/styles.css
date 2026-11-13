@@ -2045,6 +2045,21 @@ input:checked + .check-box {
   font-variant-numeric: tabular-nums;
   flex: none;
 }
+select.rule__n--pick {
+  width: auto;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+select.rule__n--pick:hover { border-color: var(--accent); }
 .rule__chips {
   flex: 1;
   min-width: 0;

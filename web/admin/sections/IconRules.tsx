@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import { confirmDialog } from '../components/feedback';
 import { Icon } from '../components/icons';
-import { Button, Card, Chips, ColorPicker, EmojiPicker, Empty, Field, PageHeader, ReorderButtons, Select, useReorder } from '../components/ui';
+import { Button, Card, Chips, ColorPicker, EmojiPicker, Empty, Field, PageHeader, ReorderButtons, RuleNumber, Select, useReorder } from '../components/ui';
 import { t } from '../i18n';
 import { clone, DEFAULT_ICON_RULES, matchIconRule, moveItem, resolveEmoji, uid } from '../util';
 import type { SectionProps } from './common';
@@ -111,7 +111,7 @@ export function IconRulesSection({ cfg, set, errors }: SectionProps) {
                   <span class="grip" {...reorder.handleProps(i)}>
                     <Icon name="grip" size={16} />
                   </span>
-                  <span class="rule__n">{i + 1}</span>
+                  <RuleNumber index={i} count={rules.length} onMove={move} />
                   <EmojiPicker size="lg" value={r.emoji} error={!!errors[`rule.${r.id}.emoji`]} onChange={(v) => upd((x) => void (x.emoji = v))} />
                   <div class="rule__chips">
                     <Chips

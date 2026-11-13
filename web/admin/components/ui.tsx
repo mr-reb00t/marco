@@ -920,6 +920,23 @@ export function ReorderButtons({ index, count, onMove }: { index: number; count:
   );
 }
 
+/**
+ * A rule's number in its list. With three or more rules it is a select of positions, so a rule moves to any place in
+ * one step instead of tapping Up again and again (#45).
+ */
+export function RuleNumber({ index, count, onMove }: { index: number; count: number; onMove: (from: number, to: number) => void }) {
+  if (count < 3) return <span class="rule__n">{index + 1}</span>;
+  return (
+    <select class="rule__n rule__n--pick" value={index} aria-label={t('Posición')} title={t('Posición')} onChange={(e) => onMove(index, Number(e.currentTarget.value))}>
+      {Array.from({ length: count }, (_, k) => (
+        <option key={k} value={k}>
+          {k + 1}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /* ------------------------------------------------------------------ v2 helpers */
 
 let scopeScreenName = '';

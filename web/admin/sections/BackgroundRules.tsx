@@ -6,7 +6,7 @@ import type { AdminPhoto, AppConfig, BackgroundRule, BackgroundRuleWhen, ImmichA
 import { api } from '../api';
 import { Icon } from '../components/icons';
 import { SourcePicker } from '../components/SourcePicker';
-import { Button, Callout, Card, Empty, Modal, ReorderButtons, Segmented, Select, TextInput, useReorder } from '../components/ui';
+import { Button, Callout, Card, Empty, Modal, ReorderButtons, RuleNumber, Segmented, Select, TextInput, useReorder } from '../components/ui';
 import { has } from '../caps';
 import { locale, t } from '../i18n';
 import { INTERVALS, intervalLabel, intervalsWith } from '../intervals';
@@ -180,7 +180,7 @@ export function RuleList({ rules, write, errors = {}, errPrefix = '', sources, p
                 <span class="grip" {...reorder.handleProps(i)}>
                   <Icon name="grip" size={16} />
                 </span>
-                <span class="rule__n">{i + 1}</span>
+                <RuleNumber index={i} count={rules.length} onMove={move} />
                 <div class="bg-rule__body">
                   <div class="bg-rule__line">
                     <Select
