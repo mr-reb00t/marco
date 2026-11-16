@@ -3,6 +3,22 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.43.0] - 2026-11-16
+
+### Added
+- *Background > Background photos* with *My gallery* can show only the photos you pick: *Gallery photos* > *Only the
+  chosen ones*. Pick a single photo for a background that never changes, for example as the default when no special
+  background applies (#47, thanks to @aswormboy). Photo cards with photos of their own (*Its own*) have the same
+  option. A screen's displays can only load the photos it actually shows.
+- *Digital clock* on Custom screens: *Date position* > *At the side* puts the date next to the time, so a wide, short
+  card holds a much larger time (about 20 % larger in a 12x4 card, 40 % in a full-width one). Where that would make the
+  time smaller, the date stays under it (#48).
+
+### Changed
+- The digital clock now fills its card: its size is measured against the card instead of estimated, so the time is
+  up to 30 % larger in the same box, and with *Card* > *No card* it uses the extra room too (#48).
+  *Text size* below 100 % still makes it smaller.
+
 ## [0.42.0] - 2026-11-13
 
 ### Added
