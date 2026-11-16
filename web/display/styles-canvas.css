@@ -841,6 +841,9 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 .theme-light #app.preset-canvas.no-photo .cv-card.is-none .cv-heading { color: #000; text-shadow: none; --m-sep: rgb(60 60 67 / 0.2); }
 /* a clock's date above the time (canvas item datePos 'above'; below is the default) */
 #app.preset-canvas .cv-clock.cv-date-above .clock-wrap { flex-direction: column; }
+/* the date beside the time (#48): on up to three lines, as tall as the digits, left of nothing but the time */
+#app.preset-canvas .cv-clock.cv-date-side > div { flex-direction: row; align-items: center; gap: calc(3rem * var(--wk, 1)); }
+.style-modern #app.preset-canvas .cv-clock.cv-date-side .date { order: 1; margin: 0; max-width: 6.5em; font-size: calc(2.8rem * var(--wk, 1)); line-height: 1.1; text-align: left; white-space: normal; overflow: visible; }
 #app.preset-canvas .cv-clock.cv-date-above .date, #app.preset-canvas .cv-date-above > .cv-date { order: -1; }
 /* square corners (canvas radius 'sq') */
 #app.preset-canvas .cv-card.r-sq { border-radius: 0; }

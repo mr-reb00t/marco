@@ -180,7 +180,8 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     { k: 'seconds', type: 'bool', label: 'Segundos' },
     { k: 'showDate', type: 'bool', label: 'Mostrar la fecha' },
     { k: 'dateFormat', type: 'seg', label: 'Fecha', opts: [{ v: 'long', l: 'Larga' }, { v: 'short', l: 'Corta' }] },
-    DATE_POS_FIELD,
+    // beside the time too (#48): a wide box holds larger type
+    { ...DATE_POS_FIELD, opts: [...(DATE_POS_FIELD.opts ?? []), { v: 'side', l: 'Al lado' }] },
     { k: 'weight', type: 'seg', label: 'Grosor', opts: [{ v: 'light', l: 'Delgada' }, { v: 'regular', l: 'Normal' }, { v: 'bold', l: 'Gruesa' }] },
   ],
   'clock.analog': [

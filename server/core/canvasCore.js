@@ -245,6 +245,8 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const SIZES_BUT_BAND = CANVAS_SIZE_IDS.filter((s) => s !== 'band' && s !== 'row' && s !== 'sq');
 /** Where a clock's date goes (below the time, as before, or above it); the Fecha card: where the weekday goes. */
 const DATE_POS = ['below', 'above'];
+/** The digital clock's date may also go beside the time (#48): a wide box then holds larger type. */
+const DIGITAL_DATE_POS = [...DATE_POS, 'side'];
 
 /**
  * Small coercers for props: wrong types are an error (and take the default), numbers out of range are clamped,
@@ -544,7 +546,7 @@ export const CANVAS_KINDS = {
     props: (c, p, x) => ({
       seconds: P.bool(c, `${p}.seconds`, x.seconds, false),
       showDate: P.bool(c, `${p}.showDate`, x.showDate, true),
-      datePos: P.oneOf(c, `${p}.datePos`, x.datePos, 'below', DATE_POS),
+      datePos: P.oneOf(c, `${p}.datePos`, x.datePos, 'below', DIGITAL_DATE_POS),
       dateFormat: P.oneOf(c, `${p}.dateFormat`, x.dateFormat, 'long', ['long', 'short']),
       weight: P.oneOf(c, `${p}.weight`, x.weight, 'regular', ['light', 'regular', 'bold']),
       ...inkProps(c, p, x, 'clock.digital'),

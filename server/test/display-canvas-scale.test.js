@@ -42,9 +42,9 @@ const MAIN = { 'ha.climate': '.cv-ha-name', widget: '.pw-title' };
 const LAST = new Set(['widget']);
 // type that fills its box (the flip clock fills its width already at 100 %): above 100 % it grows only as far as the
 // box holds it, so 150 % is never smaller than 100 % and never cramped
-// cards that already fill their box at 100 % (the navigation buttons, the flip clock; the lists, the forecasts, the message and the next
+// cards that already fill their box at 100 % (the navigation buttons, the clocks; the lists, the forecasts, the message and the next
 // event grown to a box larger than their content): 150 % may not grow them further, it must not shrink them
-const FILLS = new Set(['nav.button', 'nav.pause', 'nav.kiosk', 'nav.poweroff', 'clock.flip', 'announcement', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
+const FILLS = new Set(['nav.button', 'nav.pause', 'nav.kiosk', 'nav.poweroff', 'clock.digital', 'clock.flip', 'announcement', 'birthdays', 'calendar.next', 'family.points', 'family.rewards', 'meals.today', 'message', 'news', 'todo', 'weather.forecast', 'weather.hourly']);
 const shotOf = (kind) => {
   if (SHOT[kind]) return SHOT[kind];
   const sizes = CANVAS_KINDS[kind].sizes;

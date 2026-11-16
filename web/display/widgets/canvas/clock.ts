@@ -47,6 +47,26 @@ function applyInk(root: HTMLElement, env: AdapterEnv): void {
 export const typeCap = (root: HTMLElement): number => (root.dataset.room !== undefined ? 4 : 2.4);
 
 /**
+ * The digital clock's type measured against its box (#48): at --wk 1 its content (the time and the date, `contentEl`)
+ * is measured, and --wk is what makes it fill the box inside the padding, at most `cap` (bigType's nominal sizes left
+ * room: the date line and the padding do not grow with the type). `widthOf`: the content width that must fit (the
+ * time alone when the date is cut to its line, shrinkLine). Returns that --wk (0: nothing to measure yet); the
+ * caller applies the text size.
+ */
+export function fitToBox(root: HTMLElement, contentEl: HTMLElement, widthOf: () => number, cap: number): number {
+  const cs = getComputedStyle(root);
+  const ih = root.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  const iw = root.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  root.style.setProperty('--wk', '1');
+  const h = contentEl.getBoundingClientRect().height;
+  const w = widthOf();
+  if (!(ih > 0 && iw > 0 && h > 0 && w > 0)) return 0;
+  const wk = Math.min(cap, Math.max(0.6, Math.min(ih / h, iw / w) * 0.97));
+  root.style.setProperty('--wk', wk.toFixed(3));
+  return wk;
+}
+
+/**
  * A text size above 100 % grows the type of a card that fills its box (a clock, the date) only as far as the box
  * holds it: measured like the cramped mark, never smaller than at 100 %. At 100 % and below nothing changes.
  */
@@ -201,13 +221,42 @@ export function digitalClock(): CanvasAdapter {
         shrinkLine(root.querySelector<HTMLElement>('.date'));
         return;
       }
-      keepInBox(root, bigType(root, box, props(env).showDate === false ? 13 : 17, scaleOf(env), 30), scaleOf(env));
-      shrinkLine(root.querySelector<HTMLElement>('.date'));
+      const p = props(env);
+      const date = root.querySelector<HTMLElement>('.date');
+      const time = root.querySelector<HTMLElement>('.clock');
+      if (date) date.style.fontSize = '';
+      const inner = root.firstElementChild as HTMLElement | null;
+      const cap = Math.max(3.2, typeCap(root));
+      const fit = (beside: boolean) => {
+        root.classList.toggle('cv-date-side', beside);
+        return inner && time ? fitToBox(root, inner, () => (beside ? inner.scrollWidth : time.getBoundingClientRect().width), cap) : 0;
+      };
+      // the date beside the time (#48), where the two side by side give larger type (a wide box); in a narrower one
+      // it goes under the time as usual
+      let side = p.datePos === 'side' && p.showDate !== false;
+      let fitted = fit(side);
+      if (side && fitted) {
+        const under = fit(false);
+        if (under > fitted) [side, fitted] = [false, under];
+        else fitted = fit(true);
+      }
+      if (!fitted) {
+        keepInBox(root, bigType(root, box, p.showDate === false ? 13 : 17, scaleOf(env), 30), scaleOf(env));
+        if (!side) shrinkLine(date);
+        return;
+      }
+      // the text size: smaller below 100 %, and never past the box above it
+      const k = scaleOf(env);
+      const wk = fitted * Math.min(1, k);
+      root.style.setProperty('--wk', wk.toFixed(3));
+      if (!side) shrinkLine(date);
     },
     tick(t) {
       clock.update(t);
-      if (t.dayChanged) shrinkLine(root.querySelector<HTMLElement>('.date'));
-      refit(t, scaleOf(env), fitBox, this);
+      // the time's width changes with its digits and the date's with the day: fitted again at each minute
+      if (t.minuteChanged && fitBox && !isMini(root)) this.layout?.(fitBox);
+      else if (t.dayChanged) shrinkLine(root.querySelector<HTMLElement>('.date'));
+      if (isMini(root)) refit(t, scaleOf(env), fitBox, this);
     },
     destroy() {
       root.textContent = '';
