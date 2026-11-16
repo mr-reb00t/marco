@@ -6,7 +6,8 @@
 // server's /api/photos and Marco Cloud use it.
 import { hash } from './lib/text.js';
 import { IMMICH_ID_RE, MAX_IMMICH_ALBUMS } from './immichCore.js';
-import { sanitizeBackgroundRules } from './bgRules.js';
+import { MAX_BG_RULE_PHOTOS, sanitizeBackgroundRules } from './bgRules.js';
+import { isGalleryFile } from './imageInfo.js';
 
 export const PHOTO_SOURCES = ['stock', 'gallery', 'mixed', 'immich'];
 export const PHOTO_ORDERS = ['random', 'newest', 'name'];
@@ -15,6 +16,8 @@ export const WEATHER_FXS = ['off', 'simple', 'rich'];
 export const PHOTO_SOURCE_MODES = ['screen', 'own'];
 /** What a card's or the sidebar's block starts with when a key is missing (a new screen's Fondo; no weather effect). */
 export const PHOTO_PICK_DEFAULTS = Object.freeze({ source: 'stock', stockTopic: 'nature', order: 'random', immich: Object.freeze({ albumIds: Object.freeze([]), favoritesOnly: false }) });
+/** At most this many gallery photos chosen for a block (#47), as many as a special background may have. */
+export const MAX_PICKED_PHOTOS = MAX_BG_RULE_PHOTOS;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -73,6 +76,20 @@ export function sanitizePhotoPick(raw, D = PHOTO_PICK_DEFAULTS, { err = () => {}
   }
   if (albumIds.some((a) => typeof a !== 'string' || !IMMICH_ID_RE.test(a))) err(`${path}.immich.albumIds`, 'invalid album id');
   const source = oneOf(err, `${path}.source`, x.source, D.source, PHOTO_SOURCES);
+  // the gallery photos it shows (#47): none (no key) = every photo in rotation. Kept with another source, so going back
+  // to the gallery finds them as they were.
+  let files = [];
+  if (x.files !== undefined) {
+    if (!Array.isArray(x.files)) err(`${path}.files`, 'expected array');
+    else {
+      if (x.files.some((f) => !isGalleryFile(f))) err(`${path}.files`, 'invalid file name');
+      files = [...new Set(x.files.filter(isGalleryFile))];
+      if (files.length > MAX_PICKED_PHOTOS) {
+        err(`${path}.files`, `too many items (max ${MAX_PICKED_PHOTOS})`);
+        files = files.slice(0, MAX_PICKED_PHOTOS);
+      }
+    }
+  }
   if (immichAvailable === false && source === 'immich') err(`${path}.source`, 'Immich is not available');
   return {
     source,
@@ -82,6 +99,8 @@ export function sanitizePhotoPick(raw, D = PHOTO_PICK_DEFAULTS, { err = () => {}
       albumIds: [...new Set(albumIds.filter((a) => typeof a === 'string' && IMMICH_ID_RE.test(a)).map((a) => a.toLowerCase()))],
       favoritesOnly: bool(err, `${path}.immich.favoritesOnly`, im.favoritesOnly, D.immich.favoritesOnly),
     },
+    // only when some are chosen: a block saved before stays exactly as it was
+    ...(files.length ? { files } : {}),
     // "Fondos especiales" (#14, core/bgRules.js): other photos on some days; the first rule that matches wins
     rules: sanitizeBackgroundRules(x.rules, { err, path: `${path}.rules`, sourceIds, immichAvailable: immichAvailable !== false }),
   };
@@ -117,7 +136,8 @@ const rulesForSig = (rules) => (Array.isArray(rules) ? rules.map(({ intervalSec,
  * memory on the server (photos.js). The weather effect, the mode and the rules' pace play no part.
  */
 export function photoSourceSig(b) {
-  return hash({ source: b?.source ?? 'stock', stockTopic: b?.stockTopic ?? '', order: b?.order ?? 'random', immich: b?.immich ?? null, rules: rulesForSig(b?.rules) }, 12);
+  const files = pickedFiles(b);
+  return hash({ source: b?.source ?? 'stock', stockTopic: b?.stockTopic ?? '', order: b?.order ?? 'random', immich: b?.immich ?? null, rules: rulesForSig(b?.rules), ...(files ? { files } : {}) }, 12);
 }
 
 /**
@@ -130,6 +150,9 @@ export function displayPhotoSource(b) {
   const list = Array.isArray(rules) ? rules : [];
   return { ...rest, special: list.length > 0, rulesSig: list.length ? hash(rulesForSig(list), 12) : '' };
 }
+
+/** The gallery photos a block chose (#47), or null when it shows every photo in rotation (or not the gallery). */
+export const pickedFiles = (b) => (b?.source === 'gallery' && Array.isArray(b.files) && b.files.length ? b.files : null);
 
 /** Gallery files the rules of a list may show. */
 export function rulesGalleryFiles(rules) {

@@ -11,6 +11,7 @@ import { immichItems, warm } from './immich.js';
 import { galleryFileAllowed, mediaScreens } from './displayAccess.js';
 import { screenPrivacy } from './privacy.js';
 import { IMMICH_ID_RE, placeOf } from './core/immichCore.js';
+import { pickedFiles } from './core/photoSource.js';
 import {
   ALLOWED_EXT, ALLOWED_MIME, imageInfo as imageInfoOf, imageHeaderNeed, isJpeg, isGalleryFile, uploadName as coreUploadName,
   sniffImage as sniffImageOf, stripImageMetadata,
@@ -435,7 +436,10 @@ async function sourcePhotos(count, bg, order, key, after) {
   }
   if (!isGalleryFile(after)) after = '';
   if (bg.source === 'gallery') {
-    const g = pickGallery(order, count, key, after);
+    // only the photos it chose (#47); when none of them is left, stock as for an empty gallery (a display of this
+    // screen may load the chosen files only, core/screens.js screenRuleGalleryFiles)
+    const files = pickedFiles(bg);
+    const g = pickGallery(order, count, key, after, files ? new Set(files) : null);
     return g.length ? g : stockPhotos(count); // fall back to stock when nothing is in rotation
   }
   if (bg.source === 'mixed') {

@@ -381,6 +381,8 @@ export interface PhotoSource {
   stockTopic: string;
   order: 'random' | 'newest' | 'name';
   immich: ImmichBackground;
+  /** the gallery photos shown with source 'gallery' (#47); none = every photo in rotation */
+  files?: string[];
   rules: BackgroundRule[];
   weatherFx: 'off' | 'simple' | 'rich';
 }
@@ -425,6 +427,8 @@ export interface BackgroundConfig {
   weatherFx?: 'off' | 'simple' | 'rich';
   portraitFit?: PortraitFit;
   immich?: ImmichBackground;
+  /** the gallery photos shown with source 'gallery' (#47); none = every photo in rotation */
+  files?: string[];
   /** 'side' (default) or 'screen': one photo behind the whole screen */
   scope?: BackgroundScope;
   /** with scope 'screen': how solid the calendar glass is, 0 = most see-through, 1 = almost opaque (default 0.5) */

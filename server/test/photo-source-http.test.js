@@ -214,3 +214,36 @@ test('displays of a screen get a photos event when the special background of one
     c.screens[0].canvas.items[0].props.photoSource.rules = [{ id: 'bg_x', when: { type: 'event', text: 'navidad', calendars: [] }, photos: { source: 'gallery', files: ['xmas.jpg'] } }];
   });
 });
+
+test('chosen gallery photos (#47): the screen and a card show only those, one stays put; displays load only those files', async () => {
+  await withServer(async ({ photos, call, keyOf }) => {
+    const media = (file) => call('GET', `/media/photos/${file}?k=${keyOf('living-room')}`);
+    // the screen: one photo, every batch
+    for (let i = 0; i < 3; i++) assert.deepEqual((await photos('')).json.photos.map((p) => p.file), ['c.jpg']);
+    assert.deepEqual((await photos('&after=c.jpg')).json.photos.map((p) => p.file), ['c.jpg']);
+    // card A: its two, by name
+    assert.deepEqual((await photos('&for=cv_carda001')).json.photos.map((p) => p.file), ['b.jpg', 'e.jpg']);
+    // card B: the gallery in rotation as before (its settings differ from A's now: a rotation of its own)
+    assert.deepEqual((await photos('&for=cv_cardb001')).json.photos.map((p) => p.file), ['a.jpg', 'b.jpg']);
+    // card B shows the whole gallery, so every file loads; without it, only the chosen ones would
+    assert.equal((await media('d.jpg')).status, 200);
+  }, (c) => {
+    Object.assign(c.screens[0].background, { source: 'gallery', files: ['c.jpg'] });
+    c.screens[0].privacy.hidePhotos = false;
+    c.screens[0].canvas.items[0].props.photoSource = { ...OWN, rules: [], files: ['e.jpg', 'b.jpg'] };
+    c.screens[0].canvas.items[1].props.cards[0].props.photoSource = { ...OWN, rules: [] };
+  });
+  await withServer(async ({ photos, call, keyOf }) => {
+    const media = (file) => call('GET', `/media/photos/${file}?k=${keyOf('living-room')}`);
+    assert.equal((await media('e.jpg')).status, 200);
+    for (const f of ['c.jpg', 'd.jpg']) assert.equal((await media(f)).status, 404, `${f}: no setting of the screen chose it`);
+    // a chosen photo deleted from the gallery: the rest; none left: stock, as an empty gallery
+    assert.deepEqual((await photos('&for=cv_carda001')).json.photos.map((p) => p.file), ['e.jpg']);
+    assert.ok((await photos('')).json.photos.every((p) => p.source === 'stock'));
+  }, (c) => {
+    Object.assign(c.screens[0].background, { source: 'gallery', files: ['gone.jpg'] });
+    c.screens[0].privacy.hidePhotos = false;
+    c.screens[0].canvas.items[0].props.photoSource = { ...OWN, rules: [], files: ['e.jpg', 'gone2.jpg'] };
+    c.screens[0].canvas.items.splice(1, 1);
+  });
+});

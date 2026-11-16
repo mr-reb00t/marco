@@ -7,7 +7,7 @@ import { showsFamilyQr } from './familyCore.js';
 import { carouselBlock } from './carousels.js';
 import { canvasCards, canvasWidgetIds, projectCanvas, sidebarOwnBlock } from './canvasCore.js';
 import { LOCAL_TODO_LIST, todoListNames, todoViews } from './todoCore.js';
-import { isOwnPhotoSource, photoSourceSig, rulesAlbumIds, rulesGalleryFiles } from './photoSource.js';
+import { isOwnPhotoSource, photoSourceSig, pickedFiles, rulesAlbumIds, rulesGalleryFiles } from './photoSource.js';
 import { displayCommuteOptions } from './commuteCore.js';
 
 /** Default screen profile (cfg.defaultScreen, falling back to the first one). */
@@ -287,15 +287,19 @@ export function screenPhotoBlocks(screen) {
   return out;
 }
 
-const showsGalleryBlock = (b) => b?.source === 'gallery' || b?.source === 'mixed';
+// a block with photos of its choosing (#47) shows only those: they count with the rules' files below
+const showsGalleryBlock = (b) => (b?.source === 'gallery' && !pickedFiles(b)) || b?.source === 'mixed';
 
 /** Some photo setting of the screen shows the gallery (its Fondo, or a card or the sidebar with photos of their own). */
 export const screenShowsGallery = (screen) => screenPhotoBlocks(screen).some((x) => showsGalleryBlock(x.block));
 
-/** Gallery files the special backgrounds of a screen may show (its Fondo's and its cards' and sidebar's own). */
+/**
+ * Gallery files a screen shows by name: those of its special backgrounds and those its Fondo, cards or sidebar chose
+ * (#47).
+ */
 export function screenRuleGalleryFiles(screen) {
   const out = new Set();
-  for (const x of screenPhotoBlocks(screen)) for (const f of rulesGalleryFiles(x.block.rules)) out.add(f);
+  for (const x of screenPhotoBlocks(screen)) for (const f of [...rulesGalleryFiles(x.block.rules), ...(pickedFiles(x.block) ?? [])]) out.add(f);
   return out;
 }
 

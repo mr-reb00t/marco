@@ -8,7 +8,7 @@ import { defaultConfig, defaultScreenProfile } from '../core/defaults.js';
 import { validateConfig } from '../core/validate.js';
 import { canvasDefaults, defaultCanvas, defaultItemStyle, projectCanvas, sanitizeCanvas, sidebarOwnBlock } from '../core/canvasCore.js';
 import { bootDataPaths } from '../core/bootstrap.js';
-import { displayPhotoSource, photoSourceSig, sanitizePhotoSource } from '../core/photoSource.js';
+import { displayPhotoSource, MAX_PICKED_PHOTOS, PHOTO_PICK_DEFAULTS, photoSourceSig, pickedFiles, sanitizePhotoPick, sanitizePhotoSource } from '../core/photoSource.js';
 import { allPhotoSources, isPhotoFor, photoTarget, screenPhotoBlocks, screenRuleAlbumIds, screenRuleGalleryFiles, screenShowsGallery } from '../core/screens.js';
 
 const ALBUM = '6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b';
@@ -216,4 +216,26 @@ test('a photo card filling the sidebar hides its own photos everywhere (display,
   // hidden by hand: it fills nothing
   s.canvas.items[2].hidden = true;
   assert.equal(sidebarOwnBlock(s.canvas), s.canvas.sidebar.photoSource);
+});
+
+test('chosen gallery photos (#47): checked, kept with another source, part of the signature and of the files a screen names', () => {
+  const errs = [];
+  const err = (p, m) => errs.push(`${p}: ${m}`);
+  const pick = sanitizePhotoPick({ source: 'gallery', files: ['a.jpg', 'a.jpg', '../x.jpg', 7, 'b.png'] }, PHOTO_PICK_DEFAULTS, { err });
+  assert.deepEqual(pick.files, ['a.jpg', 'b.png']);
+  assert.deepEqual(errs, ['background.files: invalid file name']);
+  assert.deepEqual(sanitizePhotoPick({ source: 'stock', files: ['a.jpg'] }).files, ['a.jpg'], 'kept for going back to the gallery');
+  assert.equal('files' in sanitizePhotoPick({ source: 'gallery', files: [] }), false, 'none chosen: no key, as a block saved before');
+  const many = sanitizePhotoPick({ source: 'gallery', files: Array.from({ length: MAX_PICKED_PHOTOS + 3 }, (_, i) => `p${i}.jpg`) }, PHOTO_PICK_DEFAULTS, { err });
+  assert.equal(many.files.length, MAX_PICKED_PHOTOS);
+  assert.equal(pickedFiles({ source: 'gallery', files: [] }), null);
+  assert.equal(pickedFiles({ source: 'mixed', files: ['a.jpg'] }), null, 'only the gallery source');
+  assert.deepEqual(pickedFiles({ source: 'gallery', files: ['a.jpg'] }), ['a.jpg']);
+  const base = { source: 'gallery', stockTopic: 'x', order: 'random', immich: { albumIds: [], favoritesOnly: false }, rules: [] };
+  assert.equal(photoSourceSig(base), photoSourceSig({ ...base, files: [] }), 'no choice: the signature of a screen saved before');
+  assert.notEqual(photoSourceSig(base), photoSourceSig({ ...base, files: ['a.jpg'] }));
+  const s = defaultScreenProfile({ id: 's_x', slug: 'x', name: 'X' });
+  Object.assign(s.background, { source: 'gallery', files: ['a.jpg'] });
+  assert.equal(screenShowsGallery(s), false, 'not the whole gallery');
+  assert.deepEqual([...screenRuleGalleryFiles(s)], ['a.jpg']);
 });

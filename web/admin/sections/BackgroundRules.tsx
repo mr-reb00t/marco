@@ -47,7 +47,7 @@ function whenOf(type: BackgroundRuleWhen['type'], old: BackgroundRuleWhen): Back
 }
 
 /** Gallery picker: tap photos to add or take them out (at most 50). Hidden photos are not offered. */
-function PhotoPicker({ gallery, value, onClose }: { gallery: AdminPhoto[]; value: string[]; onClose: (files: string[] | null) => void }) {
+export function PhotoPicker({ gallery, value, onClose }: { gallery: AdminPhoto[]; value: string[]; onClose: (files: string[] | null) => void }) {
   const [sel, setSel] = useState<string[]>(value);
   const shown = gallery.filter((p) => !p.hidden || value.includes(p.file));
   const full = sel.length >= MAX_BG_RULE_PHOTOS;

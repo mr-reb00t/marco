@@ -70,7 +70,7 @@ export class OwnPhotos {
   }
 
   private keyOf(b: DisplayPhotoSource): string {
-    return `${this.deps.screen()}|${JSON.stringify([b.source, b.stockTopic, b.order, b.immich?.albumIds ?? [], !!b.immich?.favoritesOnly, b.rulesSig ?? ''])}`;
+    return `${this.deps.screen()}|${JSON.stringify([b.source, b.stockTopic, b.order, b.immich?.albumIds ?? [], !!b.immich?.favoritesOnly, b.rulesSig ?? '', b.files ?? []])}`;
   }
 
   private fondoKey(): string {

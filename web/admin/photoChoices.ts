@@ -22,7 +22,7 @@ export function sourceChoices(has: { gallery: boolean; immich: boolean }, curren
  * is (its source, topic, order, Immich albums and special backgrounds), a source this server lacks becoming Stock.
  * The weather effect starts off on a card (a new layer over it) and as the Fondo's on the sidebar (the same effect).
  */
-export function startPhotoSource(bg: Pick<BackgroundConfig, 'source' | 'stockTopic' | 'order' | 'immich' | 'rules' | 'weatherFx'>, card: boolean, has: { gallery: boolean; immich: boolean }): PhotoSource {
+export function startPhotoSource(bg: Pick<BackgroundConfig, 'source' | 'stockTopic' | 'order' | 'immich' | 'files' | 'rules' | 'weatherFx'>, card: boolean, has: { gallery: boolean; immich: boolean }): PhotoSource {
   const ok = bg.source === 'stock' || ((bg.source === 'gallery' || bg.source === 'mixed') && has.gallery) || (bg.source === 'immich' && has.immich);
   const rules = (bg.rules ?? []).filter((r) => (r.photos.source === 'immich' ? has.immich : has.gallery));
   return {
@@ -31,6 +31,7 @@ export function startPhotoSource(bg: Pick<BackgroundConfig, 'source' | 'stockTop
     stockTopic: bg.stockTopic ?? 'nature',
     order: bg.order ?? 'random',
     immich: { albumIds: [...(bg.immich?.albumIds ?? [])], favoritesOnly: bg.immich?.favoritesOnly ?? false },
+    files: [...(bg.files ?? [])],
     rules: structuredClone(rules),
     weatherFx: card ? 'off' : bg.weatherFx ?? 'simple',
   };

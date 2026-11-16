@@ -369,6 +369,7 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     calendarOpacity: num(ctx, `${p}.background.calendarOpacity`, bg.calendarOpacity, D.background.calendarOpacity, 0, 1),
     calendarBlur: num(ctx, `${p}.background.calendarBlur`, bg.calendarBlur, D.background.calendarBlur, 0, 40, true),
     // "Fondos especiales" (#14, core/bgRules.js): other photos on some days; the first rule that matches wins
+    ...(pick.files ? { files: pick.files } : {}),
     rules: pick.rules,
   };
 

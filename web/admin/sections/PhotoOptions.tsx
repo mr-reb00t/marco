@@ -10,9 +10,10 @@ import { has } from '../caps';
 import { t } from '../i18n';
 import { sourceChoices, type PhotoSourceId } from '../photoChoices';
 import { AlbumCover, immichErrorText } from './Immich';
+import { PhotoPicker } from './BackgroundRules';
 
 /** The keys PhotoPickFields edits (a screen's background, a card's or the sidebar's photoSource). */
-export type PhotoPick = Pick<BackgroundConfig, 'source' | 'stockTopic' | 'order' | 'immich'>;
+export type PhotoPick = Pick<BackgroundConfig, 'source' | 'stockTopic' | 'order' | 'immich' | 'files'>;
 type ImmichSel = { albumIds: string[]; favoritesOnly: boolean };
 
 const SOURCE_LABEL: Record<PhotoSourceId, { label: () => string; icon: 'globe' | 'photos' | 'sparkles' | 'image' }> = {
@@ -43,6 +44,12 @@ export function PhotoPickFields({ value: b, edit, errors = {}, errPrefix = '', p
     if (usesGallery && gallery === null) api.photos().then(setGallery, () => setGallery([]));
   }, [usesGallery]);
   const inRotation = gallery?.filter((p) => !p.hidden).length ?? 0;
+  // "Solo las elegidas" (#47): the gallery photos it shows, one for a background that never changes
+  const files = b.source === 'gallery' ? (b.files ?? []) : [];
+  const [chosen, setChosen] = useState(files.length > 0);
+  const [picking, setPicking] = useState(false);
+  const picks = chosen || files.length > 0;
+  const byFile = new Map((gallery ?? []).map((p) => [p.file, p]));
   const choices = sourceChoices({ gallery: galleryOn, immich: immichOn }, b.source);
   const err = (k: string) => (errPrefix ? errors[`${errPrefix}.${k}`] : undefined);
   return (
@@ -72,7 +79,53 @@ export function PhotoPickFields({ value: b, edit, errors = {}, errPrefix = '', p
           <TextInput value={b.stockTopic} onValue={(v) => edit((x) => void (x.stockTopic = v))} placeholder="nature" />
         </Field>
       )}
-      {usesGallery &&
+      {usesGallery && b.source === 'gallery' && (
+        <Field
+          label={t('Fotos de la galería')}
+          hint={picks && files.length === 1 ? t('Una sola foto: el fondo no cambia.') : picks && files.length ? t('Solo pasan estas fotos.') : undefined}
+          error={err('files')}
+        >
+          <Segmented
+            full
+            value={picks ? 'pick' : 'all'}
+            options={[
+              { value: 'all', label: t('Todas en rotación') },
+              { value: 'pick', label: t('Solo las elegidas') },
+            ]}
+            onChange={(v) => {
+              setChosen(v === 'pick');
+              if (v === 'all') edit((x) => void (x.files = []));
+              else if (!files.length) setPicking(true);
+            }}
+          />
+          {picks && (
+            <div class="bg-rule__line">
+              <span class="bg-rule__thumbs">
+                {files.slice(0, 5).map((f) => {
+                  const p = byFile.get(f);
+                  return p ? <img key={f} src={p.thumbUrl ?? p.url} alt="" title={f} loading="lazy" /> : null;
+                })}
+                {files.length > 5 && <span class="muted small">+{files.length - 5}</span>}
+              </span>
+              <Button size="sm" icon="photos" disabled={!gallery} onClick={() => setPicking(true)}>
+                {files.length ? t('{n} fotos', { n: files.length }) : t('Elegir fotos')}
+              </Button>
+            </div>
+          )}
+          {picking && gallery && (
+            <PhotoPicker
+              gallery={gallery}
+              value={files}
+              onClose={(sel) => {
+                setPicking(false);
+                if (sel) edit((x) => void (x.files = sel));
+                if (!(sel ?? files).length) setChosen(false);
+              }}
+            />
+          )}
+        </Field>
+      )}
+      {usesGallery && !(b.source === 'gallery' && picks) &&
         (gallery && gallery.length > 0 && inRotation === 0 ? (
           <Callout kind="warn">
             <strong>{t('Todas las fotos de la galería están ocultas.')}</strong>{' '}
@@ -92,7 +145,7 @@ export function PhotoPickFields({ value: b, edit, errors = {}, errPrefix = '', p
             .
           </Callout>
         ))}
-      {(usesGallery || (usesImmich && immichOn)) && (
+      {((usesGallery && !(picks && files.length === 1)) || (usesImmich && immichOn)) && (
         <Field
           label={t('Orden de las fotos')}
           hint={(b.order ?? 'random') === 'random' ? t('Al azar, sin repetir las fotos de la tanda anterior.') : t('Sigue donde lo dejó y vuelve a empezar al terminar.')}

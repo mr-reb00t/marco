@@ -34,6 +34,12 @@ const ROWS: [string, string, string, string, string][] = [
   ['No hay fotos en la galería', 'There are no photos in the gallery', 'Não há fotos na galeria', 'Er staan geen foto’s in de galerij', 'Der er ingen billeder i galleriet'],
   ['Sube fotos en Galería', 'Upload photos in Gallery', 'Carrega fotos em Galeria', 'Upload foto’s bij Galerij', 'Upload billeder under Galleri'],
   ['Elige al menos una foto', 'Choose at least one photo', 'Escolhe pelo menos uma foto', 'Kies minstens één foto', 'Vælg mindst ét billede'],
+  // the background's own choice of gallery photos (#47)
+  ['Fotos de la galería', 'Gallery photos', 'Fotos da galeria', 'Foto’s uit de galerij', 'Billeder fra galleriet'],
+  ['Todas en rotación', 'All in rotation', 'Todas em rotação', 'Alle in rotatie', 'Alle i rotation'],
+  ['Solo las elegidas', 'Only the chosen ones', 'Só as escolhidas', 'Alleen de gekozen', 'Kun de valgte'],
+  ['Una sola foto: el fondo no cambia.', 'A single photo: the background stays the same.', 'Uma só foto: o fundo não muda.', 'Eén foto: de achtergrond blijft hetzelfde.', 'Ét billede: baggrunden forbliver den samme.'],
+  ['Solo pasan estas fotos.', 'Only these photos are shown.', 'Só passam estas fotos.', 'Alleen deze foto’s worden getoond.', 'Kun disse billeder vises.'],
 ];
 
 export const ROWS_BGRULES: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

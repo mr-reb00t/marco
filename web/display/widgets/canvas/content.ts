@@ -178,7 +178,7 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
     const ps = (env.item().props as Props).photoSource as DisplayPhotoSource | undefined;
     return ps && ps.mode === 'own' ? ps : null;
   };
-  const srcOf = (b: DisplayPhotoSource | null) => (b ? JSON.stringify([b.source, b.stockTopic, b.order, b.immich, b.rulesSig]) : 'screen');
+  const srcOf = (b: DisplayPhotoSource | null) => (b ? JSON.stringify([b.source, b.stockTopic, b.order, b.immich, b.rulesSig, b.files ?? []]) : 'screen');
   const resp = (): PhotosResponse | null => ownResp;
   const list = (): Photo[] => resp()?.photos ?? [];
   /**

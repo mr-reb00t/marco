@@ -1545,15 +1545,15 @@ let privateSig = '';
  * What decides the photo list of a screen (a carousel keeps the list when the next screen has the same): its photo
  * settings and the special background that holds on it (`rule`, the signature /api/photos answers with).
  */
-const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean }; own?: string }, rule = '') =>
-  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}|${rule}${b.own ? `|${b.own}` : ''}`;
+const photoSigOf = (b: { enabled: boolean; source: string; stockTopic: string; order?: string; immich?: { albumIds?: string[]; favoritesOnly?: boolean }; files?: string[]; own?: string }, rule = '') =>
+  `${b.enabled}|${b.source}|${b.stockTopic}|${b.order ?? 'random'}|${(b.immich?.albumIds ?? []).join(',')}|${b.immich?.favoritesOnly ? 1 : 0}|${rule}${b.own ? `|${b.own}` : ''}${b.files?.length ? `|${b.files.join('/')}` : ''}`;
 /**
  * A screen's photo settings as its slideshow uses them: the Fondo, or the Personalizado sidebar's own photos (#41).
  * ctx.cfg.background already is this for the screen on display (applyConfig); a carousel's other screens need it too.
  */
 function slideBgOf(cfg: DisplayConfig): DisplayConfig['background'] {
   const own = effectivePreset(cfg) === 'canvas' ? sidebarOwnPhotos(cfg.canvas, isPortrait(cfg)) : null;
-  return own ? { ...cfg.background, source: own.source, stockTopic: own.stockTopic, order: own.order, immich: own.immich, own: 'sidebar' } : cfg.background;
+  return own ? { ...cfg.background, source: own.source, stockTopic: own.stockTopic, order: own.order, immich: own.immich, files: own.files, own: 'sidebar' } : cfg.background;
 }
 on('config', (s) => {
   if (!s.config) return;
