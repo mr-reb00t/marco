@@ -536,6 +536,17 @@ export const CANVAS_FIXTURES: Record<string, { canvas: Partial<CanvasConfig>; it
       { kind: 'calendar.week', pos: B(12, 8, 12, 7), props: { gridLines: 'clear', gridColor: '#ffb340', eventFill: 'solid' } },
     ],
   },
+  // Month and year over the month card (#48): shown (the look it always had), hidden with the legend kept, and hidden
+  // with no legend either, so the grid fills the whole card
+  'calendar-month-head': {
+    canvas: { background: 'ambient' },
+    items: [
+      { kind: 'calendar.month', pos: B(0, 0, 12, 7), props: { weeks: 4 } },
+      { kind: 'calendar.month', pos: B(12, 0, 12, 7), props: { weeks: 4, showMonth: false } },
+      { kind: 'calendar.month', pos: B(0, 8, 12, 7), props: { weeks: 4, showMonth: false, showLegend: false } },
+      { kind: 'calendar.month', pos: B(12, 8, 12, 7), props: { showMonth: false, showLegend: false } },
+    ],
+  },
   // Cuentas atrás two and three cells wide (#30): the name over the days left, in short
   'two-high': {
     canvas: { background: 'ambient' },

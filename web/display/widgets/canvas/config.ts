@@ -32,10 +32,10 @@ function build(screen: DisplayConfig, item: DisplayCanvasItem): DisplayConfig {
     if (item.kind === 'calendar.month') {
       Object.assign(cfg.calendar, {
         view: 'month', weeks: p.weeks === 'auto' || !p.weeks ? 'auto' : p.weeks, startOn: 'week', eventStyle: p.eventStyle === 'cards' ? 'cards' : 'lines',
-        maxEventsPerDay: p.maxEventsPerDay ?? 4, showLegend: p.showLegend !== false,
+        maxEventsPerDay: p.maxEventsPerDay ?? 4, showLegend: p.showLegend !== false, showMonth: p.showMonth !== false,
       });
     } else if (item.kind === 'calendar.week') {
-      Object.assign(cfg.calendar, { view: 'week', weeks: 1, startOn: p.start === 'monday' ? 'week' : 'today', eventStyle: 'cards', showLegend: false });
+      Object.assign(cfg.calendar, { showMonth: true, view: 'week', weeks: 1, startOn: p.start === 'monday' ? 'week' : 'today', eventStyle: 'cards', showLegend: false });
     } else if (item.kind === 'calendar.agenda') {
       cfg.calendar.showLegend = p.showLegend === true;
     }

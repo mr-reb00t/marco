@@ -234,6 +234,8 @@ const ROWS: [string, string, string][] = [
   ['Latitud', 'Latitude', 'Latitude'],
   ['Latitud entre -90 y 90', 'Latitude between -90 and 90', 'Latitude entre -90 e 90'],
   ['Leyenda de calendarios', 'Calendar legend', 'Legenda dos calendários'],
+  ['Mes y año arriba', 'Month and year at the top', 'Mês e ano em cima'],
+  ['Sin ellos, el calendario ocupa toda la tarjeta.', 'Without them, the calendar fills the whole card.', 'Sem eles, o calendário ocupa o cartão inteiro.'],
   ['Lista de próximos eventos agrupados por día, legible desde lejos (móvil / tablet).', 'Upcoming events grouped by day, readable from afar (mobile / tablet).', 'Lista de próximos eventos agrupados por dia, legível ao longe (telemóvel / tablet).'],
   ['Lista de tareas', 'To-do list', 'Lista de tarefas'],
   ['Longitud', 'Longitude', 'Longitude'],

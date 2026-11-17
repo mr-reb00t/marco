@@ -175,6 +175,10 @@ export class MonthCalendar {
           .join('')
       : '';
     setHTML(this.head.querySelector('.legend') as HTMLElement, legend);
+    // calendar.showMonth false (#48): no month and year; with no legend either, the heading takes no room at all
+    const noMonth = c.showMonth === false;
+    (this.head.querySelector('.cal-title') as HTMLElement).hidden = noMonth;
+    this.head.hidden = noMonth && !legend;
 
     // ---- weekday header: the columns follow the grid's first day (today's weekday first when it starts today)
     const names = weekdayNames(lang, firstWd, 'short');

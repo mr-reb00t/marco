@@ -226,6 +226,8 @@ export const DA: Record<string, string> = {
   'Latitud': 'Breddegrad',
   'Latitud entre -90 y 90': 'Breddegrad mellem -90 og 90',
   'Leyenda de calendarios': 'Kalenderforklaring',
+  'Mes y año arriba': 'Måned og år øverst',
+  'Sin ellos, el calendario ocupa toda la tarjeta.': 'Uden dem fylder kalenderen hele kortet.',
   'Lista de próximos eventos agrupados por día, legible desde lejos (móvil / tablet).': 'Kommende begivenheder samlet pr. dag, til at læse på afstand (mobil / tablet).',
   'Lista de tareas': 'Opgaveliste',
   'Longitud': 'Længdegrad',

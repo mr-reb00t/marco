@@ -603,6 +603,8 @@ export const CANVAS_KINDS = {
       eventStyle: P.oneOf(c, `${p}.eventStyle`, x.eventStyle, 'lines', ['lines', 'cards']),
       maxEventsPerDay: P.num(c, `${p}.maxEventsPerDay`, x.maxEventsPerDay, 4, 1, 12),
       showLegend: P.bool(c, `${p}.showLegend`, x.showLegend, true),
+      // the month and year over the grid (#48): kept off the item unless hidden, so saved cards stay as they were
+      ...(P.bool(c, `${p}.showMonth`, x.showMonth, true) ? {} : { showMonth: false }),
       gridLines: P.oneOf(c, `${p}.gridLines`, x.gridLines, 'soft', GRID_LINES),
       eventFill: P.oneOf(c, `${p}.eventFill`, x.eventFill, 'soft', EVENT_FILLS),
       ...pastProps(c, p, x),

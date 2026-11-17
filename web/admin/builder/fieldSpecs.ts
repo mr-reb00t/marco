@@ -207,6 +207,7 @@ export const FIELDS: Partial<Record<CanvasKind, Spec[]>> = {
     WEEKDAYS,
     { k: 'eventStyle', type: 'seg', label: 'Eventos', opts: [{ v: 'lines', l: 'Líneas' }, { v: 'cards', l: 'Tarjetas' }] },
     { k: 'maxEventsPerDay', type: 'num', label: 'Eventos por día como mucho', min: 1, max: 12, unit: 'n' },
+    { k: 'showMonth', type: 'bool', label: 'Mes y año arriba', hint: 'Sin ellos, el calendario ocupa toda la tarjeta.' },
     { k: 'showLegend', type: 'bool', label: 'Leyenda de calendarios' },
     GRID_LINES,
     EVENT_FILL,

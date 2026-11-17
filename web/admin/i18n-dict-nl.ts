@@ -226,6 +226,8 @@ export const NL: Record<string, string> = {
   'Latitud': 'Breedtegraad',
   'Latitud entre -90 y 90': 'Breedtegraad tussen -90 en 90',
   'Leyenda de calendarios': 'Legenda van de agenda\'s',
+  'Mes y año arriba': 'Maand en jaar bovenaan',
+  'Sin ellos, el calendario ocupa toda la tarjeta.': 'Zonder deze vult de kalender de hele kaart.',
   'Lista de próximos eventos agrupados por día, legible desde lejos (móvil / tablet).': 'Komende afspraken per dag gegroepeerd, van ver leesbaar (telefoon / tablet).',
   'Lista de tareas': 'Takenlijst',
   'Longitud': 'Lengtegraad',

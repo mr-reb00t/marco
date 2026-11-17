@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.43.1] - 2026-11-17
+
+### Added
+- *Month* card on Custom screens: *Month and year at the top* can be turned off, so the calendar fills the whole card.
+  With *Calendar legend* on, the legend keeps its line; with both off there is no heading at all (#48, thanks to
+  @aswormboy).
+
 ## [0.43.0] - 2026-11-16
 
 ### Added

@@ -684,6 +684,8 @@ export interface CalendarConfig<S = CalendarSource> {
   showEndTime: boolean;
   showDayXofY: boolean;
   showLegend: boolean;
+  /** The month and year over the month grid; false hides them (a Personalizado card, #48). Unset: shown. */
+  showMonth?: boolean;
   hidePast: boolean;
   /** Events that have ended: 'dim' (default, the look it always had), 'soft' (a little faded) or 'full' (not faded). */
   pastEvents: PastEvents;

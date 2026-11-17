@@ -209,6 +209,8 @@ export const PL: Record<string, string> = {
   'Latitud': 'Szerokość geograficzna',
   'Latitud entre -90 y 90': 'Szerokość geograficzna od -90 do 90',
   'Leyenda de calendarios': 'Legenda kalendarzy',
+  'Mes y año arriba': 'Miesiąc i rok u góry',
+  'Sin ellos, el calendario ocupa toda la tarjeta.': 'Bez nich kalendarz wypełnia całą kartę.',
   'Lista de próximos eventos agrupados por día, legible desde lejos (móvil / tablet).': 'Lista nadchodzących wydarzeń pogrupowanych według dni, czytelna z daleka (telefon / tablet).',
   'Lista de tareas': 'Lista zadań',
   'Longitud': 'Długość geograficzna',
