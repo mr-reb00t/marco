@@ -3,6 +3,11 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.44.1] - 2026-11-20
+
+### Fixed
+- *To-do > Google Tasks lists* only shows on self-hosted servers (Marco Cloud links Google accounts for calendars only).
+
 ## [0.44.0] - 2026-11-20
 
 ### Added
