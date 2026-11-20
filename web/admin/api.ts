@@ -86,6 +86,7 @@ import type {
   ImmichStatus,
   TestIcsResponse,
   TestRssResponse,
+  GoogleTaskListItem,
   UpdateInfo,
   UpdateSettings,
   FeedbackRequest,
@@ -219,6 +220,9 @@ export const api = {
   googleAccounts: () => request<GoogleAccount[]>('GET', '/api/admin/google/accounts'),
   removeGoogleAccount: (email: string) =>
     request<unknown>('DELETE', `/api/admin/google/accounts/${encodeURIComponent(email)}`),
+  // Google Tasks lists of a linked account (the To-do page). 409 google_tasks_reconnect / google_tasks_api_off.
+  googleTaskLists: (account: string) =>
+    request<GoogleTaskListItem[]>('GET', `/api/admin/google/task-lists?account=${encodeURIComponent(account)}`),
   googleCalendars: (account: string) =>
     request<GoogleCalendarListItem[]>('GET', `/api/admin/google/calendars?account=${encodeURIComponent(account)}`),
 

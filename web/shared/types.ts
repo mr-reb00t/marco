@@ -823,11 +823,23 @@ export interface TodoView {
 }
 
 /** A Microsoft To Do list shown on the to-do list (config todo.lists). Its tasks are read by the server. */
-export interface TodoList {
+export type TodoList = MicrosoftTodoList | GoogleTaskList;
+
+export interface MicrosoftTodoList {
   id: string; // tl_...
   type: 'microsoft';
   microsoftAccount: string;
   microsoftListId: string;
+  name: string;
+  enabled: boolean;
+}
+
+/** A Google Tasks list (self-hosted, with a Google account linked from the To-do page). */
+export interface GoogleTaskList {
+  id: string; // tl_...
+  type: 'google';
+  googleAccount: string;
+  googleListId: string;
   name: string;
   enabled: boolean;
 }
@@ -2480,6 +2492,16 @@ export interface GoogleAccount {
   email: string;
   name?: string;
   picture?: string;
+  /** the account lets Marco read its Google Tasks lists (false: linked for its calendars only; connect it from To-do) */
+  tasks?: boolean;
+  /** the account lets Marco tick its Google tasks from a touch screen */
+  tasksWrite?: boolean;
+}
+
+/** One Google Tasks list of a linked account (GET /api/admin/google/task-lists). */
+export interface GoogleTaskListItem {
+  id: string;
+  name: string;
 }
 
 export interface GoogleCalendarListItem {

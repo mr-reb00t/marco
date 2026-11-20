@@ -320,8 +320,8 @@ export function displayTodoItem(it, id, tick, list = '') {
   return out;
 }
 
-/** Ids of to-do items that come from a Microsoft To Do list (displayTodoItem), not typed in the admin. */
-export const isListTask = (id) => typeof id === 'string' && id.startsWith('ms_');
+/** Ids of to-do items that come from a Microsoft To Do or Google Tasks list (displayTodoItem), not typed in the admin. */
+export const isListTask = (id) => typeof id === 'string' && /^(?:ms|gt)_/.test(id);
 
 /** The Microsoft To Do lists of a config that are on (todo.lists). */
 export const enabledTodoLists = (cfg) => (Array.isArray(cfg?.todo?.lists) ? cfg.todo.lists : []).filter((l) => l && l.enabled !== false && l.type === 'microsoft');

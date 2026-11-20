@@ -102,10 +102,10 @@ export function publicRouter({ version }) {
 
   r.get('/display/config', (req, res) => res.json(displayConfigFor(getConfig(), req)));
 
-  // A tap on a Microsoft To Do task (microsoftTodo.js). Only screens that show the to-do list with their touch setting
-  // on, not private, from a display that may tap (the rules of routines ticked on a TV, family.js), and only a task
-  // this server shows right now. { id, done } → { ok } | 403 touch_off | 403 read_only | 404 not_found |
-  // 409 microsoft_reconnect | 429 rate_limited | 502 microsoft_unavailable
+  // A tap on a Microsoft To Do or Google Tasks task (microsoftTodo.js). Only screens that show the to-do list with
+  // their touch setting on, not private, from a display that may tap (the rules of routines ticked on a TV, family.js),
+  // and only a task this server shows right now. { id, done } → { ok } | 403 touch_off | 403 read_only | 404 not_found
+  // | 409 microsoft_reconnect / google_reconnect | 429 rate_limited | 502 microsoft_unavailable / google_unavailable
   r.post('/display/todo/toggle', jsonOnly, async (req, res, next) => {
     try {
       const cfg = getConfig();
@@ -120,11 +120,12 @@ export function publicRouter({ version }) {
       const b = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
       const out = await toggleTask(cfg, b.id, b.done === true, { screen, req });
       if (out.ok) return res.json({ ok: true });
+      const who = out.provider === 'google' ? 'Google' : 'Microsoft';
       const fail = {
         not_found: [404, 'this task is not on the list any more'], read_only: [403, 'this list can only be read'],
-        reconnect: [409, 'the Microsoft account must be connected again'], unavailable: [502, 'Microsoft did not answer'],
+        reconnect: [409, `the ${who} account must be connected again`], unavailable: [502, `${who} did not answer`],
       }[out.error];
-      const code = { reconnect: 'microsoft_reconnect', unavailable: 'microsoft_unavailable' }[out.error] ?? out.error;
+      const code = ['reconnect', 'unavailable'].includes(out.error) ? `${out.provider === 'google' ? 'google' : 'microsoft'}_${out.error}` : out.error;
       res.status(fail[0]).json({ error: fail[1], code });
     } catch (err) {
       next(err);

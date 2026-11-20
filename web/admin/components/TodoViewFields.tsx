@@ -6,7 +6,7 @@ import { t } from '../i18n';
 import { Icon } from './icons';
 import { EmojiPicker, Field, Segmented, TextInput } from './ui';
 
-/** `lists`: the household's Microsoft To Do lists (config todo.lists, with their account: the admin only). */
+/** `lists`: the household's Microsoft To Do and Google Tasks lists (config todo.lists, with their account: the admin only). */
 export function TodoViewFields({ value, lists, onChange }: { value: Partial<TodoView>; lists: TodoList[]; onChange: (k: keyof TodoView, v: unknown, merge?: boolean) => void }) {
   const ids = Array.isArray(value.listIds) ? value.listIds : null;
   const all = [LOCAL_TODO_LIST, ...lists.map((l) => l.id)];
@@ -18,7 +18,7 @@ export function TodoViewFields({ value, lists, onChange }: { value: Partial<Todo
     if (next.length) onChange('listIds', all.filter((x) => next.includes(x)));
   };
   // two accounts may each have a "Tasks" list: the account shows under every Microsoft list
-  const rows = [{ id: LOCAL_TODO_LIST, name: t('Tareas escritas en Marco'), sub: '' }, ...lists.map((l) => ({ id: l.id, name: l.name || t('Lista sin nombre'), sub: l.microsoftAccount }))];
+  const rows = [{ id: LOCAL_TODO_LIST, name: t('Tareas escritas en Marco'), sub: '' }, ...lists.map((l) => ({ id: l.id, name: l.name || t('Lista sin nombre'), sub: l.type === 'google' ? l.googleAccount : l.microsoftAccount }))];
   const one = picked?.length === 1 ? picked[0] : null;
   const auto = one && one !== LOCAL_TODO_LIST ? lists.find((l) => l.id === one)?.name || t('Tareas') : t('Tareas');
   return (

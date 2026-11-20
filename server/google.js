@@ -2,6 +2,10 @@
 import crypto from 'node:crypto';
 import { request, requestJson, HttpError } from './lib/http.js';
 import { getSecrets, updateSecrets } from './store.js';
+import {
+  GOOGLE_TASKS_SCOPE, MAX_TASK_LIST_PAGES, MAX_TASK_PAGES, googleTaskItems, googleTasksGranted, googleTasksWritable, taskListItem,
+  taskListsUrl, taskStatusBody, taskUrl, tasksUrl,
+} from './core/googleTasks.js';
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -18,8 +22,11 @@ export function publicUrl(req) {
 }
 export const redirectUri = (req) => `${publicUrl(req)}/auth/google/callback`;
 
-/** Build the consent URL. purpose: 'login' | 'connect'. State = base64url JSON {p, n} with CSRF nonce n. */
-export function authUrl(req, purpose, nonce) {
+/**
+ * Build the consent URL. purpose: 'login' | 'connect'. State = base64url JSON {p, n} with CSRF nonce n. A connect from
+ * the To-do page (`tasks`) asks for Google Tasks too; `account` preselects that account in Google's chooser.
+ */
+export function authUrl(req, purpose, nonce, { tasks = false, account = '' } = {}) {
   const state = Buffer.from(JSON.stringify({ p: purpose, n: nonce })).toString('base64url');
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
@@ -29,10 +36,11 @@ export function authUrl(req, purpose, nonce) {
     include_granted_scopes: 'true',
   });
   if (purpose === 'connect') {
-    params.set('scope', `openid email profile ${CAL_SCOPE}`);
+    params.set('scope', `openid email profile ${CAL_SCOPE}${tasks ? ` ${GOOGLE_TASKS_SCOPE}` : ''}`);
     params.set('access_type', 'offline');
     // the account chooser every time, so a second (or third) Google account can be linked too
     params.set('prompt', 'consent select_account');
+    if (account) params.set('login_hint', account);
   } else {
     params.set('scope', 'openid email profile');
     params.set('prompt', 'select_account');
@@ -64,7 +72,8 @@ async function tokenRequest(params) {
   });
   let json;
   try { json = JSON.parse(res.text); } catch { json = {}; }
-  if (!res.ok) throw new HttpError(`Google token error: ${json.error_description || json.error || res.status}`, res.status);
+  // `oauth`: Google's error code (invalid_grant: the account's refresh token was revoked or expired)
+  if (!res.ok) throw Object.assign(new HttpError(`Google token error: ${json.error_description || json.error || res.status}`, res.status), { oauth: json.error });
   return json;
 }
 
@@ -91,9 +100,20 @@ export function storeAccount(profile, tokens) {
   });
 }
 
+/**
+ * Linked accounts. `tasks` false: linked without Google Tasks access (linked for its calendars, or before Marco
+ * asked; its lists need a connect from the To-do page); `tasksWrite` false with `tasks` true: read only.
+ */
 export function listAccounts() {
-  return Object.entries(getSecrets().google.accounts).map(([email, a]) => ({ email, name: a.name || email, picture: a.picture || '' }));
+  return Object.entries(getSecrets().google.accounts).map(([email, a]) => ({
+    email, name: a.name || email, picture: a.picture || '', tasks: googleTasksGranted(a.scope), tasksWrite: googleTasksWritable(a.scope),
+  }));
 }
+
+/** The account lets Marco read its Google Tasks lists. */
+export const accountHasGoogleTasks = (email) => googleTasksGranted(getSecrets().google.accounts[email]?.scope);
+/** The account lets Marco mark its Google tasks done. */
+export const accountWritesGoogleTasks = (email) => googleTasksWritable(getSecrets().google.accounts[email]?.scope);
 
 export async function removeAccount(email) {
   const acct = getSecrets().google.accounts[email];
@@ -134,13 +154,85 @@ export async function getAccessToken(email) {
   return refreshing.get(email);
 }
 
-async function api(email, url) {
+async function api(email, url, { method = 'GET', body } = {}) {
   const token = await getAccessToken(email);
-  const res = await request(url, { headers: { authorization: `Bearer ${token}` }, throwOnError: false });
+  const res = await request(url, {
+    method,
+    headers: { authorization: `Bearer ${token}`, ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+    throwOnError: false,
+  });
   let json;
   try { json = JSON.parse(res.text); } catch { json = {}; }
-  if (!res.ok) throw new HttpError(`Google API: ${json.error?.message || `HTTP ${res.status}`}`, res.status);
+  if (!res.ok) {
+    const err = new HttpError(`Google API: ${json.error?.message || `HTTP ${res.status}`}`, res.status);
+    // the Google Tasks API is off in the server's own Google Cloud project (README, Google calendars)
+    const reasons = [json.error?.status, ...(json.error?.errors ?? []).map((e) => e?.reason), ...(json.error?.details ?? []).map((d) => d?.reason)];
+    if (res.status === 403 && reasons.some((r) => r === 'accessNotConfigured' || r === 'SERVICE_DISABLED')) err.code = 'tasks_api_off';
+    else if (res.status === 401) err.code = 'auth_failed';
+    else if (res.status === 403 && reasons.some((r) => r === 'insufficientPermissions' || r === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT')) err.code = 'tasks_scope';
+    throw err;
+  }
   return json;
+}
+
+/**
+ * A Google Tasks call that failed: 'auth_failed' when the account's refresh token no longer works (not when the
+ * server's own client id or secret is wrong: connecting the account again would not help then).
+ */
+function tasksFailure(err) {
+  if (!err.code && err.oauth === 'invalid_grant') err.code = 'auth_failed';
+  if (!err.code && /^No refresh token/.test(err.message || '')) err.code = 'auth_failed';
+  return err;
+}
+
+const scopeError = () => Object.assign(new Error('Google Tasks access not granted; connect the account from the To-do page'), { code: 'tasks_scope' });
+
+/** The account's Google Tasks lists. Throws 'tasks_scope' without Tasks access. */
+export async function listTaskLists(email) {
+  if (!accountHasGoogleTasks(email)) throw scopeError();
+  const out = [];
+  let pageToken = '';
+  try {
+    for (let i = 0; i < MAX_TASK_LIST_PAGES; i++) {
+      const j = await api(email, taskListsUrl(pageToken));
+      for (const l of j.items || []) {
+        const item = taskListItem(l);
+        if (item) out.push(item);
+      }
+      if (!(pageToken = j.nextPageToken)) break;
+    }
+  } catch (err) {
+    throw tasksFailure(err);
+  }
+  return out;
+}
+
+/** The open tasks of one list (core googleTaskItems: Google id, title, due day), all pages up to MAX_TASK_PAGES. */
+export async function listGoogleTasks(email, listId) {
+  if (!accountHasGoogleTasks(email)) throw scopeError();
+  const tasks = [];
+  let pageToken = '';
+  try {
+    for (let i = 0; i < MAX_TASK_PAGES; i++) {
+      const j = await api(email, tasksUrl(listId, pageToken));
+      if (Array.isArray(j.items)) tasks.push(...j.items);
+      if (!(pageToken = j.nextPageToken)) break;
+    }
+  } catch (err) {
+    throw tasksFailure(err);
+  }
+  return googleTaskItems(tasks);
+}
+
+/** Marks one task done (completed) or not done (needsAction). Throws 'tasks_scope' without write access. */
+export async function setGoogleTaskDone(email, listId, taskId, done) {
+  if (!accountWritesGoogleTasks(email)) throw scopeError();
+  try {
+    await api(email, taskUrl(listId, taskId), { method: 'PATCH', body: taskStatusBody(done) });
+  } catch (err) {
+    throw tasksFailure(err);
+  }
 }
 
 export async function listCalendars(email) {

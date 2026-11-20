@@ -899,13 +899,15 @@ the **secret iCal address** needs no setup at all but updates slowly. Both are r
 ### 1. Create a Google Cloud project and OAuth client
 
 1. Go to <https://console.cloud.google.com/>, sign in and **create a project** (e.g. `marco`).
-2. **APIs & Services → Library** → search **Google Calendar API** → **Enable**.
+2. **APIs & Services → Library** → search **Google Calendar API** → **Enable**. For Google Tasks on the to-do list,
+   enable **Google Tasks API** too.
 3. Open **Google Auth Platform** (formerly "OAuth consent screen"):
    - **Branding**: app name (e.g. *Marco*), your support email, developer contact email. Save.
    - **Audience**: user type **External**. Under **Test users** add your own Google address (and the address of
      anyone else whose calendars you want to link).
    - **Data access** (optional): you can add the scopes `openid`, `email`, `profile` and
-     `https://www.googleapis.com/auth/calendar.readonly`; Marco requests them anyway.
+     `https://www.googleapis.com/auth/calendar.readonly` (and `https://www.googleapis.com/auth/tasks` for Google
+     Tasks); Marco requests them anyway.
 4. **Clients → Create client → Web application**:
    - **Authorized redirect URI**: `<PUBLIC_URL>/auth/google/callback`, exactly, e.g.
      `http://localhost:3000/auth/google/callback` or `https://calendar.example.com/auth/google/callback`
@@ -991,6 +993,14 @@ person and day is also in Marco's own *Birthdays* list, that screen shows only M
 on a home server. If you really want it (for example to turn the password off), set `MARCO_GOOGLE_LOGIN=1` in `.env`,
 then add the allowed addresses in **Security → Allowed Google emails**. Servers that already sign in with Google only
 (password off, allowed emails set) keep it.
+
+### 4. Google Tasks (optional)
+
+**Admin → To-do → Google Tasks lists → Link Google account** asks for access to your task lists (an account already
+linked for its calendars asks once more), then tick the lists to show. Their open tasks show on the screen with the
+typed ones, with their due date, and are read every 5 minutes. With **Allow ticking by touching this screen** on, a
+task tapped on a touch screen is marked done in Google Tasks too. It needs the **Google Tasks API** enabled in the same
+Google Cloud project (step 1); the admin tells you when it is off. Not in Marco Cloud.
 
 ## Connecting Outlook, Hotmail or Microsoft 365
 

@@ -5,6 +5,7 @@ import { EventEmitter } from 'node:events';
 import cookieSession from 'cookie-session';
 import { getConfig, getSecrets, updateSecrets, updateConfig } from './store.js';
 import * as google from './google.js';
+import { googleTasksGranted } from './core/googleTasks.js';
 import * as microsoft from './microsoft.js';
 import { CONNECT_BACK, connectBack } from './core/microsoftGraph.js';
 import { logActivity, logActivityThrottled } from './activity.js';
@@ -570,7 +571,13 @@ function oauthRedirect(req, res, purpose) {
   req.session.oauthNonce = nonce;
   // The purpose is kept in the session: the one in `state` comes back from the browser and is only compared.
   req.session.oauthPurpose = purpose;
-  res.redirect(google.authUrl(req, purpose, nonce));
+  // A connect from the To-do page (`?tasks=1`) asks for Google Tasks too and comes back there; `?account=` preselects
+  // the account in Google's chooser.
+  const tasks = purpose === 'connect' && req.query?.tasks === '1';
+  req.session.oauthTasks = tasks;
+  const account = tasks && typeof req.query?.account === 'string' && /^[^\s@]{1,64}@[^\s@]{1,255}$/.test(req.query.account.trim())
+    ? req.query.account.trim().toLowerCase() : '';
+  res.redirect(google.authUrl(req, purpose, nonce, { tasks, account }));
 }
 
 export const googleLoginHandler = (req, res) =>
@@ -596,7 +603,8 @@ export async function googleCallbackHandler(req, res) {
   const state = google.parseState(req.query.state);
   const nonce = req.session?.oauthNonce;
   const purpose = req.session?.oauthPurpose;
-  if (req.session) { delete req.session.oauthNonce; delete req.session.oauthPurpose; }
+  const tasks = req.session?.oauthTasks === true;
+  if (req.session) { delete req.session.oauthNonce; delete req.session.oauthPurpose; delete req.session.oauthTasks; }
   if (req.query.error) {
     const e = String(req.query.error);
     return failEarly(GOOGLE_ERRORS.has(e) ? `google_${e}` : 'google_error');
@@ -618,10 +626,12 @@ export async function googleCallbackHandler(req, res) {
   if (purpose === 'connect') {
     if (!sessionValid(req)) return fail('login_required');
     if (!tokens.refresh_token && !getSecrets().google.accounts[profile.email]?.refresh_token) return fail('no_refresh_token');
-    if (!String(tokens.scope || '').includes(google.CAL_SCOPE)) return fail('calendar_scope_denied');
+    // a connect from the To-do page may grant Google Tasks without the calendars (its lists still work)
+    const granted = String(tokens.scope || '');
+    if (!granted.includes(google.CAL_SCOPE) && !(tasks && googleTasksGranted(granted))) return fail('calendar_scope_denied');
     google.storeAccount(profile, tokens);
     logActivity('google.connected', { req, data: { email: profile.email } });
-    return res.redirect(`/admin/?connected=${encodeURIComponent(profile.email)}`);
+    return res.redirect(`/admin/?connected=${encodeURIComponent(profile.email)}${tasks ? '#/todo/todo-google' : ''}`);
   }
 
   // login

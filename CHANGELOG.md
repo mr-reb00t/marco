@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.44.0] - 2026-11-20
+
+### Added
+- Google Tasks on the to-do list (self-hosted): *To-do > Google Tasks lists* links a Google account with access to
+  its task lists (an account already linked for its calendars asks once more), and the lists you tick show their open
+  tasks next to the typed ones, with their due date, read every 5 minutes. With *Allow ticking by touching this
+  screen* on, a task tapped on a touch screen is marked done in Google Tasks too. It needs the Google Tasks API
+  enabled in the server's Google Cloud project; the admin says when it is off (README, *Google Tasks*).
+
 ## [0.43.2] - 2026-11-20
 
 ### Added

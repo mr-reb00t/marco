@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { MicrosoftAccount, MicrosoftTodoListItem, NewsFeed, TestRssResponse } from '../../shared/types';
+import type { NewsFeed, TestRssResponse, TodoList } from '../../shared/types';
 import { api, ApiError } from '../api';
 import { fetchErrorText } from '../apiErrors';
 import { confirmDialog } from '../components/feedback';
@@ -140,20 +140,100 @@ export function NewsSection({ cfg, set, errors }: SectionProps) {
   );
 }
 
-/** Most Microsoft To Do lists on the to-do list (server/core/validate.js MAX_TODO_LISTS). */
+/** Most Microsoft To Do and Google Tasks lists on the to-do list (server/core/validate.js MAX_TODO_LISTS). */
 const MAX_TODO_LISTS = 10;
 
+type TaskAccount = { email: string; tasks?: boolean; tasksWrite?: boolean };
+type TaskListItem = { id: string; name: string; shared?: boolean };
+type ListsState = TaskListItem[] | 'reconnect' | 'api_off' | 'error' | undefined;
+
+/** What differs between Microsoft To Do and Google Tasks on the To-do page. */
+interface TaskProvider {
+  type: 'microsoft' | 'google';
+  cardId: string;
+  title: string;
+  desc: string;
+  logo: preact.JSX.Element;
+  label: string;
+  accounts: () => Promise<TaskAccount[]>;
+  lists: (email: string) => Promise<TaskListItem[]>;
+  /** the 409 error that means "connect the account again for its lists" */
+  reconnectError: string;
+  /** where a (re)connect goes; `email` empty links another account */
+  connectUrl: (email: string) => string;
+  leaveBody: string;
+  accountOf: (l: TodoList) => string | undefined;
+  listIdOf: (l: TodoList) => string | undefined;
+  newList: (email: string, l: TaskListItem) => TodoList;
+  /** no account linked yet: where to link one */
+  none: preact.JSX.Element;
+  reconnectText: string;
+  errorText: string;
+  emptyText: string;
+}
+
+const TOUCH_MICROSOFT = 'Una tarea de To Do tocada en la pantalla se marca como hecha también en Microsoft. Es el mismo ajuste que el de las rutinas de Familia. No funciona en modo privado.';
+const TOUCH_GOOGLE = 'Una tarea de Google Tasks tocada en la pantalla se marca como hecha también en Google. Es el mismo ajuste que el de las rutinas de Familia. No funciona en modo privado.';
+const TOUCH_BOTH = 'Una tarea de To Do o de Google Tasks tocada en la pantalla se marca como hecha también allí. Es el mismo ajuste que el de las rutinas de Familia. No funciona en modo privado.';
+
+const MICROSOFT_TASKS: TaskProvider = {
+  type: 'microsoft',
+  cardId: 'todo-microsoft',
+  title: 'Listas de Microsoft To Do',
+  desc: 'Las tareas pendientes de las listas que elijas salen junto a las de aquí, con su fecha y una estrella si son importantes. Se actualizan cada 5 minutos.',
+  logo: <MicrosoftLogo size={12} />,
+  label: 'Microsoft To Do',
+  accounts: () => api.microsoftAccounts(),
+  lists: (email) => api.microsoftTodoLists(email),
+  reconnectError: 'microsoft_tasks_reconnect',
+  connectUrl: (email) => `/auth/microsoft/connect?account=${encodeURIComponent(email)}&back=todo`,
+  leaveBody: 'Vas a salir a Microsoft para vincular la cuenta. ¿Guardamos primero los cambios pendientes?',
+  accountOf: (l) => (l.type === 'microsoft' ? l.microsoftAccount : undefined),
+  listIdOf: (l) => (l.type === 'microsoft' ? l.microsoftListId : undefined),
+  newList: (email, l) => ({ id: uid('tl'), type: 'microsoft', microsoftAccount: email, microsoftListId: l.id, name: l.name, enabled: true }),
+  none: (
+    <Empty icon="link" title={t('Ninguna cuenta de Microsoft vinculada')}>
+      {t('Vincula tu cuenta de Microsoft en')} <a href="#/calendars/cal-accounts">{t('Calendarios')}</a>.
+    </Empty>
+  ),
+  reconnectText: 'Vuelve a vincular la cuenta para ver tus listas de To Do.',
+  errorText: 'No se pudieron leer las listas de To Do. Inténtalo más tarde.',
+  emptyText: 'Esta cuenta no tiene listas de To Do.',
+};
+
+const GOOGLE_TASKS: TaskProvider = {
+  type: 'google',
+  cardId: 'todo-google',
+  title: 'Listas de Google Tasks',
+  desc: 'Las tareas pendientes de las listas que elijas salen junto a las de aquí, con su fecha. Se actualizan cada 5 minutos.',
+  logo: <Icon name="google" size={12} />,
+  label: 'Google Tasks',
+  accounts: () => api.googleAccounts(),
+  lists: (email) => api.googleTaskLists(email),
+  reconnectError: 'google_tasks_reconnect',
+  connectUrl: (email) => `/auth/google/connect?tasks=1${email ? `&account=${encodeURIComponent(email)}` : ''}`,
+  leaveBody: 'Vas a salir a Google para vincular la cuenta. ¿Guardamos primero los cambios pendientes?',
+  accountOf: (l) => (l.type === 'google' ? l.googleAccount : undefined),
+  listIdOf: (l) => (l.type === 'google' ? l.googleListId : undefined),
+  newList: (email, l) => ({ id: uid('tl'), type: 'google', googleAccount: email, googleListId: l.id, name: l.name, enabled: true }),
+  none: <p class="muted small">{t('Ninguna cuenta de Google vinculada.')}</p>,
+  reconnectText: 'Da permiso a Marco para ver las listas de Google Tasks de esta cuenta.',
+  errorText: 'No se pudieron leer las listas de Google Tasks. Inténtalo más tarde.',
+  emptyText: 'Esta cuenta no tiene listas de Google Tasks.',
+};
+
 /**
- * Microsoft To Do lists shown with the typed tasks: each linked Microsoft account (linked in Calendars) lists its To
- * Do lists to pick from, like its calendars. An account linked before Marco asked for To Do access offers to connect
- * it again. Shown only where Microsoft accounts can be linked.
+ * Microsoft To Do or Google Tasks lists shown with the typed tasks: each linked account lists its task lists to pick
+ * from, like its calendars. An account linked without access to its tasks offers to connect it again (a Google
+ * account linked for its calendars only, a Microsoft one linked before Marco asked). `touchHint`: this card shows the
+ * "tick from the screen" setting with this hint (only one card does when both are on the page).
  */
-function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
-  const [accounts, setAccounts] = useState<MicrosoftAccount[] | null>(null);
-  const [lists, setLists] = useState<Record<string, MicrosoftTodoListItem[] | 'reconnect' | 'error' | undefined>>({});
+function TaskListsCard({ cfg, set, dirty, save, provider: p, touchHint }: SectionProps & { provider: TaskProvider; touchHint?: string }) {
+  const [accounts, setAccounts] = useState<TaskAccount[] | null>(null);
+  const [lists, setLists] = useState<Record<string, ListsState>>({});
   const chosen = cfg.todo.lists ?? [];
   useEffect(() => {
-    api.microsoftAccounts().then(
+    p.accounts().then(
       (list) => {
         setAccounts(list);
         for (const a of list) {
@@ -161,9 +241,12 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
             setLists((m) => ({ ...m, [a.email]: 'reconnect' }));
             continue;
           }
-          api.microsoftTodoLists(a.email).then(
+          p.lists(a.email).then(
             (l) => setLists((m) => ({ ...m, [a.email]: l })),
-            (e) => setLists((m) => ({ ...m, [a.email]: ((e as ApiError).body as { error?: string } | undefined)?.error === 'microsoft_tasks_reconnect' ? 'reconnect' : 'error' })),
+            (e) => {
+              const code = ((e as ApiError).body as { error?: string } | undefined)?.error;
+              setLists((m) => ({ ...m, [a.email]: code === p.reconnectError || code === `${p.type}_reconnect` ? 'reconnect' : code === 'google_tasks_api_off' ? 'api_off' : 'error' }));
+            },
           );
         }
       },
@@ -171,45 +254,37 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
     );
   }, []);
 
-  /** Connect the same account again (Microsoft preselects it); its calendars and lists stay. */
-  const reconnect = async (email: string) => {
+  /** Connect the same account again (preselected), or another one; its calendars and lists stay. */
+  const connect = async (email: string) => {
     if (dirty) {
       const ok = await confirmDialog({
         title: t('Guardar cambios antes de continuar'),
-        body: t('Vas a salir a Microsoft para vincular la cuenta. ¿Guardamos primero los cambios pendientes?'),
+        body: t(p.leaveBody),
         confirm: t('Guardar y continuar'),
       });
       if (!ok || !(await save())) return;
     }
-    window.location.href = `/auth/microsoft/connect?account=${encodeURIComponent(email)}&back=todo`;
+    window.location.href = p.connectUrl(email);
   };
-  const isOn = (email: string, id: string) => chosen.some((l) => l.microsoftAccount === email && l.microsoftListId === id);
-  const toggle = (email: string, l: MicrosoftTodoListItem, on: boolean) =>
+  const isOn = (email: string, id: string) => chosen.some((l) => p.accountOf(l) === email && p.listIdOf(l) === id);
+  const toggle = (email: string, l: TaskListItem, on: boolean) =>
     set((d) => {
       d.todo.lists ??= [];
       if (on) {
         if (isOn(email, l.id) || d.todo.lists.length >= MAX_TODO_LISTS) return;
-        d.todo.lists.push({ id: uid('tl'), type: 'microsoft', microsoftAccount: email, microsoftListId: l.id, name: l.name, enabled: true });
+        d.todo.lists.push(p.newList(email, l));
       } else {
-        d.todo.lists = d.todo.lists.filter((x) => !(x.microsoftAccount === email && x.microsoftListId === l.id));
+        d.todo.lists = d.todo.lists.filter((x) => !(p.accountOf(x) === email && p.listIdOf(x) === l.id));
       }
     });
-  const readOnly = (a: MicrosoftAccount) => a.tasks !== false && a.tasksWrite === false && chosen.some((l) => l.microsoftAccount === a.email);
+  const readOnly = (a: TaskAccount) => a.tasks !== false && a.tasksWrite === false && chosen.some((l) => p.accountOf(l) === a.email);
 
   return (
-    <Card
-      id="todo-microsoft"
-      title={t('Listas de Microsoft To Do')}
-      icon="microsoft"
-      scope="global"
-      desc={t('Las tareas pendientes de las listas que elijas salen junto a las de aquí, con su fecha y una estrella si son importantes. Se actualizan cada 5 minutos.')}
-    >
+    <Card id={p.cardId} title={t(p.title)} icon={p.type === 'microsoft' ? 'microsoft' : 'checklist'} scope="global" desc={t(p.desc)}>
       {accounts === null ? (
         <div class="skeleton" />
       ) : accounts.length === 0 ? (
-        <Empty icon="link" title={t('Ninguna cuenta de Microsoft vinculada')}>
-          {t('Vincula tu cuenta de Microsoft en')} <a href="#/calendars/cal-accounts">{t('Calendarios')}</a>.
-        </Empty>
+        p.none
       ) : (
         <div class="gaccounts">
           {accounts.map((a) => {
@@ -221,7 +296,7 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
                   <div class="gaccount__who">
                     <strong>{a.email}</strong>
                     <span class="muted small">
-                      <MicrosoftLogo size={12} /> Microsoft To Do
+                      {p.logo} {p.label}
                     </span>
                   </div>
                 </div>
@@ -229,21 +304,28 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
                   <div class="skeleton" />
                 ) : l === 'reconnect' ? (
                   <Callout kind="warn">
-                    {t('Vuelve a vincular la cuenta para ver tus listas de To Do.')}{' '}
-                    <Button size="sm" variant="ghost" icon="link" onClick={() => reconnect(a.email)}>
+                    {t(p.reconnectText)}{' '}
+                    <Button size="sm" variant="ghost" icon="link" onClick={() => connect(a.email)}>
                       {t('Volver a vincular')}
                     </Button>
                   </Callout>
+                ) : l === 'api_off' ? (
+                  <Callout kind="warn">
+                    {t('La API de Google Tasks está desactivada en el proyecto de Google Cloud de este servidor. Actívala y vuelve a esta página:')}{' '}
+                    <a href="https://console.cloud.google.com/apis/library/tasks.googleapis.com" target="_blank" rel="noopener noreferrer">
+                      Google Tasks API
+                    </a>
+                  </Callout>
                 ) : l === 'error' ? (
-                  <Callout kind="error">{t('No se pudieron leer las listas de To Do. Inténtalo más tarde.')}</Callout>
+                  <Callout kind="error">{t(p.errorText)}</Callout>
                 ) : l.length === 0 ? (
-                  <p class="muted small">{t('Esta cuenta no tiene listas de To Do.')}</p>
+                  <p class="muted small">{t(p.emptyText)}</p>
                 ) : (
                   <>
                   {readOnly(a) && (
                     <p class="muted small">
                       {t('Estas listas solo se pueden leer: vuelve a vincular la cuenta para poder marcarlas desde la pantalla.')}{' '}
-                      <Button size="sm" variant="ghost" icon="link" onClick={() => reconnect(a.email)}>
+                      <Button size="sm" variant="ghost" icon="link" onClick={() => connect(a.email)}>
                         {t('Volver a vincular')}
                       </Button>
                     </p>
@@ -272,12 +354,21 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
           })}
         </div>
       )}
-      <ToggleRow
-        label={<>{t('Permitir marcar tocando esta pantalla')} <ScopeBadge scope="screen" /></>}
-        hint={t('Una tarea de To Do tocada en la pantalla se marca como hecha también en Microsoft. Es el mismo ajuste que el de las rutinas de Familia. No funciona en modo privado.')}
-        checked={!!cfg.family.touch}
-        onChange={(v) => set((d) => void (d.family.touch = v))}
-      />
+      {p.type === 'google' && accounts !== null && (
+        <div>
+          <Button size="sm" variant="ghost" icon="link" onClick={() => connect('')}>
+            {accounts.length ? t('Vincular otra cuenta de Google') : t('Vincular cuenta de Google')}
+          </Button>
+        </div>
+      )}
+      {touchHint && (
+        <ToggleRow
+          label={<>{t('Permitir marcar tocando esta pantalla')} <ScopeBadge scope="screen" /></>}
+          hint={t(touchHint)}
+          checked={!!cfg.family.touch}
+          onChange={(v) => set((d) => void (d.family.touch = v))}
+        />
+      )}
     </Card>
   );
 }
@@ -285,6 +376,8 @@ function MicrosoftTodoCard({ cfg, set, dirty, save }: SectionProps) {
 export function TodoSection(props: SectionProps) {
   const { cfg, set, me } = props;
   const td = cfg.todo;
+  const msTasks = has('microsoftCalendar') && !!me.microsoftConfigured;
+  const googleTasks = has('googleCalendar') && !!me.googleConfigured;
   const [text, setText] = useState('');
   const add = (e: Event) => {
     e.preventDefault();
@@ -331,7 +424,8 @@ export function TodoSection(props: SectionProps) {
           </Button>
         )}
       </Card>
-      {has('microsoftCalendar') && !!me.microsoftConfigured && <MicrosoftTodoCard {...props} />}
+      {msTasks && <TaskListsCard {...props} provider={MICROSOFT_TASKS} touchHint={googleTasks ? undefined : TOUCH_MICROSOFT} />}
+      {googleTasks && <TaskListsCard {...props} provider={GOOGLE_TASKS} touchHint={msTasks ? TOUCH_BOTH : TOUCH_GOOGLE} />}
       <Card scope="screen" id="todo-screen" title={t('En esta pantalla')} icon="checklist" desc={t('Qué listas y qué tareas muestra la lista de tareas de esta pantalla, con su título.')}>
         {cfg.layout.preset === 'canvas' ? (
           <p class="muted small">{t('En una pantalla Personalizado, cada tarjeta de tareas tiene estos ajustes en el editor. Puedes poner varias, por ejemplo «Compra» y «Casa».')}</p>

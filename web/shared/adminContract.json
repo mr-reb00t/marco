@@ -1229,7 +1229,9 @@
       "responseKeys": [
         "email",
         "name?",
-        "picture?"
+        "picture?",
+        "tasks?",
+        "tasksWrite?"
       ]
     },
     {
@@ -1263,6 +1265,24 @@
         "summary",
         "backgroundColor?",
         "primary?"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/google/task-lists",
+      "query": [
+        "account"
+      ],
+      "feature": "googleCalendar",
+      "callers": [
+        "googleTaskLists"
+      ],
+      "request": null,
+      "response": "GoogleTaskListItem[]",
+      "responseArray": true,
+      "responseKeys": [
+        "id",
+        "name"
       ]
     },
     {

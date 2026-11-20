@@ -24,8 +24,8 @@ interface Host {
   allowed(): boolean;
 }
 
-/** A task of a Microsoft To Do list (the server's opaque id), not an item typed in the admin (core microsoftGraph.js). */
-export const isListTask = (id: string): boolean => typeof id === 'string' && id.startsWith('ms_');
+/** A task of a Microsoft To Do or Google Tasks list (the server's opaque id), not an item typed in the admin (core microsoftGraph.js). */
+export const isListTask = (id: string): boolean => typeof id === 'string' && /^(?:ms|gt)_/.test(id);
 
 let host: Host | null = null;
 const shown = new Map<string, { done: boolean; at: number }>();

@@ -1,7 +1,7 @@
 // Background refresher: keeps calendar sources fresh (respecting refreshMin) and broadcasts SSE `events`
 // when the merged events (default window) change. Also pre-warms weather/news caches, checks which special
-// background rule holds on each screen (photoRules.js) and reads the Microsoft To Do lists of the to-do list
-// (microsoftTodo.js, every 5 minutes; SSE `todo` when their tasks change).
+// background rule holds on each screen (photoRules.js) and reads the Microsoft To Do and Google Tasks lists of the
+// to-do list (microsoftTodo.js, every 5 minutes; SSE `todo` when their tasks change).
 import { getConfig } from './store.js';
 import { refreshAll, getEvents, defaultWindow } from './calendars.js';
 import { getWeather } from './weather.js';

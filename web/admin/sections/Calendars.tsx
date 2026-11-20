@@ -461,8 +461,9 @@ function LinkedAccounts({ cfg, set, dirty, save, me }: SectionProps) {
       await p.remove(a.email);
       set((d) => {
         d.calendar.sources = d.calendar.sources.filter((s) => !ofAccount(s, a));
-        // its Microsoft To Do lists go too
-        if (a.provider === 'microsoft' && d.todo.lists) d.todo.lists = d.todo.lists.filter((l) => l.microsoftAccount !== a.email);
+        // its Microsoft To Do or Google Tasks lists go too
+        if (a.provider === 'microsoft' && d.todo.lists) d.todo.lists = d.todo.lists.filter((l) => l.type !== 'microsoft' || l.microsoftAccount !== a.email);
+        if (a.provider === 'google' && d.todo.lists) d.todo.lists = d.todo.lists.filter((l) => l.type !== 'google' || l.googleAccount !== a.email);
       });
       toast(t('Cuenta desvinculada. Guarda para aplicar los cambios en los calendarios.'), 'info');
       load();

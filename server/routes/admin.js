@@ -84,6 +84,23 @@ export function adminRouter({ onConfigSaved } = {}) {
     logActivity('google.removed', { req, data: { email } });
     res.json({ ok: true });
   }));
+  // Google Tasks lists of an account, for the To-do page. 409 google_tasks_reconnect: linked without Tasks access
+  // (connect it from the To-do page); 409 google_tasks_api_off: the Google Tasks API is off in the server's Google
+  // Cloud project.
+  r.get('/google/task-lists', wrap(async (req, res) => {
+    if (!google.googleConfigured()) return res.status(404).json({ error: 'feature_unavailable' });
+    const account = String(req.query.account || '').toLowerCase();
+    if (!account) return res.status(400).json({ error: 'account required' });
+    if (!google.listAccounts().some((a) => a.email === account)) return res.status(404).json({ error: 'not found' });
+    try {
+      res.json(await google.listTaskLists(account));
+    } catch (err) {
+      if (err.code === 'tasks_scope') return res.status(409).json({ error: 'google_tasks_reconnect' });
+      if (err.code === 'tasks_api_off') return res.status(409).json({ error: 'google_tasks_api_off' });
+      if (err.code === 'auth_failed') return res.status(409).json({ error: 'google_reconnect' });
+      res.status(502).json({ error: 'google_unavailable' });
+    }
+  }));
   r.get('/google/calendars', wrap(async (req, res) => {
     const account = String(req.query.account || '').toLowerCase();
     if (!account) return res.status(400).json({ error: 'account required' });
