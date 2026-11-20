@@ -12,6 +12,13 @@ import { TodoViewFields } from '../components/TodoViewFields';
 import { t } from '../i18n';
 import { isHttpUrl, moveItem, uid } from '../util';
 import type { SectionProps } from './common';
+import { fmtDay } from '../dates';
+
+/** Days without a new story after which a tested feed is likely abandoned. */
+const STALE_FEED_DAYS = 30;
+
+/** The newest story of a tested feed when it is old enough that the feed has likely stopped (CNN's old feeds). */
+const staleSince = (newest?: string | null) => (newest && Date.now() - Date.parse(newest) > STALE_FEED_DAYS * 86_400_000 ? newest : null);
 
 function FeedRow({ f, i, n, errors, upd, remove, move }: { f: NewsFeed; i: number; n: number; errors: Record<string, string>; upd: (fn: (x: NewsFeed) => void) => void; remove: () => void; move: (a: number, b: number) => void }) {
   const [test, setTest] = useState<{ loading: boolean; res?: TestRssResponse }>({ loading: false });
@@ -65,6 +72,11 @@ function FeedRow({ f, i, n, errors, upd, remove, move }: { f: NewsFeed; i: numbe
             <span>
               <Icon name="alert" size={14} /> {fetchErrorText(test.res.error) || t('Feed no válido')}
             </span>
+          )}
+          {test.res.ok && staleSince(test.res.newest) && (
+            <p class="test-result__warn">
+              <Icon name="alert" size={14} /> {t('La noticia más reciente es del {date}: puede que esta fuente ya no se actualice. Busca otra dirección RSS en su web.', { date: fmtDay(test.res.newest!.slice(0, 10), { weekday: false, year: true }) })}
+            </p>
           )}
         </div>
       )}

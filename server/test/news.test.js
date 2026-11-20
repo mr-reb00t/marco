@@ -42,3 +42,14 @@ test('stripHtml / truncate helpers', () => {
   assert.equal(truncate('abc', 10), 'abc');
   assert.ok(truncate('palabra '.repeat(50), 200).length <= 200);
 });
+
+test('the newest story of a feed: its latest dated item, null when none has a date (CNN’s old feed stopped in 2023)', async () => {
+  const { newestItemDate } = await import('../core/newsParse.js');
+  const rss = (dates) => `<rss><channel><title>T</title>${dates.map((d, i) => `<item><title>n${i}</title>${d ? `<pubDate>${d}</pubDate>` : ''}</item>`).join('')}</channel></rss>`;
+  const f = parseFeed(rss(['Wed, 19 Apr 2023 15:31:24 GMT', '', 'Tue, 18 Apr 2023 08:00:00 GMT', 'Sun, 19 Mar 2023 10:00:00 GMT']));
+  assert.equal(newestItemDate(f.items), '2023-04-19T15:31:24.000Z');
+  assert.equal(newestItemDate(parseFeed(rss(['', ''])).items), null);
+  assert.equal(newestItemDate([]), null);
+  const src = (await import('node:fs')).readFileSync(new URL('../news.js', import.meta.url), 'utf8');
+  assert.match(src, /newest: newestItemDate\(f\.items\)/, 'Probar says how old the newest story is');
+});

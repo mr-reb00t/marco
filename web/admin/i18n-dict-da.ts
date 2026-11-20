@@ -162,6 +162,7 @@ export const DA: Record<string, string> = {
   'Falta la cuenta o el calendario de Google': 'Google-konto eller kalender mangler',
   'Fecha y hora': 'Dato og tid',
   'Feed no válido': 'Ugyldigt feed',
+  'La noticia más reciente es del {date}: puede que esta fuente ya no se actualice. Busca otra dirección RSS en su web.': 'Den nyeste historie er fra {date}: dette feed bliver måske ikke længere opdateret. Find en anden RSS-adresse på webstedet.',
   'Festivos': 'Helligdage',
   'Festivos de España': 'Helligdage i Spanien',
   'Festivos de Portugal': 'Helligdage i Portugal',

@@ -147,6 +147,7 @@ export const PL: Record<string, string> = {
   'Falta la cuenta o el calendario de Google': 'Brak konta lub kalendarza Google',
   'Fecha y hora': 'Data i godzina',
   'Feed no válido': 'Nieprawidłowy kanał',
+  'La noticia más reciente es del {date}: puede que esta fuente ya no se actualice. Busca otra dirección RSS en su web.': 'Najnowsza wiadomość jest z {date}: ten kanał może już nie być aktualizowany. Poszukaj innego adresu RSS na jego stronie.',
   'Festivos': 'Święta',
   'Festivos de España': 'Święta w Hiszpanii',
   'Festivos de Portugal': 'Święta w Portugalii',

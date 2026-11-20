@@ -162,6 +162,7 @@ export const NL: Record<string, string> = {
   'Falta la cuenta o el calendario de Google': 'Google-account of -agenda ontbreekt',
   'Fecha y hora': 'Datum en tijd',
   'Feed no válido': 'Ongeldige feed',
+  'La noticia más reciente es del {date}: puede que esta fuente ya no se actualice. Busca otra dirección RSS en su web.': 'Het nieuwste bericht is van {date}: deze feed wordt misschien niet meer bijgewerkt. Zoek een ander RSS-adres op de website.',
   'Festivos': 'Feestdagen',
   'Festivos de España': 'Feestdagen Spanje',
   'Festivos de Portugal': 'Feestdagen Portugal',

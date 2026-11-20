@@ -5,6 +5,8 @@ import { stripHtml, truncate, hash, decodeEntities } from './lib/text.js';
 
 /** Items read from one feed at most (news.maxItems is at most 200 too). */
 export const MAX_FEED_ITEMS = 200;
+/** The date of the newest dated story of `items` (ISO), or null when none has a date. */
+export const newestItemDate = (items) => items.reduce((m, i) => (i.date && (!m || i.date > m) ? i.date : m), null);
 
 const parser = new XMLParser({
   ignoreAttributes: false,

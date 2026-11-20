@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.43.2] - 2026-11-20
+
+### Added
+- *News > RSS feeds* > *Test* warns when the feed's newest story is more than 30 days old, so a feed that stopped
+  being updated (CNN's old `rss.cnn.com` feeds, for example, last changed in 2023) no longer looks like it works.
+
 ## [0.43.1] - 2026-11-17
 
 ### Added

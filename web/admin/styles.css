@@ -1839,6 +1839,13 @@ input[type='number']::-webkit-inner-spin-button {
   background: color-mix(in srgb, var(--err) 10%, transparent);
   color: var(--err);
 }
+.test-result__warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 0;
+  color: var(--warn);
+}
 .test-result ul {
   margin: 6px 0 0;
   padding-left: 20px;

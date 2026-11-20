@@ -172,6 +172,7 @@ const ROWS: [string, string, string][] = [
   ['Falta la cuenta o el calendario de Google', 'Missing Google account or calendar', 'Falta a conta ou o calendário Google'],
   ['Fecha y hora', 'Date & time', 'Data e hora'],
   ['Feed no válido', 'Invalid feed', 'Feed inválido'],
+  ['La noticia más reciente es del {date}: puede que esta fuente ya no se actualice. Busca otra dirección RSS en su web.', 'The newest story is from {date}: this feed may no longer be updated. Look for another RSS address on its website.', 'A notícia mais recente é de {date}: talvez esta fonte já não seja atualizada. Procure outro endereço RSS no site.'],
   ['Festivos', 'Holidays', 'Feriados'],
   ['Festivos de España', 'Spain holidays', 'Feriados de Espanha'],
   ['Festivos de Portugal', 'Portugal holidays', 'Feriados de Portugal'],

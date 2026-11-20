@@ -2152,6 +2152,7 @@
         "ok",
         "title?",
         "count?",
+        "newest?",
         "error?"
       ]
     },

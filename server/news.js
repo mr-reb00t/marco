@@ -1,7 +1,7 @@
 // RSS 2.0 / Atom / RDF news feeds: fetching and caching. Parsing is in server/core/newsParse.js.
 import { request, BROWSER_UA } from './lib/http.js';
 import { getConfig } from './store.js';
-import { parseFeed } from './core/newsParse.js';
+import { newestItemDate, parseFeed } from './core/newsParse.js';
 
 export { parseFeed } from './core/newsParse.js';
 
@@ -21,7 +21,7 @@ export async function fetchFeed(url) {
 export async function testFeed(url) {
   try {
     const f = parseFeed(await fetchFeed(url));
-    return { ok: true, title: f.title, count: f.items.length };
+    return { ok: true, title: f.title, count: f.items.length, newest: newestItemDate(f.items) };
   } catch (err) {
     return { ok: false, title: '', count: 0, error: err.message };
   }

@@ -2590,6 +2590,8 @@ export interface TestRssResponse {
   ok: boolean;
   title?: string;
   count?: number;
+  /** The date of the feed's newest story (ISO), null when no story has one. */
+  newest?: string | null;
   error?: string;
 }
 
