@@ -445,11 +445,13 @@ export interface PhotoUpload {
   thumb?: Blob;
   focusX?: number;
   focusY?: number;
+  /** day taken (YYYY-MM-DD) from the original file, as an optimized copy has no EXIF */
+  takenAt?: string;
 }
 
 /**
  * Multipart upload (XHR for progress). Field `photos[]` as documented in docs/API.md, optional `thumbs[]` (same order) and `meta`
- * (focal points). `onConflict` decides what happens when the name is taken (server default: rename).
+ * (focal points, day taken). `onConflict` decides what happens when the name is taken (server default: rename).
  */
 export function uploadPhotos(
   files: PhotoUpload[],
@@ -457,7 +459,15 @@ export function uploadPhotos(
   onProgress?: (fraction: number) => void
 ): Promise<PhotoUploadResult> {
   const fd = new FormData();
-  fd.append('meta', JSON.stringify(files.map((f) => (f.focusX !== undefined && f.focusY !== undefined ? { focusX: f.focusX, focusY: f.focusY } : null))));
+  fd.append(
+    'meta',
+    JSON.stringify(
+      files.map((f) => {
+        const m = { ...(f.focusX !== undefined && f.focusY !== undefined ? { focusX: f.focusX, focusY: f.focusY } : {}), ...(f.takenAt ? { takenAt: f.takenAt } : {}) };
+        return Object.keys(m).length ? m : null;
+      })
+    )
+  );
   for (const f of files) {
     fd.append('photos[]', f.blob, f.name);
     if (f.thumb) fd.append('thumbs[]', f.thumb, 'thumb.jpg');

@@ -356,6 +356,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
     intervalSec: num(ctx, `${p}.background.intervalSec`, bg.intervalSec, D.background.intervalSec, 10, 86400, true),
     brightness: num(ctx, `${p}.background.brightness`, bg.brightness, D.background.brightness, 0.1, 1),
     showMeta: bool(ctx, `${p}.background.showMeta`, bg.showMeta, D.background.showMeta),
+    // written only when on, so screens saved before #49 stay exactly as they were
+    ...(bool(ctx, `${p}.background.showDate`, bg.showDate, false) ? { showDate: true } : {}),
     cover: bool(ctx, `${p}.background.cover`, bg.cover, D.background.cover),
     transition: oneOf(ctx, `${p}.background.transition`, bg.transition, D.background.transition, ['webgl', 'fade', 'none']),
     ambient: oneOf(ctx, `${p}.background.ambient`, bg.ambient, D.background.ambient, ['aurora', 'particles', 'none']),

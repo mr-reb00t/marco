@@ -2205,6 +2205,8 @@ export const NL: Record<string, string> = {
   'Pon las dos horas o ninguna': 'Vul beide tijden in of geen van beide',
   'Clave en GOOGLE_MAPS_API_KEY': 'Sleutel in GOOGLE_MAPS_API_KEY',
   'Viene del entorno del servidor: para quitarla hay que cambiar ese entorno. Una clave guardada aquí la sustituye.': 'Komt uit de omgeving van de server: om hem te verwijderen pas je die omgeving aan. Een hier opgeslagen sleutel vervangt hem.',
+  'Mostrar la fecha de la foto': 'Datum van de foto tonen',
+  'El día en que se hizo, si la foto lo guarda o su nombre lo lleva (como IMG_20190812).': 'De dag waarop hij is gemaakt, als de foto die bewaart of de naam hem bevat (zoals IMG_20190812).',
 };
 
 /** Singular forms of the count strings (i18n-plural.ts), used by t() when vars.n === 1. */

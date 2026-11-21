@@ -12,6 +12,7 @@ import { galleryFileAllowed, mediaScreens } from './displayAccess.js';
 import { screenPrivacy } from './privacy.js';
 import { IMMICH_ID_RE, placeOf } from './core/immichCore.js';
 import { pickedFiles } from './core/photoSource.js';
+import { DATE_HEADER_BYTES, fileNameDate, jpegDateTaken } from './core/photoDate.js';
 import {
   ALLOWED_EXT, ALLOWED_MIME, imageInfo as imageInfoOf, imageHeaderNeed, isJpeg, isGalleryFile, uploadName as coreUploadName,
   sniffImage as sniffImageOf, stripImageMetadata,
@@ -201,11 +202,32 @@ export function imageInfo(file) {
   }
 }
 
-/** Fresh metadata for a file on disk (keeps the focal point unless `resetFocus`). */
+/**
+ * Day a photo file was taken (#49), from its EXIF (core/photoDate.js), or ''. Gallery files keep no EXIF once
+ * stored, so this finds a date in uploads before they are cleaned and in photos copied in by hand.
+ */
+export function dateTakenOf(file) {
+  let fd;
+  try {
+    fd = fs.openSync(file, 'r');
+    const buf = Buffer.alloc(DATE_HEADER_BYTES);
+    return jpegDateTaken(buf.subarray(0, fs.readSync(fd, buf, 0, buf.length, 0)));
+  } catch {
+    return '';
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
+/**
+ * Fresh metadata for a file on disk (keeps the focal point unless `resetFocus`). takenAt = the day taken from the
+ * file or its name ('' = unknown), kept while the file stays the same (its EXIF is gone once stored).
+ */
 function describe(file, prev = {}, { resetFocus = false } = {}) {
   const st = fs.statSync(photoPath(file));
   const info = imageInfo(photoPath(file));
   const out = { ...(info ? { w: info.w, h: info.h } : {}), bytes: st.size, uploadedAt: prev.uploadedAt || st.mtime.toISOString() };
+  out.takenAt = !resetFocus && typeof prev.takenAt === 'string' ? prev.takenAt : dateTakenOf(photoPath(file)) || fileNameDate(file);
   if (!resetFocus && isUnit(prev.focusX) && isUnit(prev.focusY)) Object.assign(out, { focusX: prev.focusX, focusY: prev.focusY });
   if (prev.hidden === true) out.hidden = true; // excluded from the rotation (survives replace / re-describe)
   return out;
@@ -226,6 +248,7 @@ function entry(file, st, m = {}) {
     ...(m.w && m.h ? { w: m.w, h: m.h } : {}),
     ...(isUnit(m.focusX) && isUnit(m.focusY) ? { focusX: m.focusX, focusY: m.focusY } : {}),
     ...(m.uploadedAt ? { uploadedAt: m.uploadedAt } : {}),
+    ...(m.takenAt ? { takenAt: m.takenAt } : {}),
     hidden: m.hidden === true,
   };
 }
@@ -245,7 +268,7 @@ export function listGallery() {
     try { st = fs.statSync(photoPath(file)); } catch { continue; }
     if (!st.isFile()) continue;
     let m = meta[file];
-    if (!m || m.bytes !== st.size || !m.w) {
+    if (!m || m.bytes !== st.size || !m.w || m.takenAt === undefined) {
       m = meta[file] = describe(file, m || {}, { resetFocus: !!m && m.bytes !== st.size });
       dirty = true;
     }
@@ -365,6 +388,7 @@ function pickGallery(order, n, key, after, only = null) {
     file: g.file,
     title: g.file.replace(/\.[^.]+$/, ''),
     source: 'gallery',
+    ...(g.takenAt ? { takenAt: g.takenAt } : {}),
     ...(g.focusX !== undefined ? { focusX: g.focusX, focusY: g.focusY } : {}),
   }));
 }
@@ -505,9 +529,10 @@ export function checkNames(names) {
 /**
  * Move an uploaded temp file into the gallery under `requested` according to the conflict policy:
  * replace (overwrite, metadata refreshed), rename (first free "name-N.ext"), skip (discard). Never overwrites
- * unless asked. `focus` = optional client-computed focal point.
+ * unless asked. `focus` = optional client-computed focal point. `takenAt` = the day taken read before the upload was
+ * cleaned ('' = none: the file name's, or on a replace the day the photo had, as an optimized copy has no EXIF).
  */
-export function finalizeUpload(tmpPath, requested, policy = 'rename', focus = null, meta = readMeta(), thumbTmp = null) {
+export function finalizeUpload(tmpPath, requested, policy = 'rename', focus = null, meta = readMeta(), thumbTmp = null, takenAt = '') {
   let target = requested;
   let status = 'created';
   if (exists(requested)) {
@@ -526,8 +551,10 @@ export function finalizeUpload(tmpPath, requested, policy = 'rename', focus = nu
     if (thumbTmp) fs.rmSync(thumbTmp, { force: true });
     removeThumb(target);
   }
-  const m = describe(target, status === 'replaced' && meta[target]?.hidden ? { hidden: true } : {}, { resetFocus: true });
+  const old = status === 'replaced' ? meta[target] : null;
+  const m = describe(target, old?.hidden ? { hidden: true } : {}, { resetFocus: true });
   m.uploadedAt = new Date().toISOString();
+  m.takenAt = takenAt || m.takenAt || (typeof old?.takenAt === 'string' ? old.takenAt : '');
   if (focus && isUnit(focus.focusX) && isUnit(focus.focusY)) Object.assign(m, { focusX: round4(focus.focusX), focusY: round4(focus.focusY) });
   meta[target] = m;
   const st = fs.statSync(photoPath(target));

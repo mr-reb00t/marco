@@ -8,7 +8,7 @@ import { ConflictDialog, FocusEditor, type ConflictItem } from '../components/Ph
 import { Button, Callout, Card, Empty, PageHeader, Segmented } from '../components/ui';
 import { limit, runtime } from '../caps';
 import { locale, t } from '../i18n';
-import { isJpegName, jpgName, looksLikeImage, MAX_UPLOAD_BYTES, optimizePhoto, PhotoError, TARGET_SIDE } from '../photoTools';
+import { isJpegName, jpgName, looksLikeImage, MAX_UPLOAD_BYTES, optimizePhoto, PhotoError, photoDateTaken, TARGET_SIDE } from '../photoTools';
 import { formatBytes } from '../util';
 import type { SectionProps } from './common';
 
@@ -233,17 +233,18 @@ export function PhotosSection({ cfg, set }: SectionProps) {
         continue;
       }
       try {
-        let up: { blob: Blob; name: string; thumb?: Blob; focusX?: number; focusY?: number };
+        let up: { blob: Blob; name: string; thumb?: Blob; focusX?: number; focusY?: number; takenAt?: string };
         let note = '';
+        const takenAt = (await photoDateTaken(it.file)) || undefined;
         try {
           const o = await optimizePhoto(it.file, { strip: cloud, onStage: (s) => patch(it.id, { status: s, pct: s === 'heic' ? 0.1 : 0.2 }) });
-          up = o;
+          up = { ...o, takenAt };
           patch(it.id, { thumb: thumbUrl(o.thumb), after: o.after });
         } catch (e) {
           // A JPG/PNG/WebP this browser can't decode still goes up as it is (the server accepts it).
           // On Workers every photo is optimized (metadata such as the location must not be stored).
           if (!cloud && e instanceof PhotoError && e.code === 'decode' && SERVER_TYPES.test(it.file.name) && /^image\/(jpeg|png|webp)$/.test(it.file.type)) {
-            up = { blob: it.file, name: it.file.name };
+            up = { blob: it.file, name: it.file.name, takenAt };
             note = t('subida sin optimizar');
           } else throw e;
         }
@@ -327,10 +328,10 @@ export function PhotosSection({ cfg, set }: SectionProps) {
           if (!hasFocus(p)) await api.setPhotoFocus(p.file, o.focusX, o.focusY);
           note = t('ya estaba optimizada · miniatura y encuadre listos');
         } else if (jpgName(p.file) === p.file) {
-          await uploadPhotos([o], 'replace', (fr) => patch(id, { pct: 0.5 + fr * 0.5 }));
+          await uploadPhotos([{ ...o, takenAt: p.takenAt }], 'replace', (fr) => patch(id, { pct: 0.5 + fr * 0.5 }));
         } else {
           // PNG / WebP → new .jpg next to it, then the old file goes.
-          const r = await uploadPhotos([o], 'rename', (fr) => patch(id, { pct: 0.5 + fr * 0.45 }));
+          const r = await uploadPhotos([{ ...o, takenAt: p.takenAt }], 'rename', (fr) => patch(id, { pct: 0.5 + fr * 0.45 }));
           if (r.files[0] && p.hidden) await api.setPhotoHidden(r.files[0].file, true);
           if (r.files[0]) await api.deletePhoto(p.file);
           note = t('convertida a {name}', { name: r.files[0]?.file ?? o.name });

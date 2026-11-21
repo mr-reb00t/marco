@@ -52,6 +52,12 @@ export function BackgroundSection({ cfg, set, errors, full }: SectionProps) {
             </Field>
           </div>
           <ToggleRow label={t('Mostrar autor / título de la foto')} checked={b.showMeta} onChange={(v) => set((d) => void (d.background.showMeta = v))} />
+          <ToggleRow
+            label={t('Mostrar la fecha de la foto')}
+            hint={t('El día en que se hizo, si la foto lo guarda o su nombre lo lleva (como IMG_20190812).')}
+            checked={!!b.showDate}
+            onChange={(v) => set((d) => void (d.background.showDate = v))}
+          />
           <ToggleRow label={t('Recortar para llenar la pantalla')} hint={t('Si se desactiva, la foto se muestra completa con bandas.')} checked={b.cover} onChange={(v) => set((d) => void (d.background.cover = v))} />
           {b.cover && (
             <Field

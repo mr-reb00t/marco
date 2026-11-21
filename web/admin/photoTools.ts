@@ -2,6 +2,7 @@
 // downscale to ≤ 2560 px, re-encode as JPEG, make a small thumbnail and find a focal point (saliency, saliency.ts).
 // Everything runs one photo at a time and frees its bitmaps/canvases, so 30 phone photos don't exhaust memory.
 import { saliencyFocus } from './saliency';
+import { DATE_HEADER_BYTES, jpegDateTaken } from '../../server/core/photoDate.js';
 
 export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 export const TARGET_SIDE = 2560;
@@ -161,6 +162,15 @@ export async function jpegOrientation(file: Blob): Promise<number> {
     /* truncated / odd file */
   }
   return 1;
+}
+
+/** Day a photo was taken (YYYY-MM-DD) from its EXIF, read before optimizing drops it (#49), or ''. */
+export async function photoDateTaken(file: Blob): Promise<string> {
+  try {
+    return jpegDateTaken(new Uint8Array(await file.slice(0, DATE_HEADER_BYTES).arrayBuffer()));
+  } catch {
+    return '';
+  }
 }
 
 export interface Optimized {

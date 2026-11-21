@@ -25,4 +25,10 @@ export const ROWS_BACKGROUND: [string, string, string][] = [
   ],
   ['Las fotos de fondo están desactivadas en esta pantalla.', 'Background photos are off on this screen.', 'As fotos de fundo estão desativadas neste ecrã.'],
   ['Desenfoque del calendario', 'Calendar blur', 'Desfoque do calendário'],
+  ['Mostrar la fecha de la foto', 'Show the date the photo was taken', 'Mostrar a data da foto'],
+  [
+    'El día en que se hizo, si la foto lo guarda o su nombre lo lleva (como IMG_20190812).',
+    'The day it was taken, when the photo has it saved or its name has it (like IMG_20190812).',
+    'O dia em que foi tirada, se a foto o guardar ou o nome o tiver (como IMG_20190812).',
+  ],
 ];

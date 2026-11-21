@@ -1,4 +1,4 @@
-// Pure helpers of the photo rotation (widgets/photos.ts): when a photo gets the blurred fill, and the Immich caption.
+// Pure helpers of the photo rotation (widgets/photos.ts): when a photo gets the blurred fill, and the caption.
 import type { BackgroundConfig, Photo } from '../shared/types';
 
 /** Whether a photo gets the blurred fill: the setting (auto = Immich photos only), cover on, and an orientation that
@@ -11,16 +11,34 @@ export function wantsBlurFill(b: Pick<BackgroundConfig, 'cover' | 'portraitFit'>
   return ia < 1 !== aa < 1 && Math.max(ia / aa, aa / ia) > 1.25;
 }
 
+/** The day a photo was taken, "12 August 2019" in the screen's language ('' when unknown). */
+export function takenDay(takenAt: string | undefined, lang: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(takenAt || '');
+  if (!m) return '';
+  try {
+    return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])));
+  } catch {
+    return takenAt!;
+  }
+}
+
 /** Caption of an Immich photo: "Valencia, Spain · 12 August 2019" in the screen's language. */
 export function immichCaption(p: Pick<Photo, 'takenAt' | 'place'>, lang: string): string {
-  let date = '';
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(p.takenAt || '');
-  if (m) {
-    try {
-      date = new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])));
-    } catch {
-      date = p.takenAt!;
-    }
-  }
-  return [p.place, date].filter(Boolean).join(' · ');
+  return [p.place, takenDay(p.takenAt, lang)].filter(Boolean).join(' · ');
+}
+
+/**
+ * Caption of the background photo ('' = none). showMeta: the author or title (Immich: place and date, as before);
+ * showDate: the day taken (#49), alone or after the title.
+ */
+export function photoCaption(
+  p: Pick<Photo, 'source' | 'title' | 'author' | 'takenAt' | 'place'>,
+  b: { showMeta?: boolean; showDate?: boolean },
+  lang: string,
+  photoBy: (a: string) => string
+): string {
+  const date = b.showDate ? takenDay(p.takenAt, lang) : '';
+  if (p.source === 'immich') return b.showMeta ? immichCaption(p, lang) : date;
+  const meta = !b.showMeta ? '' : p.title ? `${p.title}${p.author ? ' · ' + p.author : ''}` : p.author ? photoBy(p.author) : '';
+  return [meta, date].filter(Boolean).join(' · ');
 }

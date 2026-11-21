@@ -3230,6 +3230,8 @@ export const PL: Record<string, string> = {
   'Escribe las direcciones': 'Wpisz adresy',
   'Hay demasiadas rutas en uso ahora. Prueba de nuevo en unos minutos.': 'Zbyt wiele tras jest teraz w użyciu. Spróbuj ponownie za kilka minut.',
   'Demasiadas pruebas seguidas. Espera un minuto y vuelve a probar.': 'Zbyt wiele testów pod rząd. Odczekaj minutę i spróbuj ponownie.',
+  'Mostrar la fecha de la foto': 'Pokaż datę zdjęcia',
+  'El día en que se hizo, si la foto lo guarda o su nombre lo lleva (como IMG_20190812).': 'Dzień jego wykonania, jeśli zdjęcie go zapisuje lub ma go w nazwie (np. IMG_20190812).',
 };
 
 /** Singular forms (n = 1): Spanish key → Polish. */

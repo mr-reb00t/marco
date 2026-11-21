@@ -3,6 +3,15 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.45.0] - 2026-11-21
+
+### Added
+- *Background > Background photos* > *Show the date the photo was taken*: the caption shows the day each photo was
+  taken, on its own or after the title. Gallery photos are still stored without their metadata, so the day is read
+  from the photo's EXIF while it is uploaded (or from a camera-style name such as `IMG_20190812_183012.jpg`) and kept
+  apart; photos uploaded before this version only get it from their name. Immich photos use Immich's date (#49,
+  thanks to @Szendy).
+
 ## [0.44.1] - 2026-11-20
 
 ### Fixed

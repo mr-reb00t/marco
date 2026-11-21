@@ -417,6 +417,8 @@ export interface BackgroundConfig {
   intervalSec: number;
   brightness: number;
   showMeta: boolean;
+  /** the day each photo was taken in the caption (gallery: from its EXIF or file name; Immich), #49 */
+  showDate?: boolean;
   cover: boolean;
   transition: 'webgl' | 'fade' | 'none';
   ambient: 'aurora' | 'particles' | 'none';
@@ -2059,7 +2061,7 @@ export interface Photo {
   file?: string;
   /** Immich asset id (Immich photos only) */
   id?: string;
-  /** Immich: local date taken (YYYY-MM-DD) and place ("City, Country") for the caption */
+  /** Gallery and Immich: local day taken (YYYY-MM-DD); Immich: place ("City, Country"). For the caption. */
   takenAt?: string;
   place?: string;
   /** Focal point (0..1 of width / height, from the top-left) the cover crop is kept around. Gallery only. */
@@ -2653,6 +2655,8 @@ export interface AdminPhoto {
   focusX?: number;
   focusY?: number;
   uploadedAt?: string;
+  /** day taken (YYYY-MM-DD), read from the photo before its metadata was removed or from its name (#49) */
+  takenAt?: string;
   /** excluded from the background rotation */
   hidden?: boolean;
 }

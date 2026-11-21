@@ -1707,6 +1707,7 @@
         "focusX?",
         "focusY?",
         "uploadedAt?",
+        "takenAt?",
         "hidden?"
       ]
     },
@@ -1766,6 +1767,7 @@
         "focusX?",
         "focusY?",
         "uploadedAt?",
+        "takenAt?",
         "hidden?"
       ]
     },
@@ -1792,6 +1794,7 @@
         "focusX?",
         "focusY?",
         "uploadedAt?",
+        "takenAt?",
         "hidden?"
       ]
     },

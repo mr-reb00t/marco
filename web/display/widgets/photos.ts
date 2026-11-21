@@ -5,7 +5,7 @@
 import { coverPosition, coverWindow, freeBand, type PhotoFrame } from '../../shared/focus';
 import type { PhotoStats } from '../../shared/glass';
 import type { BackgroundConfig, Photo } from '../../shared/types';
-import { immichCaption, wantsBlurFill } from '../photoFit';
+import { photoCaption, wantsBlurFill } from '../photoFit';
 import { ctx } from '../ctx';
 import { el, esc, reducedMotion } from '../dom';
 import { mediaUrl } from '../identity';
@@ -525,9 +525,8 @@ export class Photos {
           dropNode(old);
       } else dropNode(old);
     }
-    const text =
-      p.source === 'immich' ? immichCaption(p, ctx.lang) : p.title ? `${p.title}${p.author ? ' · ' + p.author : ''}` : p.author ? ctx.t('photoBy', { a: p.author }) : '';
-    const showMeta = b.showMeta && !!text;
+    const text = photoCaption(p, b, ctx.lang, (a) => ctx.t('photoBy', { a }));
+    const showMeta = !!text;
     this.meta.style.display = showMeta ? '' : 'none';
     if (showMeta) this.meta.innerHTML = esc(text);
   }

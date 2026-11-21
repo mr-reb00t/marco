@@ -18,12 +18,13 @@ import { LANGS } from '../core/lib/i18n.js';
 import { WEATHER_KEY_RE, weatherKeyStatus } from '../core/weather.js';
 import {
   listGallery, uploadMiddleware, thumbMiddleware, deletePhoto, finalizeUpload, readMeta, writeMeta, setFocus, setHidden, getPhoto, checkNames,
-  cleanupTempUploads, isUnit, isGalleryFile, isThumbField, storeThumb, validThumb, CONFLICT_POLICIES, cleanImageFile,
+  cleanupTempUploads, isUnit, isGalleryFile, isThumbField, storeThumb, validThumb, CONFLICT_POLICIES, cleanImageFile, dateTakenOf,
 } from '../photos.js';
 import fs from 'node:fs';
 import { publish, connectedCount } from '../pollHub.js';
 import { mediaScreens, showsGallery } from '../displayAccess.js';
 import { isHttpUrl } from '../core/validate.js';
+import { validPhotoDay } from '../core/photoDate.js';
 import { logActivity } from '../activity.js';
 import { resolveScreenList } from '../displays.js';
 import { handlePrivacy, privacyResponse } from '../privacy.js';
@@ -339,13 +340,15 @@ export function adminRouter({ onConfigSaved } = {}) {
     }
     // Metadata goes before anything is stored (location, camera, dates); a file that is not a JPEG, PNG or WebP that
     // parses refuses the whole upload, so nothing half-checked lands in the gallery.
+    // The day taken goes with it (#49), read here first or, for photos the admin re-encoded, sent in the meta.
+    const taken = new Map(photos.map((f) => [f, dateTakenOf(f.path) || validPhotoDay(metaIn[f.seq]?.takenAt)]));
     const bad = photos.find((f) => !cleanImageFile(f.path));
     if (bad) {
       for (const f of all) fs.rmSync(f.path, { force: true });
       return res.status(415).json({ error: `Unsupported or damaged image: ${bad.targetName || 'file'} (only JPG, PNG or WebP)` });
     }
     for (const f of photos) {
-      const r = finalizeUpload(f.path, f.targetName, policy, metaIn[f.seq] || null, meta, thumbs.get(f.seq) || null);
+      const r = finalizeUpload(f.path, f.targetName, policy, metaIn[f.seq] || null, meta, thumbs.get(f.seq) || null, taken.get(f));
       if (r.status === 'skipped') skipped.push(r.file);
       else files.push(r);
     }

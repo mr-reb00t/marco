@@ -482,7 +482,7 @@ Rules for the mutating setup endpoints:
 |---|---|
 | `GET /api/admin/photos` | `[{ file, url, thumbUrl, size, mtime, w, h, focusX, focusY, uploadedAt, hidden }]` |
 | `POST /api/admin/photos/check` | `{ names }` → which names already exist |
-| `POST /api/admin/photos?onConflict=rename\|replace\|skip` | multipart `photos[]` (≤ 100 MB each), optional `thumbs[]` and `meta` (`[{ focusX, focusY }]`) |
+| `POST /api/admin/photos?onConflict=rename\|replace\|skip` | multipart `photos[]` (≤ 100 MB each), optional `thumbs[]` and `meta` (`[{ focusX, focusY, takenAt }]`, takenAt = the day taken as YYYY-MM-DD when the EXIF of the original is gone) |
 | `PATCH /api/admin/photos/:file` | `{ focusX, focusY }` (0..1) and/or `{ hidden: boolean }` (take the photo out of / back into the rotation) → the photo |
 | `POST /api/admin/photos/visibility` | `{ files: string[] (1..2000), hidden: boolean }` → `{ ok, updated, missing, total, inRotation }` (bulk show / hide) |
 | `PUT /api/admin/photos/:file/thumb` | multipart `thumb` |
