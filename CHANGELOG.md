@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.45.1] - 2026-11-21
+
+### Fixed
+- The background photo caption (author, title, and the date from 0.45.0) now shows on *Photo frame* screens and on
+  Custom screens with the photo behind the whole screen; those layouts hid it. It is also larger and easier to read,
+  and on a Custom screen's *Photo* card with *Caption* on, the date follows the title when *Show the date the photo
+  was taken* is on (#49).
+
 ## [0.45.0] - 2026-11-21
 
 ### Added

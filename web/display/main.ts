@@ -121,7 +121,8 @@ const calendar = new MonthCalendar($('#calendar'));
 const agenda = new Agenda($('#agenda'), {}); // days: calendar.agendaDays
 const sideAgenda = new Agenda($('#side-agenda'), { days: 3, compact: true, maxPerDay: 4, legend: false });
 const news = new News($('#news'));
-const photos = new Photos(photoArea, $('.photo-meta'));
+const photoMeta = $('.photo-meta');
+const photos = new Photos(photoArea, photoMeta);
 const countdowns = new Countdowns($('#countdowns'), $('#cd-strip'));
 const schedules = new ScheduleBanners($('#sched'), $('#sched-strip'));
 const announcements = new Announcements($('#alerts'));
@@ -494,6 +495,10 @@ function applyLayout(): void {
     if (cfg.canvas.background === 'solid' && cfg.canvas.color) app.style.setProperty('--cv-bg', cfg.canvas.color);
     else app.style.removeProperty('--cv-bg');
   } else for (const k of ['--cv-side', '--cv-dim', '--cv-bg']) app.style.removeProperty(k);
+  // the photo caption sits in the side column; layouts that hide it but show the photo on the whole screen get it on
+  // the screen itself (#49)
+  const metaHost = preset === 'photoFrame' || (preset === 'canvas' && cfg.canvas?.background === 'photo') ? app : sideEl;
+  if (photoMeta.parentElement !== metaHost) metaHost.appendChild(photoMeta);
   app.classList.toggle('has-view', VIEW_PRESETS.includes(preset));
   app.classList.toggle('is-kids', isKidsPreset(preset));
   views.setPreset(preset, nightBedside ? bedsideVariant(cfg) : undefined);

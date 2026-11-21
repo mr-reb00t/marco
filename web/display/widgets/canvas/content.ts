@@ -4,6 +4,7 @@
 import type { DisplayCanvasItem, DisplayPhotoSource, DisplayValue, Photo, PhotosResponse } from '../../../shared/types';
 import { mountCardWeather, type CardWeather } from '../../cardWeather';
 import { ctx } from '../../ctx';
+import { takenDay } from '../../photoFit';
 import { mediaUrl } from '../../identity';
 import { reducedMotion } from '../../dom';
 import { state } from '../../store';
@@ -251,7 +252,8 @@ function photo(item0: DisplayCanvasItem): CanvasAdapter {
         }
       }
       const cap = root.querySelector<HTMLElement>('.cv-ph-cap')!;
-      cap.textContent = props.caption ? [p.title, p.place, p.author].filter(Boolean).join(' · ') : '';
+      const day = env.cfg().background.showDate ? takenDay(p.takenAt, ctx.lang) : '';
+      cap.textContent = props.caption ? [p.title, p.place, day, p.author].filter(Boolean).join(' · ') : '';
     };
     // a photo that does not load: the next one soon, not after a long interval (up to a day, #41)
     img.onerror = () => {

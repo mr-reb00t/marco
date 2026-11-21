@@ -14,7 +14,7 @@ import { adminRouter } from '../routes/admin.js';
 import { publicRouter } from '../routes/public.js';
 import { readMeta, writeMeta, listGallery } from '../photos.js';
 import { exifDateTaken, fileNameDate, jpegDateTaken, validPhotoDay } from '../core/photoDate.js';
-import { photoCaption } from '../../web/display/photoFit.ts';
+import { loadWebModules } from './webModules.js';
 
 /** TIFF block with IFD0 { DateTime?, ExifIFD pointer? } and an Exif IFD { DateTimeOriginal?, DateTimeDigitized? }. */
 function exifTiff({ le = false, original = '', digitized = '', dateTime = '' } = {}) {
@@ -94,7 +94,8 @@ test('file names: camera and phone patterns, nothing from other digits', () => {
   for (const v of ['2019-8-12', '2019-02-29', '1850-01-01', '2019-08-12T10:00', 20190812, null]) assert.equal(validPhotoDay(v), '', String(v));
 });
 
-test('caption: the date alone, after the title, Immich as before; nothing when both are off', () => {
+test('caption: the date alone, after the title, Immich as before; nothing when both are off', async () => {
+  const [{ photoCaption }] = await loadWebModules('/web/display/photoFit.ts');
   const by = (a) => `Photo by ${a}`;
   const gal = { source: 'gallery', title: 'Playa', takenAt: '2019-08-12' };
   assert.equal(photoCaption(gal, { showDate: true }, 'en'), 'August 12, 2019');

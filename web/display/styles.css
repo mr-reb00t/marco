@@ -189,11 +189,16 @@ body {
   position: absolute;
   right: 1.6rem;
   bottom: 0.8rem;
-  font-size: 1.1rem;
-  color: rgb(255 255 255 / 0.45);
-  text-shadow: none;
+  font-size: 1.3rem;
+  color: rgb(255 255 255 / 0.7);
+  text-shadow: 0 0.1rem 0.4rem rgb(0 0 0 / 0.6);
 }
 .side-left .photo-meta { right: auto; left: 1.6rem; }
+/* layouts with no side column to hold it (Photo frame, Custom with the photo behind the whole screen): the screen's
+   bottom-left corner, in the margin under the cards (main.ts moves it there); Photo frame keeps it off the clock */
+#app > .photo-meta { right: auto; left: 1.2rem; bottom: 0.25rem; z-index: 5; pointer-events: none; }
+#app.preset-photoFrame > .photo-meta { left: 1.6rem; bottom: 0.9rem; font-size: 1.7rem; }
+#app.preset-photoFrame.corner-bl > .photo-meta { left: auto; right: 1.6rem; }
 
 .main {
   position: relative;
