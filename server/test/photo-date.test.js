@@ -13,7 +13,7 @@ import { sessionMiddleware, csrfGuard, ensurePassword, loginHandler, hashPasswor
 import { adminRouter } from '../routes/admin.js';
 import { publicRouter } from '../routes/public.js';
 import { readMeta, writeMeta, listGallery } from '../photos.js';
-import { exifDateTaken, fileNameDate, jpegDateTaken, validPhotoDay } from '../core/photoDate.js';
+import { exifDateTaken, fileNameDate, jpegDateTaken, photoTitle, validPhotoDay } from '../core/photoDate.js';
 import { loadWebModules } from './webModules.js';
 
 /** TIFF block with IFD0 { DateTime?, ExifIFD pointer? } and an Exif IFD { DateTimeOriginal?, DateTimeDigitized? }. */
@@ -209,4 +209,14 @@ test('gallery: photos copied in by hand and ones stored before #49 get their day
     assert.equal(after['old.jpg'].takenAt, '');
     assert.equal(after['byhand.jpg'].takenAt, '2012-06-07');
   });
+});
+
+test('a name a camera or phone gave a photo is not shown as its title; a name a person wrote is', () => {
+  for (const f of ['IMG_20190812_183012.jpg', 'img_20190812_183012.jpg', 'PXL_20231224_101010123.MP.jpg', 'DSC01234.JPG',
+    'IMG-20190812-WA0001.jpg', 'Screenshot_2019-08-12-18-30-12.png', '2019-08-12 18.30.12.jpg', '20190812_183012.jpg',
+    'Photo 2019-08-12 at 18.30.12.jpeg', 'Captura de pantalla 2024-01-02 101010.png', 'GOPR0123.JPG', 'IMG_1234 (1).jpg'])
+    assert.equal(photoTitle(f), '', f);
+  for (const [f, t] of [['beach-2019.jpg', 'beach-2019'], ['Москва 2019.jpg', 'Москва 2019'], ['IMG_1234 Ana.jpg', 'IMG_1234 Ana'],
+    ['photo.jpg', 'photo'], ['img_12.jpg', 'img_12'], ['wedding.webp', 'wedding']])
+    assert.equal(photoTitle(f), t, f);
 });

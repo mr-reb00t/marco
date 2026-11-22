@@ -3,6 +3,13 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.45.2] - 2026-11-22
+
+### Changed
+- With *Show photo author / title* on, a gallery photo whose name a camera or phone gave it (`IMG_20190812_183012`,
+  `PXL_…`, `DSC01234`, `Screenshot_…`) no longer shows that name as its title; names you wrote still show. The day in
+  such a name is what *Show the date the photo was taken* shows (#49).
+
 ## [0.45.1] - 2026-11-21
 
 ### Fixed

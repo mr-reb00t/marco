@@ -98,3 +98,25 @@ export function fileNameDate(name) {
   const m = /(?:^|[^0-9])((?:19|20)\d{2})([-_.]?)(\d{2})\2(\d{2})(?![0-9])/.exec(base);
   return m ? day(+m[1], +m[3], +m[4]) : '';
 }
+
+// Words cameras, phones and apps put in the names they give photos (IMG_, PXL_, DSC, Screenshot_, WhatsApp's -WA…).
+const CAMERA_WORDS = new Set(
+  ('img image imag pxl dsc dscn dscf dji gopr gp vid mvimg pict pic photo foto sam cimg burst portrait cover hdr pano ' +
+    'mp lrg wa whatsapp signal telegram mmexport fb received screenshot screen shot captura de pantalla at am pm ' +
+    'edited edit copy original').split(' ')
+);
+
+/**
+ * The title a gallery photo shows in the caption: its file name without the extension, or '' for a name a camera or
+ * phone gave it (IMG_20190812_183012, PXL_…, DSC01234, Screenshot_…): only digits and those words, nothing a person
+ * wrote. A day in such a name is shown by *Show the date the photo was taken* instead.
+ */
+export function photoTitle(file) {
+  const base = String(file || '').replace(/^.*[\\/]/, '').replace(/\.[^.]+$/, '');
+  let digits = 0;
+  for (const piece of base.toLowerCase().match(/\p{L}+|\p{N}+/gu) || []) {
+    if (/^\p{N}+$/u.test(piece)) digits += piece.length;
+    else if (!CAMERA_WORDS.has(piece)) return base;
+  }
+  return digits >= 4 ? '' : base;
+}

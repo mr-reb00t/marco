@@ -4,3 +4,4 @@ export declare function validPhotoDay(v: unknown): string;
 export declare function exifDateTaken(seg: Uint8Array): string;
 export declare function jpegDateTaken(bytes: Uint8Array): string;
 export declare function fileNameDate(name: string): string;
+export declare function photoTitle(file: string): string;

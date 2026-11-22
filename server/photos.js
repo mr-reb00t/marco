@@ -12,7 +12,7 @@ import { galleryFileAllowed, mediaScreens } from './displayAccess.js';
 import { screenPrivacy } from './privacy.js';
 import { IMMICH_ID_RE, placeOf } from './core/immichCore.js';
 import { pickedFiles } from './core/photoSource.js';
-import { DATE_HEADER_BYTES, fileNameDate, jpegDateTaken } from './core/photoDate.js';
+import { DATE_HEADER_BYTES, fileNameDate, jpegDateTaken, photoTitle } from './core/photoDate.js';
 import {
   ALLOWED_EXT, ALLOWED_MIME, imageInfo as imageInfoOf, imageHeaderNeed, isJpeg, isGalleryFile, uploadName as coreUploadName,
   sniffImage as sniffImageOf, stripImageMetadata,
@@ -386,7 +386,7 @@ function pickGallery(order, n, key, after, only = null) {
   return picked.map((g) => ({
     url: g.url,
     file: g.file,
-    title: g.file.replace(/\.[^.]+$/, ''),
+    ...(photoTitle(g.file) ? { title: photoTitle(g.file) } : {}),
     source: 'gallery',
     ...(g.takenAt ? { takenAt: g.takenAt } : {}),
     ...(g.focusX !== undefined ? { focusX: g.focusX, focusY: g.focusY } : {}),
