@@ -218,6 +218,7 @@ test('server/weather.js: one forecast per place, shared by screens and cards; a 
     assert.deepEqual([...f.calls].sort(), ['35.68,139.65', '38.72,-9.14', '41.15,-8.61', '51.51,-0.13']);
     await weather.getWeather({ screen: scr('s_cv'), lang: 'da' });
     await weather.getWeather({ screen: scr('s_porto'), lang: 'nl' });
+    await weather.getWeather({ screen: scr('s_main'), lang: 'de' });
     assert.equal(f.calls.length, 4);
     assert.equal(weather.cacheSize(), 4);
 

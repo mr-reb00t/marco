@@ -1,40 +1,40 @@
 // Server-side strings (weather descriptions, Airbnb titles, wind labels). Default language: en.
-export const LANGS = ['es', 'en', 'pt', 'nl', 'da', 'pl'];
+export const LANGS = ['es', 'en', 'pt', 'nl', 'da', 'pl', 'de'];
 export const lang = (l) => (LANGS.includes(l) ? l : 'en');
 
 // WMO weather interpretation codes (Open-Meteo; 68 and 69 for the other providers' sleet).
 const WMO = {
-  0: ['Despejado', 'Clear sky', 'Céu limpo', 'Onbewolkt', 'Klart vejr', 'Bezchmurnie'],
-  1: ['Mayormente despejado', 'Mainly clear', 'Céu pouco nublado', 'Licht bewolkt', 'Overvejende klart', 'Przeważnie bezchmurnie'],
-  2: ['Parcialmente nublado', 'Partly cloudy', 'Parcialmente nublado', 'Half bewolkt', 'Delvis skyet', 'Częściowe zachmurzenie'],
-  3: ['Nublado', 'Overcast', 'Encoberto', 'Zwaar bewolkt', 'Overskyet', 'Pochmurno'],
-  45: ['Niebla', 'Fog', 'Nevoeiro', 'Mist', 'Tåge', 'Mgła'],
-  48: ['Niebla con escarcha', 'Depositing rime fog', 'Nevoeiro com geada', 'Mist met rijp', 'Rimtåge', 'Mgła osadzająca szadź'],
-  51: ['Llovizna ligera', 'Light drizzle', 'Chuvisco fraco', 'Lichte motregen', 'Let støvregn', 'Lekka mżawka'],
-  53: ['Llovizna', 'Drizzle', 'Chuvisco', 'Motregen', 'Støvregn', 'Mżawka'],
-  55: ['Llovizna intensa', 'Dense drizzle', 'Chuvisco forte', 'Zware motregen', 'Kraftig støvregn', 'Gęsta mżawka'],
-  56: ['Llovizna helada', 'Freezing drizzle', 'Chuvisco gelado', 'Aanvriezende motregen', 'Frysende støvregn', 'Marznąca mżawka'],
-  57: ['Llovizna helada intensa', 'Dense freezing drizzle', 'Chuvisco gelado forte', 'Zware aanvriezende motregen', 'Kraftig frysende støvregn', 'Gęsta marznąca mżawka'],
-  61: ['Lluvia ligera', 'Light rain', 'Chuva fraca', 'Lichte regen', 'Let regn', 'Lekki deszcz'],
-  63: ['Lluvia', 'Rain', 'Chuva', 'Regen', 'Regn', 'Deszcz'],
-  65: ['Lluvia intensa', 'Heavy rain', 'Chuva forte', 'Zware regen', 'Kraftig regn', 'Ulewny deszcz'],
-  66: ['Lluvia helada', 'Freezing rain', 'Chuva gelada', 'IJzel', 'Frysende regn', 'Marznący deszcz'],
-  67: ['Lluvia helada intensa', 'Heavy freezing rain', 'Chuva gelada forte', 'Zware ijzel', 'Kraftig frysende regn', 'Silny marznący deszcz'],
+  0: ['Despejado', 'Clear sky', 'Céu limpo', 'Onbewolkt', 'Klart vejr', 'Bezchmurnie', 'Klar'],
+  1: ['Mayormente despejado', 'Mainly clear', 'Céu pouco nublado', 'Licht bewolkt', 'Overvejende klart', 'Przeważnie bezchmurnie', 'Überwiegend klar'],
+  2: ['Parcialmente nublado', 'Partly cloudy', 'Parcialmente nublado', 'Half bewolkt', 'Delvis skyet', 'Częściowe zachmurzenie', 'Teilweise bewölkt'],
+  3: ['Nublado', 'Overcast', 'Encoberto', 'Zwaar bewolkt', 'Overskyet', 'Pochmurno', 'Bedeckt'],
+  45: ['Niebla', 'Fog', 'Nevoeiro', 'Mist', 'Tåge', 'Mgła', 'Nebel'],
+  48: ['Niebla con escarcha', 'Depositing rime fog', 'Nevoeiro com geada', 'Mist met rijp', 'Rimtåge', 'Mgła osadzająca szadź', 'Nebel mit Reif'],
+  51: ['Llovizna ligera', 'Light drizzle', 'Chuvisco fraco', 'Lichte motregen', 'Let støvregn', 'Lekka mżawka', 'Leichter Nieselregen'],
+  53: ['Llovizna', 'Drizzle', 'Chuvisco', 'Motregen', 'Støvregn', 'Mżawka', 'Nieselregen'],
+  55: ['Llovizna intensa', 'Dense drizzle', 'Chuvisco forte', 'Zware motregen', 'Kraftig støvregn', 'Gęsta mżawka', 'Starker Nieselregen'],
+  56: ['Llovizna helada', 'Freezing drizzle', 'Chuvisco gelado', 'Aanvriezende motregen', 'Frysende støvregn', 'Marznąca mżawka', 'Gefrierender Nieselregen'],
+  57: ['Llovizna helada intensa', 'Dense freezing drizzle', 'Chuvisco gelado forte', 'Zware aanvriezende motregen', 'Kraftig frysende støvregn', 'Gęsta marznąca mżawka', 'Starker gefrierender Nieselregen'],
+  61: ['Lluvia ligera', 'Light rain', 'Chuva fraca', 'Lichte regen', 'Let regn', 'Lekki deszcz', 'Leichter Regen'],
+  63: ['Lluvia', 'Rain', 'Chuva', 'Regen', 'Regn', 'Deszcz', 'Regen'],
+  65: ['Lluvia intensa', 'Heavy rain', 'Chuva forte', 'Zware regen', 'Kraftig regn', 'Ulewny deszcz', 'Starker Regen'],
+  66: ['Lluvia helada', 'Freezing rain', 'Chuva gelada', 'IJzel', 'Frysende regn', 'Marznący deszcz', 'Gefrierender Regen'],
+  67: ['Lluvia helada intensa', 'Heavy freezing rain', 'Chuva gelada forte', 'Zware ijzel', 'Kraftig frysende regn', 'Silny marznący deszcz', 'Starker gefrierender Regen'],
   // 68, 69: rain and snow mixed (WMO 4677); MET Norway and Pirate Weather "sleet"
-  68: ['Aguanieve', 'Sleet', 'Água-neve', 'Natte sneeuw', 'Slud', 'Deszcz ze śniegiem'],
-  69: ['Aguanieve intensa', 'Heavy sleet', 'Água-neve forte', 'Zware natte sneeuw', 'Kraftig slud', 'Silny deszcz ze śniegiem'],
-  71: ['Nevada ligera', 'Light snow', 'Neve fraca', 'Lichte sneeuw', 'Let sne', 'Lekki śnieg'],
-  73: ['Nevada', 'Snow', 'Neve', 'Sneeuw', 'Sne', 'Śnieg'],
-  75: ['Nevada intensa', 'Heavy snow', 'Neve forte', 'Zware sneeuw', 'Kraftig sne', 'Intensywny śnieg'],
-  77: ['Granizo fino', 'Snow grains', 'Grãos de neve', 'Motsneeuw', 'Kornsne', 'Ziarna śniegu'],
-  80: ['Chubascos ligeros', 'Light showers', 'Aguaceiros fracos', 'Lichte buien', 'Lette byger', 'Lekkie przelotne opady'],
-  81: ['Chubascos', 'Showers', 'Aguaceiros', 'Buien', 'Byger', 'Przelotne opady'],
-  82: ['Chubascos fuertes', 'Violent showers', 'Aguaceiros fortes', 'Zware buien', 'Kraftige byger', 'Silne przelotne opady'],
-  85: ['Chubascos de nieve', 'Snow showers', 'Aguaceiros de neve', 'Sneeuwbuien', 'Snebyger', 'Przelotne opady śniegu'],
-  86: ['Chubascos de nieve fuertes', 'Heavy snow showers', 'Aguaceiros de neve fortes', 'Zware sneeuwbuien', 'Kraftige snebyger', 'Silne przelotne opady śniegu'],
-  95: ['Tormenta', 'Thunderstorm', 'Trovoada', 'Onweer', 'Tordenvejr', 'Burza'],
-  96: ['Tormenta con granizo', 'Thunderstorm with hail', 'Trovoada com granizo', 'Onweer met hagel', 'Torden med hagl', 'Burza z gradem'],
-  99: ['Tormenta con granizo fuerte', 'Thunderstorm with heavy hail', 'Trovoada com granizo forte', 'Onweer met zware hagel', 'Torden med kraftigt hagl', 'Burza z silnym gradem'],
+  68: ['Aguanieve', 'Sleet', 'Água-neve', 'Natte sneeuw', 'Slud', 'Deszcz ze śniegiem', 'Schneeregen'],
+  69: ['Aguanieve intensa', 'Heavy sleet', 'Água-neve forte', 'Zware natte sneeuw', 'Kraftig slud', 'Silny deszcz ze śniegiem', 'Starker Schneeregen'],
+  71: ['Nevada ligera', 'Light snow', 'Neve fraca', 'Lichte sneeuw', 'Let sne', 'Lekki śnieg', 'Leichter Schneefall'],
+  73: ['Nevada', 'Snow', 'Neve', 'Sneeuw', 'Sne', 'Śnieg', 'Schneefall'],
+  75: ['Nevada intensa', 'Heavy snow', 'Neve forte', 'Zware sneeuw', 'Kraftig sne', 'Intensywny śnieg', 'Starker Schneefall'],
+  77: ['Granizo fino', 'Snow grains', 'Grãos de neve', 'Motsneeuw', 'Kornsne', 'Ziarna śniegu', 'Schneegriesel'],
+  80: ['Chubascos ligeros', 'Light showers', 'Aguaceiros fracos', 'Lichte buien', 'Lette byger', 'Lekkie przelotne opady', 'Leichte Schauer'],
+  81: ['Chubascos', 'Showers', 'Aguaceiros', 'Buien', 'Byger', 'Przelotne opady', 'Schauer'],
+  82: ['Chubascos fuertes', 'Violent showers', 'Aguaceiros fortes', 'Zware buien', 'Kraftige byger', 'Silne przelotne opady', 'Heftige Schauer'],
+  85: ['Chubascos de nieve', 'Snow showers', 'Aguaceiros de neve', 'Sneeuwbuien', 'Snebyger', 'Przelotne opady śniegu', 'Schneeschauer'],
+  86: ['Chubascos de nieve fuertes', 'Heavy snow showers', 'Aguaceiros de neve fortes', 'Zware sneeuwbuien', 'Kraftige snebyger', 'Silne przelotne opady śniegu', 'Starke Schneeschauer'],
+  95: ['Tormenta', 'Thunderstorm', 'Trovoada', 'Onweer', 'Tordenvejr', 'Burza', 'Gewitter'],
+  96: ['Tormenta con granizo', 'Thunderstorm with hail', 'Trovoada com granizo', 'Onweer met hagel', 'Torden med hagl', 'Burza z gradem', 'Gewitter mit Hagel'],
+  99: ['Tormenta con granizo fuerte', 'Thunderstorm with heavy hail', 'Trovoada com granizo forte', 'Onweer met zware hagel', 'Torden med kraftigt hagl', 'Burza z silnym gradem', 'Gewitter mit starkem Hagel'],
 };
 
 export function wmoDescription(code, l) {
@@ -50,6 +50,7 @@ const DIRS = {
   nl: ['N', 'NO', 'O', 'ZO', 'Z', 'ZW', 'W', 'NW'],
   da: ['N', 'NØ', 'Ø', 'SØ', 'S', 'SV', 'V', 'NV'],
   pl: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'],
+  de: ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'],
 };
 
 export function windDirLabel(deg, l) {
@@ -59,10 +60,10 @@ export function windDirLabel(deg, l) {
 }
 
 const STRINGS = {
-  reservation: { es: 'Reserva', en: 'Reservation', pt: 'Reserva', nl: 'Reservering', da: 'Reservation', pl: 'Rezerwacja' },
-  busy: { es: 'Ocupado', en: 'Busy', pt: 'Ocupado', nl: 'Bezet', da: 'Optaget', pl: 'Zajęte' },
-  blocked: { es: 'No disponible', en: 'Not available', pt: 'Indisponível', nl: 'Niet beschikbaar', da: 'Ikke ledig', pl: 'Niedostępne' },
-  untitled: { es: '(Sin título)', en: '(No title)', pt: '(Sem título)', nl: '(Geen titel)', da: '(Uden titel)', pl: '(Bez tytułu)' },
+  reservation: { es: 'Reserva', en: 'Reservation', pt: 'Reserva', nl: 'Reservering', da: 'Reservation', pl: 'Rezerwacja', de: 'Reservierung' },
+  busy: { es: 'Ocupado', en: 'Busy', pt: 'Ocupado', nl: 'Bezet', da: 'Optaget', pl: 'Zajęte', de: 'Belegt' },
+  blocked: { es: 'No disponible', en: 'Not available', pt: 'Indisponível', nl: 'Niet beschikbaar', da: 'Ikke ledig', pl: 'Niedostępne', de: 'Nicht verfügbar' },
+  untitled: { es: '(Sin título)', en: '(No title)', pt: '(Sem título)', nl: '(Geen titel)', da: '(Uden titel)', pl: '(Bez tytułu)', de: '(Ohne Titel)' },
   // the Spotify callback opened on the server itself in paste mode (routes/spotify.js)
   spotifyPaste: {
     es: 'Copia la dirección de esta página y pégala en la página Spotify del panel de Marco.',
@@ -71,6 +72,7 @@ const STRINGS = {
     nl: 'Kopieer het adres van deze pagina en plak het op de Spotify-pagina van het Marco-beheer.',
     da: 'Kopiér adressen på denne side, og indsæt den på Spotify-siden i Marcos administration.',
     pl: 'Skopiuj adres tej strony i wklej go na stronie Spotify w panelu administracyjnym Marco.',
+    de: 'Kopiere die Adresse dieser Seite und füge sie im Admin-Bereich von Marco auf der Spotify-Seite ein.',
   },
 };
 
@@ -96,20 +98,20 @@ export const requestLang = (req) => {
 // Import-preview summaries (server/core/backupsCore.js). Nouns: [one, many, grammatical gender ('f'|'m')]; Polish:
 // [one, few (2-4, 22-24…), many].
 const NOUNS = {
-  screen: { es: ['pantalla', 'pantallas', 'f'], en: ['screen', 'screens'], pt: ['ecrã', 'ecrãs', 'm'], nl: ['scherm', 'schermen'], da: ['skærm', 'skærme'], pl: ['ekran', 'ekrany', 'ekranów'] },
-  source: { es: ['fuente', 'fuentes', 'f'], en: ['source', 'sources'], pt: ['fonte', 'fontes', 'f'], nl: ['bron', 'bronnen'], da: ['kilde', 'kilder'], pl: ['źródło', 'źródła', 'źródeł'] },
-  feed: { es: ['feed', 'feeds', 'm'], en: ['feed', 'feeds'], pt: ['feed', 'feeds', 'm'], nl: ['feed', 'feeds'], da: ['feed', 'feeds'], pl: ['kanał', 'kanały', 'kanałów'] },
-  item: { es: ['elemento', 'elementos', 'm'], en: ['item', 'items'], pt: ['elemento', 'elementos', 'm'], nl: ['item', 'items'], da: ['element', 'elementer'], pl: ['element', 'elementy', 'elementów'] },
-  iconRule: { es: ['regla de iconos', 'reglas de iconos', 'f'], en: ['icon rule', 'icon rules'], pt: ['regra de ícones', 'regras de ícones', 'f'], nl: ['pictogramregel', 'pictogramregels'], da: ['ikonregel', 'ikonregler'], pl: ['reguła ikon', 'reguły ikon', 'reguł ikon'] },
-  member: { es: ['miembro', 'miembros', 'm'], en: ['member', 'members'], pt: ['membro', 'membros', 'm'], nl: ['gezinslid', 'gezinsleden'], da: ['medlem', 'medlemmer'], pl: ['członek', 'członków', 'członków'] },
-  chore: { es: ['rutina', 'rutinas', 'f'], en: ['routine', 'routines'], pt: ['rotina', 'rotinas', 'f'], nl: ['routine', 'routines'], da: ['rutine', 'rutiner'], pl: ['rutyna', 'rutyny', 'rutyn'] },
-  reward: { es: ['premio', 'premios', 'm'], en: ['reward', 'rewards'], pt: ['prémio', 'prémios', 'm'], nl: ['beloning', 'beloningen'], da: ['belønning', 'belønninger'], pl: ['nagroda', 'nagrody', 'nagród'] },
+  screen: { es: ['pantalla', 'pantallas', 'f'], en: ['screen', 'screens'], pt: ['ecrã', 'ecrãs', 'm'], nl: ['scherm', 'schermen'], da: ['skærm', 'skærme'], pl: ['ekran', 'ekrany', 'ekranów'], de: ['Bildschirm', 'Bildschirme'] },
+  source: { es: ['fuente', 'fuentes', 'f'], en: ['source', 'sources'], pt: ['fonte', 'fontes', 'f'], nl: ['bron', 'bronnen'], da: ['kilde', 'kilder'], pl: ['źródło', 'źródła', 'źródeł'], de: ['Quelle', 'Quellen'] },
+  feed: { es: ['feed', 'feeds', 'm'], en: ['feed', 'feeds'], pt: ['feed', 'feeds', 'm'], nl: ['feed', 'feeds'], da: ['feed', 'feeds'], pl: ['kanał', 'kanały', 'kanałów'], de: ['Feed', 'Feeds'] },
+  item: { es: ['elemento', 'elementos', 'm'], en: ['item', 'items'], pt: ['elemento', 'elementos', 'm'], nl: ['item', 'items'], da: ['element', 'elementer'], pl: ['element', 'elementy', 'elementów'], de: ['Element', 'Elemente'] },
+  iconRule: { es: ['regla de iconos', 'reglas de iconos', 'f'], en: ['icon rule', 'icon rules'], pt: ['regra de ícones', 'regras de ícones', 'f'], nl: ['pictogramregel', 'pictogramregels'], da: ['ikonregel', 'ikonregler'], pl: ['reguła ikon', 'reguły ikon', 'reguł ikon'], de: ['Symbolregel', 'Symbolregeln'] },
+  member: { es: ['miembro', 'miembros', 'm'], en: ['member', 'members'], pt: ['membro', 'membros', 'm'], nl: ['gezinslid', 'gezinsleden'], da: ['medlem', 'medlemmer'], pl: ['członek', 'członków', 'członków'], de: ['Mitglied', 'Mitglieder'] },
+  chore: { es: ['rutina', 'rutinas', 'f'], en: ['routine', 'routines'], pt: ['rotina', 'rotinas', 'f'], nl: ['routine', 'routines'], da: ['rutine', 'rutiner'], pl: ['rutyna', 'rutyny', 'rutyn'], de: ['Routine', 'Routinen'] },
+  reward: { es: ['premio', 'premios', 'm'], en: ['reward', 'rewards'], pt: ['prémio', 'prémios', 'm'], nl: ['beloning', 'beloningen'], da: ['belønning', 'belønninger'], pl: ['nagroda', 'nagrody', 'nagród'], de: ['Belohnung', 'Belohnungen'] },
 };
 const SUMMARY = {
-  modified: { es: 'modificado', en: 'modified', pt: 'modificado', nl: 'gewijzigd', da: 'ændret', pl: 'zmienione' },
-  unchanged: { es: 'sin cambios', en: 'unchanged', pt: 'sem alterações', nl: 'ongewijzigd', da: 'uændret', pl: 'bez zmian' },
-  settingsModified: { es: 'ajustes modificados', en: 'settings modified', pt: 'definições modificadas', nl: 'instellingen gewijzigd', da: 'indstillinger ændret', pl: 'zmienione ustawienia' },
-  familyState: { es: 'también se sustituyen las estrellas y el historial', en: 'stars and history are replaced too', pt: 'as estrelas e o histórico também são substituídos', nl: 'sterren en geschiedenis worden ook vervangen', da: 'stjerner og historik erstattes også', pl: 'gwiazdki i historia też zostaną zastąpione' },
+  modified: { es: 'modificado', en: 'modified', pt: 'modificado', nl: 'gewijzigd', da: 'ændret', pl: 'zmienione', de: 'geändert' },
+  unchanged: { es: 'sin cambios', en: 'unchanged', pt: 'sem alterações', nl: 'ongewijzigd', da: 'uændret', pl: 'bez zmian', de: 'unverändert' },
+  settingsModified: { es: 'ajustes modificados', en: 'settings modified', pt: 'definições modificadas', nl: 'instellingen gewijzigd', da: 'indstillinger ændret', pl: 'zmienione ustawienia', de: 'Einstellungen geändert' },
+  familyState: { es: 'también se sustituyen las estrellas y el historial', en: 'stars and history are replaced too', pt: 'as estrelas e o histórico também são substituídos', nl: 'sterren en geschiedenis worden ook vervangen', da: 'stjerner og historik erstattes også', pl: 'gwiazdki i historia też zostaną zastąpione', de: 'Sterne und Verlauf werden ebenfalls ersetzt' },
 };
 
 let plRules = null;
@@ -129,7 +131,7 @@ export function countNoun(n, noun, l) {
 }
 
 /**
- * "1 modificada" / "2 modified" / "2 modificados" / "2 gewijzigd" / "2 ændret" / "zmienione: 2" (agrees with the noun's
+ * "1 modificada" / "2 modified" / "2 modificados" / "2 gewijzigd" / "2 ændret" / "2 geändert" / "zmienione: 2" (agrees with the noun's
  * gender in es/pt; Polish puts the count after a colon, so the word does not change with it).
  */
 export function countChanged(n, noun, l) {
@@ -138,6 +140,7 @@ export function countChanged(n, noun, l) {
   if (L === 'pl') return `zmienione: ${n}`;
   if (L === 'nl') return `${n} gewijzigd`;
   if (L === 'da') return `${n} ændret`;
+  if (L === 'de') return `${n} geändert`;
   const g = NOUNS[noun][L][2] === 'f' ? 'a' : 'o';
   return `${n} modificad${g}${n === 1 ? '' : 's'}`;
 }

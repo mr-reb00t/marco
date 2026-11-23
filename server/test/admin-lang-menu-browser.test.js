@@ -21,7 +21,7 @@ import { findChrome, launchChrome, startWeb } from './browser.js';
 
 const realFetch = globalThis.fetch;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const NAMES = ['Español', 'English', 'Português', 'Nederlands', 'Dansk', 'Polski'];
+const NAMES = ['Español', 'English', 'Português', 'Nederlands', 'Dansk', 'Polski', 'Deutsch'];
 
 async function until(p, expr, ms = 15000) {
   const end = Date.now() + ms;
@@ -116,7 +116,7 @@ describe('admin language menu in a browser', { skip: !chrome && 'no Chrome' }, (
     }
   });
 
-  test('the sidebar: six languages, the current one checked, the keyboard, and Polski switches the panel', async () => {
+  test('the sidebar: seven languages, the current one checked, the keyboard, and Polski switches the panel', async () => {
     // the wizard's job done by hand: a password, so the panel opens after a login
     const hash = await hashPassword('secret-pass-123');
     store.updateSecrets((s) => { s.passwordHash = hash; s.passwordIsDefault = false; });
@@ -141,7 +141,7 @@ describe('admin language menu in a browser', { skip: !chrome && 'no Chrome' }, (
       await key(p, 'ArrowDown', 'ArrowDown', 40);
       await until(p, `document.activeElement.getAttribute('role') === 'menuitemradio' && document.activeElement.textContent === 'Português'`);
       await key(p, 'End', 'End', 35);
-      await until(p, `document.activeElement.getAttribute('role') === 'menuitemradio' && document.activeElement.textContent === 'Polski'`);
+      await until(p, `document.activeElement.getAttribute('role') === 'menuitemradio' && document.activeElement.textContent === 'Deutsch'`);
       await key(p, 'Escape', 'Escape', 27);
       await until(p, `!document.querySelector('.sidebar [role="menu"]')`);
       await until(p, `document.activeElement === document.querySelector('${btn}')`);
@@ -150,7 +150,7 @@ describe('admin language menu in a browser', { skip: !chrome && 'no Chrome' }, (
       await until(p, `document.activeElement.getAttribute('aria-checked') === 'true'`);
       await p.eval(`document.querySelector('.main-col').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))`);
       await until(p, `!document.querySelector('.sidebar [role="menu"]')`);
-      // open it, six languages by their own names, English checked; pick Polski
+      // open it, seven languages by their own names, English checked; pick Polski
       await p.eval(`document.querySelector('${btn}').click()`);
       await until(p, `document.querySelector('.sidebar [role="menu"]')`);
       const list = await items(p, '.sidebar');

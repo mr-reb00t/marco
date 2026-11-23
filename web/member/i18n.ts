@@ -7,7 +7,7 @@ import { ROWS_ACCESS_ALL } from '../admin/i18n-dict-access';
  */
 // Column of each language in ROWS_ACCESS_ALL. Every language of Lang must have one (tsc says so when a new one is
 // added); shared/i18n.ts is not imported for its LANGS, so the page does not load the screens' dictionary.
-const COLUMN: { [K in Exclude<Lang, 'es'>]: number } & Record<string, number> = { en: 1, pt: 2, nl: 3, da: 4, pl: 5 };
+const COLUMN: { [K in Exclude<Lang, 'es'>]: number } & Record<string, number> = { en: 1, pt: 2, nl: 3, da: 4, pl: 5, de: 6 };
 const LANGS = ['es', ...Object.keys(COLUMN)] as Lang[];
 const DICTS: Partial<Record<Lang, Record<string, string>>> = {};
 for (const l of LANGS) {
@@ -69,5 +69,5 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   return s;
 }
 
-const LOCALE: Record<string, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT', nl: 'nl-NL', da: 'da-DK', pl: 'pl-PL' };
+const LOCALE: Record<string, string> = { es: 'es-ES', en: 'en-GB', pt: 'pt-PT', nl: 'nl-NL', da: 'da-DK', pl: 'pl-PL', de: 'de-DE' };
 export const locale = () => LOCALE[current] ?? 'en-GB';

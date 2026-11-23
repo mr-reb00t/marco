@@ -8,7 +8,7 @@ import type {
 } from '../shared/types';
 import { DEFAULT_ICON_RULES, resolveEventStyle } from '../shared/emoji';
 import { addDays, dateKeyInTz, keyToUTC, normLang, pad2, startOfWeek, zonedParts } from '../shared/i18n';
-import { DEMO_FAMILY_EN, DEMO_MORE, DEMO_NEWS } from './mock-text';
+import { DEMO_DE, DEMO_DE_HOLIDAYS, DEMO_DE_NAMES, DEMO_FAMILY_EN, DEMO_MORE, DEMO_NEWS } from './mock-text';
 import { DEFAULT_CONFIG, deepMerge } from './defaults';
 import { now } from './time';
 import { DEMO_WIDGET, mockCanvas } from './mockCanvas';
@@ -26,12 +26,14 @@ const TZ = (() => {
   }
 })();
 
-// Demo text follows ?lang=en|es|pt|nl|da|pl (English by default).
+// Demo text follows ?lang=en|es|pt|nl|da|pl|de (English by default).
 const DEMO_LANG = normLang(new URLSearchParams(location.search).get('lang'));
 /** A showcase screen in English (&shot=show.* or the showcase carousel, web/display/showcase/): the family demo in English too. */
 const SHOW_EN = DEMO_LANG === 'en' && SHOW_ACTIVE;
 /** Column of DEMO_MORE for Dutch, Danish and Polish, else null. */
 const MORE_COL: 0 | 1 | 2 | null = DEMO_LANG === 'nl' ? 0 : DEMO_LANG === 'da' ? 1 : DEMO_LANG === 'pl' ? 2 : null;
+/** German demo (mock-text.ts DEMO_DE): a family in Hamburg, with German first names and German holidays. */
+const IS_DE = DEMO_LANG === 'de';
 /** ?empty=1: no events, no countdowns, no to-dos (empty states). */
 const EMPTY = new URLSearchParams(location.search).get('empty') === '1';
 /** ?sparse=1: a quiet calendar, a few events and most of them weeks away (to see how far the agenda looks ahead). */
@@ -43,12 +45,14 @@ const BUSY_MONTH = BUSY_Q === '2';
 const BUSY = BUSY_Q === '1' || BUSY_MONTH;
 /** ?private=1: privacy mode on (what the server sends then: "Busy" blocks, holidays and birthdays as they are). */
 const PRIVATE = new URLSearchParams(location.search).get('private') === '1';
-/** Pick the demo string for the current language: L('English', 'Español', 'Português'); Dutch and Danish come from
- * mock-text.ts, keyed by the English. */
+/** Pick the demo string for the current language: L('English', 'Español', 'Português'); Dutch, Danish, Polish and
+ * German come from mock-text.ts, keyed by the English. */
 const L = (en: string, es: string, pt: string) =>
-  DEMO_LANG === 'es' ? es : DEMO_LANG === 'pt' ? pt : MORE_COL !== null ? DEMO_MORE[en]?.[MORE_COL] ?? en : en;
-/** The family demo is written in Spanish (every language but Dutch and Danish shows it as is). */
-const F = (es: string) => (MORE_COL !== null ? DEMO_MORE[es]?.[MORE_COL] ?? es : SHOW_EN ? DEMO_FAMILY_EN[es] ?? es : es);
+  DEMO_LANG === 'es' ? es : DEMO_LANG === 'pt' ? pt : MORE_COL !== null ? DEMO_MORE[en]?.[MORE_COL] ?? en : IS_DE ? DEMO_DE[en] ?? en : en;
+/** The family demo is written in Spanish (every language but Dutch, Danish, Polish and German shows it as is). */
+const F = (es: string) => (MORE_COL !== null ? DEMO_MORE[es]?.[MORE_COL] ?? es : IS_DE ? DEMO_DE[es] ?? es : SHOW_EN ? DEMO_FAMILY_EN[es] ?? es : es);
+/** A demo first name: German ones in the German demo, the Spanish ones everywhere else. */
+const N = (name: string) => (IS_DE ? DEMO_DE_NAMES[name] ?? name : name);
 
 export const MOCK_SOURCES: PublicCalendarSource[] = [
   { id: 'c_fam', name: L('Family', 'Familia', 'Família'), color: '#4c8dff', emoji: '', kind: 'generic' },
@@ -286,9 +290,9 @@ export function mockConfig(show?: string): DisplayConfig {
 // gives the parents routines too (the compact two-row Rutinas layout).
 // ---------------------------------------------------------------------------------------------
 const MOCK_MEMBERS: [string, string, string, string, boolean, number, string | null][] = [
-  ['m_lucia', 'Lucía', '🦊', '#ff8fab', true, 12, 'c_kids'],
-  ['m_mateo', 'Mateo', '🐻', '#7cc6fe', true, 8, null],
-  ['m_sofia', 'Sofía', '🐼', '#9be3a0', true, 5, null],
+  ['m_lucia', N('Lucía'), '🦊', '#ff8fab', true, 12, 'c_kids'],
+  ['m_mateo', N('Mateo'), '🐻', '#7cc6fe', true, 8, null],
+  ['m_sofia', N('Sofía'), '🐼', '#9be3a0', true, 5, null],
   ['m_mama', 'Mamá', '🌷', '#c3a6ff', false, 0, 'c_work'],
   ['m_papa', 'Papá', '☕', '#ffc46b', false, 0, null],
   ['m_abuela', 'Abuela Carmen', '🌻', '#7fe0d6', false, 0, null],
@@ -558,14 +562,17 @@ export function mockEvents(now = new Date()): EventsResponse {
     ['04-25', 'Freedom Day', 'Día de la Libertad', 'Dia da Liberdade'],
     ['06-10', 'Portugal Day', 'Día de Portugal', 'Dia de Portugal'], ['08-15', 'Assumption Day', 'Asunción', 'Assunção de Nossa Senhora'],
   ];
-  for (const y of [year, year + 1]) for (const [md, en, es, pt] of hol) out.push(ev('c_hol', L(en, es, pt), `${y}-${md}`));
+  for (const y of [year, year + 1]) {
+    if (IS_DE) for (const [md, name] of DEMO_DE_HOLIDAYS) out.push(ev('c_hol', name, `${y}-${md}`));
+    else for (const [md, en, es, pt] of hol) out.push(ev('c_hol', L(en, es, pt), `${y}-${md}`));
+  }
 
   // Birthdays (age shown as "🎂 Grandma Isabel (72)")
-  out.push(ev('c_bday', 'Elena', T, { age: 39 }));
+  out.push(ev('c_bday', N('Elena'), T, { age: 39 }));
   out.push(ev('c_bday', L('Grandpa Luis', 'Abuelo Luis', 'Avô Luis'), D(9), { age: 81 }));
-  out.push(ev('c_bday', 'Mateo', D(16), { age: 7 }));
+  out.push(ev('c_bday', N('Mateo'), D(16), { age: 7 }));
   out.push(ev('c_bday', L('Grandma Isabel', 'Abuela Isabel', 'Avó Isabel'), D(25), { age: 72 }));
-  out.push(ev('c_bday', 'Lucía', D(33), { age: 10 }));
+  out.push(ev('c_bday', N('Lucía'), D(33), { age: 10 }));
 
   // Vacation-rental stays (all-day, end = checkout date). Guests as icons: 🧑🏻 adults, 🧒🏻 children, 👶🏻 babies, 🐶 pets.
   out.push(ev('c_rent', 'Sophie Martin · 🧑🏻🧑🏻', D(-3), { endKey: D(1) }));
@@ -813,7 +820,7 @@ export function mockNews(): NewsResponse {
     ['La fiesta de la vendimia cierra con 200.000 visitantes', 'Música, gastronomía y vino llenaron las calles del centro histórico durante cinco días.'],
     ['La biblioteca municipal abre también los domingos', 'El nuevo horario incluye talleres gratuitos para niños y un club de lectura en inglés.'],
     ['Previsión: llega la primera lluvia del otoño', 'Se esperan chubascos a partir del sábado, con un descenso notable de las temperaturas.'],
-  ] : MORE_COL !== null ? DEMO_NEWS[DEMO_LANG as 'nl' | 'da' | 'pl'].map(([a, b]) => [a, b]) : DEMO_LANG === 'pt' ? [
+  ] : MORE_COL !== null || IS_DE ? DEMO_NEWS[DEMO_LANG as 'nl' | 'da' | 'pl' | 'de'].map(([a, b]) => [a, b]) : DEMO_LANG === 'pt' ? [
     ['Cidade alarga a rede de metro com quatro novas estações', 'As obras da linha circular avançam e os novos troços devem abrir no próximo ano.'],
     ['Golfinhos voltam a ser avistados no estuário', 'Os biólogos registam mais avistamentos este outono e os passeios de barco celebram uma temporada recorde.'],
     ['Renováveis batem recorde na produção de eletricidade', 'Em setembro, mais de 80 % da eletricidade consumida veio de fontes eólica, solar e hídrica.'],
@@ -901,7 +908,7 @@ export function mockCountdowns(now = new Date()): CountdownsResponse {
   const year = +T.slice(0, 4);
   const xmas = `${year}-12-25` >= T ? `${year}-12-25` : `${year + 1}-12-25`;
   const items: CountdownItem[] = [
-    { id: 'k_today', title: 'Elena', emoji: '🎂', color: '#f15bb5', date: T, days: 0, origin: 'birthday', age: 39 },
+    { id: 'k_today', title: N('Elena'), emoji: '🎂', color: '#f15bb5', date: T, days: 0, origin: 'birthday', age: 39 },
     { id: 'k_trip', title: L('Trip to Madeira', 'Viaje a Madeira', 'Viagem à Madeira'), emoji: '✈️', color: '#4c8dff', date: addDays(T, 12), days: 12, origin: 'manual' },
     { id: 'k_luis', title: L('Grandpa Luis', 'Abuelo Luis', 'Avô Luis'), emoji: '🎂', color: '#f15bb5', date: addDays(T, 9), days: 9, origin: 'birthday', age: 81 },
     { id: 'k_party', title: L('Halloween party', 'Fiesta de Halloween', 'Festa de Halloween'), emoji: '🎃', color: '#ff9f1c', date: addDays(T, 1), days: 1, origin: 'event' },

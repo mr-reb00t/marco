@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.46.0] - 2026-11-23
+
+### Added
+- German: every admin and family page text, the screen's words, dates and numbers, weather descriptions, private mode
+  titles, backup summaries, the pairing and welcome screens, the setup wizard and the demo (`npm run demo -- --lang de`).
+  Long dates read "Montag, 12. Oktober". The translation is ours: reviews and corrections from native speakers are
+  very welcome (see *Adding a language* in CONTRIBUTING.md).
+- Icon rules and the emoji search: German keywords. Existing installs get them once on the next start; rules you
+  changed keep your emoji and your own keywords, and nothing is removed. Searches treat "ß" and "ss" alike.
+- Holidays: German names for the holidays of the German Google feed, and vacation rental and birthday titles in German
+  are recognised.
+
 ## [0.45.2] - 2026-11-22
 
 ### Changed

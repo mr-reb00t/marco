@@ -5,7 +5,7 @@
 //
 //   npm run demo                       # admin: http://localhost:3000/admin/ (password: demo-calendar); the display links are printed
 //   npm run demo -- --port 3080        # another port
-//   npm run demo -- --lang es          # Spanish (also: pt, nl, da, pl)
+//   npm run demo -- --lang es          # Spanish (also: pt, nl, da, pl, de)
 //   npm run demo -- --no-photos        # skip downloading sample photos from picsum.photos
 //   npm run demo -- --data ./demo-data --keep   # keep the generated data directory afterwards
 //
@@ -35,68 +35,68 @@ if (flag('help') || flag('h')) {
 }
 
 const PORT = Number(opt('port', process.env.PORT || 3000));
-const LANG = ['es', 'pt', 'nl', 'da', 'pl'].includes(opt('lang', 'en')) ? opt('lang', 'en') : 'en';
+const LANG = ['es', 'pt', 'nl', 'da', 'pl', 'de'].includes(opt('lang', 'en')) ? opt('lang', 'en') : 'en';
 const PASSWORD = 'demo-calendar';
 const keep = flag('keep');
 const dataDir = path.resolve(opt('data', fs.mkdtempSync(path.join(os.tmpdir(), 'marco-demo-'))));
-// Dutch, Danish and Polish demo text, keyed by the English string: [nl, da, pl].
-const NL_DA_PL = {
-  'Swimming lesson – Lucía': ['Zwemles – Lucía', 'Svømning – Lucía', 'Basen – Lucía'],
-  'Municipal pool': ['Gemeentelijk zwembad', 'Svømmehallen', 'Basen miejski'],
-  'Football practice – Mateo': ['Voetbaltraining – Mateo', 'Fodboldtræning – Mateo', 'Trening piłki nożnej – Mateo'],
-  'School trip to the science museum': ['Schoolreisje naar het wetenschapsmuseum', 'Skoleudflugt til videnskabsmuseet', 'Wycieczka szkolna do muzeum nauki'],
-  'School play': ['Schoolvoorstelling', 'Skolekomedie', 'Przedstawienie szkolne'],
-  'Miss Nora’s Birthday': ['Verjaardag van juf Nora', 'Lærer Noras fødselsdag', 'Urodziny pani Nory'],
-  'Beach house': ['Strandhuis', 'Sommerhuset', 'Domek nad morzem'],
-  'School & activities': ['School en activiteiten', 'Skole og aktiviteter', 'Szkoła i zajęcia'],
-  'Public holidays': ['Feestdagen', 'Helligdage', 'Święta'],
-  'Family': ['Gezin', 'Familie', 'Rodzina'],
-  'Birthdays': ['Verjaardagen', 'Fødselsdage', 'Urodziny'],
-  'Weekly meeting': ['Weekoverleg', 'Ugemøde', 'Cotygodniowe spotkanie'],
-  'Padel with Rui': ['Padel met Rui', 'Padel med Rui', 'Padel z Ruim'],
-  'Farmers market': ['Weekmarkt', 'Torvedag', 'Targ'],
-  'Pay the rent': ['Huur betalen', 'Betal husleje', 'Zapłacić czynsz'],
-  'Dentist – Lucía': ['Tandarts – Lucía', 'Tandlæge – Lucía', 'Dentysta – Lucía'],
-  'Smile Clinic': ['Tandartspraktijk De Glimlach', 'Smilets Tandklinik', 'Gabinet Uśmiech'],
-  'Dinner with Ana & Pedro': ['Uit eten met Ana en Pedro', 'Middag med Ana og Pedro', 'Kolacja z Aną i Pedrem'],
-  'Seaside restaurant': ['Restaurant aan de haven', 'Restauranten ved havnen', 'Restauracja nad morzem'],
-  'Vet – Luna': ['Dierenarts – Luna', 'Dyrlæge – Luna', 'Weterynarz – Luna'],
-  'Car service': ['Auto naar de garage', 'Bilen til service', 'Przegląd samochodu'],
-  'Cinema night': ['Bioscoopavond', 'Biografaften', 'Wieczór w kinie'],
-  'Flight to Madeira': ['Vlucht naar Madeira', 'Fly til Madeira', 'Lot na Maderę'],
-  'Vacation in the Algarve': ['Vakantie in de Algarve', 'Ferie i Algarve', 'Wakacje w Algarve'],
-  "Inês & Duarte's wedding": ['Bruiloft van Inês en Duarte', 'Inês og Duartes bryllup', 'Ślub Inês i Duarte'],
-  'Pediatrician – Mateo': ['Kinderarts – Mateo', 'Børnelæge – Mateo', 'Pediatra – Mateo'],
-  'Grandpa Luis': ['Opa Luis', 'Morfar Luis', 'Dziadek Luis'],
-  'Grandma Isabel': ['Oma Isabel', 'Mormor Isabel', 'Babcia Isabel'],
-  'Aunt Rosa': ['Tante Rosa', 'Moster Rosa', 'Ciocia Rosa'],
+// Dutch, Danish, Polish and German demo text, keyed by the English string: [nl, da, pl, de].
+const NL_DA_PL_DE = {
+  'Swimming lesson – Lucía': ['Zwemles – Lucía', 'Svømning – Lucía', 'Basen – Lucía', 'Schwimmkurs – Lucía'],
+  'Municipal pool': ['Gemeentelijk zwembad', 'Svømmehallen', 'Basen miejski', 'Hallenbad'],
+  'Football practice – Mateo': ['Voetbaltraining – Mateo', 'Fodboldtræning – Mateo', 'Trening piłki nożnej – Mateo', 'Fußballtraining – Mateo'],
+  'School trip to the science museum': ['Schoolreisje naar het wetenschapsmuseum', 'Skoleudflugt til videnskabsmuseet', 'Wycieczka szkolna do muzeum nauki', 'Schulausflug ins Wissenschaftsmuseum'],
+  'School play': ['Schoolvoorstelling', 'Skolekomedie', 'Przedstawienie szkolne', 'Schultheater'],
+  'Miss Nora’s Birthday': ['Verjaardag van juf Nora', 'Lærer Noras fødselsdag', 'Urodziny pani Nory', 'Geburtstag von Frau Nora'],
+  'Beach house': ['Strandhuis', 'Sommerhuset', 'Domek nad morzem', 'Strandhaus'],
+  'School & activities': ['School en activiteiten', 'Skole og aktiviteter', 'Szkoła i zajęcia', 'Schule & Aktivitäten'],
+  'Public holidays': ['Feestdagen', 'Helligdage', 'Święta', 'Feiertage'],
+  'Family': ['Gezin', 'Familie', 'Rodzina', 'Familie'],
+  'Birthdays': ['Verjaardagen', 'Fødselsdage', 'Urodziny', 'Geburtstage'],
+  'Weekly meeting': ['Weekoverleg', 'Ugemøde', 'Cotygodniowe spotkanie', 'Wochenbesprechung'],
+  'Padel with Rui': ['Padel met Rui', 'Padel med Rui', 'Padel z Ruim', 'Padel mit Rui'],
+  'Farmers market': ['Weekmarkt', 'Torvedag', 'Targ', 'Wochenmarkt'],
+  'Pay the rent': ['Huur betalen', 'Betal husleje', 'Zapłacić czynsz', 'Miete zahlen'],
+  'Dentist – Lucía': ['Tandarts – Lucía', 'Tandlæge – Lucía', 'Dentysta – Lucía', 'Zahnarzt – Lucía'],
+  'Smile Clinic': ['Tandartspraktijk De Glimlach', 'Smilets Tandklinik', 'Gabinet Uśmiech', 'Zahnarztpraxis Lächeln'],
+  'Dinner with Ana & Pedro': ['Uit eten met Ana en Pedro', 'Middag med Ana og Pedro', 'Kolacja z Aną i Pedrem', 'Abendessen mit Ana & Pedro'],
+  'Seaside restaurant': ['Restaurant aan de haven', 'Restauranten ved havnen', 'Restauracja nad morzem', 'Restaurant am Hafen'],
+  'Vet – Luna': ['Dierenarts – Luna', 'Dyrlæge – Luna', 'Weterynarz – Luna', 'Tierarzt – Luna'],
+  'Car service': ['Auto naar de garage', 'Bilen til service', 'Przegląd samochodu', 'Auto zur Inspektion'],
+  'Cinema night': ['Bioscoopavond', 'Biografaften', 'Wieczór w kinie', 'Kinoabend'],
+  'Flight to Madeira': ['Vlucht naar Madeira', 'Fly til Madeira', 'Lot na Maderę', 'Flug nach Madeira'],
+  'Vacation in the Algarve': ['Vakantie in de Algarve', 'Ferie i Algarve', 'Wakacje w Algarve', 'Urlaub an der Algarve'],
+  "Inês & Duarte's wedding": ['Bruiloft van Inês en Duarte', 'Inês og Duartes bryllup', 'Ślub Inês i Duarte', 'Hochzeit von Inês und Duarte'],
+  'Pediatrician – Mateo': ['Kinderarts – Mateo', 'Børnelæge – Mateo', 'Pediatra – Mateo', 'Kinderarzt – Mateo'],
+  'Grandpa Luis': ['Opa Luis', 'Morfar Luis', 'Dziadek Luis', 'Opa Luis'],
+  'Grandma Isabel': ['Oma Isabel', 'Mormor Isabel', 'Babcia Isabel', 'Oma Isabel'],
+  'Aunt Rosa': ['Tante Rosa', 'Moster Rosa', 'Ciocia Rosa', 'Tante Rosa'],
   // the server's own "Not available" title (server/core/lib/i18n.js), so the filter still hides the blocked dates
-  'Not available': ['Niet beschikbaar', 'Ikke ledig', 'Niedostępne'],
-  'Blocked dates': ['Geblokkeerde data', 'Blokerede datoer', 'Zablokowane terminy'],
-  'Football practice': ['Voetbaltraining', 'Fodboldtræning', 'Trening piłki nożnej'],
-  'Football': ['Voetbal', 'Fodbold', 'Piłka nożna'],
-  'Shorter titles': ['Kortere titels', 'Kortere titler', 'Krótsze tytuły'],
-  'Swimming': ['Zwemles', 'Svømning', 'Basen'],
-  'Christmas': ['Kerst', 'Jul', 'Boże Narodzenie'],
-  'Halloween party': ['Halloweenfeest', 'Halloweenfest', 'Impreza halloweenowa'],
-  'Take out the bins': ['Vuilnis buitenzetten', 'Skrald ud', 'Wynieść śmieci'],
-  'Recycling & organic': ['Plastic en gft', 'Genbrug og madaffald', 'Plastik i bio'],
-  'School run!': ['Naar school!', 'Afsted i skole!', 'Do szkoły!'],
-  'Backpacks, snacks, water bottles': ['Schooltassen, tussendoortjes, drinkflessen', 'Skoletasker, madpakker, vandflasker', 'Plecaki, przekąski, bidony'],
-  'Buy batteries for the remote': ['Batterijen kopen voor de afstandsbediening', 'Køb batterier til fjernbetjeningen', 'Kupić baterie do pilota'],
-  'Call the plumber': ['Loodgieter bellen', 'Ring til blikkenslageren', 'Zadzwonić do hydraulika'],
-  'Living room': ['Woonkamer', 'Stue', 'Salon'],
-  'Kitchen': ['Keuken', 'Køkken', 'Kuchnia'],
-  'Hall tablet': ['Tablet in de hal', 'Tablet i entréen', 'Tablet w przedpokoju'],
-  'The washing machine is done': ['De wasmachine is klaar', 'Vaskemaskinen er færdig', 'Pralka skończyła'],
-  'Time to hang the laundry': ['De was kan opgehangen worden', 'Tøjet kan hænges op', 'Czas rozwiesić pranie'],
-  'A parcel has arrived': ['Er is een pakketje bezorgd', 'Der er kommet en pakke', 'Przyszła paczka'],
-  "It's in the mailbox": ['Het ligt in de brievenbus', 'Den ligger i postkassen', 'Jest w skrzynce'],
-  'Dinner is ready!': ['Het eten is klaar!', 'Maden er klar!', 'Obiad gotowy!'],
+  'Not available': ['Niet beschikbaar', 'Ikke ledig', 'Niedostępne', 'Nicht verfügbar'],
+  'Blocked dates': ['Geblokkeerde data', 'Blokerede datoer', 'Zablokowane terminy', 'Gesperrte Tage'],
+  'Football practice': ['Voetbaltraining', 'Fodboldtræning', 'Trening piłki nożnej', 'Fußballtraining'],
+  'Football': ['Voetbal', 'Fodbold', 'Piłka nożna', 'Fußball'],
+  'Shorter titles': ['Kortere titels', 'Kortere titler', 'Krótsze tytuły', 'Kürzere Titel'],
+  'Swimming': ['Zwemles', 'Svømning', 'Basen', 'Schwimmen'],
+  'Christmas': ['Kerst', 'Jul', 'Boże Narodzenie', 'Weihnachten'],
+  'Halloween party': ['Halloweenfeest', 'Halloweenfest', 'Impreza halloweenowa', 'Halloweenparty'],
+  'Take out the bins': ['Vuilnis buitenzetten', 'Skrald ud', 'Wynieść śmieci', 'Müll rausbringen'],
+  'Recycling & organic': ['Plastic en gft', 'Genbrug og madaffald', 'Plastik i bio', 'Gelber Sack & Bio'],
+  'School run!': ['Naar school!', 'Afsted i skole!', 'Do szkoły!', 'Ab zur Schule!'],
+  'Backpacks, snacks, water bottles': ['Schooltassen, tussendoortjes, drinkflessen', 'Skoletasker, madpakker, vandflasker', 'Plecaki, przekąski, bidony', 'Schulranzen, Pausenbrot, Trinkflaschen'],
+  'Buy batteries for the remote': ['Batterijen kopen voor de afstandsbediening', 'Køb batterier til fjernbetjeningen', 'Kupić baterie do pilota', 'Batterien für die Fernbedienung kaufen'],
+  'Call the plumber': ['Loodgieter bellen', 'Ring til blikkenslageren', 'Zadzwonić do hydraulika', 'Klempner anrufen'],
+  'Living room': ['Woonkamer', 'Stue', 'Salon', 'Wohnzimmer'],
+  'Kitchen': ['Keuken', 'Køkken', 'Kuchnia', 'Küche'],
+  'Hall tablet': ['Tablet in de hal', 'Tablet i entréen', 'Tablet w przedpokoju', 'Tablet im Flur'],
+  'The washing machine is done': ['De wasmachine is klaar', 'Vaskemaskinen er færdig', 'Pralka skończyła', 'Die Waschmaschine ist fertig'],
+  'Time to hang the laundry': ['De was kan opgehangen worden', 'Tøjet kan hænges op', 'Czas rozwiesić pranie', 'Wäsche aufhängen'],
+  'A parcel has arrived': ['Er is een pakketje bezorgd', 'Der er kommet en pakke', 'Przyszła paczka', 'Ein Paket ist da'],
+  "It's in the mailbox": ['Het ligt in de brievenbus', 'Den ligger i postkassen', 'Jest w skrzynce', 'Es liegt im Briefkasten'],
+  'Dinner is ready!': ['Het eten is klaar!', 'Maden er klar!', 'Obiad gotowy!', 'Essen ist fertig!'],
 };
-const MORE_COL = { nl: 0, da: 1, pl: 2 }[LANG];
+const MORE_COL = { nl: 0, da: 1, pl: 2, de: 3 }[LANG];
 const L = (en, es, pt = en) =>
-  LANG === 'es' ? es : LANG === 'pt' ? pt : MORE_COL !== undefined ? NL_DA_PL[en]?.[MORE_COL] ?? en : en;
+  LANG === 'es' ? es : LANG === 'pt' ? pt : MORE_COL !== undefined ? NL_DA_PL_DE[en]?.[MORE_COL] ?? en : en;
 
 // ------------------------------------------------------------------ dates
 const TZ = 'Europe/Lisbon';

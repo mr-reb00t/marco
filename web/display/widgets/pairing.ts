@@ -114,6 +114,23 @@ const TEXT: Record<Lang, Record<string, string>> = {
     scan: 'Zeskanuj telefonem, na którym używasz panelu',
     kiosk: 'Kiosk Raspberry Pi? Zapomina parowanie przy restarcie: zamiast tego wpisz prywatny link ekranu w KIOSK_URL (~/.config/marco/kiosk.env).',
   },
+  de: {
+    pairTitle: 'Bildschirm koppeln',
+    pairLead: 'Dieser Bildschirm ist privat. Kopple ihn auf deinem Handy oder Computer mit deinem Marco:',
+    invalidTitle: 'Dieser Link ist nicht mehr gültig',
+    invalidLead: 'Der private Link wurde ersetzt oder das Gerät entfernt. Öffne den Admin-Bereich für den neuen Link oder kopple diesen Bildschirm erneut:',
+    s1: 'Öffne den Admin-Bereich → Verbundene Bildschirme → Bildschirm koppeln',
+    s1At: 'Öffne {where} → Verbundene Bildschirme → Bildschirm koppeln',
+    s2: 'Gib diesen Code ein oder scanne den QR-Code',
+    s3: 'Dieser Bildschirm startet von selbst',
+    expires: 'Neuer Code in {t}',
+    renewing: 'Neuer Code wird geholt…',
+    busy: 'Zu viele Kopplungsanfragen. Neuer Versuch in einer Minute…',
+    offline: 'Server nicht erreichbar. Neuer Versuch…',
+    paired: 'Gekoppelt! Wird gestartet…',
+    scan: 'Scanne mit dem Handy, auf dem du den Admin-Bereich nutzt',
+    kiosk: 'Raspberry-Pi-Kiosk? Er vergisst die Kopplung beim Neustart: trag stattdessen den privaten Link des Bildschirms in KIOSK_URL (~/.config/marco/kiosk.env) ein.',
+  },
 };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);

@@ -91,11 +91,12 @@ export const HA_ENTITY_RE = /^[a-z_]{1,64}\.[a-z0-9_]{1,200}$/;
 export const VALUE_KEY_RE = /^(?!(?:__proto__|constructor|prototype)$)[a-z0-9_.-]{1,40}$/;
 
 /**
- * Words that say "this opens a door or a lock" in the six admin languages (whole words for the short Dutch and Danish
- * ones, so "Sports" or "Report" do not match; "outdoor" and "clock" do not count either). "portao" too: Home
- * Assistant makes entity ids without accents, so a "Portão" becomes switch.portao (and a Polish "Garaż" garaz).
+ * Words that say "this opens a door or a lock" in the seven admin languages (whole words for the short Dutch, Danish
+ * and German ones, so "Sports", "Report", "Temperatur" or "Motor" do not match; "outdoor" and "clock" do not count
+ * either, nor "geschlossen"). "portao" too: Home Assistant makes entity ids without accents, so a "Portão" becomes
+ * switch.portao (a Polish "Garaż" garaz, a German "Haustür" haustur).
  */
-const DOORLIKE_RE = /(?<!out)door|(?<![bc])lock|gate|garage|alarm|puerta|cerradura|port[oó]n|garaje|alarma|port[ãa]o|fechadura|deur|poort|dør|lås|drzwi|zam(?:ek|k[auie])|(?<![a-z])bram[aeyię]|gara[żz]|furtk|szlaban|(?<![a-z])(?:slot|port)(?![a-z])/i;
+const DOORLIKE_RE = /(?<!out)door|(?<![bc])lock|gate|garage|alarm|puerta|cerradura|port[oó]n|garaje|alarma|port[ãa]o|fechadura|deur|poort|dør|lås|drzwi|zam(?:ek|k[auie])|(?<![a-z])bram[aeyię]|gara[żz]|furtk|szlaban|(?<![a-z])(?:slot|port)(?![a-z])|tür(?!k)|tuer(?!k)|(?<![a-z])(?:haus|keller|terrassen|balkon|garten|hof|eingangs|wohnungs)?tur(?![a-z])|(?<![a-z])(?:hof|garten|einfahrts)?tor(?![a-z])|(?<!ge)schlo(?:ss|ß)|riegel/i;
 const DOORLIKE_DC = ['door', 'garage', 'gate', 'lock', 'opening', 'window'];
 
 /**

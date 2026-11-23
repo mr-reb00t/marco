@@ -483,10 +483,10 @@ test('the phone page, the display overlay and the texts are wired up', async () 
   assert.match(read('server/pollHub.js'), /POLL_EVENTS = Object\.freeze\(\[[^\]]*'access-code'/);
   assert.match(read('web/index.html'), /<div id="access-code"/);
   const i18n = read('web/shared/i18n.ts');
-  for (const k of ['accessCodeFor', 'accessCodeHint', 'accessCodeHintNoUrl', 'accessCodeScan']) assert.equal(i18n.split(`  ${k}: '`).length - 1, 6, `${k} in 6 languages`);
+  for (const k of ['accessCodeFor', 'accessCodeHint', 'accessCodeHintNoUrl', 'accessCodeScan']) assert.equal(i18n.split(`  ${k}: '`).length - 1, 7, `${k} in 7 languages`);
 });
 
-test('the phone page needs only its own table: every text it shows has all six languages', async (t) => {
+test('the phone page needs only its own table: every text it shows has all seven languages', async (t) => {
   let mod;
   try {
     mod = await import('../../web/admin/i18n-dict-access.ts');
@@ -496,7 +496,7 @@ test('the phone page needs only its own table: every text it shows has all six l
   const rows = new Map(mod.ROWS_ACCESS_ALL.map((r) => [r[0], r]));
   const holes = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(',');
   for (const r of mod.ROWS_ACCESS_ALL) {
-    assert.equal(r.length, 6);
+    assert.equal(r.length, 7);
     for (const v of r) assert.ok(v && !/\u2014/.test(v), `${r[0]}: no empty value, no em dash`);
     for (const v of r.slice(1)) assert.equal(holes(v), holes(r[0]), `placeholders of ${r[0]}`);
   }

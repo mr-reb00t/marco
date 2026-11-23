@@ -37,6 +37,9 @@ test('Filtros preview: a recognised birthday, a rename rule, capitals; the origi
   i18n.setLang('da');
   assert.equal(titleNote(ev(), rules).lead, 'Fødselsdag genkendt');
   assert.equal(i18n.t('título original'), 'oprindelig titel');
+  i18n.setLang('de');
+  assert.equal(titleNote(ev(), rules).lead, 'Geburtstag erkannt');
+  assert.equal(i18n.t('título original'), 'Originaltitel');
   i18n.setLang('nl');
   assert.equal(titleNote(ev({ titleWhy: 'rule', applied: [{ ruleId: 'f_a', action: 'rename' }] }), rules).lead, 'Hernoemd door regel #1');
   i18n.setLang('pt');

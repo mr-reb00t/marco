@@ -1,5 +1,5 @@
-// Dutch (nl), Danish (da) and Polish (pl): every text the admin, the family page, the display and the server can show
-// has a value in each, with the same {placeholders} as the source, and a missing key falls back to English. Polish also
+// Dutch (nl), Danish (da), Polish (pl) and German (de): every text the admin, the family page, the display and the
+// server can show has a value in each, with the same {placeholders} as the source, and a missing key falls back to English. Polish also
 // has a "few" form for counts like 2-4. The web modules load through Node's TypeScript type stripping (skipped before
 // Node 22.18).
 import { test } from 'node:test';
@@ -36,10 +36,11 @@ const family = await load('../../web/admin/i18n-dict-family.ts');
 const nlMod = await load('../../web/admin/i18n-dict-nl.ts');
 const daMod = await load('../../web/admin/i18n-dict-da.ts');
 const plMod = await load('../../web/admin/i18n-dict-pl.ts');
+const deMod = await load('../../web/admin/i18n-dict-de.ts');
 const shared = await load('../../web/shared/i18n.ts');
 const access = await load('../../web/admin/i18n-dict-access.ts');
 const binary = await load('../../web/display/widgets/ha/binaryWords.ts');
-const ts = { skip: dict && plural && family && nlMod && daMod && plMod && shared && access && binary ? false : 'TypeScript imports need Node >= 22.18' };
+const ts = { skip: dict && plural && family && nlMod && daMod && plMod && deMod && shared && access && binary ? false : 'TypeScript imports need Node >= 22.18' };
 
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 const holes = (s) => (String(s).match(/\{\w+\}/g) || []).sort().join(',');
@@ -47,15 +48,21 @@ const MORE = () => ({
   nl: { rows: { ...nlMod.NL, ...family.NL_FAMILY }, one: { ...nlMod.NL_SINGULAR, ...family.NL_SINGULAR_FAMILY } },
   da: { rows: { ...daMod.DA, ...family.DA_FAMILY }, one: { ...daMod.DA_SINGULAR, ...family.DA_SINGULAR_FAMILY } },
   pl: { rows: { ...plMod.PL, ...family.PL_FAMILY }, one: { ...plMod.PL_SINGULAR, ...family.PL_SINGULAR_FAMILY } },
+  de: { rows: { ...deMod.DE, ...family.DE_FAMILY }, one: { ...deMod.DE_SINGULAR, ...family.DE_SINGULAR_FAMILY } },
 });
 
-test('languages: es, en, pt, nl, da and pl on the server and the screens', ts, () => {
-  assert.deepEqual(LANGS, ['es', 'en', 'pt', 'nl', 'da', 'pl']);
+test('languages: es, en, pt, nl, da, pl and de on the server and the screens', ts, () => {
+  assert.deepEqual(LANGS, ['es', 'en', 'pt', 'nl', 'da', 'pl', 'de']);
   assert.deepEqual(shared.LANGS, LANGS);
   assert.equal(shared.LOCALES.nl, 'nl-NL');
   assert.equal(shared.LOCALES.da, 'da-DK');
   assert.equal(shared.LOCALES.pl, 'pl-PL');
   assert.equal(shared.LANG_NAMES.pl, 'Polski');
+  assert.equal(shared.LOCALES.de, 'de-DE');
+  assert.equal(shared.LANG_NAMES.de, 'Deutsch');
+  assert.equal(shared.normLang('de'), 'de');
+  assert.equal(langFromHeader('de-DE,de;q=0.9,en;q=0.5'), 'de');
+  assert.equal(langFromHeader('de-AT,de;q=0.9'), 'de');
   assert.equal(shared.normLang('pl'), 'pl');
   assert.equal(langFromHeader('pl-PL,pl;q=0.9,en;q=0.5'), 'pl');
   assert.equal(shared.normLang('nl'), 'nl');
@@ -63,7 +70,7 @@ test('languages: es, en, pt, nl, da and pl on the server and the screens', ts, (
   assert.equal(shared.normLang('fr'), 'en');
   assert.equal(langFromHeader('nl-BE,nl;q=0.9'), 'nl');
   assert.equal(langFromHeader('da-DK,da;q=0.9,en;q=0.5'), 'da');
-  for (const lang of ['nl', 'da', 'pl']) {
+  for (const lang of ['nl', 'da', 'pl', 'de']) {
     const c = defaultConfig();
     c.screens[0].screen.language = lang;
     const v = validateConfig(c);
@@ -72,7 +79,7 @@ test('languages: es, en, pt, nl, da and pl on the server and the screens', ts, (
   }
 });
 
-test('admin: every Spanish key has a Dutch, a Danish and a Polish value with the same placeholders, and nothing extra', ts, () => {
+test('admin: every Spanish key has a Dutch, a Danish, a Polish and a German value with the same placeholders, and nothing extra', ts, () => {
   const keys = Object.keys(dict.EN);
   for (const [lang, { rows }] of Object.entries(MORE())) {
     const missing = keys.filter((k) => typeof rows[k] !== 'string' || !rows[k].trim());
@@ -83,7 +90,7 @@ test('admin: every Spanish key has a Dutch, a Danish and a Polish value with the
   }
 });
 
-test('admin: every singular form has a Dutch, a Danish and a Polish value', ts, () => {
+test('admin: every singular form has a Dutch, a Danish, a Polish and a German value', ts, () => {
   for (const [lang, { one }] of Object.entries(MORE())) {
     for (const [k, [es]] of Object.entries(plural.SINGULAR)) {
       assert.ok(one[k], `${lang} misses the singular of ${k}`);
@@ -96,18 +103,18 @@ test('admin: every singular form has a Dutch, a Danish and a Polish value', ts, 
 });
 
 test('family page: the family tables hold every Familia row, so the page needs nothing else', ts, () => {
-  for (const [lang, mod] of [['nl', family.NL_FAMILY], ['da', family.DA_FAMILY], ['pl', family.PL_FAMILY]]) {
+  for (const [lang, mod] of [['nl', family.NL_FAMILY], ['da', family.DA_FAMILY], ['pl', family.PL_FAMILY], ['de', family.DE_FAMILY]]) {
     const rows = family.ROWS_FAMILY.map((r) => r[0]).filter((k) => !(k in mod));
     assert.deepEqual(rows, [], `${lang} family rows`);
   }
-  for (const [lang, mod] of [['nl', family.NL_SINGULAR_FAMILY], ['da', family.DA_SINGULAR_FAMILY], ['pl', family.PL_SINGULAR_FAMILY]]) {
+  for (const [lang, mod] of [['nl', family.NL_SINGULAR_FAMILY], ['da', family.DA_SINGULAR_FAMILY], ['pl', family.PL_SINGULAR_FAMILY], ['de', family.DE_SINGULAR_FAMILY]]) {
     assert.deepEqual(Object.keys(family.SINGULAR_FAMILY).filter((k) => !(k in mod)), [], `${lang} family singular forms`);
   }
   const src = read('web/family/i18n.ts');
-  assert.doesNotMatch(src, /i18n-dict-(nl|da|pl)/, 'the family page loads only the family tables');
+  assert.doesNotMatch(src, /i18n-dict-(nl|da|pl|de)/, 'the family page loads only the family tables');
 });
 
-test('admin t(): Dutch and Danish, singular forms, English when a key is missing', ts, async () => {
+test('admin t(): Dutch, Danish and German, singular forms, English when a key is missing', ts, async () => {
   globalThis.document ??= { documentElement: {} };
   const i18n = await import('../../web/admin/i18n.ts');
   try {
@@ -127,6 +134,23 @@ test('admin t(): Dutch and Danish, singular forms, English when a key is missing
     assert.equal(i18n.locale(), 'da-DK');
     assert.equal(i18n.browserLang(['nl-NL']), 'nl');
     assert.equal(i18n.browserLang(['da']), 'da');
+    i18n.setLang('de');
+    assert.equal(i18n.t('{n} pantallas', { n: 1 }), '1 Bildschirm');
+    assert.equal(i18n.t('{n} pantallas', { n: 2 }), '2 Bildschirme');
+    assert.equal(i18n.t('Guardar'), 'Speichern');
+    assert.equal(i18n.t('Cancelar'), 'Abbrechen');
+    assert.equal(i18n.t('Festivos de Alemania'), 'Feiertage in Deutschland');
+    // a key with no German value yet: the English one
+    const saved = deMod.DE.Cerrar;
+    delete deMod.DE.Cerrar;
+    try {
+      assert.equal(i18n.t('Cerrar'), dict.EN.Cerrar);
+    } finally {
+      deMod.DE.Cerrar = saved;
+    }
+    assert.equal(i18n.locale(), 'de-DE');
+    assert.equal(i18n.browserLang(['de-DE']), 'de');
+    assert.equal(i18n.browserLang(['de-CH', 'en']), 'de');
   } finally {
     i18n.setLang('es');
   }
@@ -138,9 +162,9 @@ test('the price widget Shape field has its own key (not the date Format one)', t
   assert.match(read('web/admin/sections/PriceWidget.tsx'), /label=\{t\('Forma'\)\}/);
 });
 
-test('display: every key in Dutch, Danish and Polish with the same placeholders; English for a missing one', ts, () => {
+test('display: every key in Dutch, Danish, Polish and German with the same placeholders; English for a missing one', ts, () => {
   const en = shared.DICTS.en;
-  for (const lang of ['nl', 'da', 'pl']) {
+  for (const lang of ['nl', 'da', 'pl', 'de']) {
     const d = shared.DICTS[lang];
     assert.deepEqual(Object.keys(en).filter((k) => !d[k]), [], `${lang} display keys`);
     // Polish "few" twins (key_few) belong to a key that exists, with the same placeholders
@@ -187,32 +211,32 @@ test('display (#20): every binary sensor device class says its on and off state 
   assert.equal(shared.DICTS.es[binary.binaryKey(true, 'lock')], 'Sin llave');
 });
 
-test('display: pairing screen texts in Dutch, Danish and Polish', () => {
+test('display: pairing screen texts in Dutch, Danish, Polish and German', () => {
   const src = read('web/display/widgets/pairing.ts');
   const block = (l) => src.slice(src.indexOf(`\n  ${l}: {`), src.indexOf('\n  },', src.indexOf(`\n  ${l}: {`)));
   const keys = (l) => [...block(l).matchAll(/\n {4}(\w+): /g)].map((m) => m[1]);
-  for (const l of ['nl', 'da', 'pl']) assert.deepEqual(keys(l), keys('en'), l);
+  for (const l of ['nl', 'da', 'pl', 'de']) assert.deepEqual(keys(l), keys('en'), l);
 });
 
-test('display: welcome screen texts in Dutch, Danish and Polish', () => {
+test('display: welcome screen texts in Dutch, Danish, Polish and German', () => {
   const src = read('web/display/widgets/welcome.ts');
   const block = (l) => src.slice(src.indexOf(`\n  ${l}: {`), src.indexOf('\n  },', src.indexOf(`\n  ${l}: {`)));
   const keys = (l) => [...block(l).matchAll(/\n {4}(\w+): /g)].map((m) => m[1]);
-  for (const l of ['nl', 'da', 'pl']) assert.deepEqual(keys(l), keys('en'), l);
+  for (const l of ['nl', 'da', 'pl', 'de']) assert.deepEqual(keys(l), keys('en'), l);
 });
 
-test('demo seed (scripts/demo.js): every demo string has a Dutch, a Danish and a Polish version', () => {
+test('demo seed (scripts/demo.js): every demo string has a Dutch, a Danish, a Polish and a German version', () => {
   const src = read('scripts/demo.js');
-  const table = src.slice(src.indexOf('const NL_DA_PL = {'), src.indexOf('\n};', src.indexOf('const NL_DA_PL = {')));
+  const table = src.slice(src.indexOf('const NL_DA_PL_DE = {'), src.indexOf('\n};', src.indexOf('const NL_DA_PL_DE = {')));
   const lit = `('(?:[^'\\\\]|\\\\.)*'|"(?:[^"\\\\]|\\\\.)*")`;
   const strings = new Set([...src.matchAll(new RegExp(`\\bL\\(\\s*${lit}`, 'g'))].map((m) => m[1].slice(1, -1)));
   assert.ok(strings.size > 40, `${strings.size} demo strings`);
   const missing = [...strings].filter((s) => !table.includes(`'${s}': [`) && !table.includes(`"${s}": [`));
   assert.deepEqual(missing, []);
-  // three values per row: nl, da, pl
+  // four values per row: nl, da, pl, de
   for (const line of table.split('\n').filter((l) => /^ {2}["']/.test(l))) {
     const cols = line.slice(line.indexOf('[') + 1, line.lastIndexOf(']')).match(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g);
-    assert.equal(cols.length, 3, line);
+    assert.equal(cols.length, 4, line);
   }
 });
 
@@ -229,19 +253,30 @@ test('dates: long date line as Dutch and Danish write it; Monday first; decimal 
   assert.equal((1234.5).toLocaleString(shared.LOCALES.da), '1.234,5');
 });
 
-test('weather: descriptions and wind directions in Dutch and Danish', () => {
+test('dates: German long date line, Monday first, decimal comma', ts, () => {
+  assert.equal(shared.formatDateLine('de', '2026-10-12', 'weekday_d_month'), 'Montag, 12. Oktober');
+  assert.deepEqual(shared.weekdayNames('de', 1), ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']);
+  assert.equal(shared.monthName('de', 3), 'März');
+  assert.equal(shared.formatDatePattern('de', '2026-10-12', '{dddd}, {d}. {mmmm}'), 'Montag, 12. Oktober');
+  assert.equal((12345.5).toLocaleString(shared.LOCALES.de), '12.345,5');
+});
+
+test('weather: descriptions and wind directions in Dutch, Danish and German', () => {
   assert.equal(wmoDescription(0, 'nl'), 'Onbewolkt');
   assert.equal(wmoDescription(95, 'da'), 'Tordenvejr');
   assert.equal(windDirLabel(90, 'nl'), 'O');
   assert.equal(windDirLabel(225, 'nl'), 'ZW');
   assert.equal(windDirLabel(90, 'da'), 'Ø');
   assert.equal(windDirLabel(315, 'da'), 'NV');
+  assert.equal(wmoDescription(95, 'de'), 'Gewitter');
+  assert.equal(windDirLabel(90, 'de'), 'O');
+  assert.equal(windDirLabel(315, 'de'), 'NW');
   for (const code of [0, 1, 2, 3, 45, 61, 63, 71, 80, 95, 99]) {
-    for (const l of ['nl', 'da']) assert.ok(wmoDescription(code, l), `${l} ${code}`);
+    for (const l of ['nl', 'da', 'de']) assert.ok(wmoDescription(code, l), `${l} ${code}`);
   }
 });
 
-test('server words: private mode titles and backup summaries in Dutch and Danish', () => {
+test('server words: private mode titles and backup summaries in Dutch, Danish and German', () => {
   assert.equal(serverT('busy', 'nl'), 'Bezet');
   assert.equal(serverT('reservation', 'da'), 'Reservation');
   assert.equal(serverT('blocked', 'da'), 'Ikke ledig');
@@ -251,9 +286,15 @@ test('server words: private mode titles and backup summaries in Dutch and Danish
   assert.equal(countChanged(1, 'source', 'da'), '1 ændret');
   assert.equal(summaryWord('unchanged', 'da'), 'uændret');
   assert.equal(summaryWord('settingsModified', 'nl'), 'instellingen gewijzigd');
+  assert.equal(serverT('busy', 'de'), 'Belegt');
+  assert.equal(serverT('blocked', 'de'), 'Nicht verfügbar');
+  assert.equal(countNoun(1, 'screen', 'de'), '1 Bildschirm');
+  assert.equal(countNoun(3, 'iconRule', 'de'), '3 Symbolregeln');
+  assert.equal(countChanged(2, 'screen', 'de'), '2 geändert');
+  assert.equal(summaryWord('unchanged', 'de'), 'unverändert');
 });
 
-test('holidays: the Dutch, Belgian, Danish and Polish Google feeds, curly apostrophes included', () => {
+test('holidays: the Dutch, Belgian, Danish, Polish and German Google feeds, curly apostrophes included', () => {
   assert.equal(translateHoliday("King's Birthday", 'nl'), 'Koningsdag');
   assert.equal(translateHoliday('Second Day of Christmas', 'nl'), 'Tweede kerstdag');
   assert.equal(translateHoliday('Father’s Day', 'nl'), 'Vaderdag');
@@ -272,16 +313,21 @@ test('holidays: the Dutch, Belgian, Danish and Polish Google feeds, curly apostr
   assert.equal(translateHoliday("All Souls' Day", 'pl'), 'Zaduszki');
   assert.equal(translateHoliday('Father’s Day', 'pl'), 'Dzień Ojca');
   assert.equal(translateHoliday('Whit Sunday', 'pl'), 'Zielone Świątki');
-  // every row has a value for es, pt, nl, da and pl
+  assert.equal(translateHoliday('German Unity Day', 'de'), 'Tag der Deutschen Einheit');
+  assert.equal(translateHoliday('Day of German Unity', 'de'), 'Tag der Deutschen Einheit');
+  assert.equal(translateHoliday('Reformation Day', 'de'), 'Reformationstag');
+  assert.equal(translateHoliday('Christmas Eve', 'de'), 'Heiligabend');
+  assert.equal(translateHoliday('German Unity Day', 'es'), 'Día de la Unidad Alemana');
+  // every row has a value for es, pt, nl, da, pl and de
   const src = read('server/rules.js');
   const block = src.slice(src.indexOf('const HOLIDAYS = {'), src.indexOf('\n};', src.indexOf('const HOLIDAYS = {')));
   for (const line of block.split('\n').filter((l) => /^ {2}["']/.test(l))) {
     const cols = line.slice(line.indexOf('[') + 1, line.lastIndexOf(']')).match(/'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"/g);
-    assert.equal(cols.length, 5, line);
+    assert.equal(cols.length, 6, line);
   }
 });
 
-test('icon rules: Dutch, Danish and Polish keywords, within the limits, for existing installs too (marker v4)', () => {
+test('icon rules: Dutch, Danish, Polish and German keywords, within the limits, for existing installs too (marker v5)', () => {
   const emoji = (title) => findKeyword(DEFAULT_ICON_RULES, title)?.rule.emoji ?? null;
   assert.equal(emoji('Verjaardag van Anna'), '🎂');
   assert.equal(emoji('Tandarts Lucía'), '🩺');
@@ -296,6 +342,11 @@ test('icon rules: Dutch, Danish and Polish keywords, within the limits, for exis
   assert.equal(emoji('Wywóz śmieci'), '🗑️');
   assert.equal(emoji('Wylot do Madrytu'), '✈️');
   assert.equal(emoji('Dziadek Luis'), null);
+  assert.equal(emoji('Geburtstag von Anna'), '🎂');
+  assert.equal(emoji('Zahnarzt Lucía'), '🩺');
+  assert.equal(emoji('Schwimmkurs'), emoji('Swimming lesson'));
+  assert.equal(emoji('Fußballspiel'), emoji('Football practice'));
+  assert.equal(emoji('Opa Luis'), null);
   // Polish stems must not catch other languages' titles
   assert.equal(emoji('Terminar el informe'), null);
   assert.equal(emoji('Pilot doctor visit'), emoji('Doctor visit'));
@@ -304,11 +355,11 @@ test('icon rules: Dutch, Danish and Polish keywords, within the limits, for exis
   assert.equal(emoji('Apple pies'), null);
   assert.equal(emoji('Praça do Comércio'), null);
   for (const r of DEFAULT_ICON_RULES) assert.ok(r.match.length <= 100, `${r.id}: ${r.match.length} keywords`);
-  assert.match(read('server/store.js'), /const ICON_RULES_MARKER = '.iconrules-v4';/);
+  assert.match(read('server/store.js'), /const ICON_RULES_MARKER = '.iconrules-v5';/);
 });
 
-test('demo data: every demo string of mock.ts has a Dutch, a Danish and a Polish version', ts, async () => {
-  const { DEMO_MORE, DEMO_NEWS } = await import('../../web/display/mock-text.ts');
+test('demo data: every demo string of mock.ts has a Dutch, a Danish, a Polish and a German version', ts, async () => {
+  const { DEMO_MORE, DEMO_DE, DEMO_NEWS } = await import('../../web/display/mock-text.ts');
   const src = read('web/display/mock.ts');
   const strings = new Set();
   const lit = `('(?:[^'\\\\]|\\\\.)*'|"(?:[^"\\\\]|\\\\.)*")`;
@@ -325,17 +376,20 @@ test('demo data: every demo string of mock.ts has a Dutch, a Danish and a Polish
   assert.ok(strings.size > 150, `${strings.size} demo strings`);
   const missing = [...strings].filter((s) => !DEMO_MORE[s] || DEMO_MORE[s].length !== 3 || DEMO_MORE[s].some((v) => !v));
   assert.deepEqual(missing, []);
+  // German has its own map (DEMO_DE)
+  assert.deepEqual([...strings].filter((s) => typeof DEMO_DE[s] !== 'string' || !DEMO_DE[s].trim()), [], 'German demo strings');
   assert.equal(DEMO_NEWS.nl.length, 6);
   assert.equal(DEMO_NEWS.da.length, 6);
   assert.equal(DEMO_NEWS.pl.length, 6);
+  assert.equal(DEMO_NEWS.de.length, 6);
 });
 
-test('Dutch, Danish and Polish files: no em dashes, no DAKboard', () => {
-  for (const f of ['web/admin/i18n-dict-nl.ts', 'web/admin/i18n-dict-da.ts', 'web/admin/i18n-dict-pl.ts', 'web/admin/i18n-dict-family.ts', 'web/display/mock-text.ts', 'web/shared/i18n.ts', 'server/core/lib/i18n.js', 'server/core/iconRules.js', 'scripts/demo.js']) {
+test('Dutch, Danish, Polish and German files: no em dashes, no DAKboard', () => {
+  for (const f of ['web/admin/i18n-dict-nl.ts', 'web/admin/i18n-dict-da.ts', 'web/admin/i18n-dict-pl.ts', 'web/admin/i18n-dict-de.ts', 'web/admin/i18n-dict-family.ts', 'web/display/mock-text.ts', 'web/shared/i18n.ts', 'server/core/lib/i18n.js', 'server/core/iconRules.js', 'scripts/demo.js']) {
     const s = read(f);
     assert.doesNotMatch(s, /—/, `em dash in ${f}`);
-    // the Spanish keys are the existing source strings; only the Dutch, Danish and Polish values are checked
-    const values = /i18n-dict-(nl|da|pl|family)\.ts$/.test(f) ? [...s.matchAll(/^ {2}'(?:[^'\\]|\\.)*': ('(?:[^'\\]|\\.)*'),$/gm)].map((m) => m[1]).join('\n') : s;
+    // the Spanish keys are the existing source strings; only the Dutch, Danish, Polish and German values are checked
+    const values = /i18n-dict-(nl|da|pl|de|family)\.ts$/.test(f) ? [...s.matchAll(/^ {2}'(?:[^'\\]|\\.)*': ('(?:[^'\\]|\\.)*'),$/gm)].map((m) => m[1]).join('\n') : s;
     assert.doesNotMatch(values, /dakboard/i, f);
   }
 });
@@ -460,11 +514,11 @@ test('Polish: ł folds to l, so "pilka" finds "piłka" and slugs keep the letter
 });
 
 test('family access (#16): every row has a value in every column, with the same {placeholders}, and no em dash', ts, () => {
-  // [es, en, pt, nl, da, pl]: the phone page (web/member/i18n.ts) reads the column of each language
+  // [es, en, pt, nl, da, pl, de]: the phone page (web/member/i18n.ts) reads the column of each language
   assert.ok(access.ROWS_ACCESS_ALL.length > 100);
   const keys = new Set();
   for (const row of access.ROWS_ACCESS_ALL) {
-    assert.equal(row.length, 6, row[0]);
+    assert.equal(row.length, 7, row[0]);
     assert.ok(!keys.has(row[0]), `twice: ${row[0]}`);
     keys.add(row[0]);
     for (const v of row) {
@@ -473,7 +527,7 @@ test('family access (#16): every row has a value in every column, with the same 
       assert.doesNotMatch(v, /—/, v);
     }
   }
-  for (const l of shared.LANGS) if (l !== 'es') assert.ok(['en', 'pt', 'nl', 'da', 'pl'].includes(l), `no family access column for ${l}`);
+  for (const l of shared.LANGS) if (l !== 'es') assert.ok(['en', 'pt', 'nl', 'da', 'pl', 'de'].includes(l), `no family access column for ${l}`);
   // the admin's own wording: "private mode", never "privacy mode"
   assert.ok(access.ROWS_ACCESS_ALL.every((r) => !/privacy mode/i.test(r[1])));
 });

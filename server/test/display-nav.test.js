@@ -606,7 +606,7 @@ test('the editor: why a button does not show without touch, the swipe switch, th
   const dict = read('web/admin/i18n-dict-nav.ts');
   for (const k of ['Ir a pantalla', 'Pausar carrusel', 'Progreso del carrusel', 'Volver solo tras', 'Sin tocar', 'Ir a Efecto ambiental']) assert.ok(dict.includes(`['${k}',`), k);
   const shared = read('web/shared/i18n.ts');
-  for (const k of ['navHome', 'navPause', 'navResume', 'navPaused', 'navUnavailable']) assert.equal(shared.split(`  ${k}: `).length - 1, 6, k);
+  for (const k of ['navHome', 'navPause', 'navResume', 'navPaused', 'navUnavailable']) assert.equal(shared.split(`  ${k}: `).length - 1, 7, k);
 });
 
 test('TapTracker: a lift within the slop of its down is a tap, a stroke is not; the To Do and routine taps use it', () => {

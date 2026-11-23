@@ -31,10 +31,11 @@ const F = await load('../../web/admin/builder/fieldSpecs.ts');
 const dict = await load('../../web/admin/i18n-dict.ts');
 const nl = await load('../../web/admin/i18n-dict-nl.ts');
 const da = await load('../../web/admin/i18n-dict-da.ts');
+const de = await load('../../web/admin/i18n-dict-de.ts');
 const fam = await load('../../web/admin/i18n-dict-family.ts');
 const HS = await load('../../web/admin/haSearch.ts');
 const PC = await load('../../web/admin/photoChoices.ts');
-const ts = { skip: M && H && D && G && K && F && dict && nl && da && fam && HS ? false : 'TypeScript imports need Node >= 22.18' };
+const ts = { skip: M && H && D && G && K && F && dict && nl && da && de && fam && HS ? false : 'TypeScript imports need Node >= 22.18' };
 
 const clean = () => {
   const c = { errors: [], warnings: [], err(p, m) { this.errors.push([p, m]); }, warn(p, m) { this.warnings.push([p, m]); } };
@@ -373,7 +374,7 @@ test('entity picker list: grouped by area (none last), by name inside; by domain
   assert.deepEqual(HS.haEntityGroups(flat, '', 'Sin habitación').map((m) => m.group), ['light', 'light', 'sensor', 'sensor', 'switch']);
 });
 
-test('builder texts: every string in Spanish, English, Portuguese, Dutch and Danish, no em dashes', ts, () => {
+test('builder texts: every string in Spanish, English, Portuguese, Dutch, Danish and German, no em dashes', ts, () => {
   const keys = new Set();
   const dir = new URL('../../web/admin/builder/', import.meta.url);
   for (const f of fs.readdirSync(dir).filter((x) => /\.tsx?$/.test(x))) {
@@ -394,7 +395,8 @@ test('builder texts: every string in Spanish, English, Portuguese, Dutch and Dan
   assert.ok(all.length > 300, `${all.length} keys`);
   const NL = { ...nl.NL, ...fam.NL_FAMILY };
   const DA = { ...da.DA, ...fam.DA_FAMILY };
-  assert.deepEqual(all.filter((k) => !(k in dict.EN) || !(k in dict.PT) || !(k in NL) || !(k in DA)), []);
+  const DE = { ...de.DE, ...fam.DE_FAMILY };
+  assert.deepEqual(all.filter((k) => !(k in dict.EN) || !(k in dict.PT) || !(k in NL) || !(k in DA) || !(k in DE)), []);
   const src = fs.readFileSync(new URL('../../web/admin/i18n-dict-builder.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(src, /—/);
 });

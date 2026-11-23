@@ -1,17 +1,18 @@
 // Personalizado "Navegación" (touch screens: go to another screen, pause the carousel, its progress, the swipe, exit
-// the kiosk and shut down the Pi) and the hint next to the animated background. Each row is [es, en, pt, nl, da].
+// the kiosk and shut down the Pi) and the hint next to the animated background. Each row is [es, en, pt, nl, da, de].
 // ROWS_NAV feeds EN and PT (i18n-dict.ts); NL_NAV and DA_NAV are spread into NL and DA.
-const ROWS: [string, string, string, string, string][] = [
-  ['Navegación', 'Navigation', 'Navegação', 'Navigatie', 'Navigation'],
-  ['Ir a pantalla', 'Go to screen', 'Ir para ecrã', 'Naar scherm', 'Gå til skærm'],
-  ['Pausar carrusel', 'Pause carousel', 'Pausar carrossel', 'Carrousel pauzeren', 'Sæt karrusel på pause'],
-  ['Progreso del carrusel', 'Carousel progress', 'Progresso do carrossel', 'Voortgang van de carrousel', 'Karrusellens fremskridt'],
+const ROWS: [string, string, string, string, string, string][] = [
+  ['Navegación', 'Navigation', 'Navegação', 'Navigatie', 'Navigation', 'Navigation'],
+  ['Ir a pantalla', 'Go to screen', 'Ir para ecrã', 'Naar scherm', 'Gå til skærm', 'Zu Bildschirm'],
+  ['Pausar carrusel', 'Pause carousel', 'Pausar carrossel', 'Carrousel pauzeren', 'Sæt karrusel på pause', 'Karussell pausieren'],
+  ['Progreso del carrusel', 'Carousel progress', 'Progresso do carrossel', 'Voortgang van de carrousel', 'Karrusellens fremskridt', 'Karussell-Fortschritt'],
   [
     'Un botón que lleva a otra pantalla de casa, o de vuelta a la de siempre del dispositivo. Necesita tocar la pantalla.',
     'A button that takes you to another screen in your home, or back to this device’s own one. Needs a touch screen.',
     'Um botão que leva a outro ecrã da casa, ou ao ecrã inicial deste dispositivo. Precisa de ecrã tátil.',
     'Een knop die naar een ander scherm in huis gaat, of terug naar het eigen scherm van dit apparaat. Werkt met aanraken.',
     'En knap, der fører til en anden skærm i hjemmet, eller tilbage til enhedens egen. Kræver berøring.',
+    'Ein Button, der zu einem anderen Bildschirm im Haushalt führt oder zurück zum üblichen des Geräts. Braucht einen Touchscreen.',
   ],
   [
     'Un botón que para el carrusel en esta pantalla y lo deja seguir con otro toque.',
@@ -19,6 +20,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Um botão que para o carrossel neste ecrã e o deixa continuar com outro toque.',
     'Een knop die de carrousel op dit scherm stilzet en hem met nog een tik verder laat gaan.',
     'En knap, der stopper karrusellen på denne skærm og lader den fortsætte med et tryk mere.',
+    'Ein Button, der das Karussell auf diesem Bildschirm anhält und es mit einem weiteren Tippen weiterlaufen lässt.',
   ],
   [
     'Qué pantalla del carrusel se ve y cuánto le queda, con puntos o una barra fina.',
@@ -26,27 +28,29 @@ const ROWS: [string, string, string, string, string][] = [
     'Que ecrã do carrossel se vê e quanto tempo lhe falta, com pontos ou uma barra fina.',
     'Welk scherm van de carrousel te zien is en hoelang nog, met stippen of een dunne balk.',
     'Hvilken skærm i karrusellen der vises, og hvor længe den er tilbage, med prikker eller en tynd bjælke.',
+    'Welcher Bildschirm des Karussells gerade läuft und wie lange noch, als Punkte oder dünner Balken.',
   ],
-  ['Icono y texto', 'Icon and text', 'Ícone e texto', 'Pictogram en tekst', 'Ikon og tekst'],
-  ['Solo icono', 'Icon only', 'Só ícone', 'Alleen pictogram', 'Kun ikon'],
-  ['Solo texto', 'Text only', 'Só texto', 'Alleen tekst', 'Kun tekst'],
-  ['Vacío: el nombre de la pantalla.', 'Empty: the screen’s name.', 'Vazio: o nome do ecrã.', 'Leeg: de naam van het scherm.', 'Tom: skærmens navn.'],
-  ['Vacío: Pausar o Seguir.', 'Empty: Pause or Resume.', 'Vazio: Pausar ou Continuar.', 'Leeg: Pauzeren of Verder.', 'Tom: Pause eller Fortsæt.'],
-  ['Volver solo tras', 'Go back by itself after', 'Voltar sozinho após', 'Vanzelf terug na', 'Gå selv tilbage efter'],
-  ['No volver solo', 'Never by itself', 'Não voltar sozinho', 'Niet vanzelf', 'Ikke af sig selv'],
-  ['1 min sin tocar', '1 min without a touch', '1 min sem toques', '1 min zonder aanraken', '1 min uden berøring'],
-  ['2 min sin tocar', '2 min without a touch', '2 min sem toques', '2 min zonder aanraken', '2 min uden berøring'],
-  ['5 min sin tocar', '5 min without a touch', '5 min sem toques', '5 min zonder aanraken', '5 min uden berøring'],
-  ['10 min sin tocar', '10 min without a touch', '10 min sem toques', '10 min zonder aanraken', '10 min uden berøring'],
-  ['15 min sin tocar', '15 min without a touch', '15 min sem toques', '15 min zonder aanraken', '15 min uden berøring'],
-  ['30 min sin tocar', '30 min without a touch', '30 min sem toques', '30 min zonder aanraken', '30 min uden berøring'],
-  ['60 min sin tocar', '60 min without a touch', '60 min sem toques', '60 min zonder aanraken', '60 min uden berøring'],
+  ['Icono y texto', 'Icon and text', 'Ícone e texto', 'Pictogram en tekst', 'Ikon og tekst', 'Symbol und Text'],
+  ['Solo icono', 'Icon only', 'Só ícone', 'Alleen pictogram', 'Kun ikon', 'Nur Symbol'],
+  ['Solo texto', 'Text only', 'Só texto', 'Alleen tekst', 'Kun tekst', 'Nur Text'],
+  ['Vacío: el nombre de la pantalla.', 'Empty: the screen’s name.', 'Vazio: o nome do ecrã.', 'Leeg: de naam van het scherm.', 'Tom: skærmens navn.', 'Leer: der Name des Bildschirms.'],
+  ['Vacío: Pausar o Seguir.', 'Empty: Pause or Resume.', 'Vazio: Pausar ou Continuar.', 'Leeg: Pauzeren of Verder.', 'Tom: Pause eller Fortsæt.', 'Leer: Pause oder Weiter.'],
+  ['Volver solo tras', 'Go back by itself after', 'Voltar sozinho após', 'Vanzelf terug na', 'Gå selv tilbage efter', 'Automatisch zurück nach'],
+  ['No volver solo', 'Never by itself', 'Não voltar sozinho', 'Niet vanzelf', 'Ikke af sig selv', 'Nicht automatisch zurück'],
+  ['1 min sin tocar', '1 min without a touch', '1 min sem toques', '1 min zonder aanraken', '1 min uden berøring', '1 Min. ohne Tippen'],
+  ['2 min sin tocar', '2 min without a touch', '2 min sem toques', '2 min zonder aanraken', '2 min uden berøring', '2 Min. ohne Tippen'],
+  ['5 min sin tocar', '5 min without a touch', '5 min sem toques', '5 min zonder aanraken', '5 min uden berøring', '5 Min. ohne Tippen'],
+  ['10 min sin tocar', '10 min without a touch', '10 min sem toques', '10 min zonder aanraken', '10 min uden berøring', '10 Min. ohne Tippen'],
+  ['15 min sin tocar', '15 min without a touch', '15 min sem toques', '15 min zonder aanraken', '15 min uden berøring', '15 Min. ohne Tippen'],
+  ['30 min sin tocar', '30 min without a touch', '30 min sem toques', '30 min zonder aanraken', '30 min uden berøring', '30 Min. ohne Tippen'],
+  ['60 min sin tocar', '60 min without a touch', '60 min sem toques', '60 min zonder aanraken', '60 min uden berøring', '60 Min. ohne Tippen'],
   [
     'Pasado ese tiempo sin que nadie toque la pantalla, vuelve a su pantalla o a su carrusel de siempre.',
     'Once nobody has touched the screen for that long, it goes back to its usual screen or carousel.',
     'Passado esse tempo sem ninguém tocar no ecrã, volta ao ecrã ou ao carrossel de sempre.',
     'Als niemand het scherm zo lang heeft aangeraakt, gaat het terug naar het gewone scherm of de gewone carrousel.',
     'Når ingen har rørt skærmen så længe, går den tilbage til sin sædvanlige skærm eller karrusel.',
+    'Wenn so lange niemand den Bildschirm berührt hat, kehrt er zu seinem üblichen Bildschirm oder Karussell zurück.',
   ],
   [
     'Si la pantalla de destino está en el carrusel de este dispositivo, salta a ella y el carrusel sigue desde ahí. Si no, la muestra y se queda en ella.',
@@ -54,6 +58,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Se o ecrã de destino estiver no carrossel deste dispositivo, salta para ele e o carrossel continua daí. Se não, mostra-o e fica nele.',
     'Staat het scherm in de carrousel van dit apparaat, dan springt de carrousel erheen en gaat vanaf daar verder. Zo niet, dan toont het apparaat het en blijft daar.',
     'Hvis skærmen er i enhedens karrusel, springer karrusellen til den og fortsætter derfra. Ellers viser enheden den og bliver der.',
+    'Ist der Zielbildschirm im Karussell dieses Geräts, springt das Karussell dorthin und läuft von da aus weiter. Sonst zeigt das Gerät ihn an und bleibt dort.',
   ],
   [
     'Solo se ve en los dispositivos que muestran un carrusel.',
@@ -61,35 +66,39 @@ const ROWS: [string, string, string, string, string][] = [
     'Só aparece nos dispositivos que mostram um carrossel.',
     'Alleen te zien op apparaten die een carrousel tonen.',
     'Vises kun på enheder, der kører en karrusel.',
+    'Nur sichtbar auf Geräten, die ein Karussell zeigen.',
   ],
-  ['Nombre de la pantalla', 'Screen name', 'Nome do ecrã', 'Naam van het scherm', 'Skærmens navn'],
-  ['Tiempo que queda', 'Time left', 'Tempo que falta', 'Resterende tijd', 'Tid tilbage'],
+  ['Nombre de la pantalla', 'Screen name', 'Nome do ecrã', 'Naam van het scherm', 'Skærmens navn', 'Name des Bildschirms'],
+  ['Tiempo que queda', 'Time left', 'Tempo que falta', 'Resterende tijd', 'Tid tilbage', 'Verbleibende Zeit'],
   [
     'Solo se ve en los dispositivos que muestran un carrusel. No hace falta tocar la pantalla.',
     'Only shows on devices that run a carousel. It does not need a touch screen.',
     'Só aparece nos dispositivos que mostram um carrossel. Não precisa de ecrã tátil.',
     'Alleen te zien op apparaten die een carrousel tonen. Aanraken is niet nodig.',
     'Vises kun på enheder, der kører en karrusel. Kræver ikke berøring.',
+    'Nur sichtbar auf Geräten, die ein Karussell zeigen. Ein Touchscreen ist nicht nötig.',
   ],
-  ['Elige a qué pantalla lleva el botón.', 'Choose which screen the button goes to.', 'Escolhe para que ecrã o botão leva.', 'Kies naar welk scherm de knop gaat.', 'Vælg, hvilken skærm knappen fører til.'],
+  ['Elige a qué pantalla lleva el botón.', 'Choose which screen the button goes to.', 'Escolhe para que ecrã o botão leva.', 'Kies naar welk scherm de knop gaat.', 'Vælg, hvilken skærm knappen fører til.', 'Wähle, zu welchem Bildschirm der Button führt.'],
   [
     'La pantalla o el carrusel que el dispositivo muestra siempre.',
     'The screen or carousel the device usually shows.',
     'O ecrã ou o carrossel que o dispositivo mostra sempre.',
     'Het scherm of de carrousel die het apparaat normaal toont.',
     'Den skærm eller karrusel, enheden normalt viser.',
+    'Der Bildschirm oder das Karussell, das das Gerät normalerweise zeigt.',
   ],
-  ['Inicio (la de siempre del dispositivo)', 'Home (the device’s usual one)', 'Início (o de sempre do dispositivo)', 'Start (het gewone van het apparaat)', 'Start (enhedens sædvanlige)'],
-  ['{name} (esta pantalla)', '{name} (this screen)', '{name} (este ecrã)', '{name} (dit scherm)', '{name} (denne skærm)'],
+  ['Inicio (la de siempre del dispositivo)', 'Home (the device’s usual one)', 'Início (o de sempre do dispositivo)', 'Start (het gewone van het apparaat)', 'Start (enhedens sædvanlige)', 'Start (der übliche des Geräts)'],
+  ['{name} (esta pantalla)', '{name} (this screen)', '{name} (este ecrã)', '{name} (dit scherm)', '{name} (denne skærm)', '{name} (dieser Bildschirm)'],
   [
     'Sin icono: el de siempre (una flecha, o la casa para Inicio).',
     'No icon: the usual one (an arrow, or the house for Home).',
     'Sem ícone: o de sempre (uma seta, ou a casa para Início).',
     'Geen pictogram: het gewone (een pijl, of het huisje voor Start).',
     'Intet ikon: det sædvanlige (en pil, eller huset for Start).',
+    'Ohne Symbol: das übliche (ein Pfeil, oder das Haus für Start).',
   ],
-  ['Sin icono: el de siempre.', 'No icon: the usual one.', 'Sem ícone: o de sempre.', 'Geen pictogram: het gewone.', 'Intet ikon: det sædvanlige.'],
-  ['Elige la pantalla', 'Pick the screen', 'Escolhe o ecrã', 'Kies het scherm', 'Vælg skærmen'],
+  ['Sin icono: el de siempre.', 'No icon: the usual one.', 'Sem ícone: o de sempre.', 'Geen pictogram: het gewone.', 'Intet ikon: det sædvanlige.', 'Ohne Symbol: das übliche.'],
+  ['Elige la pantalla', 'Pick the screen', 'Escolhe o ecrã', 'Kies het scherm', 'Vælg skærmen', 'Wähle den Bildschirm'],
   // the page settings: touch, the swipe, the animated background
   [
     'Para los controles de Home Assistant, los botones de Navegación y deslizar entre pantallas.',
@@ -97,14 +106,16 @@ const ROWS: [string, string, string, string, string][] = [
     'Para os controlos do Home Assistant, os botões de Navegação e deslizar entre ecrãs.',
     'Voor de Home Assistant-bediening, de Navigatie-knoppen en vegen tussen schermen.',
     'Til Home Assistant-styringen, Navigation-knapperne og at stryge mellem skærme.',
+    'Für die Home-Assistant-Steuerung, die Navigations-Buttons und das Wischen zwischen Bildschirmen.',
   ],
-  ['Deslizar para cambiar de pantalla', 'Swipe to change screen', 'Deslizar para mudar de ecrã', 'Vegen om van scherm te wisselen', 'Stryg for at skifte skærm'],
+  ['Deslizar para cambiar de pantalla', 'Swipe to change screen', 'Deslizar para mudar de ecrã', 'Vegen om van scherm te wisselen', 'Stryg for at skifte skærm', 'Wischen zum Bildschirmwechsel'],
   [
     'En un carrusel, deslizar el dedo a la izquierda o a la derecha pasa a la pantalla siguiente o a la anterior.',
     'On a carousel, swiping left or right goes to the next or the previous screen.',
     'Num carrossel, deslizar o dedo para a esquerda ou para a direita passa para o ecrã seguinte ou para o anterior.',
     'In een carrousel ga je met vegen naar links of rechts naar het volgende of het vorige scherm.',
     'I en karrusel går et stryg til venstre eller højre til den næste eller den forrige skærm.',
+    'In einem Karussell wechselt ein Wischen nach links oder rechts zum nächsten oder vorherigen Bildschirm.',
   ],
   [
     'Este botón no se ve en la pantalla mientras no se pueda tocar.',
@@ -112,14 +123,16 @@ const ROWS: [string, string, string, string, string][] = [
     'Este botão não aparece no ecrã enquanto não se puder tocar.',
     'Deze knop is niet te zien zolang aanraken niet is toegestaan.',
     'Knappen vises ikke på skærmen, før berøring er tilladt.',
+    'Dieser Button erscheint erst auf dem Bildschirm, wenn Tippen erlaubt ist.',
   ],
-  ['Sin tocar', 'No touch', 'Sem toque', 'Geen aanraken', 'Ingen berøring'],
+  ['Sin tocar', 'No touch', 'Sem toque', 'Geen aanraken', 'Ingen berøring', 'Kein Tippen'],
   [
     'No se ve en la pantalla: activa «Permitir tocar en la pantalla» en Página.',
     'Not on the screen: turn on “Allow touch on the screen” in Page.',
     'Não aparece no ecrã: ativa «Permitir tocar no ecrã» em Página.',
     'Niet op het scherm: zet ‘Aanraken op het scherm toestaan’ aan bij Pagina.',
     'Vises ikke på skærmen: slå »Tillad berøring på skærmen« til under Side.',
+    'Nicht auf dem Bildschirm: Schalte „Tippen auf dem Bildschirm erlauben“ unter Seite ein.',
   ],
   [
     'La animación (aurora, partículas) se elige en Fondo, en Efecto ambiental.',
@@ -127,14 +140,16 @@ const ROWS: [string, string, string, string, string][] = [
     'A animação (aurora, partículas) escolhe-se em Fundo, em Efeito ambiente.',
     'De animatie (noorderlicht, deeltjes) kies je bij Achtergrond, onder Sfeereffect.',
     'Animationen (nordlys, partikler) vælges under Baggrund, i Stemningseffekt.',
+    'Die Animation (Polarlicht, Partikel) wählst du unter Hintergrund, Stimmungseffekt.',
   ],
-  ['Ir a Efecto ambiental', 'Go to Ambient effect', 'Ir para Efeito ambiente', 'Naar Sfeereffect', 'Gå til Stemningseffekt'],
+  ['Ir a Efecto ambiental', 'Go to Ambient effect', 'Ir para Efeito ambiente', 'Naar Sfeereffect', 'Gå til Stemningseffekt', 'Zu Stimmungseffekt'],
   [
     'Salir del kiosko',
     'Exit kiosk',
     'Sair do quiosque',
     'Kiosk afsluiten',
     'Afslut kiosk',
+    'Kiosk beenden',
   ],
   [
     'Apagar',
@@ -142,6 +157,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Desligar',
     'Uitschakelen',
     'Sluk',
+    'Herunterfahren',
   ],
   [
     'Dos toques cierran el navegador de pantalla completa del Pi que ejecuta Marco.',
@@ -149,6 +165,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Dois toques fecham o navegador em ecrã inteiro do Pi que executa o Marco.',
     'Twee tikken sluiten de schermvullende browser op de Pi waarop Marco draait.',
     'To tryk lukker fuldskærmsbrowseren på den Pi, der kører Marco.',
+    'Zweimal tippen schließt den Vollbild-Browser auf dem Pi, auf dem Marco läuft.',
   ],
   [
     'Dos toques apagan el Pi que ejecuta Marco, si lo activas en el Pi.',
@@ -156,6 +173,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Dois toques desligam o Pi que executa o Marco, se o ativar no Pi.',
     'Twee tikken schakelen de Pi met Marco uit, als je dat op de Pi aanzet.',
     'To tryk slukker den Pi, der kører Marco, hvis du slår det til på Pi’en.',
+    'Zweimal tippen fährt den Pi herunter, auf dem Marco läuft, sobald du das auf dem Pi einschaltest.',
   ],
   [
     'Vacío: Salir del kiosko.',
@@ -163,6 +181,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Vazio: Sair do quiosque.',
     'Leeg: Kiosk afsluiten.',
     'Tom: Afslut kiosk.',
+    'Leer: Kiosk beenden.',
   ],
   [
     'Vacío: Apagar.',
@@ -170,6 +189,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Vazio: Desligar.',
     'Leeg: Uitschakelen.',
     'Tom: Sluk.',
+    'Leer: Herunterfahren.',
   ],
   [
     'Cierra el navegador de pantalla completa del Pi que ejecuta Marco. Vuelve al reiniciar, al entrar otra vez en el escritorio, desde el menú del Pi (Marco) o con el comando marco kiosk. Pide un segundo toque.',
@@ -177,6 +197,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Fecha o navegador em ecrã inteiro do Pi que executa o Marco. Volta ao reiniciar, ao entrar outra vez no ambiente de trabalho, pelo menu do Pi (Marco) ou com o comando marco kiosk. Pede um segundo toque.',
     'Sluit de schermvullende browser op de Pi waarop Marco draait. Hij komt terug na een herstart, bij de volgende aanmelding op het bureaublad, via het menu van de Pi (Marco) of met de opdracht marco kiosk. Vraagt om een tweede tik.',
     'Lukker fuldskærmsbrowseren på den Pi, der kører Marco. Den kommer igen efter en genstart, ved næste login på skrivebordet, fra Pi’ens menu (Marco) eller med kommandoen marco kiosk. Beder om et tryk mere.',
+    'Schließt den Vollbild-Browser auf dem Pi, auf dem Marco läuft. Er kommt nach einem Neustart zurück, bei der nächsten Desktop-Anmeldung, über das Menü des Pi (Marco) oder mit dem Befehl marco kiosk. Verlangt ein zweites Tippen.',
   ],
   [
     'Apaga el Pi que ejecuta Marco. Antes hay que activarlo en el Pi con: sudo marco power on. Pide un segundo toque.',
@@ -184,6 +205,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Desliga o Pi que executa o Marco. Antes é preciso ativá-lo no Pi com: sudo marco power on. Pede um segundo toque.',
     'Schakelt de Pi uit waarop Marco draait. Zet het eerst aan op de Pi met: sudo marco power on. Vraagt om een tweede tik.',
     'Slukker den Pi, der kører Marco. Slå det først til på Pi’en med: sudo marco power on. Beder om et tryk mere.',
+    'Fährt den Pi herunter, auf dem Marco läuft. Vorher musst du es auf dem Pi einschalten mit: sudo marco power on. Verlangt ein zweites Tippen.',
   ],
   [
     'Solo funciona en el kiosko del Pi que ejecuta Marco, el navegador de pantalla completa que abre el instalador. Necesita Permitir tocar en la pantalla.',
@@ -191,6 +213,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Só funciona no quiosque do Pi que executa o Marco, o navegador em ecrã inteiro que o instalador configura. Precisa de Permitir tocar no ecrã.',
     'Werkt alleen in de kiosk van de Pi waarop Marco draait, de schermvullende browser die het installatieprogramma instelt. Vereist ‘Aanraken op het scherm toestaan’.',
     'Virker kun i kiosken på den Pi, der kører Marco, den fuldskærmsbrowser som installationsprogrammet sætter op. Kræver »Tillad berøring på skærmen«.',
+    'Funktioniert nur im Kiosk des Pi, auf dem Marco läuft, dem Vollbild-Browser, den das Installationsprogramm einrichtet. Braucht „Tippen auf dem Bildschirm erlauben“.',
   ],
   [
     'Cierre del kiosko pedido desde la pantalla {screen}',
@@ -198,6 +221,7 @@ const ROWS: [string, string, string, string, string][] = [
     'Saída do quiosque pedida a partir do ecrã {screen}',
     'Kiosk afsluiten gevraagd vanaf het scherm {screen}',
     'Lukning af kiosken anmodet fra skærmen {screen}',
+    'Kiosk beenden angefordert von Bildschirm {screen}',
   ],
   [
     'Apagado pedido desde la pantalla {screen}',
@@ -205,9 +229,11 @@ const ROWS: [string, string, string, string, string][] = [
     'Desligar pedido a partir do ecrã {screen}',
     'Uitschakelen gevraagd vanaf het scherm {screen}',
     'Slukning anmodet fra skærmen {screen}',
+    'Herunterfahren angefordert von Bildschirm {screen}',
   ],
 ];
 
 export const ROWS_NAV: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);
 export const NL_NAV: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[3]]));
 export const DA_NAV: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[4]]));
+export const DE_NAV: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[5]]));

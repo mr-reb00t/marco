@@ -1,8 +1,8 @@
 // Seasonal decorations and the HTML overlay of a screen (#24, Pantalla → Ajustes). Admin text keyed by the Spanish
-// string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_DECOR feeds EN and PT (i18n-dict.ts); NL_DECOR,
+// string t() takes. Each row is [es, en, pt, nl, da, pl, de]. ROWS_DECOR feeds EN and PT (i18n-dict.ts); NL_DECOR,
 // DA_DECOR and PL_DECOR are spread into NL, DA and PL.
-const ROWS: [string, string, string, string, string, string][] = [
-  ['Decoración de temporada', 'Seasonal decorations', 'Decoração da época', 'Seizoensversiering', 'Sæsonpynt', 'Dekoracje sezonowe'],
+const ROWS: [string, string, string, string, string, string, string][] = [
+  ['Decoración de temporada', 'Seasonal decorations', 'Decoração da época', 'Seizoensversiering', 'Sæsonpynt', 'Dekoracje sezonowe', 'Saisonale Deko'],
   [
     'Luces, nieve o confeti que dibuja Marco, sin código. Se quedan en el borde de arriba y no tapan nada importante.',
     'Lights, snow or confetti drawn by Marco, no code needed. They stay along the top edge and cover nothing important.',
@@ -10,12 +10,13 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Lichtjes, sneeuw of confetti die Marco zelf tekent, zonder code. Ze blijven langs de bovenrand en bedekken niets belangrijks.',
     'Lys, sne eller konfetti, som Marco selv tegner, uden kode. De holder sig langs den øverste kant og dækker intet vigtigt.',
     'Światełka, śnieg lub konfetti rysowane przez Marco, bez kodu. Zostają przy górnej krawędzi i nie zasłaniają niczego ważnego.',
+    'Lichter, Schnee oder Konfetti, von Marco gezeichnet, ohne Code. Sie bleiben am oberen Rand und verdecken nichts Wichtiges.',
   ],
-  ['Decoración', 'Decoration', 'Decoração', 'Versiering', 'Pynt', 'Dekoracja'],
-  ['Automática (según la fecha)', 'Automatic (by the date)', 'Automática (conforme a data)', 'Automatisch (op datum)', 'Automatisk (efter datoen)', 'Automatyczna (według daty)'],
-  ['Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween'],
-  ['Año Nuevo', 'New Year', 'Ano Novo', 'Oud en nieuw', 'Nytår', 'Nowy Rok'],
-  ['Nieve', 'Snow', 'Neve', 'Sneeuw', 'Sne', 'Śnieg'],
+  ['Decoración', 'Decoration', 'Decoração', 'Versiering', 'Pynt', 'Dekoracja', 'Deko'],
+  ['Automática (según la fecha)', 'Automatic (by the date)', 'Automática (conforme a data)', 'Automatisch (op datum)', 'Automatisk (efter datoen)', 'Automatyczna (według daty)', 'Automatisch (nach Datum)'],
+  ['Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween', 'Halloween'],
+  ['Año Nuevo', 'New Year', 'Ano Novo', 'Oud en nieuw', 'Nytår', 'Nowy Rok', 'Neujahr'],
+  ['Nieve', 'Snow', 'Neve', 'Sneeuw', 'Sne', 'Śnieg', 'Schnee'],
   [
     'Unos pocos copos que caen despacio, con las luces de Navidad.',
     'A few flakes falling slowly, with the Christmas lights.',
@@ -23,6 +24,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Een paar vlokken die langzaam vallen, bij de kerstverlichting.',
     'Nogle få fnug, der falder langsomt, sammen med julelysene.',
     'Kilka płatków spadających powoli, razem ze światełkami świątecznymi.',
+    'Ein paar langsam fallende Flocken, zusammen mit den Weihnachtslichtern.',
   ],
   [
     'En modo ligero, en Ahorro o con menos movimiento, las luces se quedan quietas y no hay nieve ni confeti.',
@@ -31,8 +33,9 @@ const ROWS: [string, string, string, string, string, string][] = [
     'In de eenvoudige modus, bij Zuinig of met minder beweging blijven de lichtjes stil en is er geen sneeuw of confetti.',
     'I lite-tilstand, med Spar eller med mindre bevægelse står lysene stille, og der er hverken sne eller konfetti.',
     'W trybie lekkim, w trybie Oszczędnym lub przy ograniczonym ruchu światełka stoją w miejscu, a śniegu ani konfetti nie ma.',
+    'Im Lite-Modus, im Sparmodus oder bei reduzierter Bewegung bleiben die Lichter stehen und es gibt weder Schnee noch Konfetti.',
   ],
-  ['HTML sobre la pantalla', 'HTML over the screen', 'HTML sobre o ecrã', 'HTML over het scherm', 'HTML over skærmen', 'HTML nad ekranem'],
+  ['HTML sobre la pantalla', 'HTML over the screen', 'HTML sobre o ecrã', 'HTML over het scherm', 'HTML over skærmen', 'HTML nad ekranem', 'HTML über dem Bildschirm'],
   [
     'Tu propio HTML y CSS, dibujado encima de toda la pantalla (por ejemplo, unas luces en diciembre).',
     'Your own HTML and CSS, drawn over the whole screen (for example, some lights in December).',
@@ -40,10 +43,11 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Je eigen HTML en CSS, over het hele scherm getekend (bijvoorbeeld lichtjes in december).',
     'Din egen HTML og CSS, tegnet over hele skærmen (for eksempel nogle lys i december).',
     'Twój własny HTML i CSS, rysowany nad całym ekranem (na przykład światełka w grudniu).',
+    'Dein eigenes HTML und CSS, über den ganzen Bildschirm gezeichnet (zum Beispiel Lichter im Dezember).',
   ],
-  ['Cada año entre dos fechas', 'Every year between two dates', 'Todos os anos entre duas datas', 'Elk jaar tussen twee datums', 'Hvert år mellem to datoer', 'Co roku między dwiema datami'],
-  ['{used} de {max} caracteres', '{used} of {max} characters', '{used} de {max} caracteres', '{used} van {max} tekens', '{used} af {max} tegn', '{used} z {max} znaków'],
-  ['Fechas de cada una', 'Dates of each', 'Datas de cada uma', 'Datums van elk', 'Datoer for hver', 'Daty każdej'],
+  ['Cada año entre dos fechas', 'Every year between two dates', 'Todos os anos entre duas datas', 'Elk jaar tussen twee datums', 'Hvert år mellem to datoer', 'Co roku między dwiema datami', 'Jedes Jahr zwischen zwei Daten'],
+  ['{used} de {max} caracteres', '{used} of {max} characters', '{used} de {max} caracteres', '{used} van {max} tekens', '{used} af {max} tegn', '{used} z {max} znaków', '{used} von {max} Zeichen'],
+  ['Fechas de cada una', 'Dates of each', 'Datas de cada uma', 'Datums van elk', 'Datoer for hver', 'Daty każdej', 'Daten der einzelnen Dekos'],
   [
     'Cada año, los dos días incluidos. Si dos coinciden, gana Año Nuevo, luego Navidad y luego Halloween.',
     'Every year, both days included. If two overlap, New Year wins, then Christmas, then Halloween.',
@@ -51,8 +55,9 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Elk jaar, beide dagen inbegrepen. Als er twee samenvallen, gaat oud en nieuw voor, dan kerst en dan Halloween.',
     'Hvert år, begge dage medregnet. Hvis to overlapper, vinder nytår, så jul og så halloween.',
     'Co roku, oba dni włącznie. Jeśli dwie się pokrywają, wygrywa Nowy Rok, potem Boże Narodzenie, potem Halloween.',
+    'Jedes Jahr, beide Tage eingeschlossen. Überschneiden sich zwei, gewinnt Neujahr, dann Weihnachten, dann Halloween.',
   ],
-  ['Volver a las fechas de siempre', 'Back to the usual dates', 'Voltar às datas habituais', 'Terug naar de gewone datums', 'Tilbage til de sædvanlige datoer', 'Przywróć zwykłe daty'],
+  ['Volver a las fechas de siempre', 'Back to the usual dates', 'Voltar às datas habituais', 'Terug naar de gewone datums', 'Tilbage til de sædvanlige datoer', 'Przywróć zwykłe daty', 'Zurück zu den üblichen Daten'],
   [
     'Puedes tener hasta {n}, cada uno con sus fechas; los que coinciden se ven a la vez. Los scripts no se ejecutan y solo se cargan imágenes https o data:. No reciben toques: la pantalla sigue funcionando debajo.',
     'You can have up to {n}, each with its own dates; those that overlap show together. Scripts do not run and only https or data: images load. They take no taps: the screen keeps working underneath.',
@@ -60,14 +65,16 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Je kunt er tot {n} hebben, elk met eigen datums; die samenvallen zie je tegelijk. Scripts worden niet uitgevoerd en alleen https- of data:-afbeeldingen worden geladen. Ze reageren niet op tikken: het scherm eronder blijft gewoon werken.',
     'Du kan have op til {n}, hver med sine egne datoer; dem, der overlapper, vises samtidig. Scripts køres ikke, og kun https- eller data:-billeder indlæses. De tager ikke imod tryk: skærmen virker fortsat nedenunder.',
     'Możesz mieć do {n}, każdy z własnymi datami; te, które się pokrywają, widać naraz. Skrypty się nie uruchamiają, a wczytywane są tylko obrazy https lub data:. Nie reagują na dotyk: ekran pod spodem działa dalej.',
+    'Du kannst bis zu {n} haben, jedes mit eigenen Daten; was sich überschneidet, wird zusammen angezeigt. Skripte laufen nicht, und es werden nur https- oder data:-Bilder geladen. Sie reagieren nicht auf Tippen: Der Bildschirm darunter funktioniert weiter.',
   ],
-  ['{used} de {max} KB entre todos.', '{used} of {max} KB for all of them.', '{used} de {max} KB entre todos.', '{used} van {max} KB voor alles samen.', '{used} af {max} KB i alt.', '{used} z {max} KB łącznie.'],
-  ['Nombre, p. ej. Luces de Navidad', 'Name, e.g. Christmas lights', 'Nome, p. ex. Luzes de Natal', 'Naam, bijv. Kerstverlichting', 'Navn, f.eks. Julelys', 'Nazwa, np. Światełka świąteczne'],
-  ['Añadir HTML', 'Add HTML', 'Adicionar HTML', 'HTML toevoegen', 'Tilføj HTML', 'Dodaj HTML'],
-  ['Añadir otro HTML', 'Add another HTML', 'Adicionar outro HTML', 'Nog een HTML toevoegen', 'Tilføj endnu en HTML', 'Dodaj kolejny HTML'],
+  ['{used} de {max} KB entre todos.', '{used} of {max} KB for all of them.', '{used} de {max} KB entre todos.', '{used} van {max} KB voor alles samen.', '{used} af {max} KB i alt.', '{used} z {max} KB łącznie.', '{used} von {max} KB für alle zusammen.'],
+  ['Nombre, p. ej. Luces de Navidad', 'Name, e.g. Christmas lights', 'Nome, p. ex. Luzes de Natal', 'Naam, bijv. Kerstverlichting', 'Navn, f.eks. Julelys', 'Nazwa, np. Światełka świąteczne', 'Name, z. B. Weihnachtslichter'],
+  ['Añadir HTML', 'Add HTML', 'Adicionar HTML', 'HTML toevoegen', 'Tilføj HTML', 'Dodaj HTML', 'HTML hinzufügen'],
+  ['Añadir otro HTML', 'Add another HTML', 'Adicionar outro HTML', 'Nog een HTML toevoegen', 'Tilføj endnu en HTML', 'Dodaj kolejny HTML', 'Weiteres HTML hinzufügen'],
 ];
 
 export const ROWS_DECOR: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);
 export const NL_DECOR: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[3]]));
 export const DA_DECOR: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[4]]));
+export const DE_DECOR: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[6]]));
 export const PL_DECOR: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[5]]));

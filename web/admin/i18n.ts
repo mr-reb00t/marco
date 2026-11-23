@@ -5,13 +5,14 @@ import { LANGS, LOCALES } from '../shared/i18n';
 import { NL, NL_SINGULAR } from './i18n-dict-nl';
 import { DA, DA_SINGULAR } from './i18n-dict-da';
 import { PL, PL_FEW, PL_SINGULAR } from './i18n-dict-pl';
+import { DE, DE_SINGULAR } from './i18n-dict-de';
 import {
-  DA_FAMILY, DA_SINGULAR_FAMILY, NL_FAMILY, NL_SINGULAR_FAMILY, PL_FAMILY, PL_FEW_FAMILY, PL_SINGULAR_FAMILY,
+  DA_FAMILY, DA_SINGULAR_FAMILY, DE_FAMILY, DE_SINGULAR_FAMILY, NL_FAMILY, NL_SINGULAR_FAMILY, PL_FAMILY, PL_FEW_FAMILY, PL_SINGULAR_FAMILY,
 } from './i18n-dict-family';
 
 /**
  * Spanish is the source language: t() takes the Spanish string as key and returns the
- * English/Portuguese/Dutch/Danish/Polish translation when available. A Dutch, Danish or Polish key that is missing
+ * English/Portuguese/Dutch/Danish/Polish/German translation when available. A Dutch, Danish, Polish or German key that is missing
  * falls back to English; English and Portuguese fall back to Spanish.
  * `{name}` placeholders are interpolated from `vars`. Polish also has a "few" form for counts like 2-4 (pluralForm).
  */
@@ -19,11 +20,12 @@ let current: Lang = 'es';
 
 const isLang = (v: unknown): v is Lang => LANGS.includes(v as Lang);
 
-/** Dutch, Danish and Polish rows (admin + family), their singular forms and (Polish) their "few" forms. */
+/** Dutch, Danish, Polish and German rows (admin + family), their singular forms and (Polish) their "few" forms. */
 const MORE: Partial<Record<Lang, { rows: Record<string, string>[]; one: Record<string, string>[]; few?: Record<string, string>[] }>> = {
   nl: { rows: [NL, NL_FAMILY], one: [NL_SINGULAR, NL_SINGULAR_FAMILY] },
   da: { rows: [DA, DA_FAMILY], one: [DA_SINGULAR, DA_SINGULAR_FAMILY] },
   pl: { rows: [PL, PL_FAMILY], one: [PL_SINGULAR, PL_SINGULAR_FAMILY], few: [PL_FEW, PL_FEW_FAMILY] },
+  de: { rows: [DE, DE_FAMILY], one: [DE_SINGULAR, DE_SINGULAR_FAMILY] },
 };
 
 let plRules: Intl.PluralRules | null = null;
@@ -120,11 +122,16 @@ export function formatDuration(sec: number): string {
   const d = Math.floor(sec / 86400);
   const h = Math.floor((sec % 86400) / 3600);
   const m = Math.floor((sec % 3600) / 60);
-  // Danish writes the units out ("2 t 5 min", t = timer); Polish spaces them ("2 h 5 min", d = dni)
+  // Danish writes the units out ("2 t 5 min", t = timer); Polish spaces them ("2 h 5 min", d = dni); German abbreviates them ("2 Tg. 5 Std.")
   if (current === 'pl') {
     if (d) return `${d} d ${h} h`;
     if (h) return `${h} h ${m} min`;
     return `${m} min ${Math.floor(sec % 60)} s`;
+  }
+  if (current === 'de') {
+    if (d) return `${d} Tg. ${h} Std.`;
+    if (h) return `${h} Std. ${m} Min.`;
+    return `${m} Min. ${Math.floor(sec % 60)} Sek.`;
   }
   if (current === 'da') {
     if (d) return `${d} d ${h} t`;

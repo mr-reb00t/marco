@@ -1,7 +1,7 @@
 // A "Grupo" on its own in the builder (#25), the "Icono" of a Home Assistant card (#26) and an Entidad's second sensor (#28), the Bolsa card's currency and labels, the calendar's grid lines (#29), past events (#32), manual calendar downloads (#37), the days a calendar grid shows (#39) and what night mode does (#38), the photo card behind the cards and in the sidebar (#36, #41). Admin text keyed by the
-// Spanish string t() takes. Each row is [es, en, pt, nl, da, pl]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
+// Spanish string t() takes. Each row is [es, en, pt, nl, da, pl, de]. ROWS_GROUP feeds EN and PT (i18n-dict.ts); NL_GROUP, DA_GROUP and PL_GROUP are spread into
 // NL, DA and PL.
-const ROWS: [string, string, string, string, string, string][] = [
+const ROWS: [string, string, string, string, string, string, string][] = [
   [
     'De 2 a 4 tarjetas en el hueco de una, en filas o en columnas.',
     '2 to 4 cards in the space of one, in rows or in columns.',
@@ -9,6 +9,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     '2 tot 4 kaarten op de plek van één, in rijen of in kolommen.',
     '2 til 4 kort på pladsen til ét, i rækker eller i kolonner.',
     'Od 2 do 4 kart w miejscu jednej, w wierszach lub w kolumnach.',
+    '2 bis 4 Karten im Platz von einer, in Reihen oder Spalten.',
   ],
   [
     'Las tarjetas de un grupo solo se ven: no se pueden tocar en la pantalla.',
@@ -17,6 +18,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De kaarten van een groep zijn alleen te zien: je kunt ze op het scherm niet aantikken.',
     'Kortene i en gruppe vises kun: de kan ikke trykkes på skærmen.',
     'Karty grupy są tylko do oglądania: nie można ich dotykać na ekranie.',
+    'Die Karten einer Gruppe werden nur angezeigt: Am Bildschirm lassen sie sich nicht antippen.',
   ],
   [
     'Auto: según lo que es. Una batería muestra cuánta carga le queda.',
@@ -25,8 +27,9 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Auto: naar wat het is. Een batterij laat zien hoeveel lading er nog in zit.',
     'Auto: efter hvad det er. Et batteri viser, hvor meget strøm der er tilbage.',
     'Auto: według tego, czym jest. Bateria pokazuje, ile ładunku jej zostało.',
+    'Auto: je nach Art. Eine Batterie zeigt, wie viel Ladung sie noch hat.',
   ],
-  ['Segundo sensor', 'Second sensor', 'Segundo sensor', 'Tweede sensor', 'Anden sensor', 'Drugi czujnik'],
+  ['Segundo sensor', 'Second sensor', 'Segundo sensor', 'Tweede sensor', 'Anden sensor', 'Drugi czujnik', 'Zweiter Sensor'],
   [
     'Su valor sale detrás del primero, por ejemplo 21,4 °C / 48 %.',
     'Its value shows after the first one, for example 21.4 °C / 48 %.',
@@ -34,6 +37,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De waarde staat na de eerste, bijvoorbeeld 21,4 °C / 48 %.',
     'Værdien vises efter den første, for eksempel 21,4 °C / 48 %.',
     'Jego wartość pojawia się po pierwszej, na przykład 21,4 °C / 48 %.',
+    'Sein Wert steht hinter dem ersten, zum Beispiel 21,4 °C / 48 %.',
   ],
   [
     'Su valor sale detrás del número, por ejemplo 80 % / 320 km.',
@@ -42,15 +46,16 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De waarde staat na het getal, bijvoorbeeld 80 % / 320 km.',
     'Værdien vises efter tallet, for eksempel 80 % / 320 km.',
     'Jego wartość pojawia się po liczbie, na przykład 80 % / 320 km.',
+    'Sein Wert steht hinter der Zahl, zum Beispiel 80 % / 320 km.',
   ],
-  ['En grande, si hay varios valores se van turnando.', 'Large: with several quotes, they take turns.', 'Em grande: com vários valores, vão alternando.', 'Groot: met meerdere koersen wisselen ze elkaar af.', 'Stor: med flere kurser skiftes de.', 'Duża: przy kilku notowaniach zmieniają się po kolei.'],
-  ['Símbolo y nombre', 'Symbol and name', 'Símbolo e nome', 'Symbool en naam', 'Symbol og navn', 'Symbol i nazwa'],
-  ['Solo el nombre', 'Name only', 'Só o nome', 'Alleen de naam', 'Kun navnet', 'Tylko nazwa'],
-  ['Solo el símbolo', 'Symbol only', 'Só o símbolo', 'Alleen het symbool', 'Kun symbolet', 'Tylko symbol'],
-  ['El nombre es el que le pones tú a cada valor.', 'The name is the one you give each quote.', 'O nome é o que dás a cada valor.', 'De naam is die je zelf aan elke koers geeft.', 'Navnet er det, du selv giver hver kurs.', 'Nazwa to ta, którą sam nadajesz każdemu notowaniu.'],
-  ['Sin símbolo', 'No sign', 'Sem símbolo', 'Zonder teken', 'Uden tegn', 'Bez symbolu'],
-  ['Dólar ($)', 'Dollar ($)', 'Dólar ($)', 'Dollar ($)', 'Dollar ($)', 'Dolar ($)'],
-  ['Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)'],
+  ['En grande, si hay varios valores se van turnando.', 'Large: with several quotes, they take turns.', 'Em grande: com vários valores, vão alternando.', 'Groot: met meerdere koersen wisselen ze elkaar af.', 'Stor: med flere kurser skiftes de.', 'Duża: przy kilku notowaniach zmieniają się po kolei.', 'Groß: Bei mehreren Werten wechseln sie sich ab.'],
+  ['Símbolo y nombre', 'Symbol and name', 'Símbolo e nome', 'Symbool en naam', 'Symbol og navn', 'Symbol i nazwa', 'Symbol und Name'],
+  ['Solo el nombre', 'Name only', 'Só o nome', 'Alleen de naam', 'Kun navnet', 'Tylko nazwa', 'Nur Name'],
+  ['Solo el símbolo', 'Symbol only', 'Só o símbolo', 'Alleen het symbool', 'Kun symbolet', 'Tylko symbol', 'Nur Symbol'],
+  ['El nombre es el que le pones tú a cada valor.', 'The name is the one you give each quote.', 'O nome é o que dás a cada valor.', 'De naam is die je zelf aan elke koers geeft.', 'Navnet er det, du selv giver hver kurs.', 'Nazwa to ta, którą sam nadajesz każdemu notowaniu.', 'Der Name ist der, den du jedem Wert gibst.'],
+  ['Sin símbolo', 'No sign', 'Sem símbolo', 'Zonder teken', 'Uden tegn', 'Bez symbolu', 'Ohne Zeichen'],
+  ['Dólar ($)', 'Dollar ($)', 'Dólar ($)', 'Dollar ($)', 'Dollar ($)', 'Dolar ($)', 'Dollar ($)'],
+  ['Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)', 'Euro (€)'],
   [
     'Los precios llegan en dólares. En otra moneda se pasan con el cambio del Banco Central Europeo de ese día.',
     'Prices come in dollars. In another currency they are converted at that day\'s European Central Bank rate.',
@@ -58,6 +63,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De koersen komen in dollars. In een andere munt worden ze omgerekend met de koers van de Europese Centrale Bank van die dag.',
     'Kurserne kommer i dollar. I en anden valuta omregnes de med Den Europæiske Centralbanks kurs for den dag.',
     'Ceny przychodzą w dolarach. W innej walucie są przeliczane po kursie Europejskiego Banku Centralnego z danego dnia.',
+    'Die Preise kommen in Dollar. In andere Währungen werden sie zum Tageskurs der Europäischen Zentralbank umgerechnet.',
   ],
   [
     'De fondo: la curva detrás del precio, de borde a borde; en una lista, cada valor lleva la suya detrás.',
@@ -66,18 +72,19 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Achtergrond: de lijn achter de koers, van rand tot rand; in een lijst heeft elke koers de zijne erachter.',
     'Baggrund: kurven bag prisen, fra kant til kant; i en liste har hver kurs sin egen bagved.',
     'W tle: krzywa za ceną, od krawędzi do krawędzi; na liście każde notowanie ma swoją za sobą.',
+    'Hintergrund: die Kurve hinter dem Preis, von Rand zu Rand; in einer Liste hat jeder Wert seine eigene dahinter.',
   ],
-  ['Líneas de la cuadrícula', 'Grid lines', 'Linhas da grelha', 'Rasterlijnen', 'Gitterlinjer', 'Linie siatki'],
-  ['Marcadas', 'Clear', 'Marcadas', 'Duidelijk', 'Tydelige', 'Wyraźne'],
-  ['Fuertes', 'Strong', 'Fortes', 'Sterk', 'Kraftige', 'Mocne'],
-  ['Color de las líneas', 'Line colour', 'Cor das linhas', 'Kleur van de lijnen', 'Farve på linjerne', 'Kolor linii'],
-  ['Su color, en la pestaña Estilo.', 'Their colour is in the Style tab.', 'A cor está no separador Estilo.', 'De kleur staat op het tabblad Stijl.', 'Farven finder du på fanen Stil.', 'Ich kolor jest w karcie Styl.'],
-  ['Su color: Auto es el del tema.', 'Colour: Auto follows the theme.', 'Cor: Auto segue o tema.', 'Kleur: Auto volgt het thema.', 'Farve: Auto følger temaet.', 'Kolor: Auto zgodnie z motywem.'],
+  ['Líneas de la cuadrícula', 'Grid lines', 'Linhas da grelha', 'Rasterlijnen', 'Gitterlinjer', 'Linie siatki', 'Rasterlinien'],
+  ['Marcadas', 'Clear', 'Marcadas', 'Duidelijk', 'Tydelige', 'Wyraźne', 'Deutlich'],
+  ['Fuertes', 'Strong', 'Fortes', 'Sterk', 'Kraftige', 'Mocne', 'Kräftig'],
+  ['Color de las líneas', 'Line colour', 'Cor das linhas', 'Kleur van de lijnen', 'Farve på linjerne', 'Kolor linii', 'Linienfarbe'],
+  ['Su color, en la pestaña Estilo.', 'Their colour is in the Style tab.', 'A cor está no separador Estilo.', 'De kleur staat op het tabblad Stijl.', 'Farven finder du på fanen Stil.', 'Ich kolor jest w karcie Styl.', 'Ihre Farbe stellst du im Tab Stil ein.'],
+  ['Su color: Auto es el del tema.', 'Colour: Auto follows the theme.', 'Cor: Auto segue o tema.', 'Kleur: Auto volgt het thema.', 'Farve: Auto følger temaet.', 'Kolor: Auto zgodnie z motywem.', 'Farbe: Auto folgt dem Design.'],
   // how faded the events that have ended are (#32)
-  ['Eventos pasados', 'Past events', 'Eventos passados', 'Voorbije afspraken', 'Tidligere begivenheder', 'Minione wydarzenia'],
-  ['Atenuados', 'Dimmed', 'Esbatidos', 'Gedimd', 'Dæmpede', 'Przygaszone'],
-  ['Un poco', 'Slightly', 'Um pouco', 'Een beetje', 'Lidt', 'Trochę'],
-  ['Normales', 'Normal', 'Normais', 'Normaal', 'Normale', 'Normalne'],
+  ['Eventos pasados', 'Past events', 'Eventos passados', 'Voorbije afspraken', 'Tidligere begivenheder', 'Minione wydarzenia', 'Vergangene Termine'],
+  ['Atenuados', 'Dimmed', 'Esbatidos', 'Gedimd', 'Dæmpede', 'Przygaszone', 'Abgeschwächt'],
+  ['Un poco', 'Slightly', 'Um pouco', 'Een beetje', 'Lidt', 'Trochę', 'Etwas'],
+  ['Normales', 'Normal', 'Normais', 'Normaal', 'Normale', 'Normalne', 'Normal'],
   [
     'Cuánto se apagan los que ya han terminado.',
     'How much the ones that have ended fade.',
@@ -85,13 +92,14 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Hoeveel de afspraken die al voorbij zijn vervagen.',
     'Hvor meget dem, der er slut, tones ned.',
     'Jak bardzo przygasają te, które już się skończyły.',
+    'Wie stark die schon beendeten verblassen.',
   ],
   // the Value widget (#34)
-  ['Valor {n}', 'Value {n}', 'Valor {n}', 'Waarde {n}', 'Værdi {n}', 'Wartość {n}'],
-  ['Añadir otro valor', 'Add another value', 'Adicionar outro valor', 'Nog een waarde toevoegen', 'Tilføj en værdi mere', 'Dodaj kolejną wartość'],
-  ['Baterías de los coches', 'Car batteries', 'Baterias dos carros', 'Accu van de auto’s', 'Bilernes batterier', 'Baterie samochodów'],
-  ['Añade al menos un valor', 'Add at least one value', 'Adiciona pelo menos um valor', 'Voeg minstens één waarde toe', 'Tilføj mindst én værdi', 'Dodaj co najmniej jedną wartość'],
-  ['Escribe la clave de cada valor', 'Type the key of each value', 'Escreve a chave de cada valor', 'Vul de sleutel van elke waarde in', 'Skriv nøglen til hver værdi', 'Wpisz klucz każdej wartości'],
+  ['Valor {n}', 'Value {n}', 'Valor {n}', 'Waarde {n}', 'Værdi {n}', 'Wartość {n}', 'Wert {n}'],
+  ['Añadir otro valor', 'Add another value', 'Adicionar outro valor', 'Nog een waarde toevoegen', 'Tilføj en værdi mere', 'Dodaj kolejną wartość', 'Weiteren Wert hinzufügen'],
+  ['Baterías de los coches', 'Car batteries', 'Baterias dos carros', 'Accu van de auto’s', 'Bilernes batterier', 'Baterie samochodów', 'Autobatterien'],
+  ['Añade al menos un valor', 'Add at least one value', 'Adiciona pelo menos um valor', 'Voeg minstens één waarde toe', 'Tilføj mindst én værdi', 'Dodaj co najmniej jedną wartość', 'Füge mindestens einen Wert hinzu'],
+  ['Escribe la clave de cada valor', 'Type the key of each value', 'Escreve a chave de cada valor', 'Vul de sleutel van elke waarde in', 'Skriv nøglen til hver værdi', 'Wpisz klucz każdej wartości', 'Gib für jeden Wert den Schlüssel ein'],
   [
     'Un valor que no se ha actualizado en ese tiempo sale en gris. 0: nunca.',
     'A value not updated for that long is greyed out. 0: never.',
@@ -99,6 +107,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Een waarde die zo lang niet is bijgewerkt, wordt grijs. 0: nooit.',
     'En værdi, der ikke er opdateret så længe, bliver grå. 0: aldrig.',
     'Wartość, która tak długo się nie zmieniła, robi się szara. 0: nigdy.',
+    'Ein Wert, der so lange nicht aktualisiert wurde, wird grau. 0: nie.',
   ],
   [
     'Números que Home Assistant u otro programa envía a Marco: la batería del coche, la producción solar. Uno en grande, o varios en lista.',
@@ -107,12 +116,13 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Getallen die Home Assistant of een ander programma naar Marco stuurt: de accu van de auto, de zonnepanelen. Eén groot, of meerdere in een lijst.',
     'Tal, som Home Assistant eller et andet program sender til Marco: bilens batteri, solcellerne. Ét stort, eller flere i en liste.',
     'Liczby, które Home Assistant lub inny program wysyła do Marco: bateria samochodu, produkcja z paneli. Jedna duża albo kilka na liście.',
+    'Zahlen, die Home Assistant oder ein anderes Programm an Marco sendet: die Autobatterie, die Solarleistung. Einzeln groß oder mehrere als Liste.',
   ],
   // how much the events' background covers what is behind them (#32)
-  ['Fondo de los eventos', 'Event background', 'Fundo dos eventos', 'Achtergrond van afspraken', 'Baggrund for begivenheder', 'Tło wydarzeń'],
-  ['Suave', 'Soft', 'Suave', 'Zacht', 'Blød', 'Delikatne'],
-  ['Más opaco', 'More solid', 'Mais opaco', 'Voller', 'Mere dækkende', 'Mocniejsze'],
-  ['Sólido', 'Solid', 'Sólido', 'Vol', 'Fyldt', 'Pełne'],
+  ['Fondo de los eventos', 'Event background', 'Fundo dos eventos', 'Achtergrond van afspraken', 'Baggrund for begivenheder', 'Tło wydarzeń', 'Hintergrund der Termine'],
+  ['Suave', 'Soft', 'Suave', 'Zacht', 'Blød', 'Delikatne', 'Leicht'],
+  ['Más opaco', 'More solid', 'Mais opaco', 'Voller', 'Mere dækkende', 'Mocniejsze', 'Deckender'],
+  ['Sólido', 'Solid', 'Sólido', 'Vol', 'Fyldt', 'Pełne', 'Deckend'],
   [
     'Más opaco o Sólido se leen mejor sobre una foto.',
     'More solid or Solid read better over a photo.',
@@ -120,6 +130,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Voller of Vol leest beter op een foto.',
     'Mere dækkende eller Fyldt er lettere at læse oven på et foto.',
     'Mocniejsze lub Pełne lepiej czytać na zdjęciu.',
+    'Deckender oder Deckend sind über einem Foto besser lesbar.',
   ],
   // where the layouts put the clock, and how large (#36)
   [
@@ -129,6 +140,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Automatisch: waar de indeling hem zet. De datum en de meldingen eronder gaan mee.',
     'Automatisk: hvor layoutet placerer det. Datoen og beskederne under følger med.',
     'Automatycznie: tam, gdzie umieszcza go układ. Data i powiadomienia pod nim przesuwają się razem z nim.',
+    'Automatisch: wo das Layout sie vorsieht. Datum und Hinweise darunter wandern mit.',
   ],
   [
     'Nunca pasa del ancho de su panel: para un reloj más grande, ensancha el panel o quita los segundos.',
@@ -137,6 +149,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Hij wordt nooit breder dan zijn paneel: voor een grotere klok maak je het paneel breder of verberg je de seconden.',
     'Det bliver aldrig bredere end sit panel: vil du have et større ur, så gør panelet bredere eller skjul sekunderne.',
     'Nigdy nie jest szerszy niż jego panel: aby zegar był większy, poszerz panel lub ukryj sekundy.',
+    'Nie breiter als ihr Bereich: Für eine größere Uhr verbreitere den Bereich oder blende die Sekunden aus.',
   ],
   // a photo card on Personalizado: always behind the other cards (#36), and in the sidebar it fills the bar (#41)
   [
@@ -146,8 +159,9 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De foto staat altijd achter de andere kaarten, dus je kunt er kaarten op zetten. In de zijbalk vult hij de hele balk.',
     'Fotoet ligger altid bag de andre kort, så du kan lægge kort oven på det. I sidebjælken fylder det hele bjælken.',
     'Zdjęcie jest zawsze za innymi kartami, więc możesz kłaść na nim karty. Na pasku bocznym wypełnia cały pasek.',
+    'Das Foto liegt immer hinter den anderen Karten, du kannst also Karten darüberlegen. In der Seitenleiste füllt es die ganze Leiste.',
   ],
-  ['Llena la barra lateral', 'Fills the sidebar', 'Enche a barra lateral', 'Vult de zijbalk', 'Fylder sidebjælken', 'Wypełnia pasek boczny'],
+  ['Llena la barra lateral', 'Fills the sidebar', 'Enche a barra lateral', 'Vult de zijbalk', 'Fylder sidebjælken', 'Wypełnia pasek boczny', 'Füllt die Seitenleiste'],
   [
     'Llena la barra lateral, detrás de sus tarjetas.',
     'It fills the sidebar, behind its cards.',
@@ -155,6 +169,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Hij vult de zijbalk, achter de kaarten erin.',
     'Det fylder sidebjælken, bag dens kort.',
     'Wypełnia pasek boczny, za jego kartami.',
+    'Füllt die Seitenleiste, hinter ihren Karten.',
   ],
   [
     'Una tarjeta de foto llena la barra lateral, así que este relleno no se ve. Vuelve si la quitas de la barra.',
@@ -163,6 +178,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Een fotokaart vult de zijbalk, dus deze vulling is niet te zien. Hij komt terug als je de kaart uit de balk haalt.',
     'Et fotokort fylder sidebjælken, så denne udfyldning ses ikke. Den kommer tilbage, hvis du tager kortet ud af bjælken.',
     'Karta zdjęcia wypełnia pasek boczny, więc tego wypełnienia nie widać. Wróci, gdy wyjmiesz kartę z paska.',
+    'Eine Foto-Karte füllt die Seitenleiste, daher ist diese Füllung nicht zu sehen. Sie kommt zurück, wenn du die Karte aus der Leiste nimmst.',
   ],
   [
     'En horizontal una tarjeta de foto llena la barra lateral: este relleno solo se ve en vertical.',
@@ -171,6 +187,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Liggend vult een fotokaart de zijbalk: deze vulling is alleen staand te zien.',
     'I liggende format fylder et fotokort sidebjælken: denne udfyldning ses kun i stående format.',
     'W poziomie karta zdjęcia wypełnia pasek boczny: to wypełnienie widać tylko w pionie.',
+    'Im Querformat füllt eine Foto-Karte die Seitenleiste: Diese Füllung ist nur im Hochformat zu sehen.',
   ],
   [
     'En vertical una tarjeta de foto llena la barra lateral: este relleno solo se ve en horizontal.',
@@ -179,6 +196,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Staand vult een fotokaart de zijbalk: deze vulling is alleen liggend te zien.',
     'I stående format fylder et fotokort sidebjælken: denne udfyldning ses kun i liggende format.',
     'W pionie karta zdjęcia wypełnia pasek boczny: to wypełnienie widać tylko w poziomie.',
+    'Im Hochformat füllt eine Foto-Karte die Seitenleiste: Diese Füllung ist nur im Querformat zu sehen.',
   ],
   [
     'La barra lateral ya tiene una foto detrás de sus tarjetas. Solo cabe una.',
@@ -187,6 +205,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De zijbalk heeft al een foto achter de kaarten. Er past er maar één.',
     'Sidebjælken har allerede et foto bag sine kort. Der er kun plads til ét.',
     'Pasek boczny ma już zdjęcie za swoimi kartami. Mieści się tylko jedno.',
+    'Die Seitenleiste hat schon ein Foto hinter ihren Karten. Es passt nur eins.',
   ],
   [
     'En la barra lateral de esta pantalla la foto cambia cada {interval}, como se eligió en el editor.',
@@ -195,6 +214,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'In de zijbalk van dit scherm verandert de foto elke {interval}, zoals gekozen in de editor.',
     'I sidebjælken på denne skærm skifter fotoet hver {interval}, som valgt i editoren.',
     'Na pasku bocznym tego ekranu zdjęcie zmienia się co {interval}, tak jak wybrano w edytorze.',
+    'In der Seitenleiste dieses Bildschirms wechselt das Foto alle {interval}, wie im Editor eingestellt.',
   ],
   // a Personalizado screen's photo: the Fondo section's switch and the editor's Fondo go together
   [
@@ -204,6 +224,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Op een Aangepast scherm kies je dit ook in de editor, bij Achtergrond: Foto, Bewegend of Kleur.',
     'På en Tilpasset skærm vælges det også i editoren under Baggrund: Foto, Animeret eller Farve.',
     'Na ekranie Własny wybiera się to też w edytorze, w sekcji Tło: Zdjęcie, Animowane lub Kolor.',
+    'Bei einem individuellen Layout wählst du es auch im Editor, unter Hintergrund: Foto, Animiert oder Farbe.',
   ],
   [
     'Con el Fondo en Foto no se puede añadir. Cambia el Fondo de la pantalla a Animado o Color.',
@@ -212,9 +233,10 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Kan niet worden toegevoegd zolang de Achtergrond Foto is. Zet de Achtergrond van het scherm op Bewegend of Kleur.',
     'Kan ikke tilføjes, mens Baggrund er Foto. Skift skærmens Baggrund til Animeret eller Farve.',
     'Nie można dodać, gdy Tło to Zdjęcie. Zmień Tło ekranu na Animowane lub Kolor.',
+    'Mit dem Hintergrund auf Foto nicht möglich. Stell den Hintergrund des Bildschirms auf Animiert oder Farbe.',
   ],
   // ... out to the edges of the screen
-  ['Hasta el borde de la pantalla', 'Out to the screen edge', 'Até à borda do ecrã', 'Tot aan de rand van het scherm', 'Helt ud til skærmkanten', 'Do krawędzi ekranu'],
+  ['Hasta el borde de la pantalla', 'Out to the screen edge', 'Até à borda do ecrã', 'Tot aan de rand van het scherm', 'Helt ud til skærmkanten', 'Do krawędzi ekranu', 'Bis zum Bildschirmrand'],
   [
     'Esquinas rectas, y la foto llega al borde de la pantalla por los lados donde lo toca, como la foto del diseño Moderno. En la barra lateral llega a los bordes de la barra.',
     'Square corners, and the photo reaches the edge of the screen on the sides where it touches it, like the photo of the Modern design. In the sidebar it reaches the edges of the bar.',
@@ -222,16 +244,17 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Rechte hoeken, en de foto loopt door tot de rand van het scherm aan de kanten waar hij die raakt, zoals de foto van het ontwerp Modern. In de zijbalk loopt hij door tot de randen van de balk.',
     'Lige hjørner, og fotoet går helt ud til skærmkanten på de sider, hvor det rører den, som fotoet i designet Moderne. I sidebjælken går det helt ud til bjælkens kanter.',
     'Proste rogi, a zdjęcie sięga krawędzi ekranu po stronach, gdzie jej dotyka, jak zdjęcie w projekcie Nowoczesny. Na pasku bocznym sięga krawędzi paska.',
+    'Keine runden Ecken, und das Foto reicht an den Seiten, wo es ihn berührt, bis zum Bildschirmrand, wie das Foto im Stil Modern. In der Seitenleiste reicht es bis an die Ränder der Leiste.',
   ],
   // manual calendar downloads on Estado (#37); {secs}, not {n}, so t() never picks plural forms for these short labels
-  ['Descargar ahora', 'Fetch now', 'Transferir agora', 'Nu ophalen', 'Hent nu', 'Pobierz teraz'],
-  ['Descargar todos', 'Fetch all', 'Transferir todos', 'Alles ophalen', 'Hent alle', 'Pobierz wszystkie'],
-  ['Descarga ahora todos los calendarios activos', 'Fetch every active calendar now', 'Transfere agora todos os calendários ativos', "Haal alle actieve agenda's nu op", 'Henter alle aktive kalendere nu', 'Pobiera teraz wszystkie aktywne kalendarze'],
-  ['Espera {secs} s', 'Wait {secs} s', 'Aguarde {secs} s', 'Wacht {secs} s', 'Vent {secs} s', 'Poczekaj {secs} s'],
-  ['Calendario descargado', 'Calendar fetched', 'Calendário transferido', 'Agenda opgehaald', 'Kalender hentet', 'Kalendarz pobrany'],
-  ['Calendarios descargados', 'Calendars fetched', 'Calendários transferidos', "Agenda's opgehaald", 'Kalendere hentet', 'Kalendarze pobrane'],
-  ['No se pudo descargar el calendario.', 'The calendar could not be fetched.', 'Não foi possível transferir o calendário.', 'De agenda kon niet worden opgehaald.', 'Kalenderen kunne ikke hentes.', 'Nie udało się pobrać kalendarza.'],
-  ['Algunos calendarios no se pudieron descargar.', 'Some calendars could not be fetched.', 'Alguns calendários não puderam ser transferidos.', "Sommige agenda's konden niet worden opgehaald.", 'Nogle kalendere kunne ikke hentes.', 'Niektórych kalendarzy nie udało się pobrać.'],
+  ['Descargar ahora', 'Fetch now', 'Transferir agora', 'Nu ophalen', 'Hent nu', 'Pobierz teraz', 'Jetzt abrufen'],
+  ['Descargar todos', 'Fetch all', 'Transferir todos', 'Alles ophalen', 'Hent alle', 'Pobierz wszystkie', 'Alle abrufen'],
+  ['Descarga ahora todos los calendarios activos', 'Fetch every active calendar now', 'Transfere agora todos os calendários ativos', "Haal alle actieve agenda's nu op", 'Henter alle aktive kalendere nu', 'Pobiera teraz wszystkie aktywne kalendarze', 'Alle aktiven Kalender jetzt abrufen'],
+  ['Espera {secs} s', 'Wait {secs} s', 'Aguarde {secs} s', 'Wacht {secs} s', 'Vent {secs} s', 'Poczekaj {secs} s', 'Warte {secs} Sek.'],
+  ['Calendario descargado', 'Calendar fetched', 'Calendário transferido', 'Agenda opgehaald', 'Kalender hentet', 'Kalendarz pobrany', 'Kalender abgerufen'],
+  ['Calendarios descargados', 'Calendars fetched', 'Calendários transferidos', "Agenda's opgehaald", 'Kalendere hentet', 'Kalendarze pobrane', 'Kalender abgerufen'],
+  ['No se pudo descargar el calendario.', 'The calendar could not be fetched.', 'Não foi possível transferir o calendário.', 'De agenda kon niet worden opgehaald.', 'Kalenderen kunne ikke hentes.', 'Nie udało się pobrać kalendarza.', 'Der Kalender konnte nicht abgerufen werden.'],
+  ['Algunos calendarios no se pudieron descargar.', 'Some calendars could not be fetched.', 'Alguns calendários não puderam ser transferidos.', "Sommige agenda's konden niet worden opgehaald.", 'Nogle kalendere kunne ikke hentes.', 'Niektórych kalendarzy nie udało się pobrać.', 'Einige Kalender konnten nicht abgerufen werden.'],
   [
     'Ya se descargó hace un momento. Inténtalo de nuevo en {secs} s.',
     'It was fetched a moment ago. Try again in {secs} s.',
@@ -239,10 +262,11 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Het is net opgehaald. Probeer het over {secs} s opnieuw.',
     'Den blev hentet for et øjeblik siden. Prøv igen om {secs} s.',
     'Pobrano przed chwilą. Spróbuj ponownie za {secs} s.',
+    'Er wurde gerade erst abgerufen. Versuche es in {secs} Sek. noch einmal.',
   ],
   // the days the month / week grid shows (#39)
-  ['Días que se muestran', 'Days shown', 'Dias mostrados', 'Getoonde dagen', 'Viste dage', 'Wyświetlane dni'],
-  ['Fin de semana', 'Weekend', 'Fim de semana', 'Weekend', 'Weekend', 'Weekend'],
+  ['Días que se muestran', 'Days shown', 'Dias mostrados', 'Getoonde dagen', 'Viste dage', 'Wyświetlane dni', 'Angezeigte Tage'],
+  ['Fin de semana', 'Weekend', 'Fim de semana', 'Weekend', 'Weekend', 'Weekend', 'Wochenende'],
   [
     'Los días sin marcar no ocupan sitio y sus eventos no se ven. Un evento de varios días se muestra en los días marcados que toca.',
     'Unticked days take no space and their events are not shown. An event over several days shows on the ticked days it covers.',
@@ -250,6 +274,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Niet aangevinkte dagen nemen geen ruimte in en hun afspraken zijn niet te zien. Een afspraak van meerdere dagen staat op de aangevinkte dagen die ze raakt.',
     'Dage uden flueben fylder ikke og deres begivenheder vises ikke. En begivenhed over flere dage vises på de afkrydsede dage, den dækker.',
     'Nieodznaczone dni nie zajmują miejsca, a ich wydarzenia nie są widoczne. Wydarzenie wielodniowe widać w zaznaczonych dniach, które obejmuje.',
+    'Nicht markierte Tage nehmen keinen Platz ein und ihre Termine sind nicht zu sehen. Ein mehrtägiger Termin erscheint an den markierten Tagen, die er abdeckt.',
   ],
   // what night mode does (#38, sections/Screen.tsx NightAction) and the pointer to it from the Bedside layout
   [
@@ -259,6 +284,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Dimt het scherm, toont de nachtkastjeweergave of maakt het \'s nachts zwart.',
     'Dæmper skærmen, viser natbordsvisningen eller gør den sort om natten.',
     'Przyciemnia ekran, pokazuje widok przy łóżku albo wygasza go na czarno w nocy.',
+    'Dimmt den Bildschirm, zeigt die Nachttisch-Ansicht oder schaltet ihn nachts auf Schwarz.',
   ],
   [
     'Durante el modo noche',
@@ -267,6 +293,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Tijdens de nachtmodus',
     'Under nattilstand',
     'W trybie nocnym',
+    'Im Nachtmodus',
   ],
   [
     'Atenuar',
@@ -275,6 +302,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Dimmen',
     'Dæmp',
     'Przyciemnij',
+    'Dimmen',
   ],
   [
     'Vista de mesilla',
@@ -283,6 +311,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Nachtkastjeweergave',
     'Natbordsvisning',
     'Widok przy łóżku',
+    'Nachttisch-Ansicht',
   ],
   [
     'En negro',
@@ -291,6 +320,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Zwart',
     'Sort',
     'Czarny',
+    'Schwarz',
   ],
   [
     'Una semana',
@@ -299,6 +329,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Eén week',
     'Én uge',
     'Jeden tydzień',
+    'Eine Woche',
   ],
   [
     'Tres semanas',
@@ -307,6 +338,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Drie weken',
     'Tre uger',
     'Trzy tygodnie',
+    'Drei Wochen',
   ],
   [
     'Cuatro semanas',
@@ -315,6 +347,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Vier weken',
     'Fire uger',
     'Cztery tygodnie',
+    'Vier Wochen',
   ],
   [
     'Brillo de la vista de mesilla',
@@ -323,6 +356,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Helderheid van de nachtkastjeweergave',
     'Natbordsvisningens lysstyrke',
     'Jasność widoku przy łóżku',
+    'Helligkeit der Nachttisch-Ansicht',
   ],
   [
     'Brillo de los avisos',
@@ -331,6 +365,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Helderheid van de meldingen',
     'Lysstyrke for beskederne',
     'Jasność powiadomień',
+    'Helligkeit der Meldungen',
   ],
   [
     'Despertar con el timbre y los avisos',
@@ -339,6 +374,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Wekken voor de deurbel en meldingen',
     'Væk ved dørklokken og beskeder',
     'Budź przy dzwonku i powiadomieniach',
+    'Bei Türklingel und Meldungen aufwachen',
   ],
   [
     'Despertar con los avisos',
@@ -347,6 +383,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Wekken voor meldingen',
     'Væk ved beskeder',
     'Budź przy powiadomieniach',
+    'Bei Meldungen aufwachen',
   ],
   [
     'La pantalla sigue en negro y solo enseña el timbre o el aviso mientras dura, con poco brillo.',
@@ -355,6 +392,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Het scherm blijft zwart en toont alleen de deurbel of de melding zolang die duurt, gedimd.',
     'Skærmen forbliver sort og viser kun dørklokken eller beskeden, mens den varer, dæmpet.',
     'Ekran pozostaje czarny i pokazuje tylko dzwonek lub powiadomienie, dopóki trwa, przyciemnione.',
+    'Der Bildschirm bleibt schwarz und zeigt nur die Türklingel oder die Meldung, solange sie dauert, gedimmt.',
   ],
   [
     'El calendario está apagado en esta pantalla: se verá el reloj.',
@@ -363,6 +401,7 @@ const ROWS: [string, string, string, string, string, string][] = [
     'De agenda staat uit op dit scherm: je ziet de klok.',
     'Kalenderen er slået fra på denne skærm: uret vises.',
     'Kalendarz jest wyłączony na tym ekranie: widać zegar.',
+    'Der Kalender ist auf diesem Bildschirm aus: Die Uhr wird angezeigt.',
   ],
   [
     'Para verla solo de noche, deja otro diseño y elige Vista de mesilla en Pantalla, Modo noche.',
@@ -371,15 +410,17 @@ const ROWS: [string, string, string, string, string, string][] = [
     'Wil je hem alleen \'s nachts zien, houd dan een andere indeling en kies Nachtkastjeweergave bij Scherm, Nachtmodus.',
     'Vil du kun se den om natten, så behold et andet layout og vælg Natbordsvisning under Skærm, Nattilstand.',
     'Aby widzieć go tylko w nocy, zostaw inny układ i wybierz Widok przy łóżku w Ekran, Tryb nocny.',
+    'Um sie nur nachts zu sehen, behalte ein anderes Layout und wähle Nachttisch-Ansicht unter Bildschirm, Nachtmodus.',
   ],
 ];
 
 // the Bolsa card's currencies (fieldSpecs.ts): an ISO code reads the same in every language
 for (const c of ['AUD', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 'RON', 'SEK', 'SGD', 'THB', 'TRY', 'ZAR']) {
-  ROWS.push([c, c, c, c, c, c]);
+  ROWS.push([c, c, c, c, c, c, c]);
 }
 
 export const ROWS_GROUP: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);
 export const NL_GROUP: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[3]]));
 export const DA_GROUP: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[4]]));
+export const DE_GROUP: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[6]]));
 export const PL_GROUP: Record<string, string> = Object.fromEntries(ROWS.map((r) => [r[0], r[5]]));

@@ -70,7 +70,7 @@ const STEPS: { id: string; label: string; icon: IconName }[] = [
 ];
 
 // "Hello" in each language, under its name in the language menu of the first step.
-const HELLO: Record<Lang, string> = { es: 'Hola', en: 'Hello', pt: 'Olá', nl: 'Hallo', da: 'Hej', pl: 'Cześć' };
+const HELLO: Record<Lang, string> = { es: 'Hola', en: 'Hello', pt: 'Olá', nl: 'Hallo', da: 'Hej', pl: 'Cześć', de: 'Hallo' };
 
 const browserTz = () => {
   try {

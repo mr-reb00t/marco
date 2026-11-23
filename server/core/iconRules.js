@@ -1,13 +1,14 @@
 // Default icon rules, shared by the server (server/core/defaults.js), the admin and the display
-// (web/shared/emoji.ts): keywords in English, Spanish, Portuguese, Dutch, Danish and Polish, matched against event
-// titles and descriptions. More specific categories come first. A plain module (not JSON) so it imports the same way on
-// Node, Vite and Workers.
+// (web/shared/emoji.ts): keywords in English, Spanish, Portuguese, Dutch, Danish, Polish and German, matched against
+// event titles and descriptions. More specific categories come first. A plain module (not JSON) so it imports the same
+// way on Node, Vite and Workers.
 export default [
   {
     id: 'r_birthday', emoji: '🎂',
     match: [
       'cumple', 'cumpleaños', 'birthday', 'bday', 'b-day', 'aniversário', 'aniversario', 'faz anos', 'verjaardag',
       'is jarig', 'jarige', 'fødselsdag', 'fødselar', 'fylder år', 'urodzin', 'imienin', 'osiemnastka',
+      'geburtstag', 'namenstag',
     ],
   },
   {
@@ -15,6 +16,7 @@ export default [
     match: [
       'check-out', 'checkout', 'check out', 'departure', 'salida huésped', 'saída', 'uitchecken', 'vertrek gast',
       'udtjekning', 'tjek ud', 'afrejse', 'wymeldowanie', 'wyjazd gości',
+      'abreise', 'auschecken',
     ],
   },
   {
@@ -23,6 +25,7 @@ export default [
       'airbnb', 'booking', 'vrbo', 'reserva', 'reservation', 'reserved', 'check-in', 'checkin', 'guest', 'guests',
       'hóspede', 'huésped', 'vakantieverhuur', 'verhuurd', 'indtjekning', 'tjek ind', 'gæst', 'rezerwacja',
       'zameldowanie', 'wynajem',
+      'anreise', 'einchecken', 'buchung', 'ferienwohnung', 'gast', 'gäste',
     ],
   },
   {
@@ -31,6 +34,7 @@ export default [
       'vuelo', 'flight', 'fly to', 'voo', 'aeropuerto', 'airport', 'aeroporto', 'boarding', 'embarque', 'vlucht naar',
       'vlucht van', 'heenvlucht', 'terugvlucht', 'vliegveld', 'luchthaven', 'vliegen naar', 'schiphol', 'zaventem',
       'fly', 'flyet', 'flyrejse', 'flyver til', 'lufthavn', 'lotnisk', 'samolot', 'odlot', 'przylot', 'wylot',
+      'flug', 'flughafen', 'abflug', 'hinflug', 'rückflug',
     ],
   },
   {
@@ -38,6 +42,7 @@ export default [
     match: [
       'train', 'tren', 'comboio', 'railway', 'estación de tren', 'trein', 'intercity', 'tog', 'togrejse', 'banegård',
       'dsb', 'pociąg', 'dworzec', 'pkp',
+      'zug', 'bahnhof', 'bahnfahrt', 'deutsche bahn',
     ],
   },
   {
@@ -52,6 +57,9 @@ export default [
       'skadestue', 'vaccin', 'optiker', 'tandregulering', 'jordemoder', 'psykolog', 'sundhedsplejerske', 'lekarz',
       'dentyst', 'stomatolog', 'ortodont', 'przychodni', 'szpital', 'klinik', 'fizjoterap', 'szczepieni', 'okulist',
       'laryngolog', 'dermatolog', 'ginekolog', 'psycholog', 'logoped', 'badanie', 'badania', 'rehabilitacj',
+      'arzt', 'arzttermin', 'zahnarzt', 'zahnreinigung', 'kinderarzt', 'hausarzt', 'augenarzt', 'frauenarzt',
+      'hautarzt', 'praxis', 'krankenhaus', 'physiotherap', 'ergotherap', 'logopäd', 'kieferorthop', 'impfung',
+      'vorsorge', 'untersuchung', 'hebamme',
     ],
   },
   {
@@ -60,6 +68,7 @@ export default [
       'pharmacy', 'farmacia', 'farmácia', 'prescription', 'receta', 'medication', 'medicine', 'medicación',
       'medicação', 'apotheek', 'medicijnen', 'medicatie', 'apotek', 'medicin', 'apteka', 'apteki', 'recepta', 'recepty',
       'leki', 'lekarstw',
+      'apotheke', 'rezept', 'medikament',
     ],
   },
   {
@@ -70,6 +79,8 @@ export default [
       'kdv', 'bso', 'peuterspeelzaal', 'ouderavond', 'oudergesprek', 'rapportgesprek', 'excursie', 'skole',
       'børnehave', 'vuggestue', 'dagpleje', 'sfo', 'forældremøde', 'forældresamtale', 'szkoła', 'w szkole', 'do szkoły', 'przedszkol',
       'żłobek', 'żłobka', 'wywiadówka', 'zebranie z rodzicami', 'wycieczka szkolna', 'świetlica',
+      'schule', 'schulausflug', 'kita', 'krippe', 'hort', 'tagesmutter', 'elternabend', 'elterngespräch',
+      'elternsprechtag', 'klassenfahrt', 'einschulung', 'wandertag',
     ],
   },
   {
@@ -78,6 +89,7 @@ export default [
       'exam', 'examen', 'exame', 'quiz', 'homework', 'deberes', 'trabalho de casa', 'assignment', 'toets',
       'proefwerk', 'tentamen', 'overhoring', 'huiswerk', 'spreekbeurt', 'werkstuk', 'eksamen', 'lektie',
       'terminsprøve', 'egzamin', 'sprawdzian', 'kartkówka', 'klasówka', 'matura', 'zadanie domowe',
+      'prüfung', 'klassenarbeit', 'klausur', 'hausaufgabe', 'referat', 'abitur',
     ],
   },
   {
@@ -85,6 +97,7 @@ export default [
     match: [
       'swim', 'swimming', 'natación', 'natação', 'piscina', 'pool', 'zwemmen', 'zwemles', 'zwembad', 'zwemdiploma',
       'svømning', 'svømme', 'badeland', 'basen', 'pływani', 'pływalni',
+      'schwimm', 'hallenbad', 'freibad', 'seepferdchen',
     ],
   },
   {
@@ -99,6 +112,8 @@ export default [
       'dans', 'cykling', 'spinning', 'ridning', 'ridetime', 'vandretur', 'piłka nożna', 'piłki nożnej', 'trening',
       'mecz', 'meczu', 'koszykówk', 'siatkówk', 'siłowni', 'bieganie', 'rower', 'joga', 'taniec', 'tańce', 'gimnastyk',
       'w-f',
+      'fußball', 'turnier', 'joggen', 'tanzen', 'tanzkurs', 'reitstunde', 'radtour', 'wandern', 'turnhalle',
+      'leichtathletik', 'volleyball',
     ],
   },
   {
@@ -106,6 +121,7 @@ export default [
     match: [
       'haircut', 'hairdresser', 'barber', 'salon', 'peluquería', 'peluqueria', 'cabeleireiro', 'barbería',
       'barbearia', 'kapper', 'kapsalon', 'barbier', 'haar knippen', 'frisør', 'hårklip', 'fryzjer', 'strzyżenie',
+      'friseur', 'frisör', 'haare schneiden',
     ],
   },
   {
@@ -113,6 +129,7 @@ export default [
     match: [
       'coffee', 'café', 'brunch', 'breakfast', 'desayuno', 'pequeno-almoço', 'merienda', 'lanche', 'koffie',
       'ontbijt', 'high tea', 'kaffe', 'morgenmad', 'kawa', 'kawę', 'kawiarni', 'śniadanie',
+      'frühstück', 'kaffee',
     ],
   },
   {
@@ -121,6 +138,7 @@ export default [
       'cena', 'cenar', 'dinner', 'jantar', 'restaurante', 'restaurant', 'almuerzo', 'almoço', 'lunch', 'comida',
       'bbq', 'barbecue', 'barbacoa', 'churrasco', 'diner', 'etentje', 'uit eten', 'eten', 'avondeten', 'aftensmad',
       'frokost', 'fællesspisning', 'middagsselskab', 'spise ude', 'grill', 'kolacj', 'obiad', 'restauracj',
+      'abendessen', 'mittagessen', 'essen gehen', 'zum essen',
     ],
   },
   {
@@ -128,6 +146,7 @@ export default [
     match: [
       'drinks', 'beers', 'pub', 'bar', 'cañas', 'copas', 'happy hour', 'borrel', 'biertje', 'drankje', 'kroeg', 'øl',
       'fredagsbar', 'vinsmagning', 'ølsmagning', 'piwo', 'na piwo', 'drinki',
+      'bier', 'kneipe', 'biergarten', 'weinprobe', 'stammtisch',
     ],
   },
   {
@@ -138,6 +157,8 @@ export default [
       'speelafspraak', 'doop', 'communie', 'jubileum', 'reünie', 'fest', 'festen', 'sommerfest', 'julefest',
       'klassefest', 'havefest', 'studenterfest', 'nytårsfest', 'fejring', 'jubilæum', 'barnedåb', 'dåb',
       'konfirmation', 'legeaftale', 'fastelavn', 'imprez', 'przyjęcie', 'chrzest', 'chrzciny', 'komunia', 'nocowanie',
+      'weihnachtsfeier', 'abschiedsfeier', 'taufe', 'kommunion', 'firmung', 'jugendweihe', 'jubiläum', 'einweihung',
+      'klassentreffen', 'abiball',
     ],
   },
   {
@@ -149,6 +170,8 @@ export default [
       'bestyrelsesmøde', 'generalforsamling', 'jobsamtale', 'medarbejdersamtale', 'opkald', 'præsentation',
       'konference', 'morgenmøde', 'statusmøde', 'spotkanie', 'zebranie', 'rozmowa kwalifikacyjna', 'telekonferencj',
       'prezentacj', 'konferencj', 'narada',
+      'besprechung', 'telefonat', 'vorstellungsgespräch', 'konferenz', 'präsentation', 'sitzung',
+      'mitarbeitergespräch', 'videocall',
     ],
   },
   {
@@ -158,6 +181,8 @@ export default [
       'werk', 'werkdag', 'kantoor', 'dagdienst', 'avonddienst', 'nachtdienst', 'arbejdsdag', 'på arbejde', 'job',
       'kontor', 'vagt', 'dagvagt', 'aftenvagt', 'nattevagt', 'hjemmearbejde', 'w pracy', 'do pracy', 'pracy', 'biuro', 'biurze',
       'dyżur',
+      'zur arbeit', 'auf arbeit', 'arbeitstag', 'homeoffice', 'home office', 'büro', 'frühschicht', 'spätschicht',
+      'nachtschicht', 'frühdienst', 'spätdienst', 'bereitschaft',
     ],
   },
   {
@@ -165,6 +190,7 @@ export default [
     match: [
       'festivo', 'feriado', 'public holiday', 'bank holiday', 'national holiday', 'feestdag', 'helligdag', 'święto',
       'dzień wolny',
+      'feiertag', 'brückentag',
     ],
   },
   {
@@ -175,6 +201,7 @@ export default [
       'weekendje weg', 'stedentrip', 'dagje uit', 'stranddag', 'naar het strand', 'kamperen', 'ferie', 'rejse',
       'sommerhus', 'weekendtur', 'stranden', 'strandtur', 'wakacje', 'urlop', 'wyjazd', 'wycieczk', 'plaża', 'plaży',
       'nad morze', 'kemping', 'biwak',
+      'urlaub', 'reise nach', 'ausflug', 'strand', 'zelten',
     ],
   },
   {
@@ -182,6 +209,7 @@ export default [
     match: [
       'boda', 'wedding', 'casamento', 'engagement', 'pedida', 'noivado', 'bruiloft', 'trouwerij', 'trouwdag',
       'huwelijk', 'verloving', 'bryllup', 'forlovelse', 'polterabend', 'ślub', 'ślubu', 'wesel', 'zaręczyny',
+      'hochzeit', 'verlobung', 'standesamt', 'junggesellenabschied',
     ],
   },
   {
@@ -190,6 +218,7 @@ export default [
       'compra', 'compras', 'shopping', 'groceries', 'grocery', 'mercado', 'supermercado', 'supermarket', 'market',
       'boodschappen', 'winkelen', 'supermarkt', 'weekmarkt', 'indkøb', 'handle ind', 'supermarked', 'loppemarked',
       'julemarked', 'zakupy', 'zakupów', 'sklep', 'targ',
+      'einkauf', 'markt', 'shoppen',
     ],
   },
   {
@@ -198,6 +227,7 @@ export default [
       'delivery', 'package', 'parcel', 'entrega', 'paquete', 'encomenda', 'pick up parcel', 'recogida', 'bezorging',
       'pakket', 'pakken', 'pakkeshop', 'pakkeboks', 'hent pakke', 'hente pakke', 'hjemlevering', 'leveres', 'paczk',
       'paczkomat', 'kurier', 'dostawa',
+      'paket', 'lieferung', 'packstation',
     ],
   },
   {
@@ -208,6 +238,8 @@ export default [
       'auto wassen', 'apk', 'automonteur', 'wasstraat', 'winterbanden', 'zomerbanden', 'bandenwissel', 'bil',
       'bilsyn', 'synshal', 'værksted', 'mekaniker', 'dækskift', 'vinterdæk', 'sommerdæk', 'bilvask', 'samoch',
       'mechanik', 'warsztat', 'przegląd auta', 'wymiana opon', 'opony', 'myjnia',
+      'auto', 'werkstatt', 'tüv', 'reifenwechsel', 'winterreifen', 'sommerreifen', 'ölwechsel', 'inspektion',
+      'waschanlage', 'autowäsche',
     ],
   },
   {
@@ -218,6 +250,7 @@ export default [
       'loodgieter', 'elektricien', 'monteur', 'reparatie', 'repareren', 'onderhoud', 'installateur', 'klusjesman',
       'cv-ketel', 'vvs', 'elektriker', 'reparation', 'håndværker', 'tekniker', 'montør', 'vedligehold', 'hydraulik',
       'elektryk', 'napraw', 'serwis', 'instalator', 'fachowiec',
+      'handwerker', 'klempner', 'reparatur', 'techniker', 'wartung', 'heizung', 'schornsteinfeger',
     ],
   },
   {
@@ -226,6 +259,7 @@ export default [
       'cleaning', 'cleaner', 'limpieza', 'limpeza', 'housekeeping', 'laundry', 'colada', 'lavandería', 'lavandaria',
       'schoonmaak', 'schoonmaken', 'poetshulp', 'strijken', 'glazenwasser', 'rengøring', 'vasketøj', 'tøjvask',
       'støvsug', 'sprząt', 'pranie', 'odkurzani', 'mycie okien',
+      'putzen', 'putzfrau', 'putzhilfe', 'hausputz', 'frühjahrsputz', 'reinigung', 'wäsche', 'bügeln', 'staubsaugen',
     ],
   },
   {
@@ -234,6 +268,8 @@ export default [
       'trash', 'garbage', 'rubbish', 'bins', 'bin day', 'recycling', 'basura', 'reciclaje', 'lixo', 'reciclagem',
       'afval', 'vuilnis', 'kliko', 'gft', 'pmd', 'oud papier', 'glasbak', 'skrald', 'affald', 'genbrug', 'śmieci',
       'odpady', 'wywóz', 'segregacj', 'makulatur',
+      'müll', 'müllabfuhr', 'restmüll', 'sperrmüll', 'gelber sack', 'tonne', 'abfall', 'altpapier', 'altglas',
+      'wertstoffhof',
     ],
   },
   {
@@ -243,6 +279,7 @@ export default [
       'tuinieren', 'tuinman', 'gras maaien', 'grasmaaien', 'planten', 'tuincentrum', 'havearbejde', 'havedag',
       'kolonihave', 'græsslåning', 'slå græs', 'hækklipning', 'planter', 'ogród', 'ogrodu', 'ogrodzie', 'działk',
       'koszenie', 'trawnik', 'kwiaty', 'podlać',
+      'garten', 'rasen mähen', 'rasenmähen', 'hecke schneiden', 'pflanzen',
     ],
   },
   {
@@ -253,6 +290,7 @@ export default [
       'betalen', 'rekening', 'factuur', 'huur', 'hypotheek', 'belasting', 'verzekering', 'incasso', 'regning',
       'betal', 'husleje', 'faktura', 'forsikring', 'årsopgørelse', 'rachun', 'płatność', 'zapłacić', 'czynsz', 'kredyt',
       'raty', 'podatek', 'ubezpieczeni', 'opłata', 'przelew',
+      'rechnung', 'zahlung', 'miete', 'überweisung', 'steuer', 'versicherung', 'kredit', 'nebenkosten', 'lastschrift',
     ],
   },
   {
@@ -261,6 +299,7 @@ export default [
       'deadline', 'due', 'plazo', 'prazo', 'vencimiento', 'vencimento', 'expires', 'caduca', 'renewal', 'renovación',
       'renovação', 'verloopt', 'vervalt', 'vervaldatum', 'verlengen', 'inleveren', 'uiterste datum', 'frist',
       'udløber', 'forny', 'termin płatności', 'ostateczny termin', 'wygasa', 'ostatni dzień', 'odnowienie',
+      'fällig', 'abgabe', 'läuft ab', 'verlängern', 'kündigen',
     ],
   },
   {
@@ -269,6 +308,7 @@ export default [
       'veterinario', 'veterinário', 'vet', 'veterinary', 'grooming', 'peluquería canina', 'dog', 'perro', 'cão',
       'puppy', 'cachorro', 'dierenarts', 'hond', 'kat', 'poes', 'trimmen', 'dyrlæge', 'dyreklinik', 'hund', 'hunden',
       'hvalp', 'weteryn', 'z psem', 'kota', 'kotem',
+      'tierarzt', 'katze', 'gassi', 'welpe',
     ],
   },
   {
@@ -279,6 +319,8 @@ export default [
       'zangles', 'drumles', 'koor', 'orkest', 'bandrepetitie', 'koorrepetitie', 'klaver', 'musikundervisning',
       'musiktime', 'kor', 'korprøve', 'bandøvning', 'trommer', 'sangtime', 'pianin', 'fortepian', 'gitar', 'skrzypce',
       'lekcja muzyki', 'chór', 'chóru',
+      'klavier', 'geige', 'musikunterricht', 'chorprobe', 'bandprobe', 'schlagzeug', 'gesangsunterricht', 'orchester',
+      'flöte',
     ],
   },
   {
@@ -287,12 +329,14 @@ export default [
       'cine', 'cinema', 'movie', 'movies', 'film', 'filme', 'película', 'theatre', 'theater', 'teatro', 'show',
       'espectáculo', 'espetáculo', 'bioscoop', 'toneel', 'voorstelling', 'musical', 'schouwburg', 'biograf', 'bio',
       'teater', 'teatret', 'forestilling', 'kino', 'kinie', 'teatr', 'spektakl', 'przedstawienie', 'seans',
+      'vorstellung', 'aufführung', 'schauspiel', 'kinoabend', 'filmabend',
     ],
   },
   {
     id: 'r_concert', emoji: '🎵',
     match: [
       'concierto', 'concert', 'concerto', 'festival', 'gig', 'live music', 'optreden', 'koncert', 'festiwal',
+      'konzert', 'auftritt',
     ],
   },
   {
@@ -300,6 +344,7 @@ export default [
     match: [
       'babysitter', 'babysitting', 'nanny', 'niñera', 'canguro', 'ama', 'baby-sitter', 'oppas', 'barnepige',
       'babysitning', 'niania', 'opiekunka', 'opieka nad dziećmi',
+      'kinderbetreuung', 'babysitten',
     ],
   },
 ];

@@ -35,11 +35,12 @@ Publishing a fork? Point the repository URLs (READMEs, `web/shared/project.ts`, 
 - The display must never visibly reload for routine updates; animate with CSS transforms/opacity only and keep the
   WebGL layers capped (see `docs/ARCHITECTURE.md`).
 - UI text: the admin uses the Spanish string as the translation key (`t('…')`) with English/Portuguese entries in
-  `web/admin/i18n-dict*.ts` and Dutch, Danish and Polish entries in `web/admin/i18n-dict-nl.ts`, `i18n-dict-da.ts`
-  and `i18n-dict-pl.ts` (the Familia rows in `i18n-dict-family.ts`); the display uses `web/shared/i18n.ts`;
-  server-generated text uses `server/core/lib/i18n.js`. Please add all six languages when you add a string (ask for
-  help in the PR if you only speak some of them; a missing Dutch, Danish or Polish value shows the English one, and
-  `server/test/i18n-complete.test.js` lists what is missing). See [Adding a language](#adding-a-language).
+  `web/admin/i18n-dict*.ts` and Dutch, Danish, Polish and German entries in `web/admin/i18n-dict-nl.ts`,
+  `i18n-dict-da.ts`, `i18n-dict-pl.ts` and `i18n-dict-de.ts` (the Familia rows in `i18n-dict-family.ts`); the display
+  uses `web/shared/i18n.ts`; server-generated text uses `server/core/lib/i18n.js`. Please add all seven languages
+  when you add a string (ask for help in the PR if you only speak some of them; a missing Dutch, Danish, Polish or
+  German value shows the English one, and `server/test/i18n-complete.test.js` lists what is missing). See
+  [Adding a language](#adding-a-language).
 - Writing style (docs, UI strings in every language, commit messages, script output): plain and direct. No em
   dashes (use a comma, colon, parentheses or a new sentence) and no marketing words. Say what a feature does.
 - Installer changes: try `bash install.sh --dry-run` first, and keep `install.sh` working when it is piped into
@@ -49,15 +50,15 @@ Publishing a fork? Point the repository URLs (READMEs, `web/shared/project.ts`, 
 
 ## Adding a language
 
-Marco speaks Spanish, English, Portuguese, Dutch, Danish and Polish. Corrections from native speakers are very
-welcome, even a single string: open an issue or a pull request with the text you would change and why. Want a new
-language? Open an issue first so we can coordinate; we can do a first translation together and you review it.
+Marco speaks Spanish, English, Portuguese, Dutch, Danish, Polish and German. Corrections from native speakers are
+very welcome, even a single string: open an issue or a pull request with the text you would change and why. Want a
+new language? Open an issue first so we can coordinate; we can do a first translation together and you review it.
 
 Where the strings live:
 
 | What | File |
 |---|---|
-| Admin (keyed by the Spanish string) | English and Portuguese rows in `web/admin/i18n-dict*.ts`; one file per further language, `web/admin/i18n-dict-nl.ts`, `-da.ts`, `-pl.ts` |
+| Admin (keyed by the Spanish string) | English and Portuguese rows in `web/admin/i18n-dict*.ts`; one file per further language, `web/admin/i18n-dict-nl.ts`, `-da.ts`, `-pl.ts`, `-de.ts` |
 | Familia rows (admin and the family page on the phone) | `web/admin/i18n-dict-family.ts` (kept apart so the family page stays small) |
 | Count forms ("1 screen", "3 screens") | `SINGULAR` in `web/admin/i18n-plural.ts` plus the language's own singular table; Polish also has a "few" table (`PL_FEW`, for 2-4, 22-24…) |
 | Screen (display) | `web/shared/i18n.ts`: one dictionary per language, plus the date helpers |
