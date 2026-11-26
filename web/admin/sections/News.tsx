@@ -166,7 +166,8 @@ interface TaskProvider {
   listIdOf: (l: TodoList) => string | undefined;
   newList: (email: string, l: TaskListItem) => TodoList;
   /** no account linked yet: where to link one */
-  none: preact.JSX.Element;
+  /** what the card says with no account linked (a function: t() must run after the admin's language is set) */
+  none: () => preact.JSX.Element;
   reconnectText: string;
   errorText: string;
   emptyText: string;
@@ -191,7 +192,7 @@ const MICROSOFT_TASKS: TaskProvider = {
   accountOf: (l) => (l.type === 'microsoft' ? l.microsoftAccount : undefined),
   listIdOf: (l) => (l.type === 'microsoft' ? l.microsoftListId : undefined),
   newList: (email, l) => ({ id: uid('tl'), type: 'microsoft', microsoftAccount: email, microsoftListId: l.id, name: l.name, enabled: true }),
-  none: (
+  none: () => (
     <Empty icon="link" title={t('Ninguna cuenta de Microsoft vinculada')}>
       {t('Vincula tu cuenta de Microsoft en')} <a href="#/calendars/cal-accounts">{t('Calendarios')}</a>.
     </Empty>
@@ -216,7 +217,7 @@ const GOOGLE_TASKS: TaskProvider = {
   accountOf: (l) => (l.type === 'google' ? l.googleAccount : undefined),
   listIdOf: (l) => (l.type === 'google' ? l.googleListId : undefined),
   newList: (email, l) => ({ id: uid('tl'), type: 'google', googleAccount: email, googleListId: l.id, name: l.name, enabled: true }),
-  none: <p class="muted small">{t('Ninguna cuenta de Google vinculada.')}</p>,
+  none: () => <p class="muted small">{t('Ninguna cuenta de Google vinculada.')}</p>,
   reconnectText: 'Da permiso a Marco para ver las listas de Google Tasks de esta cuenta.',
   errorText: 'No se pudieron leer las listas de Google Tasks. Inténtalo más tarde.',
   emptyText: 'Esta cuenta no tiene listas de Google Tasks.',
@@ -284,7 +285,7 @@ function TaskListsCard({ cfg, set, dirty, save, provider: p, touchHint }: Sectio
       {accounts === null ? (
         <div class="skeleton" />
       ) : accounts.length === 0 ? (
-        p.none
+        p.none()
       ) : (
         <div class="gaccounts">
           {accounts.map((a) => {

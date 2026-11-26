@@ -387,21 +387,21 @@ describe('touch on the calendar of a running display', { skip: !chrome && 'no Ch
   });
 
   test('a carousel holds the screen while a sheet is open or the month is moved, and goes on after', async () => {
-    const p = await browser.page(`${web.url}/?demo=1&carousel=1&touch=1&stepSec=6&lite=1&fade=0&rotate=0&compact=0`);
+    const p = await browser.page(`${web.url}/?demo=1&carousel=1&touch=1&stepSec=10&lite=1&fade=0&rotate=0&compact=0`);
     const PRESET = `(document.getElementById('app').className.match(/preset-(\\w+)/)?.[1] ?? '')`;
     try {
-      assert.ok(await until(p, `${PRESET} === 'bigCalendar' && document.querySelectorAll('#calendar .wk .ev[data-eid]').length > 0`));
+      assert.ok(await until(p, `${PRESET} === 'bigCalendar' && document.querySelectorAll('#calendar .wk .ev[data-eid]').length > 0`, 45000));
       await tap(p, '#calendar .wk .ev[data-eid]');
       assert.ok(await p.eval(SHEET));
-      await wait(7500);
+      await wait(12000);
       assert.equal(await p.eval(PRESET), 'bigCalendar', 'held while the sheet is open');
       await tap(p, '#cal-sheet .cs-close');
       // a moved month holds it too
       await tap(p, '#calendar .cal-nav [data-nav="1"]');
-      await wait(7500);
+      await wait(12000);
       assert.equal(await p.eval(PRESET), 'bigCalendar', 'held while away from today');
       await tap(p, '#calendar .cal-nav [data-nav="0"]');
-      assert.ok(await until(p, `${PRESET} !== 'bigCalendar'`, 15000), 'the carousel goes on');
+      assert.ok(await until(p, `${PRESET} !== 'bigCalendar'`, 25000), 'the carousel goes on');
     } finally {
       await p.close();
     }

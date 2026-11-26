@@ -3,6 +3,12 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.49.1] - 2026-11-26
+
+### Fixed
+- *To-dos*: with no Microsoft or Google account linked, the *Microsoft To Do lists* and *Google Tasks lists* cards
+  said so in Spanish whatever the admin's language.
+
 ## [0.49.0] - 2026-11-26
 
 ### Added
