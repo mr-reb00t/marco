@@ -3168,6 +3168,7 @@ export const PL: Record<string, string> = {
   'Ninguna cuenta de Google vinculada.': 'Brak połączonego konta Google.',
   'Da permiso a Marco para ver las listas de Google Tasks de esta cuenta.': 'Pozwól Marco widzieć listy Google Tasks tego konta.',
   'No se pudieron leer las listas de Google Tasks. Inténtalo más tarde.': 'Nie udało się odczytać list Google Tasks. Spróbuj później.',
+  'No se concedió permiso para ver las listas de Google Tasks.': 'Nie przyznano uprawnień do wyświetlania list Google Tasks.',
   'Esta cuenta no tiene listas de Google Tasks.': 'To konto nie ma list Google Tasks.',
   'La API de Google Tasks está desactivada en el proyecto de Google Cloud de este servidor. Actívala y vuelve a esta página:': 'Interfejs Google Tasks API jest wyłączony w projekcie Google Cloud tego serwera. Włącz go i wróć na tę stronę:',
   'Vincular cuenta de Google': 'Połącz konto Google',

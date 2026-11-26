@@ -2218,6 +2218,9 @@ export interface Features {
   /** The week's meals from a Mealie server on the household's network (family.meals.mealie, server/mealie.js,
    *  /api/admin/mealie/*, /api/admin/test/mealie, GET /media/mealie/<recipeId>). Self-hosted; absent = off. */
   mealie: boolean;
+  /** Marco Cloud: Google Tasks lists on the To-do page for this account (a second Google consent with the tasks scope,
+   *  GET /api/admin/google/task-lists). Self-hosted servers leave it out: they offer the lists with googleCalendar. */
+  googleTasks?: boolean;
 }
 
 export type FeatureName = keyof Features;
@@ -2434,6 +2437,8 @@ export interface AuthMeResponse {
   account?: AccountInfo;
   /** Marco Cloud: the admin shows the Microsoft accounts card when it is true (Microsoft calendars on for this account). */
   microsoftConfigured?: boolean;
+  /** Marco Cloud: Google Tasks lists are on for this account (the same answer as features.googleTasks). */
+  googleTasks?: boolean;
   /** Two-step sign-in: the password (or Google) was right and this browser still has to send the code (POST /api/auth/2fa). */
   twoFactorPending?: boolean;
 }

@@ -119,6 +119,15 @@ const ROWS: [string, string, string, string, string, string][] = [
     'På en Tilpasset skærm har hvert opgavekort disse indstillinger i editoren. Du kan sætte flere, for eksempel "Indkøb" og "Huset".',
     'Auf einem Bildschirm mit individuellem Layout hat jede Aufgabenkarte diese Einstellungen im Editor. Du kannst mehrere hinzufügen, zum Beispiel „Einkauf“ und „Haushalt“.',
   ],
+  // a Google Tasks connect (To-do page) that came back without the tasks scope (Marco Cloud: google_tasks_scope_denied)
+  [
+    'No se concedió permiso para ver las listas de Google Tasks.',
+    'Permission to see the Google Tasks lists was not granted.',
+    'Não foi concedida permissão para ver as listas do Google Tasks.',
+    'Er is geen toestemming gegeven om de Google Tasks-lijsten te zien.',
+    'Der blev ikke givet tilladelse til at se Google Tasks-listerne.',
+    'Die Berechtigung, die Google-Tasks-Listen zu sehen, wurde nicht erteilt.',
+  ],
 ];
 
 export const ROWS_TODO: [string, string, string][] = ROWS.map(([es, en, pt]) => [es, en, pt]);

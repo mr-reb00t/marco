@@ -12,6 +12,7 @@
 import { canvasCards } from '../../../../server/core/canvasCore.js';
 import type { FamilyDisplayState, FamilyMemberView } from '../../../shared/types';
 import { diffDays, monthName, keyToUTC, weekdayName } from '../../../shared/i18n';
+import { calTouchOn, tapZone } from '../../calTouch';
 import { ctx } from '../../ctx';
 import { esc, setHTML } from '../../dom';
 import { Highlights, isBirthday } from '../highlights';
@@ -487,7 +488,9 @@ function birthdays(): CanvasAdapter {
       return `${u.getUTCDate()} ${monthName(lang, u.getUTCMonth() + 1, 'short')}`;
     };
     const rows = list.map((e) => ({ id: e.id, today: e.startKey <= today, title: e.title, emoji: e.emoji || '🎂', when: when(e.startKey) }));
-    const s = JSON.stringify([rows, lang]);
+    // touch (#51): a birthday opens its event
+    const touch = tapZone(root, calTouchOn(), { today, events: list });
+    const s = JSON.stringify([rows, lang, touch]);
     if (s === sig) return;
     sig = s;
     root.textContent = '';
@@ -508,6 +511,7 @@ function birthdays(): CanvasAdapter {
     for (const r of rows) {
       const row = document.createElement('div');
       row.className = `cvf-bd${r.today ? ' is-today' : ''}`;
+      if (touch) row.dataset.eid = r.id;
       const em = document.createElement('span');
       em.className = 'cvf-bd-em';
       em.textContent = r.emoji;

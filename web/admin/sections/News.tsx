@@ -6,7 +6,7 @@ import { confirmDialog } from '../components/feedback';
 import { Icon, MicrosoftLogo } from '../components/icons';
 import { Button, Callout, Card, EmojiPicker, Empty, Field, NumberInput, PageHeader, ReorderButtons, Slider, Textarea, TextInput, Toggle, ToggleRow } from '../components/ui';
 import { ScopeBadge } from '../components/ui';
-import { atLimit, has, isSelfHosted } from '../caps';
+import { atLimit, has, offersTasksOfGoogle } from '../caps';
 import { LimitNote } from '../components/LimitNote';
 import { TodoViewFields } from '../components/TodoViewFields';
 import { t } from '../i18n';
@@ -377,8 +377,8 @@ export function TodoSection(props: SectionProps) {
   const { cfg, set, me } = props;
   const td = cfg.todo;
   const msTasks = has('microsoftCalendar') && !!me.microsoftConfigured;
-  // self-hosted only: Marco Cloud's Google accounts are for calendars
-  const googleTasks = isSelfHosted() && has('googleCalendar') && !!me.googleConfigured;
+  // self-hosted: with Google Calendar, as always; Marco Cloud: only when it says features.googleTasks for this account
+  const googleTasks = offersTasksOfGoogle(!!me.googleConfigured);
   const [text, setText] = useState('');
   const add = (e: Event) => {
     e.preventDefault();

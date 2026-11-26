@@ -3,6 +3,7 @@
 // candidate day out in a hidden copy of the agenda, keeps the leading day blocks that fit whole and shows those.
 import type { AgendaDays, DisplayConfig } from '../../shared/types';
 import { agendaHorizon, agendaKeep } from '../agendaFill';
+import { calTouchOn, eidAttr, tapZone, tdayAttr } from '../calTouch';
 import { addDays, diffDays, relativeDayLabel, weekdayName, keyToUTC, monthName } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
@@ -23,8 +24,11 @@ export class Agenda {
    * `days`: a fixed number of days (the side agenda), or omitted to follow calendar.agendaDays.
    * `cfg`: where the settings come from (default: the screen's, ctx.cfg); every read goes through it.
    */
-  /** `legend: false`: never the legend line (the small side agenda), whatever calendar.showLegend says. */
-  constructor(private root: HTMLElement, private opts: { days?: number; compact?: boolean; maxPerDay?: number; legend?: boolean; cfg?: () => DisplayConfig }) {
+  /**
+   * `legend: false`: never the legend line (the small side agenda), whatever calendar.showLegend says.
+   * `touch: false`: never takes taps (the night bedside view), whatever screen.touch says.
+   */
+  constructor(private root: HTMLElement, private opts: { days?: number; compact?: boolean; maxPerDay?: number; legend?: boolean; cfg?: () => DisplayConfig; touch?: boolean }) {
     this.cfg = opts.cfg ?? (() => ctx.cfg);
     root.classList.add('agenda');
     if (opts.compact) root.classList.add('compact');
@@ -32,7 +36,9 @@ export class Agenda {
 
   render(events: NEvent[], tick: Tick): void {
     const setting: AgendaDays | number = this.opts.days ?? this.cfg().calendar.agendaDays ?? 'auto';
-    const { specs, offsets } = this.days(events, tick, agendaHorizon(setting));
+    // touch (#51): a row opens its event, a day's heading or its "+N more" the list of that day
+    const touch = tapZone(this.root, this.opts.touch !== false && calTouchOn(), { today: tick.dayKey, events });
+    const { specs, offsets } = this.days(events, tick, agendaHorizon(setting), touch);
     const legend = this.legend();
     let shown = specs;
     if (setting === 'auto' && specs.length) shown = specs.slice(0, this.autoKeep(specs, offsets, legend));
@@ -93,7 +99,7 @@ export class Agenda {
   }
 
   /** The day blocks of the next `horizon` days (Today and Tomorrow always, later days only with events). */
-  private days(events: NEvent[], tick: Tick, horizon: number): { specs: Spec[]; offsets: number[] } {
+  private days(events: NEvent[], tick: Tick, horizon: number, touch = false): { specs: Spec[]; offsets: number[] } {
     const cfg = this.cfg();
     const { lang, tz, t } = ctx;
     const c = cfg.calendar;
@@ -134,12 +140,12 @@ export class Agenda {
         const col = chipColors(e.color);
         const past = e.timed && e.endMs <= nowMs;
         const now = e.timed && e.startMs <= nowMs && e.endMs > nowMs;
-        return `<div class="ag-ev${past ? ' past' : ''}${now ? ' ongoing' : ''}" style="--c:${col.base};--tint:${col.tint};--shade:${col.shade}">
+        return `<div class="ag-ev${past ? ' past' : ''}${now ? ' ongoing' : ''}"${eidAttr(e, touch)} style="--c:${col.base};--tint:${col.tint};--shade:${col.shade}">
           <span class="ag-em">${e.emoji ? esc(e.emoji) : '<i class="ag-dot"></i>'}</span>
           <div class="ag-main"><div class="ag-tt">${esc(e.title)}</div>${sub || badge ? `<div class="ag-sub">${badge ? `<b class="badge">${esc(badge)}</b>` : ''}${esc(sub)}</div>` : ''}</div>
         </div>`;
       });
-      if (items.length > max) rows.push(`<div class="ag-more">${esc(t('more', { n: items.length - max }))}</div>`);
+      if (items.length > max) rows.push(`<div class="ag-more"${tdayAttr(key, touch)}>${esc(t('more', { n: items.length - max }))}</div>`);
       if (!rows.length) rows.push(`<div class="ag-empty">${esc(t('noEvents'))}</div>`);
       const d = keyToUTC(key);
       const rel = relativeDayLabel(lang, key, today, false);
@@ -151,7 +157,7 @@ export class Agenda {
       specs.push({
         key: `d${key}`,
         className: `ag-day${i === 0 ? ' today' : ''}`,
-        html: `<div class="ag-date">${label}</div><div class="ag-list">${rows.join('')}</div>`,
+        html: `<div class="ag-date"${tdayAttr(key, touch)}>${label}</div><div class="ag-list">${rows.join('')}</div>`,
       });
       offsets.push(i);
     }

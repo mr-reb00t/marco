@@ -32,6 +32,9 @@ const es: Dict = {
   touchClose: 'Cerrar',
   touchBack: 'Volver',
   touchLocation: 'Lugar',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Cumple {n} años',
+  touchTurns1: 'Cumple 1 año',
   dayXofY: 'Día {x} de {y}',
   checkIn: 'Entrada',
   checkOut: 'Salida',
@@ -387,6 +390,9 @@ const en: Dict = {
   touchClose: 'Close',
   touchBack: 'Back',
   touchLocation: 'Location',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Turns {n}',
+  touchTurns1: 'Turns 1',
   dayXofY: 'Day {x} of {y}',
   checkIn: 'Check-in',
   checkOut: 'Check-out',
@@ -742,6 +748,9 @@ const pt: Dict = {
   touchClose: 'Fechar',
   touchBack: 'Voltar',
   touchLocation: 'Local',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Faz {n} anos',
+  touchTurns1: 'Faz 1 ano',
   dayXofY: 'Dia {x} de {y}',
   checkIn: 'Entrada',
   checkOut: 'Saída',
@@ -1097,6 +1106,9 @@ const nl: Dict = {
   touchClose: 'Sluiten',
   touchBack: 'Terug',
   touchLocation: 'Locatie',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Wordt {n}',
+  touchTurns1: 'Wordt 1',
   dayXofY: 'Dag {x} van {y}',
   checkIn: 'Inchecken',
   checkOut: 'Uitchecken',
@@ -1452,6 +1464,9 @@ const da: Dict = {
   touchClose: 'Luk',
   touchBack: 'Tilbage',
   touchLocation: 'Sted',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Fylder {n}',
+  touchTurns1: 'Fylder 1',
   dayXofY: 'Dag {x} af {y}',
   checkIn: 'Indtjekning',
   checkOut: 'Udtjekning',
@@ -1809,6 +1824,10 @@ const pl: Dict = {
   touchClose: 'Zamknij',
   touchBack: 'Wstecz',
   touchLocation: 'Miejsce',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Kończy {n} lat',
+  touchTurns1: 'Kończy 1 rok',
+  touchTurns_few: 'Kończy {n} lata',
   dayXofY: 'Dzień {x} z {y}',
   checkIn: 'Zameldowanie',
   checkOut: 'Wymeldowanie',
@@ -2166,6 +2185,9 @@ const de: Dict = {
   touchClose: 'Schließen',
   touchBack: 'Zurück',
   touchLocation: 'Ort',
+  // a birthday's age in its touch sheet
+  touchTurns: 'Wird {n}',
+  touchTurns1: 'Wird 1',
   dayXofY: 'Tag {x} von {y}',
   checkIn: 'Check-in',
   checkOut: 'Check-out',

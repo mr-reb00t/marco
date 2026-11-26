@@ -3,6 +3,7 @@
 // (portrait, topBottom). `days` is always recomputed locally from `date`, so midnight needs no refetch.
 import type { CountdownItem, CountdownsResponse, DisplayConfig } from '../../shared/types';
 import { diffDays } from '../../shared/i18n';
+import { calTouchOn, cdKey, tapZone } from '../calTouch';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, reconcile, type Spec } from '../dom';
@@ -71,14 +72,21 @@ export class Countdowns {
     const show = list.length > 0;
     this.card.style.display = show ? '' : 'none';
     this.strip.style.display = show ? '' : 'none';
+    // touch (#51): a countdown opens its day and the days left (only what the server sent: a private screen's hidden
+    // countdowns never reach it)
+    const colorOf = (item: CountdownItem) => item.color || screenCfg.screen.accent;
+    const src = { today, cds: list.map(({ item, days }) => ({ item, days, color: colorOf(item) })) };
+    const touch = tapZone(this.card, calTouchOn(), src);
+    tapZone(this.strip, touch, src);
     const specs = (variant: 'c' | 's'): Spec[] =>
       list.map(({ item, days }) => {
-        const col = chipColors(item.color || screenCfg.screen.accent);
+        const col = chipColors(colorOf(item));
         const cls = ['cd', days === 0 ? 'is-today' : '', days === 1 ? 'is-tomorrow' : '', `o-${item.origin}`].filter(Boolean).join(' ');
         return {
           key: `${variant}${item.id}|${item.date}`,
           className: cls,
           style: `--c:${col.base};--tint:${col.tint};--on:${col.onSolid};--deep:${col.shade}`,
+          data: touch ? { tcd: cdKey(item) } : undefined,
           html: `<span class="cd-em">${esc(item.emoji || '⏳')}</span><span class="cd-tt">${esc(title(item))}</span><span class="cd-when">${whenHtml(days, this.short)}</span>`,
         };
       });

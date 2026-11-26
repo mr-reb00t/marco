@@ -195,6 +195,8 @@ function oauthErrorMessage(code: string, account = ''): string {
     missing_code: 'Google no devolvió autorización. Inténtalo de nuevo.',
     no_refresh_token: 'Google no concedió acceso permanente. Quita el acceso de la app en tu cuenta de Google y vuelve a vincular.',
     calendar_scope_denied: 'No se concedió permiso para leer el calendario.',
+    // a Google Tasks connect from the To-do page (Marco Cloud) without the tasks scope
+    google_tasks_scope_denied: 'No se concedió permiso para ver las listas de Google Tasks.',
     google_exchange_failed: 'Error al comunicar con Google. Inténtalo de nuevo.',
     google_access_denied: 'Has cancelado el acceso con Google.',
   };

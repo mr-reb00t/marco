@@ -123,7 +123,8 @@ then add the allowed addresses in **Security → Allowed Google emails**. Server
 linked for its calendars asks once more), then tick the lists to show. Their open tasks show on the screen with the
 typed ones, with their due date, and are read every 5 minutes. With **Allow ticking by touching this screen** on, a
 task tapped on a touch screen is marked done in Google Tasks too. It needs the **Google Tasks API** enabled in the same
-Google Cloud project (step 1); the admin tells you when it is off. Not in Marco Cloud.
+Google Cloud project (step 1); the admin tells you when it is off. Marco Cloud offers it to everyone once Google has
+verified its access to the tasks scope; until then only to accounts it has turned it on for.
 
 ## Connecting Outlook, Hotmail or Microsoft 365
 

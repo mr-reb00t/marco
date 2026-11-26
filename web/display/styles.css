@@ -2319,6 +2319,11 @@ html.widget-only.theme-light .cw--side { --cw-bg: rgb(20 24 32 / 0.9) !important
 .cal-touch .num.is-pressed { border-radius: 0.8rem; }
 .cal-touch .ev, .cal-touch :is(.num, .more, .cell) { transition: filter 0.12s, transform 0.12s, background-color 0.12s; }
 .lite .cal-touch :is(.ev, .num, .more, .cell), html.low-power .cal-touch :is(.ev, .num, .more, .cell) { transition: none; }
+/* the lists (calTouch.ts tapZone: agenda, Today, Per person, Board, highlights, next events, countdowns, birthdays):
+   .tap-zone only exists with touch on; a row, a day's heading or a countdown opens, and dims a little under the finger */
+.tap-zone :is([data-eid], [data-tday], [data-tcd]) { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.tap-zone :is([data-eid], [data-tday], [data-tcd]).is-pressed { filter: brightness(1.18); transform: scale(0.98); }
+.tap-zone [data-tday].is-pressed { filter: none; transform: none; background: rgb(var(--accent-rgb) / 0.16); border-radius: 0.8rem; }
 
 /* Previous / Today / Next in the heading: at least a finger wide */
 .cal-nav { display: flex; align-items: center; gap: 0.8rem; margin-right: auto; align-self: center; }
@@ -2422,6 +2427,8 @@ html.widget-only.theme-light .cw--side { --cw-bg: rgb(20 24 32 / 0.9) !important
 .cs-title .em { font-family: var(--font-emoji); margin-right: 0.6rem; }
 .cs-ev { border-left: 0.8rem solid rgb(var(--c)); padding-left: 2.2rem; }
 .cs-ev .cs-title { margin-right: max(48px, 6rem); }
+/* a countdown: the days left stand out */
+.cs-cd .cs-when > div + div { color: var(--cs-fg); font-weight: 650; }
 /* (the back button sits on the left: the event's text keeps clear of it) */
 #cal-sheet:has(.cs-back:not([hidden])) .cs-body { padding-top: max(72px, 9rem); }
 .cs-when { font-size: max(18px, 2.7rem); line-height: 1.35; font-variant-numeric: tabular-nums; }

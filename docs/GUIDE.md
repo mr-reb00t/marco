@@ -138,7 +138,7 @@ transparency, blur and a light edge:
 
 On a tablet or a touch screen, turn on *Touch screen* in the screen's settings (*Screen settings* > *General*). It is
 off by default, so a TV with no touch never changes. With it on, the month, two weeks and week calendars (also the
-calendar cards of a Custom screen) respond to touch:
+calendar cards of a Custom screen), the agenda and the other lists of events respond to touch:
 
 - **Tap an event** to see it in large type: the title, the day or days and the time, its calendar and colour, and the
   place and notes when the event has them. Notes come with Marco's own events; other calendars do not send them to
@@ -147,11 +147,21 @@ calendar cards of a Custom screen) respond to touch:
 - **Change month:** the arrows next to the month name go to the previous or next month (in *Two weeks* and the week
   view, by two weeks or a week), and *Today* comes back. While the calendar shows another month, the month name is in
   the accent colour.
+- **Lists open too:** tap an event in the agenda (the *Agenda* layout or view, the agenda next to the clock of *Left /
+  right* and *Big time*), on the *Today* layout (the next event, the all-day chips and every block of the hour by hour
+  line), in the *Per person* columns, on the *Board* and the next event of *Photo frame*, and it opens the same way. A
+  day's heading in these lists (and *Today* on the *Today* layout) lists all of that day's events. The pills under the
+  clock ("In 3 h · Dentist") open their event. The Custom cards do the same: *Agenda*, *Today hour by hour*, *Per
+  person*, *Next event*, *Today’s highlights* and *Upcoming birthdays*.
+- **Countdowns:** tap a countdown (next to the calendar, on the *Board* or in the *Countdowns* card) to see its day and
+  the days left; a birthday also shows the age it turns, when the year of birth is known.
 - **Back by itself:** after 2 minutes without a touch, the open event closes and the calendar is on today again. A
   carousel holds the screen while an event is open or the calendar shows another month.
 
-A swipe still moves a carousel and never opens an event. The other touch features (*Navigation* cards, Home Assistant
-controls, ticking to-dos and routines) keep their own settings.
+A swipe still moves a carousel and never opens an event. The night view (*Bedside*) takes no taps: a tap only wakes
+the screen. While the screen is private, a "Busy" event shows only its time, and countdowns the privacy hides are not
+there to open. The other touch features (*Navigation* cards, Home Assistant controls, ticking to-dos and routines)
+keep their own settings.
 
 ## The admin panel
 

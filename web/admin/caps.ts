@@ -90,14 +90,25 @@ export function capsFrom(health: Partial<HealthResponse> | null | undefined): Ca
  *  POST /api/admin/status/refresh); photoSources: a photo card or the sidebar's photo with photos of its own (servers
  *  that answer GET /api/photos?for=); commute: the commute widget (servers with GET /api/display/commute);
  *  kioskPower: the Salir del kiosko and Apagar cards (servers with /api/display/power); mealie: the meal plan from
- *  Mealie (self-hosted servers with /api/admin/mealie/*). */
-const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower', 'mealie'];
+ *  Mealie (self-hosted servers with /api/admin/mealie/*); googleTasks: Google Tasks lists on Marco Cloud (per account;
+ *  self-hosted servers leave it out and offer them with googleCalendar, see offersGoogleTasks). */
+const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower', 'mealie', 'googleTasks'];
 
 export function hasFeature(caps: Caps, feature: FeatureName): boolean {
   if (!caps.features) return !OPT_IN.includes(feature);
   const v = caps.features[feature];
   if (typeof v === 'boolean') return v;
   return caps.edition === 'self-hosted' && !OPT_IN.includes(feature);
+}
+
+/**
+ * Whether the To-do page offers Google Tasks lists. Self-hosted: with Google Calendar and a Google app
+ * (`googleConfigured`), as always (those servers send no `googleTasks`). Elsewhere (Marco Cloud) only when the server
+ * also says `features.googleTasks` for this account: its Google accounts are linked for calendars otherwise.
+ */
+export function offersGoogleTasks(caps: Caps, googleConfigured: boolean): boolean {
+  if (!hasFeature(caps, 'googleCalendar') || !googleConfigured) return false;
+  return caps.edition === 'self-hosted' || hasFeature(caps, 'googleTasks');
 }
 
 /** Features a self-hosted admin shows even when they are off, with a hint on how to set them up
@@ -156,6 +167,8 @@ async function defaultFetchHealth(): Promise<Partial<HealthResponse>> {
 
 export const has = (feature: FeatureName): boolean => hasFeature(current, feature);
 export const offers = (feature: FeatureName): boolean => offersFeature(current, feature);
+/** The To-do page's Google Tasks card (offersGoogleTasks). */
+export const offersTasksOfGoogle = (googleConfigured: boolean): boolean => offersGoogleTasks(current, googleConfigured);
 export const edition = (): Caps['edition'] => current.edition;
 export const isSelfHosted = (): boolean => current.edition === 'self-hosted';
 export const runtime = (): Caps['runtime'] => current.runtime;

@@ -3,6 +3,21 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.49.0] - 2026-11-26
+
+### Added
+- *Touch screen*, part 2 (#51): with it on, the lists open what they show, as the month already did. Tap an event in
+  the agenda (the *Agenda* layout or view, the agenda next to the clock of *Left / right* and *Big time*), on the
+  *Today* layout (the next event, the all-day chips and the hour by hour line, where short events are now at least a
+  finger high), in the *Per person* columns, on the *Board*, the next event of *Photo frame* and the pills under the
+  clock to see it in large type. A day's heading in the agenda, *Per person* and the *Board* lists that day's events.
+  A countdown opens its day and the days left, and a birthday also the age it turns when it is known. The Custom cards
+  *Agenda*, *Today hour by hour*, *Per person*, *Next event*, *Today’s highlights*, *Countdowns* and *Upcoming
+  birthdays* do the same. The night view takes no taps, a swipe never opens anything, and a private screen shows
+  "Busy" events with their time only. With *Touch screen* off nothing changes.
+- *To-dos* > *Google Tasks lists* also shows on Marco Cloud when the server turns it on for the account
+  (`features.googleTasks`); self-hosted servers keep showing it with Google Calendar as before.
+
 ## [0.48.0] - 2026-11-26
 
 ### Added

@@ -1,6 +1,7 @@
 // "Today's highlights" pills: next event countdown, ongoing event, birthdays, check-ins / check-outs.
 import type { DisplayConfig } from '../../shared/types';
 import { addDays, formatCountdown, formatTime } from '../../shared/i18n';
+import { calTouchOn, tapZone } from '../calTouch';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, reconcile, type Spec } from '../dom';
@@ -28,6 +29,7 @@ export class Highlights {
       // switched off: nothing, and no room kept for it (its margin goes with it)
       this.root.style.display = 'none';
       this.count = 0;
+      tapZone(this.root, false);
       reconcile(this.root, [], { animate: false });
       return;
     }
@@ -38,6 +40,8 @@ export class Highlights {
     const today = tick.dayKey;
     const f24 = cfg.datetime.format24, ampm = cfg.datetime.showAmPm;
     const specs: Spec[] = [];
+    // touch (#51): a pill opens its event
+    const touch = tapZone(this.root, calTouchOn(), { today, events });
     // The lead ("In 23 min") changes every minute: it is written into the pill after the reconcile, so the title next
     // to it stays the same element and a title sliding to show its end (marquee.ts) is not restarted.
     const leads = new Map<string, string>();
@@ -48,6 +52,7 @@ export class Highlights {
         key,
         className: `hl-pill${extra}`,
         style: `--c:${col.base};--tint:${col.tint};--deep:${col.shade}`,
+        data: touch ? { eid: e.id } : undefined,
         html: `<span class="hl-lead"></span><span class="hl-em">${esc(e.emoji || '•')}</span><span class="hl-tt">${esc(text)}</span>`,
       });
     };

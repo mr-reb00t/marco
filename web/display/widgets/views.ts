@@ -3,8 +3,9 @@
 // dim clock, also the night view of any screen whose night mode is set to it, #38). The other layouts (and Two weeks, which is the month grid with two rows) leave #view empty.
 // Everything is plain HTML strings + setHTML (patched only when it changes) and one fitting pass that drops whole
 // rows that do not fit, so nothing is ever cut in half.
-import type { CountdownsResponse, DisplayConfig, NightView, PublicCalendarSource, WeatherResponse } from '../../shared/types';
+import type { CountdownItem, CountdownsResponse, DisplayConfig, NightView, PublicCalendarSource, WeatherResponse } from '../../shared/types';
 import { addDays, diffDays, formatCountdown, formatDateLine, formatTime, keyToUTC, monthName, relativeDayLabel } from '../../shared/i18n';
+import { calTouchOn, cdKey, eidAttr, tapZone, tdayAttr } from '../calTouch';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, setHTML } from '../dom';
@@ -132,13 +133,18 @@ export function renderTodayView(root: HTMLElement, d: ViewData, tick: Tick, cfg:
   const key = tick.dayKey;
   const nowMs = tick.now.getTime();
   const p = tick.parts;
+  // touch (#51): an event (a chip, the next one, a block of the timeline) opens it, the title lists the day
+  const touch = tapZone(root, calTouchOn(), { today: key, events: d.events });
+  const titleEl = root.querySelector<HTMLElement>('.td-title')!;
+  if (touch) titleEl.dataset.tday = key;
+  else titleEl.removeAttribute('data-tday');
   // the date as the screen writes it everywhere else ("Miércoles, 14 de octubre", "Wednesday, 14 October")
-  setHTML(root.querySelector('.td-title')!, `<b>${esc(t('today'))}</b><span>${esc(formatDateLine(lang, key, cfg.datetime.dateFormat, cfg.datetime.dateCustom))}</span>`);
+  setHTML(titleEl, `<b>${esc(t('today'))}</b><span>${esc(formatDateLine(lang, key, cfg.datetime.dateFormat, cfg.datetime.dateCustom))}</span>`);
 
   // all-day + multi-day things of today, as chips next to the title
   const chips = allDayOn(d.events, key).map((e) => {
     const note = barNote(e, key, cfg);
-    return `<span class="td-chip" style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<b>${esc(e.title)}</b>${note ? `<em>${esc(note)}</em>` : ''}</span>`;
+    return `<span class="td-chip"${eidAttr(e, touch)} style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<b>${esc(e.title)}</b>${note ? `<em>${esc(note)}</em>` : ''}</span>`;
   });
   setHTML(root.querySelector('.td-allday')!, chips.join(''));
 
@@ -153,7 +159,7 @@ export function renderTodayView(root: HTMLElement, d: ViewData, tick: Tick, cfg:
         ? `${t('firstTomorrow')} · ${hm(e.startMs, cfg)}`
         : `${t('upNext')} · ${formatCountdown(lang, e.startMs - nowMs)}`;
     const sub = [`${hm(e.startMs, cfg)}–${hm(e.endMs, cfg)}`, e.ev.location || '', sourceName(e, cfg)].filter(Boolean).map(esc).join(' · ');
-    next = `<div class="td-card${nx.kind === 'now' ? ' is-now' : ''}" style="${colStyle(e.color)}">
+    next = `<div class="td-card${nx.kind === 'now' ? ' is-now' : ''}"${eidAttr(e, touch)} style="${colStyle(e.color)}">
         <span class="td-em">${emojiOr(e, '<i class="td-dot"></i>')}</span>
         <div class="td-txt"><span class="td-k">${esc(kicker)}</span><span class="td-tt">${esc(e.title)}</span><span class="td-sub">${sub}</span></div></div>`;
   } else {
@@ -190,7 +196,8 @@ export function renderTodayView(root: HTMLElement, d: ViewData, tick: Tick, cfg:
   const box = root.querySelector<HTMLElement>('.td-evs')!;
   const H = box.clientHeight || 1;
   const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 10;
-  const minMin = Math.ceil(((rem * 4.4) / H) * span);
+  // (touch: at least a finger high, 44 px, so a short event can be tapped)
+  const minMin = Math.ceil(((touch ? Math.max(rem * 4.4, 44) : rem * 4.4) / H) * span);
   const items = evs.map((e) => {
     const a = Math.max(h0 * 60, minOf(e.startMs));
     const b = Math.min(h1 * 60, Math.max(minOf(e.endMs), a + 15));
@@ -218,7 +225,7 @@ export function renderTodayView(root: HTMLElement, d: ViewData, tick: Tick, cfg:
     const on = e.startMs <= nowMs && e.endMs > nowMs;
     const tall = ((b - a) / span) * H > rem * 7.4;
     const loc = tall && e.ev.location ? `<span class="td-loc">${esc(e.ev.location)}</span>` : '';
-    return `<div class="td-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}${tall ? ' tall' : ''}" style="${colStyle(e.color)};top:${pct(a)};height:calc(${(((vis - a) / span) * 100).toFixed(3)}% - 0.3rem);left:calc(${((lane / of) * 100).toFixed(2)}% + 0.2rem);width:calc(${(100 / of).toFixed(2)}% - 0.4rem)">
+    return `<div class="td-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}${tall ? ' tall' : ''}"${eidAttr(e, touch)} style="${colStyle(e.color)};top:${pct(a)};height:calc(${(((vis - a) / span) * 100).toFixed(3)}% - 0.3rem);left:calc(${((lane / of) * 100).toFixed(2)}% + 0.2rem);width:calc(${(100 / of).toFixed(2)}% - 0.4rem)">
         <span class="td-l1"><b>${esc(hm(e.startMs, cfg))}</b>${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span>${esc(e.title)}</span></span>${loc}</div>`;
   });
   setHTML(box, rows.join(''));
@@ -257,6 +264,8 @@ export function renderPeopleView(root: HTMLElement, d: ViewData, tick: Tick, cfg
   const today = tick.dayKey;
   const nowMs = tick.now.getTime();
   const cols = peopleColumns(cfg, opts.columns);
+  // touch (#51): an event opens it, a day's heading lists that day
+  const touch = tapZone(root, calTouchOn(), { today, events: d.events });
   const dayKeys = Array.from({ length: Math.max(1, Math.min(3, opts.days ?? 2)) }, (_, i) => addDays(today, i));
   const inCols = new Set(cols.map((s) => s.id));
   root.style.setProperty('--pp-n', String(Math.max(1, cols.length)));
@@ -266,7 +275,7 @@ export function renderPeopleView(root: HTMLElement, d: ViewData, tick: Tick, cfg
   const shared = dayKeys.slice(0, 2).flatMap((key) =>
     d.events
       .filter((e) => !inCols.has(e.ev.sourceId) && e.startKey === key && (e.allDay || e.ev.kind === 'holidays' || e.ev.kind === 'birthdays'))
-      .map((e) => `<span class="pp-chip" style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<b>${esc(e.title)}</b><em>${esc(relativeDayLabel(ctx.lang, key, today))}</em></span>`),
+      .map((e) => `<span class="pp-chip"${eidAttr(e, touch)} style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<b>${esc(e.title)}</b><em>${esc(relativeDayLabel(ctx.lang, key, today))}</em></span>`),
   );
   const sharedEl = root.querySelector<HTMLElement>('.pp-shared')!;
   setHTML(sharedEl, shared.length ? `<span class="pp-who">${esc(t('everyone'))}</span>${shared.join('')}` : '');
@@ -275,15 +284,15 @@ export function renderPeopleView(root: HTMLElement, d: ViewData, tick: Tick, cfg
   const row = (e: NEvent, key: string) => {
     if (e.bar) {
       const note = barNote(e, key, cfg);
-      return `<div class="pp-ev allday" style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span class="pp-tt">${esc(e.title)}</span>${note ? `<em>${esc(note)}</em>` : ''}</div>`;
+      return `<div class="pp-ev allday"${eidAttr(e, touch)} style="${colStyle(e.color)}">${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span class="pp-tt">${esc(e.title)}</span>${note ? `<em>${esc(note)}</em>` : ''}</div>`;
     }
     const past = e.endMs <= nowMs, on = e.startMs <= nowMs && e.endMs > nowMs;
-    return `<div class="pp-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}" style="${colStyle(e.color)}"><b class="pp-tm">${esc(hm(e.startMs, cfg))}</b>${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span class="pp-tt">${esc(e.title)}</span></div>`;
+    return `<div class="pp-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}"${eidAttr(e, touch)} style="${colStyle(e.color)}"><b class="pp-tm">${esc(hm(e.startMs, cfg))}</b>${e.emoji ? `<i>${esc(e.emoji)}</i>` : ''}<span class="pp-tt">${esc(e.title)}</span></div>`;
   };
   const section = (s: PublicCalendarSource, key: string) => {
     const list = [...allDayOn(d.events, key), ...timedOn(d.events, key)].filter((e) => e.ev.sourceId === s.id);
     const body = list.length ? list.map((e) => row(e, key)).join('') : `<div class="pp-none">${esc(t('nothingPlanned'))}</div>`;
-    return `<div class="pp-sec${key === today ? ' is-today' : ''}"><div class="pp-day">${esc(relativeDayLabel(ctx.lang, key, today, false))}</div><div class="pp-list">${body}</div><div class="pp-more"></div></div>`;
+    return `<div class="pp-sec${key === today ? ' is-today' : ''}"><div class="pp-day"${tdayAttr(key, touch)}>${esc(relativeDayLabel(ctx.lang, key, today, false))}</div><div class="pp-list">${body}</div><div class="pp-more"></div></div>`;
   };
   const html = cols.length
     ? cols.map((s) => {
@@ -318,11 +327,11 @@ export function fitPeopleView(root: HTMLElement): void {
 // ---- the compact Today and Per person (a Personalizado card in a small box, the compact look) ----------------------
 
 /** One line of an event: its time (none for an all-day one), its emoji and its title (ending in …). */
-function miniRow(e: NEvent, nowMs: number, cfg: DisplayConfig, tm = ''): string {
+function miniRow(e: NEvent, nowMs: number, cfg: DisplayConfig, tm = '', touch = false): string {
   const past = e.timed && e.endMs <= nowMs;
   const on = e.timed && e.startMs <= nowMs && e.endMs > nowMs;
   const time = tm || (e.timed ? hm(e.startMs, cfg) : '');
-  return `<div class="cvm-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}" style="${colStyle(e.color)}">${time ? `<b class="cvm-tm">${esc(time)}</b>` : '<i class="cvm-dot"></i>'}${e.emoji ? `<i class="cvm-em">${esc(e.emoji)}</i>` : ''}<span class="cvm-tt">${esc(e.title)}</span></div>`;
+  return `<div class="cvm-ev${past ? ' past' : ''}${on ? ' ongoing' : ''}"${eidAttr(e, touch)} style="${colStyle(e.color)}">${time ? `<b class="cvm-tm">${esc(time)}</b>` : '<i class="cvm-dot"></i>'}${e.emoji ? `<i class="cvm-em">${esc(e.emoji)}</i>` : ''}<span class="cvm-tt">${esc(e.title)}</span></div>`;
 }
 
 /** Drop rows from the end (what is over first) until `root` holds what is left, and say how many went. */
@@ -349,8 +358,10 @@ export function renderMiniToday(root: HTMLElement, d: ViewData, tick: Tick, cfg:
   const nowMs = tick.now.getTime();
   const date = keyToUTC(today);
   const list = [...allDayOn(d.events, today), ...timedOn(d.events, today)];
-  const rows = list.length ? list.map((e) => miniRow(e, nowMs, cfg)).join('') : `<div class="cvm-none">${esc(ctx.t('noEvents'))}</div>`;
-  setHTML(root, `<div class="cvm-head"><b>${esc(relativeDayLabel(ctx.lang, today, today, false))}</b><span>${esc(`${date.getUTCDate()} ${monthName(ctx.lang, date.getUTCMonth() + 1, 'short')}`)}</span></div><div class="cvm-list">${rows}</div><div class="cvm-more"></div>`);
+  // touch (#51): a line opens its event, the heading lists the day
+  const touch = tapZone(root, calTouchOn(), { today, events: d.events });
+  const rows = list.length ? list.map((e) => miniRow(e, nowMs, cfg, '', touch)).join('') : `<div class="cvm-none">${esc(ctx.t('noEvents'))}</div>`;
+  setHTML(root, `<div class="cvm-head"${tdayAttr(today, touch)}><b>${esc(relativeDayLabel(ctx.lang, today, today, false))}</b><span>${esc(`${date.getUTCDate()} ${monthName(ctx.lang, date.getUTCMonth() + 1, 'short')}`)}</span></div><div class="cvm-list">${rows}</div><div class="cvm-more"></div>`);
   fitMini(root);
 }
 
@@ -359,6 +370,8 @@ export function renderMiniPeople(root: HTMLElement, d: ViewData, tick: Tick, cfg
   const today = tick.dayKey;
   const nowMs = tick.now.getTime();
   const cols = peopleColumns(cfg, opts.columns);
+  // touch (#51): a person's next event opens it
+  const touch = tapZone(root, calTouchOn(), { today, events: d.events });
   const days = Array.from({ length: Math.max(1, Math.min(3, opts.days ?? 2)) }, (_, i) => addDays(today, i));
   const html = cols.map((s) => {
     const initial = (s.name.trim()[0] || '?').toUpperCase();
@@ -372,7 +385,7 @@ export function renderMiniPeople(root: HTMLElement, d: ViewData, tick: Tick, cfg
       const e = all[0] ?? timed[0];
       if (!e) continue;
       const tm = key === today ? '' : relativeDayLabel(ctx.lang, key, today, false);
-      next = miniRow(e, nowMs, cfg, tm && e.timed ? `${tm} ${hm(e.startMs, cfg)}` : tm).replace('<div class="cvm-ev', '<div class="cvm-ev cvm-pp').replace(/(style="[^"]*">)/, `$1${who}`);
+      next = miniRow(e, nowMs, cfg, tm && e.timed ? `${tm} ${hm(e.startMs, cfg)}` : tm, touch).replace('<div class="cvm-ev', '<div class="cvm-ev cvm-pp').replace(/(style="[^"]*">)/, `$1${who}`);
       break;
     }
     return next || `<div class="cvm-ev cvm-pp is-none" style="${colStyle(s.color)}">${who}<span class="cvm-tt">${esc(ctx.t('nothingPlanned'))}</span></div>`;
@@ -411,13 +424,14 @@ export class Views {
     if (this.bsCal instanceof MonthCalendar) this.bsCal.destroy();
     this.bsCal = null;
     this.bsCfg = null;
+    tapZone(this.root, false);
     this.root.className = kind ? `view view-${kind}${list ? ` bs-v-${variant.view}` : ''}` : 'view';
     this.root.innerHTML = (list ? SKELETON.bedsideList : SKELETON[kind]) ?? '';
     if (list) {
       const host = this.root.querySelector<HTMLElement>('.bs-cal')!.appendChild(document.createElement('div'));
-      if (variant.view === 'agenda') this.bsCal = new Agenda(host, { legend: false, cfg: () => this.bedsideCfg(variant) });
+      // (the night bedside view takes no taps: a tap wakes the screen)
+      if (variant.view === 'agenda') this.bsCal = new Agenda(host, { legend: false, cfg: () => this.bedsideCfg(variant), touch: false });
       else {
-        // (the night bedside view takes no taps: a tap wakes the screen)
         const mc = new MonthCalendar(host, { cfg: () => this.bedsideCfg(variant), touch: false });
         // no rows fading in and out in a dark room
         mc.still = true;
@@ -446,6 +460,11 @@ export class Views {
     else if (this.kind === 'bedside') this.bedside(d, tick);
   }
 
+  /** Touch (#51) on the Photo frame and the Board: their rows open (the Today and Per person renderers mark their own). */
+  private touch(d: ViewData, tick: Tick, cds?: { item: CountdownItem; days: number; color: string }[]): boolean {
+    return tapZone(this.root, calTouchOn(), { today: tick.dayKey, events: d.events, cds });
+  }
+
   /** Drop whatever does not fit (after layout changes: resize, fonts, news appearing). */
   fit(): void {
     if (this.kind === 'today') fitTodayView(this.root);
@@ -468,11 +487,12 @@ export class Views {
     setHTML(this.root.querySelector('.pf-wx')!, weatherLine(d.weather));
     const nx = nextOf(d.events, tick);
     const nowMs = tick.now.getTime();
+    const touch = this.touch(d, tick);
     let next = '';
     if (nx) {
       const e = nx.e;
       const when = nx.kind === 'now' ? ctx.t('happeningNow') : nx.kind === 'tomorrow' ? `${ctx.t('tomorrow')} ${hm(e.startMs)}` : `${hm(e.startMs)} · ${formatCountdown(ctx.lang, e.startMs - nowMs)}`;
-      next = `<div class="pf-ev" style="${colStyle(e.color)}"><span class="pf-em">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="pf-tt">${esc(e.title)}</span><span class="pf-when">${esc(when)}</span></div>`;
+      next = `<div class="pf-ev"${eidAttr(e, touch)} style="${colStyle(e.color)}"><span class="pf-em">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="pf-tt">${esc(e.title)}</span><span class="pf-when">${esc(when)}</span></div>`;
     }
     setHTML(this.root.querySelector('.pf-next')!, next);
   }
@@ -532,6 +552,9 @@ export class Views {
     const { t, cfg } = ctx;
     const today = tick.dayKey, tomorrow = addDays(today, 1);
     const nowMs = tick.now.getTime();
+    // touch (#51): an event, a day, a countdown or a birthday opens (the countdowns as their cards draw them)
+    const bdColor = (item: CountdownItem) => item.color || (item.origin === 'birthday' ? '#f15bb5' : cfg.screen.accent);
+    const touch = this.touch(d, tick, upcomingCountdowns(d.countdowns, today, 40).map(({ item, days }) => ({ item, days, color: bdColor(item) })));
     const cards: { id: string; w: number; html: string }[] = [];
     const card = (id: string, icon: string, title: string, body: string, w: number) =>
       cards.push({ id, w, html: `<section class="bd-card bd-${id}"><h3 class="bd-h"><span>${icon}</span>${esc(title)}</h3>${body}</section>` });
@@ -543,9 +566,9 @@ export class Views {
       const rows = list.map((e) => {
         const on = !e.bar && e.startMs <= nowMs;
         const lead = e.bar ? barNote(e, key) || t('allDay') : on ? t('happeningNow') : hm(e.startMs);
-        return `<div class="bd-row${on ? ' ongoing' : ''}" style="${colStyle(e.color)}"><span class="bd-tile">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="bd-tt">${esc(e.title)}</span><span class="bd-meta">${esc(lead)}</span></div>`;
+        return `<div class="bd-row${on ? ' ongoing' : ''}"${eidAttr(e, touch)} style="${colStyle(e.color)}"><span class="bd-tile">${emojiOr(e, '<i class="td-dot"></i>')}</span><span class="bd-tt">${esc(e.title)}</span><span class="bd-meta">${esc(lead)}</span></div>`;
       });
-      return `<div class="bd-day">${esc(relativeDayLabel(ctx.lang, key, today, false))}</div>${rows.length ? rows.join('') : `<div class="bd-none">${esc(t('nothingPlanned'))}</div>`}`;
+      return `<div class="bd-day"${tdayAttr(key, touch)}>${esc(relativeDayLabel(ctx.lang, key, today, false))}</div>${rows.length ? rows.join('') : `<div class="bd-none">${esc(t('nothingPlanned'))}</div>`}`;
     };
     card('agenda', '📅', t('agenda'), `<div class="bd-list">${dayRows(today)}${dayRows(tomorrow)}</div><div class="bd-more"></div>`, 9);
 
@@ -572,7 +595,8 @@ export class Views {
       if (cds.length) {
         const rows = cds.map(({ item, days }) => {
           const when = days === 0 ? esc(t('cdToday')) : days === 1 ? esc(t('cdTomorrow')) : `<b>${days}</b> <small>${esc(t('daysWord'))}</small>`;
-          return `<div class="bd-row bd-cd${days <= 1 ? ' soon' : ''}" style="${colStyle(item.color || cfg.screen.accent)}"><span class="bd-tile">${esc(item.emoji || '⏳')}</span><span class="bd-tt">${esc(item.title)}</span><span class="bd-meta">${when}</span></div>`;
+          const tcd = touch ? ` data-tcd="${esc(cdKey(item))}"` : '';
+          return `<div class="bd-row bd-cd${days <= 1 ? ' soon' : ''}"${tcd} style="${colStyle(bdColor(item))}"><span class="bd-tile">${esc(item.emoji || '⏳')}</span><span class="bd-tt">${esc(item.title)}</span><span class="bd-meta">${when}</span></div>`;
         });
         card('cd', '⏳', t('countdowns'), rowsHtml(rows), 1 + rows.length);
       }
@@ -580,23 +604,23 @@ export class Views {
 
     // upcoming birthdays: the countdown list (it knows the age and looks a year ahead) + calendar birthdays
     const seen = new Set<string>();
-    const bdays: { title: string; key: string; color: string }[] = [];
+    const bdays: { title: string; key: string; color: string; tap: string }[] = [];
     for (const v of upcomingCountdowns(d.countdowns, today, 40)) {
       if (v.item.origin !== 'birthday') continue;
       const title = typeof v.item.age === 'number' ? `${v.item.title} (${v.item.age})` : v.item.title;
       seen.add(`${v.item.date}|${v.item.title}`);
-      bdays.push({ title, key: v.item.date, color: v.item.color || '#f15bb5' });
+      bdays.push({ title, key: v.item.date, color: bdColor(v.item), tap: touch ? ` data-tcd="${esc(cdKey(v.item))}"` : '' });
     }
     for (const e of d.events) {
       if (!(e.allDay && (e.ev.kind === 'birthdays' || e.emoji === '🎂')) || e.startKey < today) continue;
       if (seen.has(`${e.startKey}|${e.ev.title}`) || bdays.some((b) => b.key === e.startKey && b.title === e.title)) continue;
-      bdays.push({ title: e.title, key: e.startKey, color: e.color });
+      bdays.push({ title: e.title, key: e.startKey, color: e.color, tap: eidAttr(e, touch) });
     }
     bdays.sort((a, b) => a.key.localeCompare(b.key) || a.title.localeCompare(b.title));
     if (bdays.length) {
       const rows = bdays.slice(0, 8).map((b) => {
         const dd = diffDays(today, b.key);
-        return `<div class="bd-row bd-bday${dd <= 1 ? ' soon' : ''}" style="${colStyle(b.color)}"><span class="bd-tile">🎂</span><span class="bd-tt">${esc(b.title)}</span><span class="bd-meta">${esc(dayLabel(b.key, today))}</span></div>`;
+        return `<div class="bd-row bd-bday${dd <= 1 ? ' soon' : ''}"${b.tap} style="${colStyle(b.color)}"><span class="bd-tile">🎂</span><span class="bd-tt">${esc(b.title)}</span><span class="bd-meta">${esc(dayLabel(b.key, today))}</span></div>`;
       });
       card('bday', '🎂', t('birthdays'), rowsHtml(rows), 1 + rows.length);
     }

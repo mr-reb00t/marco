@@ -1,9 +1,11 @@
-// Touch on the calendar (#51, phase 1): the per-screen switch (screen.touch, stored only when on), the pure part
+// Touch on the calendar (#51, phases 1 and 2): the per-screen switch (screen.touch, stored only when on), the pure part
 // (web/display/calTouchCore.ts: where a moved grid starts, the range it reads, the text of the sheets, privacy), and
 // in headless Chrome on the real app with a temp data dir (skipped without a browser): with touch off nothing is
 // drawn or listened to; with it on a tap opens an event (its text escaped), "+N" and a day number list the day, the
 // arrows and Today move the month and read the range they need, a swipe opens nothing, a "Busy" event shows no place
-// or notes, and the grid goes back to today by itself (?touchIdle= shortens the two minutes).
+// or notes, and the grid goes back to today by itself (?touchIdle= shortens the two minutes). Phase 2: the agenda, the
+// Today layout, the highlights pills and the countdowns open the same sheets (a countdown its own one), and with touch
+// off none of them is marked.
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -155,6 +157,32 @@ test('the day sheet: every event of the day as the grid orders them, each one a 
   assert.match(daySheetHtml('2026-11-28', list, () => '1 2 3', OPTS), /Nothing planned/);
 });
 
+test('the countdown sheet: escaped title, the day as the screen writes it, the days left, a birthday\'s age', () => {
+  const { countdownSheetHtml, daysLeftLabel } = core;
+  const trip = { id: 'k1', title: '<script>x</script> & trip', emoji: '✈️', date: '2026-12-08', origin: 'manual', age: null };
+  const html = countdownSheetHtml(trip, 12, '1 2 3', OPTS);
+  assert.ok(!html.includes('<script>'), html);
+  assert.match(html, /&lt;script&gt;x&lt;\/script&gt; &amp; trip/);
+  assert.match(html, /Tuesday, 8 December/);
+  assert.match(html, /In 12 days/);
+  assert.match(html, /✈️/);
+  assert.ok(!/Turns/.test(html));
+  assert.equal(daysLeftLabel('en', 0), 'Today!');
+  assert.equal(daysLeftLabel('en', 1), 'Tomorrow!');
+  assert.equal(daysLeftLabel('es', 3), 'Faltan 3 días');
+  // a birthday with its age; another year carries the year; Spanish and Polish
+  const bday = { id: 'b1', title: 'Ana', emoji: '', date: '2027-01-02', origin: 'birthday', age: 36 };
+  assert.match(countdownSheetHtml(bday, 37, '1 2 3', OPTS), /Saturday, 2 January 2027.*In 37 days.*Turns 36/s);
+  assert.match(countdownSheetHtml(bday, 37, '1 2 3', { ...OPTS, lang: 'es' }), /Cumple 36 años/);
+  assert.match(countdownSheetHtml({ ...bday, age: 23 }, 37, '1 2 3', { ...OPTS, lang: 'pl' }), /Kończy 23 lata/);
+  assert.match(countdownSheetHtml({ ...bday, age: 30 }, 37, '1 2 3', { ...OPTS, lang: 'pl' }), /Kończy 30 lat/);
+  // no age known: none shown; no emoji: the hourglass
+  const noAge = countdownSheetHtml({ ...bday, age: null }, 1, '1 2 3', OPTS);
+  assert.ok(!/Turns/.test(noAge));
+  assert.match(noAge, /Tomorrow!/);
+  assert.match(noAge, /⏳/);
+});
+
 // ---------------------------------------------------------------- in a browser
 
 const chrome = findChrome();
@@ -183,6 +211,9 @@ describe('touch on the calendar of a running display', { skip: !chrome && 'no Ch
       { id: 'l_prev', title: 'Antes', allDay: true, date: prevDay(), endDate: prevDay() },
       { id: 'l_far', title: 'Excursión', allDay: true, date: farDay(), endDate: farDay() },
     ];
+    const tmr = addDays(today, 1);
+    c.birthdays.items = [{ id: 'b_ana', name: 'Ana', month: +tmr.slice(5, 7), day: +tmr.slice(8, 10), year: +tmr.slice(0, 4) - 36, emoji: '' }];
+    c.countdowns.items = [{ id: 'k_trip', title: 'Viaje <i>lago</i>', emoji: '✈️', color: null, date: addDays(today, 12), yearly: false }];
     const main = c.screens[0];
     main.screen.touch = true;
     Object.assign(main.calendar, { maxEventsPerDay: 2, rotateBusyDays: false, compactBusyDays: false, weeks: 5 });
@@ -386,6 +417,125 @@ describe('touch on the calendar of a running display', { skip: !chrome && 'no Ch
       assert.ok(s, 'the busy event opens');
       assert.match(s.text, /Busy/);
       assert.match(s.text, /19:00 – 21:00/);
+      assert.ok(!/Cena|Mayor|Primera/.test(s.text), s.text);
+      assert.ok(!/cs-loc|cs-desc/.test(s.html));
+    } finally {
+      await p.close();
+      applyPrivacy({ mode: 'off', screenIds: ['s_main'] });
+    }
+  });
+  // ---------------------------------------------------------------- phase 2: the lists
+
+  const MARKED = `document.querySelectorAll('.tap-zone, [data-tcd], #agenda [data-eid], #agenda [data-tday], #view [data-eid], #view [data-tday], #highlights [data-eid], #countdowns [data-tcd]').length`;
+
+  test('touch off: the agenda, Today, the pills and the countdowns mark nothing and open nothing', async () => {
+    for (const preset of ['agenda', 'today', 'bigCalendar']) {
+      const p = await browser.page(`${web.url}/?screen=kitchen&lite=1&preset=${preset}`);
+      try {
+        const rows = preset === 'agenda' ? '#agenda .ag-ev' : preset === 'today' ? '#view .td-ev' : '#calendar .wk .ev';
+        assert.ok(await until(p, `[...document.querySelectorAll('${rows}')].some((e) => e.textContent.includes('Cena'))`), `${preset} drawn`);
+        assert.ok(await until(p, `document.querySelectorAll('#highlights .hl-pill, #countdowns .cd').length > 0`), `${preset}: pills or countdowns drawn`);
+        assert.equal(await p.eval(MARKED), 0, preset);
+        await tap(p, rows, 'Cena');
+        const pill = await at(p, '#highlights .hl-pill');
+        if (pill) await press(p, pill);
+        const cd = await at(p, '#countdowns .cd');
+        if (cd) await press(p, cd);
+        assert.equal(await p.eval(`!!document.getElementById('cal-sheet')`), false, preset);
+      } finally {
+        await p.close();
+      }
+    }
+  });
+
+  test('agenda: a row opens its event (escaped), a day heading lists the day, a swipe opens nothing', async () => {
+    const p = await browser.page(`${web.url}/?screen=living-room&lite=1&preset=agenda`);
+    try {
+      assert.ok(await until(p, `[...document.querySelectorAll('#agenda .ag-ev[data-eid]')].some((e) => e.textContent.includes('Cena'))`));
+      assert.equal(await p.eval(`document.getElementById('agenda').classList.contains('tap-zone')`), true);
+      const pt = await at(p, '#agenda .ag-ev[data-eid]', 'Cena');
+      await press(p, pt, { x: pt.x + 260, y: pt.y });
+      assert.equal(await p.eval(SHEET), null, 'a swipe opens nothing');
+      await press(p, pt);
+      const ev = await until(p, SHEET);
+      assert.ok(ev, 'the sheet opened');
+      assert.match(ev.text, /Cena <b>familia<\/b>/);
+      assert.ok(!/<b>familia/.test(ev.html));
+      assert.match(ev.text, /Calle <Mayor> 5/);
+      assert.match(ev.text, /19:00 – 21:00/);
+      await tap(p, '#cal-sheet .cs-close');
+      assert.equal(await p.eval(SHEET), null);
+      await tap(p, `#agenda .ag-date[data-tday="${today}"]`);
+      const day = await until(p, SHEET);
+      assert.ok(day);
+      assert.match(day.text, /Cena/);
+      await tap(p, '#cal-sheet .cs-row', 'Cena');
+      assert.equal((await p.eval(SHEET)).back, true);
+      await tap(p, '#cal-sheet .cs-close');
+      assert.deepEqual(p.errors().map((e) => JSON.stringify(e.params).slice(0, 200)).filter((e) => !/vite/i.test(e)), []);
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('Today layout: a block of the timeline opens its event; the pill under the clock opens its event', async () => {
+    const p = await browser.page(`${web.url}/?screen=living-room&lite=1&preset=today`);
+    try {
+      assert.ok(await until(p, `[...document.querySelectorAll('#view .td-ev[data-eid]')].some((e) => e.textContent.includes('Cena'))`));
+      // a block is at least a finger high
+      assert.ok(await p.eval(`Math.min(...[...document.querySelectorAll('#view .td-ev[data-eid]')].map((e) => e.getBoundingClientRect().height)) >= 40`));
+      await tap(p, '#view .td-ev[data-eid]', 'Cena');
+      const ev = await until(p, SHEET);
+      assert.ok(ev);
+      assert.match(ev.text, /Cena <b>familia<\/b>/);
+      assert.match(ev.text, /19:00 – 21:00/);
+      await tap(p, '#cal-sheet .cs-close');
+      // Ana's birthday tomorrow: a pill
+      assert.ok(await until(p, `[...document.querySelectorAll('#highlights .hl-pill[data-eid]')].some((e) => e.textContent.includes('Ana'))`));
+      await tap(p, '#highlights .hl-pill[data-eid]', 'Ana');
+      const bd = await until(p, SHEET);
+      assert.ok(bd, 'the pill opened');
+      assert.match(bd.text, /Ana/);
+      assert.match(bd.text, /All day/);
+      await tap(p, '#cal-sheet .cs-close');
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('countdowns: a countdown opens its day and the days left, a birthday its age', async () => {
+    const p = await browser.page(`${web.url}/?screen=living-room&lite=1`);
+    try {
+      assert.ok(await until(p, `[...document.querySelectorAll('#countdowns .cd[data-tcd]')].some((e) => e.textContent.includes('Viaje'))`));
+      await tap(p, '#countdowns .cd[data-tcd]', 'Viaje');
+      const cd = await until(p, SHEET);
+      assert.ok(cd, 'the countdown opened');
+      assert.match(cd.text, /Viaje <i>lago<\/i>/);
+      assert.ok(!/<i>lago/.test(cd.html));
+      assert.match(cd.text, /12 /);
+      assert.match(cd.text, /✈️/);
+      await tap(p, '#cal-sheet .cs-close');
+      if (await at(p, '#countdowns .cd[data-tcd]', 'Ana')) {
+        await tap(p, '#countdowns .cd[data-tcd]', 'Ana');
+        const bd = await until(p, SHEET);
+        assert.ok(bd);
+        assert.match(bd.text, /36/);
+        await tap(p, '#cal-sheet .cs-close');
+      }
+    } finally {
+      await p.close();
+    }
+  });
+
+  test('a private screen: an agenda row opens as Busy with its time, no place', async () => {
+    applyPrivacy({ mode: 'on', screenIds: ['s_main'] });
+    const p = await browser.page(`${web.url}/?screen=living-room&lite=1&preset=agenda`);
+    try {
+      assert.ok(await until(p, `[...document.querySelectorAll('#agenda .ag-ev[data-eid]')].some((e) => e.textContent.includes('Busy'))`));
+      await tap(p, '#agenda .ag-ev[data-eid]', 'Busy');
+      const s = await until(p, SHEET);
+      assert.ok(s, 'the busy event opens');
+      assert.match(s.text, /Busy/);
       assert.ok(!/Cena|Mayor|Primera/.test(s.text), s.text);
       assert.ok(!/cs-loc|cs-desc/.test(s.html));
     } finally {

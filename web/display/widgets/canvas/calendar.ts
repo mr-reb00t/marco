@@ -3,6 +3,7 @@
 // only gets the events of the calendars the item picked.
 import type { DisplayCanvasItem } from '../../../shared/types';
 import { formatCountdown, formatTime, relativeDayLabel } from '../../../shared/i18n';
+import { calTouchOn, tapZone } from '../../calTouch';
 import { chipColors } from '../../color';
 import { ctx } from '../../ctx';
 import type { NEvent } from '../../eventModel';
@@ -193,6 +194,9 @@ export function fitAgenda(box: HTMLElement): void {
     hideFrom(shown);
     const more = document.createElement('div');
     more.className = 'ag-more cv-more';
+    // touch (#51): it lists the day, as the day's heading does
+    const tday = head?.dataset.tday;
+    if (tday) more.dataset.tday = tday;
     day.querySelector('.ag-list')?.appendChild(more);
     const setMore = () => {
       const hidden = evs.filter((x) => x.classList.contains('cv-fit-hide')).length;
@@ -465,7 +469,9 @@ function next(): CanvasAdapter {
       }
       return { e, when, now };
     });
-    const s = JSON.stringify(rows.map((r) => [r.e.id, r.e.title, r.e.emoji, r.e.color, r.when, r.now]));
+    // touch (#51): an event opens it
+    const touch = tapZone(root, calTouchOn(), { today: t.dayKey, events: list });
+    const s = JSON.stringify([touch, rows.map((r) => [r.e.id, r.e.title, r.e.emoji, r.e.color, r.when, r.now])]);
     if (s === sig) return;
     sig = s;
     root.textContent = '';
@@ -480,6 +486,7 @@ function next(): CanvasAdapter {
       const c = chipColors(r.e.color);
       const row = document.createElement('div');
       row.className = `cv-next-ev${r.now ? ' is-now' : ''}`;
+      if (touch) row.dataset.eid = r.e.id;
       row.style.setProperty('--c', c.base);
       row.style.setProperty('--tint', c.tint);
       // the deeper shade: the day on a light card (the pale tint is made for dark glass)

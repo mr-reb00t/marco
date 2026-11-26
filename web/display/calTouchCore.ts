@@ -1,7 +1,7 @@
-// Touch on the calendar grids (#51, phase 1): the pure part. Where a grid moved by touch starts and how many rows it
-// shows, the range of events it needs, its heading, and the text of the read-only sheets (one event, one day). No DOM
+// Touch on the calendar grids (#51): the pure part. Where a grid moved by touch starts and how many rows it shows, the
+// range of events it needs, its heading, and the text of the read-only sheets (one event, one day, one countdown). No DOM
 // and no fetches, so the tests load it in Node (server/test/display-touch.test.js); calTouch.ts draws it.
-import type { DateFormat, Lang } from '../shared/types';
+import type { CountdownItem, DateFormat, Lang } from '../shared/types';
 import { addDays, diffDays, formatDateLine, gridStartOf, monthName, startOfWeek, t } from '../shared/i18n';
 import { type NEvent, sortForDay, timeLabel } from './eventModel';
 
@@ -194,4 +194,27 @@ export function daySheetHtml(key: string, list: NEvent[], colorOf: (e: NEvent) =
   });
   const body = rows.length ? `<div class="cs-list">${rows.join('')}</div>` : `<p class="cs-none">${escH(t(o.lang, 'nothingPlanned'))}</p>`;
   return `<div class="cs-day"><h2 class="cs-title">${escH(dayLine(key, o))}</h2>${body}</div>`;
+}
+
+/** "Today!", "Tomorrow!", "In 12 days": the days left as the countdown chips write them. */
+export function daysLeftLabel(lang: Lang, days: number): string {
+  if (days <= 0) return t(lang, 'cdToday');
+  if (days === 1) return t(lang, 'cdTomorrow');
+  return t(lang, 'cdDays', { n: days });
+}
+
+/**
+ * The body of a countdown's sheet (HTML; every text escaped): its emoji and title, the day as the screen writes dates,
+ * the days left, and for a birthday the age when it is known. `color` is "r g b".
+ */
+export function countdownSheetHtml(item: Pick<CountdownItem, 'title' | 'emoji' | 'date' | 'origin' | 'age'>, days: number, color: string, o: SheetOpts): string {
+  const title = (item.title || '').trim() || '–';
+  const em = `<span class="em">${escH(item.emoji || '⏳')}</span>`;
+  let html = `<div class="cs-ev cs-cd" style="--c:${color}"><h2 class="cs-title">${em}<span class="cs-tt">${escH(title)}</span></h2>`;
+  html += `<div class="cs-when"><div>${escH(dayLine(item.date, o))}</div><div>${escH(daysLeftLabel(o.lang, days))}</div></div>`;
+  const age = item.age;
+  if (item.origin === 'birthday' && typeof age === 'number' && Number.isFinite(age) && age > 0) {
+    html += `<div class="cs-cal"><i></i><span>${escH(age === 1 ? t(o.lang, 'touchTurns1') : t(o.lang, 'touchTurns', { n: age }))}</span></div>`;
+  }
+  return `${html}</div>`;
 }

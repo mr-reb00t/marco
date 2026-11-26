@@ -2623,6 +2623,7 @@
         "passwordFromEnv?",
         "account?",
         "microsoftConfigured?",
+        "googleTasks?",
         "twoFactorPending?"
       ]
     },
