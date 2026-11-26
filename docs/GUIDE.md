@@ -134,6 +134,25 @@ transparency, blur and a light edge:
 
 <br clear="right">
 
+### Touch screens
+
+On a tablet or a touch screen, turn on *Touch screen* in the screen's settings (*Screen settings* > *General*). It is
+off by default, so a TV with no touch never changes. With it on, the month, two weeks and week calendars (also the
+calendar cards of a Custom screen) respond to touch:
+
+- **Tap an event** to see it in large type: the title, the day or days and the time, its calendar and colour, and the
+  place and notes when the event has them. Notes come with Marco's own events; other calendars do not send them to
+  the screens. While the screen is private, a "Busy" event shows only "Busy" and its time.
+- **Tap a day** (its number, an empty part of it or its *+N more*) to list all of its events, and tap one to open it.
+- **Change month:** the arrows next to the month name go to the previous or next month (in *Two weeks* and the week
+  view, by two weeks or a week), and *Today* comes back. While the calendar shows another month, the month name is in
+  the accent colour.
+- **Back by itself:** after 2 minutes without a touch, the open event closes and the calendar is on today again. A
+  carousel holds the screen while an event is open or the calendar shows another month.
+
+A swipe still moves a carousel and never opens an event. The other touch features (*Navigation* cards, Home Assistant
+controls, ticking to-dos and routines) keep their own settings.
+
 ## The admin panel
 
 | | |

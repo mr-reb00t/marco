@@ -417,7 +417,8 @@ export class Views {
       const host = this.root.querySelector<HTMLElement>('.bs-cal')!.appendChild(document.createElement('div'));
       if (variant.view === 'agenda') this.bsCal = new Agenda(host, { legend: false, cfg: () => this.bedsideCfg(variant) });
       else {
-        const mc = new MonthCalendar(host, { cfg: () => this.bedsideCfg(variant) });
+        // (the night bedside view takes no taps: a tap wakes the screen)
+        const mc = new MonthCalendar(host, { cfg: () => this.bedsideCfg(variant), touch: false });
         // no rows fading in and out in a dark room
         mc.still = true;
         this.bsCal = mc;

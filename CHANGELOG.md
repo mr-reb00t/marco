@@ -3,6 +3,20 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.48.0] - 2026-11-26
+
+### Added
+- *Touch screen* in each screen's settings (*Screen settings* > *General*), off by default so TVs do not change. With
+  it on, the month, *Two weeks* and week calendars (also the calendar cards of Custom screens) respond to touch: tap
+  an event to see it in large type (title, day and time, its calendar, the place and notes when it has them), tap a
+  day or its *+N more* to list all of its events, and use the arrows and *Today* next to the month name to go to
+  another month (by two weeks or a week in those views). After 2 minutes without a touch the calendar is back on
+  today. A carousel holds the screen meanwhile, a swipe never opens an event, and while the screen is private a
+  "Busy" event shows only its time. This is the first part of general touch support (#51, thanks @afernandez2000).
+
+### Fixed
+- Polish: three hints still named *Connected devices* by its old name.
+
 ## [0.47.0] - 2026-11-26
 
 ### Added

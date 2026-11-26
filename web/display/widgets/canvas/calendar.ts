@@ -15,6 +15,7 @@ import { Countdowns } from '../countdowns';
 import { fitPeopleView, fitTodayView, renderMiniPeople, renderMiniToday, renderPeopleView, renderTodayView, SKELETON } from '../views';
 import type { AdapterEnv, CanvasAdapter } from './types';
 import { screenWeather } from '../../weatherPlaces';
+import { sourceFilter } from './config';
 
 type Props = Record<string, any>;
 
@@ -108,7 +109,15 @@ function grid(): CanvasAdapter {
       root.classList.add('cv-cal');
       box = document.createElement('div');
       root.appendChild(box);
-      cal = new MonthCalendar(box, { cfg: env.cfg });
+      // touch (#51): a moved grid shows the events of the card's own calendars and is drawn the card's way
+      cal = new MonthCalendar(box, {
+        cfg: env.cfg,
+        keep: (ev) => {
+          const k = sourceFilter(env.item());
+          return !k || k(ev.ev.sourceId);
+        },
+        redraw: () => render(),
+      });
       render();
     },
     update: () => render(),

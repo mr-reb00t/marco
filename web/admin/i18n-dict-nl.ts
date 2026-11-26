@@ -17,6 +17,7 @@ import { NL_GROUP } from './i18n-dict-group';
 import { NL_PHOTOSOURCE } from './i18n-dict-photosource';
 import { NL_SINGULAR_VCARD, NL_VCARD } from './i18n-dict-vcard';
 import { NL_MEALIE } from './i18n-dict-mealie';
+import { NL_TOUCH } from './i18n-dict-touch';
 
 /** Every admin row but the Familia ones. */
 export const NL: Record<string, string> = {
@@ -35,6 +36,7 @@ export const NL: Record<string, string> = {
   ...NL_PHOTOSOURCE,
   ...NL_VCARD,
   ...NL_MEALIE,
+  ...NL_TOUCH,
   '(ninguno)': '(geen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Je gebruikt het startwachtwoord. Wijzig het: tot dan wordt het alleen vanuit je lokale netwerk geaccepteerd.',
   'Sesiones': 'Sessies',

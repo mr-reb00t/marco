@@ -2307,3 +2307,151 @@ html.widget-only.theme-light .cw--side { --cw-bg: rgb(20 24 32 / 0.9) !important
 .cw-badge--moderate { background: rgb(255 214 10 / 0.16); color: var(--cw-moderate); }
 .cw-badge--heavy { background: rgb(255 69 58 / 0.18); color: var(--cw-heavy); }
 .uw-commute .uw-pill { right: auto; left: 50%; bottom: auto; top: 0.8rem; transform: translateX(-50%); }
+
+/* ======================================= touch on the calendar (#51) ======================================= */
+/* screen.touch (calTouch.ts): nothing below applies while it is off (.cal-touch, #cal-sheet only exist with it on). */
+.cal-touch :is([data-eid], [data-tday]) { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* a busy day's page that is not on show takes no taps */
+.cal-touch :is(.ev.pg-off, .cpg.pg-off) { pointer-events: none; }
+/* the pressed look: brief, under the finger */
+.cal-touch .ev.is-pressed { filter: brightness(1.2); transform: scale(0.97); }
+.cal-touch :is(.num, .more, .cell).is-pressed { background: rgb(var(--accent-rgb) / 0.16); }
+.cal-touch .num.is-pressed { border-radius: 0.8rem; }
+.cal-touch .ev, .cal-touch :is(.num, .more, .cell) { transition: filter 0.12s, transform 0.12s, background-color 0.12s; }
+.lite .cal-touch :is(.ev, .num, .more, .cell), html.low-power .cal-touch :is(.ev, .num, .more, .cell) { transition: none; }
+
+/* Previous / Today / Next in the heading: at least a finger wide */
+.cal-nav { display: flex; align-items: center; gap: 0.8rem; margin-right: auto; align-self: center; }
+.cal-nav button {
+  display: inline-grid;
+  place-items: center;
+  min-width: max(44px, 4.8rem);
+  height: max(44px, 4.8rem);
+  padding: 0 1.3rem;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 99rem;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  color: inherit;
+  font: inherit;
+  font-size: max(15px, 1.8rem);
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s, background-color 0.12s;
+}
+.cal-nav button.cal-nb { padding: 0; }
+.cal-nav svg { width: max(20px, 2.4rem); height: max(20px, 2.4rem); fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.cal-nav button:disabled { opacity: 0.3; cursor: default; }
+.cal-nav button.is-pressed { transform: scale(0.94); background: color-mix(in srgb, currentColor 18%, transparent); }
+.cal-nav .cal-today.is-away { background: var(--accent); border-color: transparent; color: #fff; }
+.cal-nav .cal-today.is-away.is-pressed { filter: brightness(1.15); }
+/* away from today: the heading says so in the accent colour */
+.cal-away .cal-title b { color: var(--accent); }
+/* a moved month: the days of the months around it fade back */
+.cal-away .num.out { opacity: 0.4; }
+.cal-away .cell.out { background: color-mix(in srgb, currentColor 3%, transparent); }
+.lite .cal-nav button, html.low-power .cal-nav button { transition: none; }
+
+/* the sheet: one event, or the events of a day; large text, read from across the room */
+#cal-sheet {
+  --cs-bg: #1c1c21;
+  --cs-fg: #f6f6f8;
+  --cs-fg-2: rgb(246 246 248 / 0.66);
+  --cs-fill: rgb(255 255 255 / 0.08);
+  --cs-line: rgb(255 255 255 / 0.12);
+  position: fixed;
+  inset: 0;
+  z-index: 46;
+  display: none;
+  place-items: center;
+  padding: 3vmin;
+  background: rgb(0 0 0 / 0.55);
+  color: var(--cs-fg);
+  font-family: var(--font-ui);
+  -webkit-tap-highlight-color: transparent;
+}
+.theme-light #cal-sheet {
+  --cs-bg: #fbfaf8;
+  --cs-fg: #16161a;
+  --cs-fg-2: rgb(22 22 26 / 0.64);
+  --cs-fill: rgb(0 0 0 / 0.06);
+  --cs-line: rgb(0 0 0 / 0.1);
+  background: rgb(0 0 0 / 0.35);
+}
+#cal-sheet.show { display: grid; animation: cs-in 0.18s ease-out; }
+@keyframes cs-in { from { opacity: 0; } to { opacity: 1; } }
+.cs-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(94vw, 72rem);
+  max-height: min(90vh, 80rem);
+  border: 1px solid var(--cs-line);
+  border-radius: 2.4rem;
+  background: var(--cs-bg);
+  box-shadow: 0 2rem 6rem rgb(0 0 0 / 0.45);
+  overflow: hidden;
+}
+.style-modern #cal-sheet .cs-card { border-radius: 3.2rem; background: color-mix(in srgb, var(--cs-bg) 86%, transparent); -webkit-backdrop-filter: blur(28px) saturate(1.4); backdrop-filter: blur(28px) saturate(1.4); }
+.lite #cal-sheet .cs-card, html.low-power #cal-sheet .cs-card { background: var(--cs-bg); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+.lite #cal-sheet.show, html.low-power #cal-sheet.show { animation: none; }
+.cs-top { position: absolute; top: 1.4rem; left: 1.4rem; right: 1.4rem; z-index: 1; display: flex; justify-content: space-between; pointer-events: none; }
+.cs-top button {
+  display: grid;
+  place-items: center;
+  width: max(48px, 6rem);
+  height: max(48px, 6rem);
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--cs-fill);
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.cs-top .cs-back { margin-left: 0; }
+.cs-top .cs-back[hidden] { display: none; }
+.cs-top svg { width: 55%; height: 55%; }
+.cs-top button.is-pressed { background: color-mix(in srgb, currentColor 20%, transparent); }
+.cs-body { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 3.2rem 3.6rem 3.6rem; }
+.cs-title { margin: 0 max(56px, 7rem) 1.8rem 0; font-size: max(24px, 4rem); font-weight: 650; line-height: 1.15; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.cs-title .em { font-family: var(--font-emoji); margin-right: 0.6rem; }
+.cs-ev { border-left: 0.8rem solid rgb(var(--c)); padding-left: 2.2rem; }
+.cs-ev .cs-title { margin-right: max(48px, 6rem); }
+/* (the back button sits on the left: the event's text keeps clear of it) */
+#cal-sheet:has(.cs-back:not([hidden])) .cs-body { padding-top: max(72px, 9rem); }
+.cs-when { font-size: max(18px, 2.7rem); line-height: 1.35; font-variant-numeric: tabular-nums; }
+.cs-when > div + div { color: var(--cs-fg-2); }
+.cs-cal { display: flex; align-items: center; gap: 1rem; margin-top: 1.6rem; font-size: max(15px, 2.2rem); color: var(--cs-fg-2); }
+.cs-cal i { flex: none; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: rgb(var(--c)); }
+.cs-loc { display: flex; align-items: flex-start; gap: 1rem; margin-top: 1.8rem; font-size: max(16px, 2.5rem); line-height: 1.3; overflow-wrap: anywhere; }
+.cs-loc svg { flex: none; width: 1.1em; height: 1.1em; margin-top: 0.1em; color: rgb(var(--c)); }
+.cs-desc { margin-top: 2.2rem; padding-top: 2.2rem; border-top: 1px solid var(--cs-line); font-size: max(15px, 2.3rem); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--cs-fg-2); }
+.cs-list { display: flex; flex-direction: column; gap: 0.9rem; }
+.cs-row {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  width: 100%;
+  min-height: max(48px, 6.6rem);
+  padding: 1rem 1.8rem 1rem 1.2rem;
+  border: 0;
+  border-radius: 1.6rem;
+  background: var(--cs-fill);
+  color: inherit;
+  font: inherit;
+  font-size: max(17px, 2.6rem);
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.cs-row.is-pressed { background: color-mix(in srgb, currentColor 16%, transparent); }
+.cs-row i { flex: none; align-self: stretch; width: 0.7rem; border-radius: 0.4rem; background: rgb(var(--c)); }
+.cs-row .em { flex: none; font-family: var(--font-emoji); }
+.cs-rt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.cs-rm { flex: none; color: var(--cs-fg-2); font-size: 0.85em; font-variant-numeric: tabular-nums; }
+.cs-none { margin: 0; font-size: max(17px, 2.6rem); color: var(--cs-fg-2); }

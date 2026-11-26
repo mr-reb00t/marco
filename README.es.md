@@ -48,6 +48,8 @@ suscripción, y tus datos se quedan en casa.
 - Pantallas personalizadas: arrastra tarjetas de cualquier tamaño a una cuadrícula. Varias pantallas pueden turnarse
   en una misma tele en un carrusel.
 - Un servidor, muchas pantallas: salón, cocina y pasillo, cada una con su diseño y sus calendarios.
+- En una tablet o pantalla táctil: toca un evento o un día para verlo y cambia de mes
+  ([Touch screens](docs/GUIDE.md#touch-screens), en inglés).
 
 **Familia**
 - Rutinas que dan estrellas, premios y las comidas de la semana (tu propio plan o el de Mealie).

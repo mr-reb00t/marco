@@ -45,6 +45,8 @@ yourself on a Raspberry Pi, home server or NAS: no account, no subscription, and
   Bedside...) plus three for kids, in landscape or portrait, in a Modern or Classic style.
 - Custom screens: drag cards of any size onto a grid. Several screens can take turns on one TV in a carousel.
 - One server, many screens: living room, kitchen and hallway, each with its own layout and calendars.
+- On a tablet or touch screen: tap an event or a day to see it, and change months
+  ([Touch screens](docs/GUIDE.md#touch-screens)).
 
 **Family**
 - Routines that earn stars, rewards, and the meals of the week (your own plan or one from Mealie).

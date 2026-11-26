@@ -1,10 +1,13 @@
 // Month / week grid: huge thin day numbers, lane-allocated event chips and continuous multi-day bars.
-import type { DisplayConfig } from '../../shared/types';
+import type { CalEvent, DisplayConfig } from '../../shared/types';
 import { addDays, diffDays, gridStartOf, monthName, weekdayNames, weekdayOfKey } from '../../shared/i18n';
 import { chipColors } from '../color';
 import { ctx } from '../ctx';
 import { esc, reconcile, setHTML, type Spec } from '../dom';
-import { type NEvent, sortForDay, timeLabel } from '../eventModel';
+import { type NEvent, normalizeEvents, sortForDay, timeLabel } from '../eventModel';
+import { type NavGrid, type NavKind, type NavOpts, navAllowed, navGrid, navKind, navRange, navTitle } from '../calTouchCore';
+import { calTouchJoin, calTouchOn, calTouchWakes, changed as calTouchChanged, rangeEvents, showDay, showEvent } from '../calTouch';
+import { isTap } from '../taps';
 import { refreshMarquee } from '../marquee';
 import { clipSpan, daysSincePrevCol, visibleCols } from '../weekdays';
 import { PAGE_MS, pageAt, pageLabel, planPages, wrapLineCap } from '../motion';
@@ -103,9 +106,38 @@ export class MonthCalendar {
   /** The settings this grid reads (the screen's, or a canvas item's merged over them). */
   private readonly cfg: () => DisplayConfig;
 
-  /** `opts.cfg`: where the settings come from (default: the screen's, ctx.cfg); every read, page timers included, goes through it. */
-  constructor(root: HTMLElement, opts: { cfg?: () => DisplayConfig } = {}) {
+  // ---- touch (#51, screen.touch; calTouch.ts): nothing of it is drawn or listened to while touch is off
+  /** this grid may take taps (the night bedside view does not) */
+  private readonly touchable: boolean;
+  /** touch is on for this draw */
+  private touchNow = false;
+  /** steps away from today (months, or spans of what the grid shows), of the kind `navAt` */
+  private navOff = 0;
+  private navAt: NavKind = 'month';
+  private navOpts: NavOpts | null = null;
+  /** the next draw swaps the rows at once (a move by touch), no fade */
+  private instant = false;
+  private last: { events: NEvent[]; tick: Tick } | null = null;
+  /** the events the grid was drawn from (a tap finds its event here) */
+  private shownEvents: NEvent[] = [];
+  private awayNorm: { src: CalEvent[]; tz: string; out: NEvent[] } | null = null;
+  private navEl: HTMLElement | null = null;
+  /** the month a moved month grid shows (its days before and after are dimmed), '' otherwise */
+  private awayMonth = '';
+  private leave: (() => void) | null = null;
+  private readonly keep: ((e: NEvent) => boolean) | null;
+  private readonly redrawFn: (() => void) | null;
+
+  /**
+   * `opts.cfg`: where the settings come from (default: the screen's, ctx.cfg); every read, page timers included, goes
+   * through it. Touch: `touch` false never takes taps; `keep` picks the events of a moved grid (a card's calendars);
+   * `redraw` draws the grid again the owner's way after a move (default: render with the last events).
+   */
+  constructor(root: HTMLElement, opts: { cfg?: () => DisplayConfig; touch?: boolean; keep?: (e: NEvent) => boolean; redraw?: () => void } = {}) {
     this.cfg = opts.cfg ?? (() => ctx.cfg);
+    this.touchable = opts.touch !== false;
+    this.keep = opts.keep ?? null;
+    this.redrawFn = opts.redraw ?? null;
     this.root = root;
     root.classList.add('cal');
     root.innerHTML = `<div class="cal-head"><div class="cal-title"></div><div class="legend"></div></div>
@@ -120,6 +152,10 @@ export class MonthCalendar {
     const { lang, tz, t } = ctx;
     const c = cfg.calendar;
     const isWeek = c.view === 'week';
+    this.last = { events, tick };
+    this.syncTouch(this.touchable && calTouchOn());
+    const instant = this.instant;
+    this.instant = false;
     // eventStyle 'cards': one-day events are stacked cards (cardWeek); it takes precedence over compact busy days
     const cards = c.eventStyle === 'cards';
     const wantL = Math.max(1, isWeek ? Math.min(14, c.maxEventsPerDay * 3) : c.maxEventsPerDay);
@@ -140,13 +176,17 @@ export class MonthCalendar {
     const cm = cards && m ? this.cardMetrics(m.rem) : null;
     // a number of weeks is used as it is; 'auto' fits maxEventsPerDay events (chips or cards) in every day
     const rowNeed = !m ? 0 : cm ? cardRowNeed(m.numH, m.gap, c.maxEventsPerDay, cm) : lineRowNeed(m.numH, m.laneH, m.gap, wantL);
-    const nWeeks = isWeek ? 1 : resolveWeeks(c.weeks, m ? m.h : 0, rowNeed, this.maxAutoWeeks);
-    const L = Math.max(1, Math.min(wantL, m ? this.lanesFor(m.h / nWeeks - 1, m) : 99));
+    let nWeeks = isWeek ? 1 : resolveWeeks(c.weeks, m ? m.h : 0, rowNeed, this.maxAutoWeeks);
     const today = tick.dayKey;
     const nowMs = tick.now.getTime();
+    // touch: the grid moved away from today (a month, or the span it shows), with enough rows for a whole month
+    const away = this.touchNow ? this.navPlan(today, isWeek, nWeeks) : null;
+    if (away) nWeeks = away.weeks;
+    this.awayMonth = away?.month ?? '';
+    const L = Math.max(1, Math.min(wantL, m ? this.lanesFor(m.h / nWeeks - 1, m) : 99));
     // the first day of this week, or today (calendar.startOn 'today': no past days, rolling rows of 7 days)
-    const rolling = c.startOn === 'today';
-    const gridStart = gridStartOf(today, c.weekStart, c.startOn);
+    const rolling = c.startOn === 'today' && !away;
+    const gridStart = away ? away.start : gridStartOf(today, c.weekStart, c.startOn);
     const firstWd = weekdayOfKey(gridStart);
     // hidden days take no column: the header and every row are laid out on the shown ones (styles.css --days / --slots,
     // 7 / 14 when they are not set, so a grid showing every day is drawn exactly as before)
@@ -163,9 +203,14 @@ export class MonthCalendar {
     this.root.style.setProperty('--lanes', String(L));
 
     // ---- header: month title + legend
-    // Just the current month: the grid itself marks where the next one starts ("Nov").
-    const title = `<b>${esc(monthName(lang, +today.slice(5, 7)))}</b> <span>${today.slice(0, 4)}</span>`;
+    // Just the current month: the grid itself marks where the next one starts ("Nov"). Moved by touch: the month or the
+    // days it shows, so it is clear the grid is not on today.
+    const title = away
+      ? navTitle(lang, away, addDays(gridStart, nWeeks * 7 - 1))
+      : `<b>${esc(monthName(lang, +today.slice(5, 7)))}</b> <span>${today.slice(0, 4)}</span>`;
     setHTML(this.head.querySelector('.cal-title') as HTMLElement, title);
+    this.root.classList.toggle('cal-away', !!away);
+    if (this.touchNow) this.paintNav(today);
     const legend = c.showLegend
       ? c.sources
           .map((s) => {
@@ -177,8 +222,9 @@ export class MonthCalendar {
     setHTML(this.head.querySelector('.legend') as HTMLElement, legend);
     // calendar.showMonth false (#48): no month and year; with no legend either, the heading takes no room at all
     const noMonth = c.showMonth === false;
-    (this.head.querySelector('.cal-title') as HTMLElement).hidden = noMonth;
-    this.head.hidden = noMonth && !legend;
+    // (touch: the heading keeps its buttons, and the month shows while the grid is away from today)
+    (this.head.querySelector('.cal-title') as HTMLElement).hidden = noMonth && !away;
+    this.head.hidden = noMonth && !legend && !this.touchNow;
 
     // ---- weekday header: the columns follow the grid's first day (today's weekday first when it starts today)
     const names = weekdayNames(lang, firstWd, 'short');
@@ -196,8 +242,10 @@ export class MonthCalendar {
     );
 
     // ---- weeks
-    let list = events;
-    if (c.hidePast) list = list.filter((e) => e.spanLast >= today && !(e.timed && e.endMs <= nowMs));
+    let list = away ? this.awayEvents(away, events) : events;
+    // (a moved grid shows the past too: it was asked for)
+    if (c.hidePast && !away) list = list.filter((e) => e.spanLast >= today && !(e.timed && e.endMs <= nowMs));
+    this.shownEvents = list;
     const weekSpecs: Spec[] = [];
     const weekRows: { key: string; start: string }[] = [];
     for (let w = 0; w < nWeeks; w++) {
@@ -206,7 +254,9 @@ export class MonthCalendar {
       // rolling rows move on by one day every midnight: keep each row (its days slide along) instead of replacing them all
       weekSpecs.push({ key: rolling ? `r${w}` : `w${ws}`, className: cards ? 'wk cards' : 'wk', html: '' });
     }
-    reconcile(this.weeks, weekSpecs, { flip: true, animate: !this.still });
+    // (a move by touch swaps the rows at once)
+    if (instant) reconcile(this.weeks, weekSpecs, { flip: true, animate: false });
+    else reconcile(this.weeks, weekSpecs, { flip: true, animate: !this.still });
     const rowEls = Array.from(this.weeks.children).filter((x) => !(x as any).__leaving) as HTMLElement[];
 
     this.geom = this.measureGeom();
@@ -227,13 +277,14 @@ export class MonthCalendar {
       const el = rowEls[w];
       if (!el) return;
       if (cards) {
-        this.cardWeek(el, row.start, layouts[w], m && cm ? { m, cm, rowH: m.h / nWeeks - 1 } : null, today, nowMs, t, tz, isWeek);
+        this.cardWeek(el, row.start, layouts[w], m && cm ? { m, cm, rowH: m.h / nWeeks - 1 } : null, today, nowMs, t, tz, isWeek, instant);
         return;
       }
       const rowH = rowHs ? rowHs[w] - 1 : m ? m.h / nWeeks - 1 : 0;
       const Lw = rowHs && m ? Math.max(1, Math.min(wantL, this.lanesFor(rowH, m))) : L;
       el.style.setProperty('--lanes', String(Lw));
-      reconcile(el, this.weekSpecs(row.start, layouts[w], Lw, today, nowMs, t, tz, isWeek, compact ? m : null, rowH), { flip: true });
+      const specs = this.weekSpecs(row.start, layouts[w], Lw, today, nowMs, t, tz, isWeek, compact ? m : null, rowH);
+      reconcile(el, specs, instant ? { flip: true, animate: false } : { flip: true });
     });
     this.applyPages();
   }
@@ -242,6 +293,140 @@ export class MonthCalendar {
   destroy(): void {
     if (this.pageTimer) clearInterval(this.pageTimer);
     this.pageTimer = null;
+    this.syncTouch(false);
+  }
+
+  // ------------------------------------------------------------------------------------------------ touch (#51)
+  /** Touch on or off for this draw: the class, the header buttons, the tap listener, the idle rule. */
+  private syncTouch(on: boolean): void {
+    if (on === this.touchNow) return;
+    this.touchNow = on;
+    this.root.classList.toggle('cal-touch', on);
+    if (on) {
+      this.root.addEventListener('pointerup', this.onUp);
+      this.leave = calTouchJoin({ away: () => this.navOff !== 0, home: () => this.goHome() });
+      return;
+    }
+    this.root.removeEventListener('pointerup', this.onUp);
+    this.navEl?.remove();
+    this.navEl = null;
+    this.root.classList.remove('cal-away');
+    this.navOff = 0;
+    this.navOpts = null;
+    this.awayNorm = null;
+    const leave = this.leave;
+    this.leave = null;
+    leave?.();
+  }
+
+  /** The grid this draw shows when it was moved (null: today's, as always). */
+  private navPlan(today: string, isWeek: boolean, weeks: number): NavGrid | null {
+    const c = this.cfg().calendar;
+    const o: NavOpts = { kind: navKind(isWeek, weeks), weeks, weekStart: c.weekStart ?? 1, startOn: c.startOn === 'today' ? 'today' : 'week' };
+    this.navOpts = o;
+    // the view changed under a moved grid (another layout, the settings): back to today
+    if (this.navOff && (this.navAt !== o.kind || !navAllowed(today, this.navOff, o))) {
+      this.navOff = 0;
+      calTouchChanged();
+    }
+    return this.navOff ? navGrid(today, this.navOff, o) : null;
+  }
+
+  /** The events of a moved grid: the range is read once (the screen's events stand in meanwhile). */
+  private awayEvents(g: NavGrid, fallback: NEvent[]): NEvent[] {
+    const [from, to] = navRange(g);
+    const raw = rangeEvents(from, to, () => this.redraw());
+    this.root.classList.toggle('cal-loading', !raw);
+    if (!raw) return fallback;
+    if (!this.awayNorm || this.awayNorm.src !== raw || this.awayNorm.tz !== ctx.tz) {
+      const all = normalizeEvents(raw, ctx.tz);
+      this.awayNorm = { src: raw, tz: ctx.tz, out: this.keep ? all.filter(this.keep) : all };
+    }
+    return this.awayNorm.out;
+  }
+
+  /** Previous / Today / Next in the heading (drawn once, then only their state changes). */
+  private paintNav(today: string): void {
+    if (!this.navEl) {
+      const el = document.createElement('div');
+      el.className = 'cal-nav';
+      el.innerHTML = '<button type="button" class="cal-nb" data-nav="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'
+        + '<button type="button" class="cal-today" data-nav="0"></button>'
+        + '<button type="button" class="cal-nb" data-nav="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>';
+      this.head.querySelector('.cal-title')!.after(el);
+      this.navEl = el;
+    }
+    const [prev, home, next] = Array.from(this.navEl.children) as HTMLButtonElement[];
+    const o = this.navOpts;
+    prev.disabled = !o || !navAllowed(today, this.navOff - 1, o);
+    next.disabled = !o || !navAllowed(today, this.navOff + 1, o);
+    prev.setAttribute('aria-label', ctx.t('touchPrev'));
+    next.setAttribute('aria-label', ctx.t('touchNext'));
+    if (home.textContent !== ctx.t('today')) home.textContent = ctx.t('today');
+    home.classList.toggle('is-away', this.navOff !== 0);
+  }
+
+  private redraw(): void {
+    if (this.redrawFn) this.redrawFn();
+    else if (this.last) {
+      this.render(this.last.events, this.last.tick);
+      refreshMarquee();
+    }
+  }
+
+  /** Move by `dir` steps (0: back to today). */
+  private move(dir: number): void {
+    const o = this.navOpts;
+    const today = this.last?.tick.dayKey;
+    if (!o || !today) return;
+    const off = dir === 0 ? 0 : this.navOff + dir;
+    if (off === this.navOff || !navAllowed(today, off, o)) return;
+    this.navOff = off;
+    this.navAt = o.kind;
+    this.instant = true;
+    calTouchChanged();
+    this.redraw();
+  }
+
+  private goHome(): void {
+    if (!this.navOff) return;
+    this.navOff = 0;
+    this.instant = true;
+    this.redraw();
+  }
+
+  private onUp = (e: PointerEvent): void => {
+    if (!this.touchNow || !isTap(e) || (e.pointerType === 'mouse' && e.button > 0)) return;
+    const t = e.target as Element | null;
+    if (!t || !this.root.contains(t)) return;
+    const nav = t.closest<HTMLElement>('[data-nav]');
+    const ev = nav ? null : t.closest<HTMLElement>('[data-eid]');
+    const day = nav || ev ? null : t.closest<HTMLElement>('[data-tday]');
+    if (!nav && !ev && !day) return;
+    // the first tap on a dimmed screen only wakes it
+    if (calTouchWakes()) return;
+    const today = this.last?.tick.dayKey ?? '';
+    if (nav) {
+      if (!(nav as HTMLButtonElement).disabled) this.move(Number(nav.dataset.nav) || 0);
+      return;
+    }
+    if (ev) {
+      const n = this.shownEvents.find((x) => x.id === ev.dataset.eid);
+      if (n) showEvent(n, today);
+      return;
+    }
+    if (day?.dataset.tday) showDay(day.dataset.tday, this.shownEvents, today);
+  };
+
+  /** The data of a day's "+N" (or page mark "1/2"): its pages, and the day a tap lists while touch is on. */
+  private moreData(key: string, pages: number): Record<string, string> | undefined {
+    if (!pages && !this.touchNow) return undefined;
+    return { ...(pages ? { day: key, pgs: String(pages) } : {}), ...(this.touchNow ? { tday: key } : {}) };
+  }
+
+  /** ` data-eid="…"` on an event drawn as HTML while touch is on (nothing otherwise). */
+  private eidAttr(e: NEvent): string {
+    return this.touchNow ? ` data-eid="${esc(e.id)}"` : '';
   }
 
   /** Busy days: page turns so far (every day shows page step % its page count, so they all turn together). */
@@ -641,7 +826,7 @@ export class MonthCalendar {
     let html = e.emoji ? `<span class="em">${esc(e.emoji)}</span>` : '';
     if (e.timed) html += `<span class="tm">${esc(timeLabel(e, tz, cfg.datetime.format24, cfg.datetime.showAmPm, false, true))}</span>`;
     html += `<span class="tt">${esc(e.title)}</span>`;
-    return `<div class="${cls}" style="--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade}">${html}</div>`;
+    return `<div class="${cls}"${this.eidAttr(e)} style="--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade}">${html}</div>`;
   }
 
   /** Day cells and day numbers of the week starting `ws` (both event styles). */
@@ -657,12 +842,15 @@ export class MonthCalendar {
       // the first shown day of a month carries its name (the 1st itself, or the day after a hidden 1st)
       const first = dayNum <= daysSincePrevCol(this.cols, d);
       const col = `grid-column:${2 * d + 1} / span 2`;
-      const cls = `${past ? ' past' : ''}${isToday ? ' today' : ''}${wd === 0 || wd === 6 ? ' we' : ''}${first ? ' m1' : ''}`;
-      specs.push({ key: `b${key}`, className: `cell${cls}`, style: col, html: '' });
+      const out = this.awayMonth && key.slice(0, 7) !== this.awayMonth.slice(0, 7) ? ' out' : '';
+      const cls = `${past ? ' past' : ''}${isToday ? ' today' : ''}${wd === 0 || wd === 6 ? ' we' : ''}${first ? ' m1' : ''}${out}`;
+      // touch: the day (its empty space, its number) opens the list of its events
+      const tday = this.touchNow ? { tday: key } : undefined;
+      specs.push({ key: `b${key}`, className: `cell${cls}`, style: col, html: '', data: tday });
       let label = first ? esc(monthName(lang, +key.slice(5, 7), 'short')) : String(dayNum);
       if (isWeek && !first) label = `${dayNum}`;
       const numHtml = isToday ? `<span class="dot"><span>${label}</span></span>` : `<span>${label}</span>`;
-      specs.push({ key: `n${key}`, className: `num${cls}`, style: `${col};grid-row:1`, html: numHtml });
+      specs.push({ key: `n${key}`, className: `num${cls}`, style: `${col};grid-row:1`, html: numHtml, data: tday });
     }
     return specs;
   }
@@ -739,7 +927,7 @@ export class MonthCalendar {
       if (loc) html += `<div class="ch">${loc}</div>`;
     }
     const style = `--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade};--clamp:${lines}`;
-    return `<div class="${cls}" style="${style}">${html}</div>`;
+    return `<div class="${cls}"${this.eidAttr(e)} style="${style}">${html}</div>`;
   }
 
   /**
@@ -750,7 +938,7 @@ export class MonthCalendar {
    */
   private cardWeek(
     el: HTMLElement, ws: string, segs: Placed[], size: { m: Metrics; cm: CardMetrics; rowH: number } | null,
-    today: string, nowMs: number, t: Ctx['t'], tz: string, isWeek: boolean,
+    today: string, nowMs: number, t: Ctx['t'], tz: string, isWeek: boolean, instant = false,
   ): void {
     const cfg = this.cfg();
     const c = cfg.calendar;
@@ -812,6 +1000,7 @@ export class MonthCalendar {
         className: cls,
         style: `grid-column:${sg.s + 1} / ${sg.eSlot + 1};grid-row:${sg.lane + 2};--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade}`,
         html,
+        data: this.touchNow ? { eid: e.id } : undefined,
       });
     }
 
@@ -844,6 +1033,7 @@ export class MonthCalendar {
         className: `cstack cards${n > 1 ? ' paged' : ''}`,
         style: `grid-column:${2 * d + 1} / span 2;grid-row:${top + 2} / -1`,
         ...this.pagedHtml(key, pages.map(html)),
+        data: this.touchNow ? { tday: key } : undefined,
       });
       if (n > 1) this.busyPages.set(key, n);
       if (n > 1 || more) {
@@ -852,11 +1042,11 @@ export class MonthCalendar {
           className: `more${key < today ? ' past' : ''}${n > 1 ? ' pgi' : ''}`,
           style: `grid-column:${2 * d + 1} / span 2`,
           html: n > 1 ? esc(pageLabel(pageAt(this.pageStep, n), n)) : esc(t('more', { n: more })),
-          data: n > 1 ? { day: key, pgs: String(n) } : undefined,
+          data: this.moreData(key, n > 1 ? n : 0),
         });
       }
     }
-    reconcile(el, specs, { flip: true });
+    reconcile(el, specs, instant ? { flip: true, animate: false } : { flip: true });
   }
 
   private weekSpecs(
@@ -942,7 +1132,9 @@ export class MonthCalendar {
         className: cls,
         style: `grid-column:${sg.s + 1} / ${sg.eSlot + 1};grid-row:${row};--c:${col.base};--on:${col.onSolid};--tint:${col.tint};--shade:${col.shade}`,
         html,
-        data: sg.pages ? { day: sg.day!, pg: String(sg.page), pgs: String(sg.pages) } : undefined,
+        data: sg.pages || this.touchNow
+          ? { ...(sg.pages ? { day: sg.day!, pg: String(sg.page), pgs: String(sg.pages) } : {}), ...(this.touchNow ? { eid: e.id } : {}) }
+          : undefined,
       });
     }
     for (const st of stacks) {
@@ -955,6 +1147,7 @@ export class MonthCalendar {
         className: `cstack${n > 1 ? ' paged' : ''}`,
         style: `grid-column:${2 * st.d + 1} / span 2;grid-row:${st.top + 2} / -1`,
         ...this.pagedHtml(key, st.pages.map(lines)),
+        data: this.touchNow ? { tday: key } : undefined,
       });
     }
     for (let d = 0; d < this.cols.length; d++) {
@@ -967,7 +1160,7 @@ export class MonthCalendar {
         style: `grid-column:${2 * d + 1} / span 2`,
         // the page indicator's text is kept up to date by applyPages()
         html: pages ? esc(pageLabel(pageAt(this.pageStep, pages), pages)) : esc(t('more', { n: moreCount[d] })),
-        data: pages ? { day: key, pgs: String(pages) } : undefined,
+        data: this.moreData(key, pages ?? 0),
       });
     }
     return specs;

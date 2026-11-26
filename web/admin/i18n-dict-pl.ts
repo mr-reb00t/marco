@@ -10,6 +10,7 @@ import { PL_GROUP } from './i18n-dict-group';
 import { PL_PHOTOSOURCE } from './i18n-dict-photosource';
 import { PL_FEW_VCARD, PL_SINGULAR_VCARD, PL_VCARD } from './i18n-dict-vcard';
 import { PL_MEALIE } from './i18n-dict-mealie';
+import { PL_TOUCH } from './i18n-dict-touch';
 
 /** Every admin row but the Familia ones. */
 export const PL: Record<string, string> = {
@@ -20,6 +21,7 @@ export const PL: Record<string, string> = {
   ...PL_PHOTOSOURCE,
   ...PL_VCARD,
   ...PL_MEALIE,
+  ...PL_TOUCH,
   '(ninguno)': '(brak)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Używasz hasła początkowego. Zmień je: do tego czasu działa tylko z sieci lokalnej.',
   'Sesiones': 'Sesje',
@@ -1276,7 +1278,7 @@ export const PL: Record<string, string> = {
   'Hecho': 'Gotowe',
   'Vincular': 'Sparuj',
   '¡Listo! «{name}» muestra ahora {screen}.': 'Gotowe! „{name}” pokazuje teraz {screen}.',
-  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.': 'Ekran uruchomi się sam za kilka sekund. Możesz zmienić jego nazwę lub go unieważnić w Połączonych ekranach.',
+  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.': 'Ekran uruchomi się sam za kilka sekund. Możesz zmienić jego nazwę lub go unieważnić w Połączonych urządzeniach.',
   'Código de la pantalla': 'Kod ekranu',
   'Qué pantalla mostrará': 'Który ekran pokazać',
   'Nombre del dispositivo (opcional)': 'Nazwa urządzenia (opcjonalnie)',
@@ -1308,9 +1310,9 @@ export const PL: Record<string, string> = {
   'Como antes de la versión 0.3: cualquiera que llegue a la dirección del servidor ve el calendario sin clave. Úsalo solo en una red doméstica de confianza.': 'Jak przed wersją 0.3: każdy, kto dotrze do adresu serwera, widzi kalendarz bez klucza. Używaj tylko w zaufanej sieci domowej.',
   'Acceso a las pantallas': 'Dostęp do ekranów',
   'Quién puede ver el calendario familiar en una pantalla.': 'Kto może widzieć kalendarz rodzinny na ekranie.',
-  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Po zapisaniu ekrany, które teraz wchodzą bez klucza, pokażą kod parowania. Otwórz na każdym jego prywatny link (Ekran → Ustawienia) lub sparuj go w Połączonych ekranach. W kiosku Raspberry Pi wpisz prywatny link w KIOSK_URL (~/.config/marco/kiosk.env): tam parowanie ginie przy restarcie.',
+  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Po zapisaniu ekrany, które teraz wchodzą bez klucza, pokażą kod parowania. Otwórz na każdym jego prywatny link (Ekran → Ustawienia) lub sparuj go w Połączonych urządzeniach. W kiosku Raspberry Pi wpisz prywatny link w KIOSK_URL (~/.config/marco/kiosk.env): tam parowanie ginie przy restarcie.',
   'Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.': 'Po zapisaniu każdy, kto dotrze do adresu serwera, zobaczy kalendarz bez klucza. Ekrany z kodem parowania wrócą same w ciągu minuty.',
-  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.': 'Prywatne linki są w Ekran → Ustawienia, a sparowane urządzenia w Połączonych ekranach.',
+  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.': 'Prywatne linki są w Ekran → Ustawienia, a sparowane urządzenia w Połączonych urządzeniach.',
   'Ver el enlace de esta pantalla': 'Zobacz link do tego ekranu',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.': 'Każdy ekran (salon, kuchnia, przedpokój…) ma własny układ i widżety. Każde urządzenie otwiera prywatny link swojego ekranu lub jest parowane kodem.',
   'Copiar enlace privado': 'Kopiuj prywatny link',

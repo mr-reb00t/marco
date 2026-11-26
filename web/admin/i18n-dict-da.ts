@@ -17,6 +17,7 @@ import { DA_GROUP } from './i18n-dict-group';
 import { DA_PHOTOSOURCE } from './i18n-dict-photosource';
 import { DA_SINGULAR_VCARD, DA_VCARD } from './i18n-dict-vcard';
 import { DA_MEALIE } from './i18n-dict-mealie';
+import { DA_TOUCH } from './i18n-dict-touch';
 
 /** Every admin row but the Familia ones. */
 export const DA: Record<string, string> = {
@@ -35,6 +36,7 @@ export const DA: Record<string, string> = {
   ...DA_PHOTOSOURCE,
   ...DA_VCARD,
   ...DA_MEALIE,
+  ...DA_TOUCH,
   '(ninguno)': '(ingen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du bruger den første adgangskode. Skift den: indtil da godtages den kun fra dit lokale netværk.',
   'Sesiones': 'Sessioner',

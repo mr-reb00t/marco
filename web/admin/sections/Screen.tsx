@@ -53,6 +53,16 @@ export function ScreenSection({ cfg, set, errors, screenId, saved, go }: Section
             <Slider value={s.fontScale} min={0.7} max={1.6} step={0.05} format={(v) => `${Math.round(v * 100)}%`} onChange={(v) => set((d) => void (d.screen.fontScale = v))} />
           </Field>
         </div>
+        {/* #51: stored only when on (configs without it stay as they are) */}
+        <ToggleRow
+          label={t('Pantalla táctil')}
+          hint={t('Toca eventos y días, cambia de mes. Vuelve a hoy tras 2 minutos sin tocar.')}
+          checked={s.touch === true}
+          onChange={(v) => set((d) => {
+            if (v) d.screen.touch = true;
+            else delete d.screen.touch;
+          })}
+        />
       </Card>
       <PrivateLinkCard screenId={screenId} saved={saved} mode={saved.security?.displayAccess ?? 'open'} go={go} />
       <Card id="scr-night" scope="screen" title={t('Modo noche')} icon="moon" desc={t('Atenúa la pantalla, muestra la vista de mesilla o la deja en negro durante la noche.')}>

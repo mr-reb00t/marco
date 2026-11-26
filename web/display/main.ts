@@ -16,7 +16,7 @@ import './styles-canvas-mini.css';
 import type {
   Announcement, CountdownsResponse, DisplayConfig, EventsResponse, FamilyDisplayState, Lang, NewsResponse, NightCommand, Photo, PhotosResponse, PlannerBar, StreamHello, WeatherResponse,
 } from '../shared/types';
-import { LANGS } from '../shared/i18n';
+import { addDays, LANGS } from '../shared/i18n';
 import { api, ApiError, paths, prefetchJSON } from './api';
 import { initTodoTaps, isListTask } from './todoTaps';
 import { parseColor, toHex } from './color';
@@ -90,6 +90,7 @@ import { HaTouch } from './widgets/canvas/touch';
 import { CANVAS_KINDS, canvasCards, SIDEBAR_SHARE } from '../../server/core/canvasCore.js';
 import { eventsWindow, nightViewOf } from '../../server/core/bootstrap.js';
 import { rotatorPins } from './widgets/canvas/rotator';
+import { calTouchReset, calTouchSync, setCalTouchHost } from './calTouch';
 
 const params = ctx.params;
 if (isWidgetOnly) document.documentElement.classList.add('widget-only');
@@ -117,7 +118,8 @@ const clock = new Clock($('#clock'));
 // the pills under the date: screen.highlights off ("Avisos bajo la fecha") hides them
 const highlights = new Highlights($('#highlights'), { shown: () => ctx.cfg.screen.highlights !== false });
 const weather = new Weather($('#weather'));
-const calendar = new MonthCalendar($('#calendar'));
+// touch (#51): a move by touch draws the grid again as the screen always does
+const calendar = new MonthCalendar($('#calendar'), { redraw: () => renderCalendar(current()) });
 const agenda = new Agenda($('#agenda'), {}); // days: calendar.agendaDays
 const sideAgenda = new Agenda($('#side-agenda'), { days: 3, compact: true, maxPerDay: 4, legend: false });
 const news = new News($('#news'));
@@ -556,6 +558,10 @@ function applyConfig(raw: DisplayConfig): void {
   const phl = params.get('highlights');
   if (phl === '0' || phl === '1') cfg.screen.highlights = phl === '1';
   // ?np=0 hides the "now playing" line under the clock; in the demo ?np=1 shows a made-up track there (?np=idle: nothing plays)
+  // ?touch=0|1 (screen.touch, #51: taps on the calendar)
+  const ptc = params.get('touch');
+  if (ptc === '0') delete cfg.screen.touch;
+  else if (ptc === '1') cfg.screen.touch = true;
   const pnp = params.get('np');
   if (pnp === '0') cfg.screen.nowPlaying = '';
   else if (pnp && state.demo && !cfg.screen.nowPlaying) cfg.screen.nowPlaying = DEMO_NOW_PLAYING_ACCOUNT;
@@ -671,6 +677,7 @@ function applyConfig(raw: DisplayConfig): void {
   calendar.maxAutoWeeks = autoMax;
   setCtxConfig(cfg);
   lastFrameKey = frameKey();
+  calTouchSync(cfg);
   setTimezone(ctx.tz);
   const root = document.documentElement;
   root.lang = ctx.lang;
@@ -1889,6 +1896,8 @@ function photoStart(b: Bundle): { list: Photo[]; idx: number } | null {
 function showScreen(id: string, b: Bundle, sw: SwitchInfo): void {
   // from now on, answers for the screen that leaves are kept for it and never shown
   setActiveScreen(id);
+  // a sheet or a calendar moved by touch belongs to the screen that leaves
+  calTouchReset();
   const booting = app.classList.contains('booting');
   const start = booting ? null : photoStart(b);
   let plan: SwitchPlan | null = null;
@@ -2258,6 +2267,39 @@ document.addEventListener('visibilitychange', () => {
 document.addEventListener('contextmenu', (e) => {
   if (document.documentElement.classList.contains('car-hold') && pressAt.type !== 'mouse') e.preventDefault();
 }, { capture: true });
+
+// ---------------------------------------------------------------------------------------------
+// Touch on the calendar (#51, calTouch.ts; screen.touch): the range a moved grid needs is read for the screen on
+// display (the demo makes it up), and while a sheet is open or a grid is away from today the carousel holds the
+// screen, going on when it closes or the grid is back (after two minutes without a touch at the latest).
+// ---------------------------------------------------------------------------------------------
+/** The carousel was paused here by the calendar (and is let go by it only). */
+let calHeld = false;
+setCalTouchHost({
+  load: async (from, to) => {
+    if (state.demo) return mockEvents(new Date(`${addDays(from, 14)}T12:00:00Z`)).events;
+    try {
+      return (await api.events(from, to)).events;
+    } catch (e) {
+      console.warn('[events]', (e as Error).message);
+      return null;
+    }
+  },
+  hold: (on) => {
+    if (on) {
+      if (!calHeld && carousel && !carousel.paused && carousel.where().rotating) {
+        carousel.pause(true);
+        calHeld = true;
+      }
+      return;
+    }
+    if (!calHeld) return;
+    calHeld = false;
+    if (carousel?.paused) carousel.pause(false);
+  },
+  gen: () => `${state.events?.hash ?? ''}|${state.config?.revision ?? ''}|${state.config?.privacy?.active ? 1 : 0}`,
+  wakes: () => navWakes(),
+});
 
 // ---------------------------------------------------------------------------------------------
 // Privacy mode: the server already filtered the events; the display shows a small lock and asks again when the

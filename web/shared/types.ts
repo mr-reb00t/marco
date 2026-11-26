@@ -82,6 +82,9 @@ export interface ScreenConfig {
   /** "Sonando ahora bajo el reloj": the opaque id of a linked Spotify account whose track shows on one line under the
    *  clock of the usual designs ('' or absent = off). Not used by Personalizado (it has its own card). */
   nowPlaying?: string;
+  /** "Pantalla táctil" (#51): taps on the calendar open events and days, and its arrows change the month or week. Stored
+   *  only when on (absent = off, so TVs and configs saved before it stay as they are). */
+  touch?: boolean;
 }
 
 /** When the HTML overlay shows: always, or every year from one day to another (MM-DD, may run over New Year). */

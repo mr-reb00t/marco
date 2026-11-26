@@ -238,7 +238,7 @@ export const PRESS_RING_DELAY_MS = 150;
  * sliders, the navigation cards, chores, To Do rows that tick a task, links and form fields). Those handlers skip a
  * lift that moved (TapTracker, taps.ts), so a stroke there does nothing at all.
  */
-export const GESTURE_SKIP = '[data-ctl], [data-slide], [data-task], [data-chore], .cv-nav-btn, .k-chore, .kf-chore, a[href], input, select, textarea, button';
+export const GESTURE_SKIP = '#cal-sheet, [data-ctl], [data-slide], [data-task], [data-chore], .cv-nav-btn, .k-chore, .kf-chore, a[href], input, select, textarea, button';
 
 export type GestureAction = { do: 'step'; dir: 1 | -1 } | { do: 'press' } | { do: 'hold' } | { do: 'release' };
 

@@ -17,6 +17,7 @@ import { DE_GROUP } from './i18n-dict-group';
 import { DE_PHOTOSOURCE } from './i18n-dict-photosource';
 import { DE_SINGULAR_VCARD, DE_VCARD } from './i18n-dict-vcard';
 import { DE_MEALIE } from './i18n-dict-mealie';
+import { DE_TOUCH } from './i18n-dict-touch';
 
 /** Every admin row but the Familia ones. */
 export const DE: Record<string, string> = {
@@ -35,6 +36,7 @@ export const DE: Record<string, string> = {
   ...DE_PHOTOSOURCE,
   ...DE_VCARD,
   ...DE_MEALIE,
+  ...DE_TOUCH,
   '(ninguno)': '(keine)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du verwendest noch das Startpasswort. Ändere es: bis dahin wird es nur im lokalen Netzwerk akzeptiert.',
   'Sesiones': 'Sitzungen',

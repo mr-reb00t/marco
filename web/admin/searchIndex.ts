@@ -32,6 +32,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Idioma de la pantalla', route: 'screen', anchor: 'scr-general', keywords: 'language idioma lingua taal sprog język español english português nederlands dansk polski sprache deutsch' },
   { label: 'Orientación (horizontal / vertical)', route: 'screen', anchor: 'scr-general', keywords: 'orientation portrait landscape vertical rotar' },
   { label: 'Tamaño de letra', route: 'screen', anchor: 'scr-general', keywords: 'font size escala texto grande' },
+  { label: 'Pantalla táctil', route: 'screen', anchor: 'scr-general', keywords: 'touch táctil tátil tablet tableta tocar tap toque aanraken tryk dotyk berührung calendario calendar mes month semana week' },
   { label: 'Tema claro / oscuro', route: 'layout', anchor: 'layout-look', keywords: 'theme dark light tema' },
   { label: 'Color de acento', route: 'layout', anchor: 'layout-look', keywords: 'accent color cor' },
   { label: 'Modo noche (horario y brillo)', route: 'screen', anchor: 'scr-night', keywords: 'night dim noche noturno brillo atenuar bedside mesilla cabeceira negro black apagar off agenda semanas weeks' },

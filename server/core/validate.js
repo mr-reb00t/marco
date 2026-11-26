@@ -328,6 +328,8 @@ function sanitizeScreenProfile(ctx, p, raw, seenIds, seenSlugs, familyMemberIds 
   // "Sonando ahora bajo el reloj": a linked Spotify account's opaque id, stored only when one is chosen
   const np = nowPlayingAccountOf(ctx, `${p}.screen.nowPlaying`, sc.nowPlaying);
   if (np) screen.nowPlaying = np;
+  // "Pantalla táctil" (#51): taps on the calendar, stored only when on so configs that never had it stay as they were
+  if (bool(ctx, `${p}.screen.touch`, sc.touch, false)) screen.touch = true;
 
   const ly = obj(ctx, `${p}.layout`, x.layout);
   const layout = {
