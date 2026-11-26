@@ -59,11 +59,11 @@ test('values that are not booleans are rejected with their path and fall back to
   }
 });
 
-test('the display reads ?marquee= and ?rotate=, and the README documents them', () => {
+test('the display reads ?marquee= and ?rotate=, and the docs document them', () => {
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('marquee'\)/);
   assert.match(main, /params\.get\('rotate'\)/);
-  for (const f of ['README.md', 'README.es.md']) {
+  for (const f of ['docs/CONFIGURATION.md']) {
     const md = read(f);
     assert.match(md, /\?marquee=0/, f);
     assert.match(md, /\?rotate=0/, f);

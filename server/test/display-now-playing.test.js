@@ -28,11 +28,11 @@ const LINE = `(() => {
 })()`;
 const settle = 'document.fonts.ready.then(() => new Promise((r) => setTimeout(r, 1200)))';
 
-test('the display reads ?np=, the README documents it, and the marquee slides a long line', () => {
+test('the display reads ?np=, the docs document it, and the marquee slides a long line', () => {
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('np'\)/);
   assert.match(read('web/display/marquee.ts'), /'\.hl-tt'/);
-  for (const f of ['README.md', 'README.es.md']) assert.match(read(f), /\?np=0/, f);
+  for (const f of ['docs/CONFIGURATION.md']) assert.match(read(f), /\?np=0/, f);
   // nothing in the display talks to Spotify itself
   for (const f of ['web/display/nowPlayingFeed.ts', 'web/display/widgets/canvas/nowPlaying.ts', 'web/display/widgets/nowPlayingLine.ts']) assert.doesNotMatch(read(f), /spotify\.com|scdn\.co/, f);
 });

@@ -306,7 +306,7 @@ function PairDialog({ initialCode, saved, defaultScreenId, onClose, onPaired }: 
             <Icon name="check" size={26} />
           </span>
           <strong>{t('¡Listo! «{name}» muestra ahora {screen}.', { name: done.name, screen: done.screenName || ask?.screenName || screenName })}</strong>
-          <p class="muted small">{t('La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Pantallas conectadas.')}</p>
+          <p class="muted small">{t('La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.')}</p>
         </div>
       ) : ask ? (
         <form class="stack pair-confirm" onSubmit={submit}>

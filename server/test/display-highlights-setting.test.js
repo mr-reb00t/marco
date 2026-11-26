@@ -41,14 +41,14 @@ test('per screen, reaches the display, and wrong values are rejected with their 
   }
 });
 
-test('the display reads ?highlights=, only the pills under the date follow it, the README documents it', () => {
+test('the display reads ?highlights=, only the pills under the date follow it, the docs document it', () => {
   const main = read('web/display/main.ts');
   assert.match(main, /params\.get\('highlights'\)/);
   assert.match(main, /new Highlights\(\$\('#highlights'\), \{ shown: \(\) => ctx\.cfg\.screen\.highlights !== false \}\)/);
   // the Personalizado card builds its own Highlights without the switch
   assert.doesNotMatch(read('web/display/widgets/canvas/family.ts'), /shown:/);
   assert.match(read('web/display/defaults.ts'), /highlights: true/);
-  for (const f of ['README.md', 'README.es.md']) assert.match(read(f), /\?highlights=0/, f);
+  for (const f of ['docs/CONFIGURATION.md']) assert.match(read(f), /\?highlights=0/, f);
 });
 
 const PILLS = `(async () => {

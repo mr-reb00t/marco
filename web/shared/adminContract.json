@@ -1585,6 +1585,84 @@
       ]
     },
     {
+      "method": "POST",
+      "path": "/api/admin/mealie/refresh",
+      "query": [],
+      "feature": "mealie",
+      "callers": [
+        "refreshMealie"
+      ],
+      "request": null,
+      "response": "MealieStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "usable",
+        "updatedAt",
+        "error",
+        "errorAt",
+        "count",
+        "from",
+        "to"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/mealie/status",
+      "query": [],
+      "feature": "mealie",
+      "callers": [
+        "mealieStatus"
+      ],
+      "request": null,
+      "response": "MealieStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "usable",
+        "updatedAt",
+        "error",
+        "errorAt",
+        "count",
+        "from",
+        "to"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/admin/mealie/token",
+      "query": [],
+      "feature": "mealie",
+      "callers": [
+        "mealieToken"
+      ],
+      "request": null,
+      "response": "MealieTokenStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "set",
+        "hint",
+        "otherUrl?",
+        "checked?"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/admin/mealie/token",
+      "query": [],
+      "feature": "mealie",
+      "callers": [
+        "setMealieToken"
+      ],
+      "request": "{token, (url ? { url }}",
+      "response": "MealieTokenStatus",
+      "responseArray": false,
+      "responseKeys": [
+        "set",
+        "hint",
+        "otherUrl?",
+        "checked?"
+      ]
+    },
+    {
       "method": "GET",
       "path": "/api/admin/microsoft/accounts",
       "query": [],
@@ -2144,6 +2222,24 @@
         "ok",
         "version?",
         "missingScopes?",
+        "error?"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/admin/test/mealie",
+      "query": [],
+      "feature": "mealie",
+      "callers": [
+        "testMealie"
+      ],
+      "request": "{ url?: string; token?: string }",
+      "response": "TestMealieResponse",
+      "responseArray": false,
+      "responseKeys": [
+        "ok",
+        "version?",
+        "count?",
         "error?"
       ]
     },

@@ -127,7 +127,7 @@ export function StatusSection({ cfg }: SectionProps) {
               </span>
               <div>
                 <div class="stat__value">{st ? st.displays : '–'}</div>
-                <div class="stat__label">{t('Pantallas conectadas')}</div>
+                <div class="stat__label">{t('Dispositivos conectados')}</div>
               </div>
             </div>
             <div class="stat">

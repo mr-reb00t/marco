@@ -9,6 +9,8 @@ import { Button, Callout, Card, PageHeader, ToggleRow } from '../components/ui';
 import { addDays, dropAbbrDots, todayIn, weekdayNames } from '../dates';
 import { locale, t } from '../i18n';
 import type { SectionProps } from './common';
+import { has } from '../caps';
+import { MealieCard } from './MealieCard';
 
 export const MEAL_LABEL: Record<MealSlot, { label: string; emoji: string; hint: string }> = {
   breakfast: { label: 'Desayuno', emoji: '🥣', hint: 'Ej.: Tostadas y fruta' },
@@ -42,7 +44,7 @@ function weekLabel(monday: string) {
   return t('Semana del {from} al {to}', { from, to });
 }
 
-export function MealsSection({ full, setFull, cfg, go }: SectionProps) {
+export function MealsSection({ full, setFull, cfg, go, saved, errors }: SectionProps) {
   const m = full.family.meals;
   const today = todayIn(cfg.datetime.timezone);
   const thisMonday = weekStartOf(today, 1);
@@ -125,6 +127,8 @@ export function MealsSection({ full, setFull, cfg, go }: SectionProps) {
           onChange={(v) => setFull((d) => void (d.family.meals.useTemplate = v))}
         />
       </Card>
+
+      {has('mealie') && <MealieCard full={full} setFull={setFull} saved={saved} errors={errors} />}
 
       <Card
         id="meals-week"

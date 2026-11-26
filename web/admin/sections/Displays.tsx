@@ -226,7 +226,7 @@ export function DisplaysSection({ saved, go }: SectionProps) {
 
   return (
     <>
-      <PageHeader title={t('Pantallas conectadas')} desc={t('Dispositivos que muestran el calendario ahora mismo. Se actualiza cada 5 s.')}>
+      <PageHeader title={t('Dispositivos conectados')} desc={t('Dispositivos que muestran el calendario ahora mismo. Se actualiza cada 5 s.')}>
         <Button variant="primary" icon="link" onClick={() => openPairDialog()}>
           {t('Vincular una pantalla')}
         </Button>

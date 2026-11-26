@@ -166,7 +166,7 @@ async function api(email, url, { method = 'GET', body } = {}) {
   try { json = JSON.parse(res.text); } catch { json = {}; }
   if (!res.ok) {
     const err = new HttpError(`Google API: ${json.error?.message || `HTTP ${res.status}`}`, res.status);
-    // the Google Tasks API is off in the server's own Google Cloud project (README, Google calendars)
+    // the Google Tasks API is off in the server's own Google Cloud project (docs/INTEGRATIONS.md, Connecting Google Calendar)
     const reasons = [json.error?.status, ...(json.error?.errors ?? []).map((e) => e?.reason), ...(json.error?.details ?? []).map((d) => d?.reason)];
     if (res.status === 403 && reasons.some((r) => r === 'accessNotConfigured' || r === 'SERVICE_DISABLED')) err.code = 'tasks_api_off';
     else if (res.status === 401) err.code = 'auth_failed';

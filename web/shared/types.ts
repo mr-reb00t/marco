@@ -910,6 +910,43 @@ export interface ImmichKeyStatus {
   checked?: boolean;
 }
 
+/** POST /api/admin/test/mealie */
+export interface TestMealieResponse {
+  ok: boolean;
+  /** Mealie's version ('3.31.0') */
+  version?: string;
+  /** meals in Mealie's plan from today through the next 13 days */
+  count?: number;
+  /** not_configured, invalid_url, token_missing, invalid_token, old_version, bad_response, unreachable */
+  error?: string;
+}
+
+/** GET/PUT /api/admin/mealie/token: the token itself is never sent back. */
+export interface MealieTokenStatus {
+  set: boolean;
+  /** last 4 characters of a long token */
+  hint: string;
+  /** a token is stored for another Mealie address than the one saved now (it is only ever sent to its own) */
+  otherUrl?: boolean;
+  /** PUT only: Mealie accepted the token on a test call */
+  checked?: boolean;
+}
+
+/** GET /api/admin/mealie/status, POST /api/admin/mealie/refresh */
+export interface MealieStatus {
+  /** Familia and the menus are on, and a URL and a token are saved */
+  usable: boolean;
+  /** last good read of the meal plan (ISO time) */
+  updatedAt: string | null;
+  /** error code of the last read when it failed (the last good meals stay meanwhile) */
+  error: string | null;
+  errorAt: string | null;
+  /** meals read for the dates from..to */
+  count: number | null;
+  from: string | null;
+  to: string | null;
+}
+
 export interface HomeAssistantConfig {
   enabled: boolean;
   url: string;
@@ -1664,6 +1701,16 @@ export interface MealsConfig {
   template: MealDays;
   /** ISO week ('2026-W42') → its plan; the newest 26 are kept */
   weeks: Record<string, MealDays>;
+  /** Meals from Mealie (server/mealie.js): per date and meal they replace the plan above. Absent = no Mealie. The
+   *  API token is a secret (PUT /api/admin/mealie/token), never in the config. */
+  mealie?: MealieConfig;
+}
+
+export interface MealieConfig {
+  /** http(s) address of the Mealie server, without a trailing slash ('' = not set) */
+  url: string;
+  /** false = the dinner's photo is not shown (absent = shown) */
+  photo?: false;
 }
 
 /** Global `family` block (StoredConfig.family). */
@@ -1888,7 +1935,8 @@ export interface FamilyDisplayState {
   qrUrl?: string | null;
   members: FamilyMemberView[];
   chores: FamilyChoreView[];
-  meals: { slots: MealSlot[]; days: { date: string; dow: number; meals: Partial<Record<MealSlot, string>> }[] } | null;
+  /** `photo`: address of the day's dinner photo (a Mealie recipe, /media/mealie/<id>?v=…), only when there is one */
+  meals: { slots: MealSlot[]; days: { date: string; dow: number; meals: Partial<Record<MealSlot, string>>; photo?: string }[] } | null;
   nextReward?: Record<string, { title: string; emoji: string; cost: number; missing: number }>;
   generatedAt: string | null;
 }
@@ -2164,6 +2212,9 @@ export interface Features {
   /** The "Salir del kiosko" and "Apagar" cards of Personalizado: close the kiosk browser or power off the computer that
    *  runs the server, from a screen on that computer (GET/POST /api/display/power). Absent = off. */
   kioskPower: boolean;
+  /** The week's meals from a Mealie server on the household's network (family.meals.mealie, server/mealie.js,
+   *  /api/admin/mealie/*, /api/admin/test/mealie, GET /media/mealie/<recipeId>). Self-hosted; absent = off. */
+  mealie: boolean;
 }
 
 export type FeatureName = keyof Features;

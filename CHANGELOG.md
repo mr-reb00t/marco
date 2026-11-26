@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.47.0] - 2026-11-26
+
+### Added
+- *Meals* > *Mealie*: the week's meals can come from a [Mealie](https://mealie.io) server (2.0 or newer). Per day and
+  meal, Mealie's plan replaces Marco's own; meals Mealie has nothing for keep Marco's week or template. Sides, drinks
+  and desserts are added after the day's dinner. With *Show the dinner's photo* (on by default) the *Today's meals*
+  card and the Family kids layout show the dinner recipe's picture. The API token stays on the server and is only
+  sent to the address it was saved for; *Test connection* shows Mealie's version and the meals of the next two weeks
+  (#50, thanks @grantwarfield).
+
+### Changed
+- *Connected screens* is now *Connected devices*: it lists the TVs, tablets and kiosks that show a screen, while a
+  screen is a set of settings that several devices can show and a carousel can rotate. The *Screens* page says so in
+  one line (#52, thanks @joshtbernstein).
+- The README is a short overview now. The detail moved to [docs/INSTALL.md](docs/INSTALL.md),
+  [docs/GUIDE.md](docs/GUIDE.md), [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) and
+  [docs/CONFIGURATION.md](docs/CONFIGURATION.md), and the release package includes them.
+
 ## [0.46.0] - 2026-11-23
 
 ### Added

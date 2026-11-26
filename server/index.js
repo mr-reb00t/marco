@@ -22,6 +22,7 @@ import { onPrivacyConfig, syncPrivacy, stopPrivacy } from './privacy.js';
 import { startPhotoSweep } from './familyPhotos.js';
 import { cleanStoredPhotos } from './photos.js';
 import { startHomeAssistantLive, stopHomeAssistantLive } from './haService.js';
+import { startMealie, stopMealie } from './mealie.js';
 
 // TRUST_PROXY: a value Express cannot read stops here with a plain message (not a stack trace later on)
 const trust = checkTrustProxy(process.env.TRUST_PROXY);
@@ -94,6 +95,8 @@ const server = app.listen(PORT, process.env.HOST || '0.0.0.0', (err) => {
   console.log(`[server] Marco v${pkg.version} on http://localhost:${PORT} (data: ${paths.data})`);
   logSetupHint(PORT);
   startRefresher();
+  // The meal plan from Mealie, when one is set up (server/mealie.js)
+  startMealie();
   // Privacy periods that end and schedule rules that start while the server runs (server/privacy.js)
   syncPrivacy();
   // Daily check for a newer release (MARCO_UPDATE_CHECK=0 or the admin switch turn it off); server/updates.js
@@ -105,6 +108,7 @@ function shutdown(sig) {
   stopRefresher();
   stopPrivacy();
   stopHomeAssistantLive();
+  stopMealie();
   serverUpdater(pkg.version).stop();
   try { flushDisplays(); flushTokenUsage(); flushValues(); } catch { /* ignore */ }
   closeAll();

@@ -16,6 +16,7 @@ import { DA_DECOR } from './i18n-dict-decor';
 import { DA_GROUP } from './i18n-dict-group';
 import { DA_PHOTOSOURCE } from './i18n-dict-photosource';
 import { DA_SINGULAR_VCARD, DA_VCARD } from './i18n-dict-vcard';
+import { DA_MEALIE } from './i18n-dict-mealie';
 
 /** Every admin row but the Familia ones. */
 export const DA: Record<string, string> = {
@@ -33,6 +34,7 @@ export const DA: Record<string, string> = {
   ...DA_GROUP,
   ...DA_PHOTOSOURCE,
   ...DA_VCARD,
+  ...DA_MEALIE,
   '(ninguno)': '(ingen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du bruger den første adgangskode. Skift den: indtil da godtages den kun fra dit lokale netværk.',
   'Sesiones': 'Sessioner',
@@ -299,7 +301,7 @@ export const DA: Record<string, string> = {
   'Panel de la pantalla': 'Skærmpanel',
   'Panel lateral': 'Sidepanel',
   'Pantalla': 'Skærm',
-  'Pantallas conectadas': 'Forbundne skærme',
+  'Dispositivos conectados': 'Forbundne enheder',
   'Pantallas recargándose…': 'Skærmene genindlæses…',
   'Para usuarios avanzados: se inyecta en la pantalla.': 'Til øvede brugere: indsættes på skærmen.',
   'Partículas': 'Partikler',
@@ -494,6 +496,7 @@ export const DA: Record<string, string> = {
   'Cada': 'Hver',
   'Cada año, el {date}': 'Hvert år den {date}',
   'Cada mes, el día {d}': 'Hver måned den {d}.',
+  'Una pantalla es un conjunto de ajustes, no un aparato: varios dispositivos pueden mostrar la misma, y un carrusel puede alternar varias.': 'En skærm er et sæt indstillinger, ikke en enhed: flere enheder kan vise den samme, og en karrusel kan skifte mellem flere.',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Abre /?screen=<dirección> en cada dispositivo.': 'Hver skærm (stue, køkken, entré…) har sit eget layout og sine egne widgets. Åbn /?screen=<adresse> på hver enhed.',
   'Cada semana: {days}': 'Hver uge: {days}',
   'Cada {n} años, el {date}': 'Hvert {n}. år den {date}',
@@ -1259,7 +1262,7 @@ export const DA: Record<string, string> = {
   'Abre este enlace privado en la tele, la Raspberry Pi o una tablet: es la llave de esta pantalla, no lo publiques. Los cambios del panel aparecen en la pantalla al instante.': 'Åbn dette private link på tv\'et, Raspberry Pi\'en eller en tablet: det er nøglen til denne skærm, så del det ikke offentligt. Ændringer i adminpanelet vises på skærmen med det samme.',
   'Código QR del enlace privado': 'QR-kode til det private link',
   'Enlace privado de la pantalla': 'Skærmens private link',
-  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).': 'En skærm mere? Åbn {url} på den, og par den med den kode, den viser (Forbundne skærme → Par).',
+  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Dispositivos conectados → Vincular).': 'En skærm mere? Åbn {url} på den, og par den med den kode, den viser (Forbundne enheder → Par).',
   'Instalación existente: pantallas en modo abierto (sin clave). Recomendado: enlaces privados.': 'Eksisterende installation: skærme i åben tilstand (ingen nøgle). Anbefalet: private links.',
   'Enlace privado regenerado: {screen}': 'Nyt privat link lavet: {screen}',
   'Pantalla vinculada: {name} → {screen}': 'Skærm parret: {name} → {screen}',
@@ -1290,7 +1293,7 @@ export const DA: Record<string, string> = {
   'Hecho': 'Færdig',
   'Vincular': 'Par',
   '¡Listo! «{name}» muestra ahora {screen}.': 'Færdig! “{name}” viser nu {screen}.',
-  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Pantallas conectadas.': 'Skærmen starter af sig selv om få sekunder. Du kan omdøbe eller tilbagekalde den under Forbundne skærme.',
+  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.': 'Skærmen starter af sig selv om få sekunder. Du kan omdøbe eller tilbagekalde den under Forbundne enheder.',
   'Código de la pantalla': 'Skærmens kode',
   'Qué pantalla mostrará': 'Skærm, der skal vises',
   'Nombre del dispositivo (opcional)': 'Enhedens navn (valgfrit)',
@@ -1322,9 +1325,9 @@ export const DA: Record<string, string> = {
   'Como antes de la versión 0.3: cualquiera que llegue a la dirección del servidor ve el calendario sin clave. Úsalo solo en una red doméstica de confianza.': 'Som før version 0.3: alle, der kan nå serverens adresse, ser kalenderen uden nøgle. Brug det kun på et hjemmenetværk, du stoler på.',
   'Acceso a las pantallas': 'Adgang til skærmene',
   'Quién puede ver el calendario familiar en una pantalla.': 'Hvem der kan se familiekalenderen på en skærm.',
-  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Pantallas conectadas. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Når du gemmer, viser skærme, der kommer ind uden nøgle, en parringskode. Åbn hver skærms private link (Skærm → Indstillinger), eller par den under Forbundne skærme. På en Raspberry Pi-kiosk skal det private link stå i KIOSK_URL (~/.config/marco/kiosk.env): den glemmer parringen, når den genstarter.',
+  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Når du gemmer, viser skærme, der kommer ind uden nøgle, en parringskode. Åbn hver skærms private link (Skærm → Indstillinger), eller par den under Forbundne enheder. På en Raspberry Pi-kiosk skal det private link stå i KIOSK_URL (~/.config/marco/kiosk.env): den glemmer parringen, når den genstarter.',
   'Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.': 'Når du gemmer, kan alle, der kan nå serverens adresse, se kalenderen uden nøgle. Skærme, der viser en parringskode, kommer selv tilbage inden for et minut.',
-  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Pantallas conectadas.': 'Private links findes under Skærm → Indstillinger; parrede enheder under Forbundne skærme.',
+  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.': 'Private links findes under Skærm → Indstillinger; parrede enheder under Forbundne enheder.',
   'Ver el enlace de esta pantalla': 'Se linket til denne skærm',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.': 'Hver skærm (stue, køkken, entré…) har sit eget layout og sine egne widgets. Hver enhed åbner sin skærms private link eller parres med en kode.',
   'Copiar enlace privado': 'Kopiér privat link',

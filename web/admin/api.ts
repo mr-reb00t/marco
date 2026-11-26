@@ -84,6 +84,9 @@ import type {
   ImmichKeyStatus,
   ImmichAlbum,
   ImmichStatus,
+  MealieStatus,
+  MealieTokenStatus,
+  TestMealieResponse,
   TestIcsResponse,
   TestRssResponse,
   GoogleTaskListItem,
@@ -284,6 +287,13 @@ export const api = {
   immichStatus: () => request<ImmichStatus>('GET', '/api/admin/immich/status'),
   refreshImmich: () => request<ImmichStatus>('POST', '/api/admin/immich/refresh'),
   clearImmichCache: () => request<{ ok: boolean; freed: number }>('DELETE', '/api/admin/immich/cache'),
+  // Mealie (self-hosted, features.mealie): the token is write-only and tied to the address it is saved for
+  testMealie: (body: { url?: string; token?: string }) => request<TestMealieResponse>('POST', '/api/admin/test/mealie', body),
+  mealieToken: () => request<MealieTokenStatus>('GET', '/api/admin/mealie/token'),
+  /** '' removes the token; one Mealie refuses answers 400 invalid_token */
+  setMealieToken: (token: string, url?: string) => request<MealieTokenStatus>('PUT', '/api/admin/mealie/token', { token, ...(url ? { url } : {}) }),
+  mealieStatus: () => request<MealieStatus>('GET', '/api/admin/mealie/status'),
+  refreshMealie: () => request<MealieStatus>('POST', '/api/admin/mealie/refresh'),
   weatherKey: () => request<WeatherKeyStatus>('GET', '/api/admin/weather/key'),
   /** The weather of places not saved yet (the preview of a screen's place or a card's), by placeKey. */
   weatherPreview: (body: WeatherPreviewRequest) => request<WeatherPreviewResponse>('POST', '/api/admin/weather/preview', body),

@@ -457,10 +457,12 @@ test('adminFamily: last 14 days newest first, last 50 entries', () => {
   assert.deepEqual(a.progress.m_mateo, { done: 1, total: 1 });
 });
 
-test('familyCore stays portable: no fs, no express, no store; only lib/tz.js and the pure photo checks', () => {
+test('familyCore stays portable: no fs, no express, no store; only lib/tz.js, the pure photo checks and Mealie rules', () => {
   const src = fs.readFileSync(new URL('../core/familyCore.js', import.meta.url), 'utf8');
   const imports = [...src.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]);
-  assert.deepEqual(imports, ['./lib/tz.js', './familyPhotoCore.js']);
+  assert.deepEqual(imports, ['./lib/tz.js', './familyPhotoCore.js', './mealieCore.js']);
+  const mealie = fs.readFileSync(new URL('../core/mealieCore.js', import.meta.url), 'utf8');
+  assert.deepEqual([...mealie.matchAll(/^import .* from '([^']+)';$/gm)], [], 'mealieCore.js has no imports');
   const photo = fs.readFileSync(new URL('../core/familyPhotoCore.js', import.meta.url), 'utf8');
   assert.deepEqual([...photo.matchAll(/^import .* from '([^']+)';$/gm)].map((m) => m[1]), ['./imageInfo.js']);
   assert.doesNotMatch(photo, /\bBuffer\b|node:/);

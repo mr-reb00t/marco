@@ -7,6 +7,7 @@ import { stableStringify } from './lib/text.js';
 import { countNoun, countChanged, summaryWord } from './lib/i18n.js';
 import { carouselList, targetInfo } from './carousels.js';
 import { IMMICH_KEY_RE } from './immichCore.js';
+import { MEALIE_TOKEN_RE, mealieUrlOk, normalizeMealieUrl } from './mealieCore.js';
 import { NOW_PLAYING_ACCOUNT_RE, NOW_PLAYING_MAX_ACCOUNTS, SPOTIFY_CLIENT_ID_RE, SPOTIFY_SECRET_RE } from './nowPlayingCore.js';
 import { FAMILY_KEY_RE } from './familyCore.js';
 import { exportAccessPeople, importAccessPeople } from './familyAccessCore.js';
@@ -30,6 +31,8 @@ export function exportSecrets(sec) {
     ...(sec.weather?.apiKey ? { weather: { apiKey: sec.weather.apiKey } } : {}),
     // The Immich API key, only when one is stored.
     ...(sec.immich?.apiKey ? { immich: { apiKey: sec.immich.apiKey } } : {}),
+    // The Mealie API token and the address it is for, only when one is stored.
+    ...(sec.mealie?.token ? { mealie: { token: sec.mealie.token, url: sec.mealie.url || '' } } : {}),
     // The ENTSO-E token of the price widget, only when one is stored.
     ...(sec.prices?.entsoeToken ? { prices: { entsoeToken: sec.prices.entsoeToken } } : {}),
     // The Finnhub key of the stocks card, only when one is stored.
@@ -116,6 +119,10 @@ export function sanitizeImportedSecrets(s) {
   }
   if (isObj(s.immich) && typeof s.immich.apiKey === 'string' && (s.immich.apiKey === '' || IMMICH_KEY_RE.test(s.immich.apiKey))) {
     out.immichKey = s.immich.apiKey;
+  }
+  if (isObj(s.mealie) && typeof s.mealie.token === 'string' && MEALIE_TOKEN_RE.test(s.mealie.token)) {
+    const url = normalizeMealieUrl(typeof s.mealie.url === 'string' ? s.mealie.url.slice(0, 512) : '');
+    if (mealieUrlOk(url)) out.mealie = { token: s.mealie.token, url };
   }
   if (isObj(s.prices) && typeof s.prices.entsoeToken === 'string' && /^(?:[A-Za-z0-9-]{20,64})?$/.test(s.prices.entsoeToken)) {
     out.entsoeToken = s.prices.entsoeToken;

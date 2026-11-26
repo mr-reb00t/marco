@@ -1055,7 +1055,7 @@ export function App() {
                       </button>
                     )}
                     <a class="menu__item" href="#/displays" onClick={() => setMenuOpen(false)}>
-                      <Icon name="wifi" size={16} /> {t('Pantallas conectadas')}
+                      <Icon name="wifi" size={16} /> {t('Dispositivos conectados')}
                     </a>
                     {feedback && (
                       <button

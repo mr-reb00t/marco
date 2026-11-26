@@ -214,9 +214,10 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
   return (
     <>
       <PageHeader title={t('Pantallas')} desc={
-          openMode
+          (openMode
             ? t('Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Abre /?screen=<dirección> en cada dispositivo.')
-            : t('Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.')
+            : t('Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.')) +
+          ' ' + t('Una pantalla es un conjunto de ajustes, no un aparato: varios dispositivos pueden mostrar la misma, y un carrusel puede alternar varias.')
         }>
         <Button variant="primary" icon="plus" disabled={atLimit('screens', screens.length)} onClick={() => setCreating(true)}>
           {t('Nueva pantalla')}
@@ -377,7 +378,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
               {t('y reinicia el kiosco (el kiosco olvida una vinculación al reiniciarse).')}
             </li>
             <li>
-              {t('Comprueba qué ve cada dispositivo en')} <a href="#/displays">{t('Pantallas conectadas')}</a>.
+              {t('Comprueba qué ve cada dispositivo en')} <a href="#/displays">{t('Dispositivos conectados')}</a>.
             </li>
           </ol>
         ) : (
@@ -390,7 +391,7 @@ export function ScreensSection({ full, setFull, saved, screenId, setScreenId, go
           </li>
           <li>
             {t('Sin ?screen= solo el propio servidor (http://localhost) muestra la pantalla predeterminada (★); desde otro equipo se ve «Abre el enlace de una pantalla». Comprueba qué ve cada dispositivo en')}{' '}
-            <a href="#/displays">{t('Pantallas conectadas')}</a>.
+            <a href="#/displays">{t('Dispositivos conectados')}</a>.
           </li>
         </ol>
         )}

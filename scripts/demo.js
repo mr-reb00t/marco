@@ -376,7 +376,7 @@ console.log(`
   Marco demo
   ──────────
 ${value.screens.map((s) => `  Display:   http://localhost:${PORT}/d/${displayKeys[s.id].key}   (${s.name}: private link)`).join('\n')}
-  Pairing:   http://localhost:${PORT}/pair        (shows a code to type in the admin → Connected screens → Pair a screen)
+  Pairing:   http://localhost:${PORT}/pair        (shows a code to type in the admin → Connected devices → Pair a screen)
   Admin:     http://localhost:${PORT}/admin/      password: ${PASSWORD}
   API token: ${demoToken}
   Data dir:  ${dataDir}${keep ? '' : '  (deleted on exit; use --keep to keep it)'}

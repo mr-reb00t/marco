@@ -1,5 +1,5 @@
 // Microsoft calendars and To Do lists (Outlook.com, Hotmail, Microsoft 365), read only, through Microsoft Graph with your own Microsoft
-// Entra app (MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in .env; see README "Connecting Outlook, Hotmail or Microsoft 365"). Optional: without them
+// Entra app (MICROSOFT_CLIENT_ID and MICROSOFT_CLIENT_SECRET in .env; see docs/INTEGRATIONS.md "Connecting Outlook, Hotmail or Microsoft 365"). Optional: without them
 // the admin does not offer Microsoft accounts.
 //
 // Connect: authorization code with PKCE; the state and the verifier live in the admin's session. Tokens are kept in

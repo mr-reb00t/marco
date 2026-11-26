@@ -78,6 +78,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Permitir marcar tocando esta pantalla', route: 'family', anchor: 'fam-screen', keywords: 'touch táctil tátil tocar touchscreen tablet marcar check tick', feature: 'family' },
   { label: 'Menú de la semana', route: 'meals', anchor: 'meals-week', keywords: 'meals menús menu ementa comidas refeições semana week desayuno comida merienda cena breakfast lunch snack dinner', feature: 'family' },
   { label: 'Plantilla de menús', route: 'meals', anchor: 'meals-template', keywords: 'template plantilla modelo semana tipo meals menú ementa', feature: 'family' },
+  { label: 'Mealie', route: 'meals', anchor: 'meals-mealie', keywords: 'mealie recetas recipes receitas plan comidas meals refeições token api foto photo cena dinner', feature: 'mealie' },
   // Avisos
   { label: 'Enviar un aviso ahora', route: 'alerts', anchor: 'al-send', keywords: 'announce alert send aviso notificación anuncio', feature: 'announcements' },
   { label: 'Avisos activos', route: 'alerts', anchor: 'al-active', keywords: 'active alerts quitar', feature: 'announcements' },
@@ -98,7 +99,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   { label: 'Pantallas (crear, duplicar, predeterminada)', route: 'screens', anchor: 'scr-list', keywords: 'screens profiles salón cocina slug' },
   { label: 'Modo privado (invitados)', route: 'screen', anchor: 'scr-privacy', keywords: 'privacy private guests busy ocupado invitados convidados privado lock candado horario schedule', feature: 'privacy' },
   { label: 'Carruseles (varias pantallas en bucle)', route: 'carousels', keywords: 'carousel carrossel rotación rotation bucle loop playlist', feature: 'carousels' },
-  { label: 'Pantallas conectadas', route: 'displays', keywords: 'displays connected kiosk raspberry ip resolución' },
+  { label: 'Dispositivos conectados', route: 'displays', keywords: 'displays connected kiosk raspberry ip resolución' },
   { label: 'Dispositivos vinculados', route: 'displays', anchor: 'disp-paired', keywords: 'paired devices pair code revoke revocar vincular emparelhar' },
   { label: 'Acceso a las pantallas', route: 'security', anchor: 'sec-display', keywords: 'display access private open privado abierto aberto key clave enlace', feature: 'openDisplayAccess' },
   { label: 'Exportar configuración', route: 'backups', anchor: 'bk-export', keywords: 'export backup descargar json', feature: 'importExport' },

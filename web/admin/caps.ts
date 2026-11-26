@@ -89,8 +89,9 @@ export function capsFrom(health: Partial<HealthResponse> | null | undefined): Ca
  *  Spotify app); sourceRefresh: the manual download buttons on Estado (servers that answer
  *  POST /api/admin/status/refresh); photoSources: a photo card or the sidebar's photo with photos of its own (servers
  *  that answer GET /api/photos?for=); commute: the commute widget (servers with GET /api/display/commute);
- *  kioskPower: the Salir del kiosko and Apagar cards (servers with /api/display/power). */
-const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower'];
+ *  kioskPower: the Salir del kiosko and Apagar cards (servers with /api/display/power); mealie: the meal plan from
+ *  Mealie (self-hosted servers with /api/admin/mealie/*). */
+const OPT_IN: readonly FeatureName[] = ['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower', 'mealie'];
 
 export function hasFeature(caps: Caps, feature: FeatureName): boolean {
   if (!caps.features) return !OPT_IN.includes(feature);

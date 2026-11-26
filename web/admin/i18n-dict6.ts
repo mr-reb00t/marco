@@ -9,9 +9,9 @@ export const ROWS6: [string, string, string][] = [
   ['Código QR del enlace privado', 'QR code of the private link', 'Código QR da ligação privada'],
   ['Enlace privado de la pantalla', 'Screen’s private link', 'Ligação privada do ecrã'],
   [
-    '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).',
-    'Another screen? Open {url} on it and pair it with the code it shows (Connected screens → Pair).',
-    'Outro ecrã? Abre {url} nele e emparelha-o com o código que mostra (Ecrãs ligados → Emparelhar).',
+    '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Dispositivos conectados → Vincular).',
+    'Another screen? Open {url} on it and pair it with the code it shows (Connected devices → Pair).',
+    'Outro ecrã? Abre {url} nele e emparelha-o com o código que mostra (Dispositivos ligados → Emparelhar).',
   ],
   [
     'Instalación existente: pantallas en modo abierto (sin clave). Recomendado: enlaces privados.',
@@ -76,9 +76,9 @@ export const ROWS6: [string, string, string][] = [
   ['Vincular', 'Pair', 'Emparelhar'],
   ['¡Listo! «{name}» muestra ahora {screen}.', 'Done! “{name}” now shows {screen}.', 'Pronto! «{name}» mostra agora {screen}.'],
   [
-    'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Pantallas conectadas.',
-    'The screen starts by itself in a few seconds. You can rename or revoke it in Connected screens.',
-    'O ecrã arranca sozinho dentro de segundos. Podes mudar-lhe o nome ou revogá-lo em Ecrãs ligados.',
+    'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.',
+    'The screen starts by itself in a few seconds. You can rename or revoke it in Connected devices.',
+    'O ecrã arranca sozinho dentro de segundos. Podes mudar-lhe o nome ou revogá-lo em Dispositivos ligados.',
   ],
   ['Código de la pantalla', 'Screen code', 'Código do ecrã'],
   ['Qué pantalla mostrará', 'Screen to show', 'Ecrã a mostrar'],
@@ -140,9 +140,9 @@ export const ROWS6: [string, string, string][] = [
   ['Acceso a las pantallas', 'Display access', 'Acesso aos ecrãs'],
   ['Quién puede ver el calendario familiar en una pantalla.', 'Who can see the family calendar on a screen.', 'Quem pode ver o calendário familiar num ecrã.'],
   [
-    'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Pantallas conectadas. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.',
-    'When you save, screens that get in without a key will show a pairing code. Open each one’s private link (Screen → Settings) or pair it from Connected screens. On a Raspberry Pi kiosk put the private link in KIOSK_URL (~/.config/marco/kiosk.env): there a pairing is lost when it restarts.',
-    'Ao guardar, os ecrãs que agora entram sem chave mostrarão um código de emparelhamento. Abre em cada um a sua ligação privada (Ecrã → Definições) ou emparelha-o em Ecrãs ligados. Num quiosque Raspberry Pi põe a ligação privada em KIOSK_URL (~/.config/marco/kiosk.env): aí o emparelhamento perde-se ao reiniciar.',
+    'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.',
+    'When you save, screens that get in without a key will show a pairing code. Open each one’s private link (Screen → Settings) or pair it from Connected devices. On a Raspberry Pi kiosk put the private link in KIOSK_URL (~/.config/marco/kiosk.env): there a pairing is lost when it restarts.',
+    'Ao guardar, os ecrãs que agora entram sem chave mostrarão um código de emparelhamento. Abre em cada um a sua ligação privada (Ecrã → Definições) ou emparelha-o em Dispositivos ligados. Num quiosque Raspberry Pi põe a ligação privada em KIOSK_URL (~/.config/marco/kiosk.env): aí o emparelhamento perde-se ao reiniciar.',
   ],
   [
     'Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.',
@@ -150,9 +150,9 @@ export const ROWS6: [string, string, string][] = [
     'Ao guardar, qualquer pessoa que chegue ao endereço do servidor poderá ver o calendário sem chave. Os ecrãs que mostram um código de emparelhamento voltam sozinhos em menos de um minuto.',
   ],
   [
-    'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Pantallas conectadas.',
-    'Private links are in Screen → Settings; paired devices in Connected screens.',
-    'As ligações privadas estão em Ecrã → Definições; os dispositivos emparelhados, em Ecrãs ligados.',
+    'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.',
+    'Private links are in Screen → Settings; paired devices in Connected devices.',
+    'As ligações privadas estão em Ecrã → Definições; os dispositivos emparelhados, em Dispositivos ligados.',
   ],
   ['Ver el enlace de esta pantalla', 'See this screen’s link', 'Ver a ligação deste ecrã'],
   [

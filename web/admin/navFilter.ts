@@ -48,7 +48,7 @@ export const NAV_ITEMS: NavMeta[] = [
   { id: 'api', label: 'API y webhooks', icon: 'code', group: 'Integraciones', feature: ['apiTokens', 'webhooks'], keywords: 'tokens webhook' },
   { id: 'screens', label: 'Pantallas', icon: 'monitor', group: 'Sistema', keywords: 'perfiles profiles' },
   { id: 'carousels', label: 'Carruseles', icon: 'repeat', group: 'Sistema', feature: 'carousels', keywords: 'rotación rotation bucle loop playlist escena scene carrusel carousel carrossel' },
-  { id: 'displays', label: 'Pantallas conectadas', icon: 'wifi', group: 'Sistema', keywords: 'kiosk dispositivos' },
+  { id: 'displays', label: 'Dispositivos conectados', icon: 'wifi', group: 'Sistema', keywords: 'kiosk dispositivos' },
   { id: 'backups', label: 'Copias de seguridad', icon: 'archive', group: 'Sistema', feature: ['backups', 'importExport'], keywords: 'backup export import' },
   { id: 'activity', label: 'Actividad', icon: 'history', group: 'Sistema', feature: 'activity', keywords: 'log registro' },
   { id: 'security', label: 'Seguridad', icon: 'shield', group: 'Sistema' },

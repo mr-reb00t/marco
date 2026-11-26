@@ -41,7 +41,7 @@ services:
       # Optional: poll = displays check for changes every 90 s instead of keeping /api/stream open (for proxies that
       # buffer server-sent events). Alerts and display commands do not reach displays in this mode yet.
       MARCO_LIVE: ${MARCO_LIVE:-}
-      # Optional: Google OAuth client (see README → Connecting Google Calendar).
+      # Optional: Google OAuth client (see docs/INTEGRATIONS.md → Connecting Google Calendar).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Optional: Google Maps / Routes API key for the commute time widget (can also be entered in Admin → Widgets).

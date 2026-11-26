@@ -33,6 +33,7 @@ import { displayAuth, mediaAuth } from './displayAccess.js';
 import { spotifyAdminRouter, spotifyCallbackHandler, spotifyConnectHandler, spotifyDisplayRouter } from './routes/spotify.js';
 import { checkTrustProxy } from './lib/trustProxy.js';
 import { immichMedia } from './immich.js';
+import { mealieMedia } from './mealie.js';
 import { galleryMedia, thumbMedia } from './photos.js';
 
 const FRAME_DESTS = new Set(['iframe', 'frame', 'embed', 'object', 'fencedframe']);
@@ -189,6 +190,8 @@ export function createApp({ version, dist = path.join(ROOT, 'dist'), updater = n
   app.use('/media', mediaAuth);
   // Immich photos (server/immich.js): proxied with the server's API key, only assets of albums a screen plays.
   app.get('/media/immich/:id', (req, res, next) => immichMedia(req, res).catch(next));
+  // Mealie recipe photos (server/mealie.js): the dinner's photo of the meal plan, only recipes in the cached plan.
+  app.get('/media/mealie/:id', (req, res, next) => mealieMedia(req, res).catch(next));
   // Gallery URLs carry ?v=<mtime> (replaced photos get a new URL), so they can be cached for long, privately. A
   // display reads only photos in the rotation of a screen its credential may read (photos.js galleryMedia).
   app.use('/media/photos', galleryMedia, express.static(paths.photos, {

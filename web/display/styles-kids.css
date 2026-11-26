@@ -292,6 +292,10 @@
 .style-modern #app.is-kids .kf-meal-em { grid-row: 1 / 3; display: grid; place-items: center; width: 4.4rem; height: 4.4rem; border-radius: 1.2rem; background: var(--k-fill); font-family: var(--font-emoji); font-size: 2.4rem; }
 .style-modern #app.is-kids .kf-meal-l { font-size: 1.6rem; font-weight: 600; color: var(--k-ink-2); }
 .style-modern #app.is-kids .kf-meal-t { font-size: 2.2rem; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the dinner's photo (Mealie) fills its tile over the emoji, which shows while it loads or when it fails (the
+   Personalizado meals card has the same rules in styles-canvas.css). No animation, no blur: fine with Saver and lite */
+.style-modern #app.is-kids .kf-meal-em.has-photo { position: relative; overflow: hidden; }
+.style-modern #app.is-kids .kf-meal-em.has-photo .kf-meal-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .style-modern #app.is-kids .kf-task { display: flex; align-items: center; gap: 1.2rem; font-size: 2.2rem; font-weight: 500; }
 .style-modern #app.is-kids .kf-task > span:last-child { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .style-modern #app.is-kids .kf-task .k-check { width: 3.2rem; height: 3.2rem; }

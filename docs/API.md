@@ -107,6 +107,7 @@ saved without `security` (old admin builds, backups or exports from before 0.3) 
 | `GET /api/display/data/crest/<token>` | A team crest a data answer named by token (PNG, JPEG or WebP, 256 KB at most, `Cache-Control: private, max-age=86400`, `nosniff`), fetched by this server from ESPN's image host and kept a day. `404` for a token the server never handed out; `403` while the screen is private |
 | `GET /media/photos/<file>`, `GET /media/thumbs/<file>` | Gallery images (a display: only photos in the rotation of a screen it may read that shows the gallery, in its *Fondo* or in a *Personalizado* photo card or sidebar photo with photos of its own, and is not private with *hide photos*; or a file a special background of that screen names) and thumbnails (admin session only) |
 | `GET /media/immich/<assetId>?v=` | Immich preview image, proxied with the server's API key and cached on disk (`Cache-Control: private, max-age=2592000`). `404` for an id that is not in an album some screen plays, in its *Fondo*, a special background, or a photo card or sidebar photo with photos of its own (a display key or device token: its own screen's albums only), and while that screen is private with *hide photos*; `503` when Immich is not set up; `502` when Immich fails or answers something that is not an image of up to 8 MB. `?s=thumb`: album cover thumbnail, admin session only |
+| `GET /media/mealie/<recipeId>?v=` | The photo of a dinner in the Mealie meal plan (Mealie's `min-original.webp` of that recipe), fetched with the server's token and kept in memory (`Cache-Control: private, max-age=86400`, `nosniff`). `?v=` is the recipe's image key from Mealie and only changes the address when the photo changes. `404` for an id that is not a UUID or not a recipe with a photo in the meal plan the server holds now, while *Show the dinner's photo* is off or Mealie is not set up, and for a display whose screens are all private with *hide photos*; `502` when Mealie fails or answers something that is not an image of up to 3 MB. See [Meal plan from Mealie](#meal-plan-from-mealie) |
 
 ### Capabilities in `/api/health`
 
@@ -129,7 +130,9 @@ The admin and the display read these fields to decide which sections, actions an
   `commute` (the `commute` widget type, `GET /api/display/commute`, `/api/admin/test/commute` and
   `/api/admin/commute/key`, see [Commute times](#commute-times); Marco Cloud answers `false`), `kioskPower` (the
   *Salir del kiosko* and *Apagar* cards of Personalizado and `/api/display/power`, see
-  [Kiosk and power cards](#kiosk-and-power-cards); Marco Cloud answers `false`). A self-hosted server turns all of them on, except
+  [Kiosk and power cards](#kiosk-and-power-cards); Marco Cloud answers `false`), `mealie` (the meal plan from a Mealie
+  server, `/api/admin/mealie/*`, `/api/admin/test/mealie` and `GET /media/mealie/<recipeId>`, see
+  [Meal plan from Mealie](#meal-plan-from-mealie); Marco Cloud answers `false`). A self-hosted server turns all of them on, except
   `googleCalendar` and `googleLogin` (on when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set),
   `microsoftCalendar` (Outlook and Microsoft 365 calendars, on when `MICROSOFT_CLIENT_ID` and
   `MICROSOFT_CLIENT_SECRET` are set), `accountMenu`, `accountSettings` and `feedback` (always off). `updates` is the update banner,
@@ -173,7 +176,7 @@ The admin and the display read these fields to decide which sections, actions an
 Clients treat a response with no `features` field (servers older than 0.5.0) as having every feature on, except
 `accountMenu`, `microsoftCalendar`, `updates`, `feedback`, `privacy`, `doorbell`, `doorbellLive`, `carousels`,
 `immich`, `family`, `widgets`, `webWidgets`, `priceWidgets`, `familyPhotos`, `twoFactor`, `accountSettings` and the
-newer opt-in keys (`screenBuilder`, `familyAccess`, `spotify`, `sourceRefresh`, `photoSources`, `commute`, `kioskPower`). A key missing
+newer opt-in keys (`screenBuilder`, `familyAccess`, `spotify`, `sourceRefresh`, `photoSources`, `commute`, `kioskPower`, `mealie`). A key missing
 from `features` counts as off only when `edition` is not `'self-hosted'`, and a missing opt-in key (the ones just
 listed) is always off.
 
@@ -325,7 +328,7 @@ Answer `{ revision, screenId, targetKind, now, serverVersion, cursor, reset, com
 - `revision`: the display refetches its config, events and countdowns when it differs from its own. `screenId`: a
   different one (the paired device was moved) reloads the page. `serverVersion`: a newer server reloads the page once.
 - `next`: milliseconds until the next poll. Self-hosted answers 30 s, 3 min while hidden, and 5 s while someone has
-  *Connected screens* open or just sent a command. The display adds ±10 % and keeps it between 3 s and 15 min; on
+  *Connected devices* open or just sent a command. The display adds ±10 % and keeps it between 3 s and 15 min; on
   errors it waits 5 s, doubling up to 5 min.
 
 The self-hosted server keeps the last 500 events in memory. Commands expire: `identify` after 60 s, `announce`,
@@ -1045,6 +1048,41 @@ Activity log types: `family.chore`, `family.redeemed`, `family.points`, `family.
 `family.key_rejected`. The family key and `/f/<key>` are redacted from logs. An export carries `familyState` (and
 `secrets.family` with secrets); an import that takes the `family` section restores it (the previous file is kept as
 `family.json.pre-import-<ms>`, newest 5).
+
+### Meal plan from Mealie
+
+The week's meals can come from a [Mealie](https://mealie.io) server (2.0 or newer) on the household's network
+(`features.mealie`, self-hosted only; `server/mealie.js`, the pure rules in `server/core/mealieCore.js`). The config
+holds the address, `family.meals.mealie: { url, photo? }` (only written when a URL is set or the photo is off;
+`photo: false` hides the dinner's photo). The API token is a secret: it lives in `secrets.json` as
+`mealie: { token, url }` and is only ever sent to the address it was saved with, in an `Authorization: Bearer` header,
+never through a redirect, and never to a display, the admin or a log.
+
+The server reads `GET /api/households/mealplans?start_date=&end_date=&perPage=100&page=` for the dates from 6 days
+before today to 13 days after (every page up to 5), with a 10 s timeout and 4 MB per page, at most every 15 minutes
+and while Familia and its menus are on. A failed read keeps the last good meals and is tried again after a minute.
+When the meals change, displays get a `family` live event and fetch their family data again.
+
+Per date and meal, a Mealie meal replaces Marco's own plan (the week or the template); meals Mealie has nothing for
+keep Marco's plan, and only the meals turned on in *Menús* show. Mealie's `breakfast`, `lunch`, `snack` and `dinner`
+are Marco's meals; `side`, `drink` and `dessert` are added after that day's dinner (or are the dinner when there is
+none). An entry's text is its recipe's name, else its title; several entries of one meal are joined with ` · ` and
+cut at 120 characters. In `FamilyDisplayState`, `meals.days[].photo` is the address of the dinner's photo
+(`/media/mealie/<recipeId>?v=<imageKey>`, the first dinner whose recipe has a picture), only while *Show the dinner's
+photo* is on and the screen is not private with *hide photos*. `FamilyPhoneState.meals.today` has the same meals,
+without the photo.
+
+**Admin** (session required, `features.mealie`):
+
+| Method | Path | Body | Answer |
+|---|---|---|---|
+| POST | `/api/admin/test/mealie` | `{ url?, token? }` (unsaved values; the saved token is only used for its own address) | `TestMealieResponse`: `{ ok, version?, count?, error? }`, `count` = meals in the plan from today through the next 13 days. `error`: `not_configured`, `invalid_url`, `token_missing`, `invalid_token`, `old_version` (Mealie 1.x), `redirect`, `too_large`, `bad_response`, `unreachable` |
+| GET | `/api/admin/mealie/token` | | `MealieTokenStatus`: `{ set, hint, otherUrl }` (`hint` = the last 4 characters of a long token; `otherUrl` = it was saved for another address than the saved URL) |
+| PUT | `/api/admin/mealie/token` | `{ token, url? }` (`''` removes it; `url` = the address it is for, default the saved one) | `{ set, hint, otherUrl, checked }`. A token Mealie refuses is not stored (`400 { error: "invalid_token" }`); `400 { error: "invalid_url" }` without a valid address |
+| GET | `/api/admin/mealie/status` | | `MealieStatus`: `{ usable, updatedAt, error, errorAt, count, from, to }` |
+| POST | `/api/admin/mealie/refresh` | | read the plan again now → `MealieStatus` |
+
+Backups with secrets carry `secrets.mealie` (`{ token, url }`) when a token is stored.
 
 ## Family access
 

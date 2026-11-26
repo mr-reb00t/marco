@@ -24,6 +24,8 @@ mkdir -p "$STAGE/$NAME"
 cd "$ROOT"
 cp -R server dist deploy "$STAGE/$NAME/"
 cp package.json package-lock.json install.sh .env.example LICENSE README.md CHANGELOG.md THIRD_PARTY_NOTICES.md "$STAGE/$NAME/"
+# the guides the README links to (text only: the screenshots stay on GitHub)
+mkdir -p "$STAGE/$NAME/docs" && cp docs/*.md "$STAGE/$NAME/docs/"
 rm -rf "$STAGE/$NAME/server/test"
 chmod 755 "$STAGE/$NAME/install.sh" "$STAGE/$NAME/deploy/"*.sh "$STAGE/$NAME/deploy/marco"
 

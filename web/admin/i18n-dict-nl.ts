@@ -16,6 +16,7 @@ import { NL_DECOR } from './i18n-dict-decor';
 import { NL_GROUP } from './i18n-dict-group';
 import { NL_PHOTOSOURCE } from './i18n-dict-photosource';
 import { NL_SINGULAR_VCARD, NL_VCARD } from './i18n-dict-vcard';
+import { NL_MEALIE } from './i18n-dict-mealie';
 
 /** Every admin row but the Familia ones. */
 export const NL: Record<string, string> = {
@@ -33,6 +34,7 @@ export const NL: Record<string, string> = {
   ...NL_GROUP,
   ...NL_PHOTOSOURCE,
   ...NL_VCARD,
+  ...NL_MEALIE,
   '(ninguno)': '(geen)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Je gebruikt het startwachtwoord. Wijzig het: tot dan wordt het alleen vanuit je lokale netwerk geaccepteerd.',
   'Sesiones': 'Sessies',
@@ -299,7 +301,7 @@ export const NL: Record<string, string> = {
   'Panel de la pantalla': 'Schermbeheer',
   'Panel lateral': 'Zijpaneel',
   'Pantalla': 'Scherm',
-  'Pantallas conectadas': 'Verbonden schermen',
+  'Dispositivos conectados': 'Verbonden apparaten',
   'Pantallas recargándose…': 'Schermen worden herladen…',
   'Para usuarios avanzados: se inyecta en la pantalla.': 'Voor gevorderden: wordt in het scherm ingevoegd.',
   'Partículas': 'Deeltjes',
@@ -494,6 +496,7 @@ export const NL: Record<string, string> = {
   'Cada': 'Elke',
   'Cada año, el {date}': 'Elk jaar op {date}',
   'Cada mes, el día {d}': 'Elke maand op dag {d}',
+  'Una pantalla es un conjunto de ajustes, no un aparato: varios dispositivos pueden mostrar la misma, y un carrusel puede alternar varias.': 'Een scherm is een set instellingen, geen apparaat: meerdere apparaten kunnen hetzelfde tonen, en een carrousel kan er meerdere afwisselen.',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Abre /?screen=<dirección> en cada dispositivo.': 'Elk scherm (woonkamer, keuken, hal…) heeft een eigen indeling en eigen widgets. Open /?screen=<adres> op elk apparaat.',
   'Cada semana: {days}': 'Elke week: {days}',
   'Cada {n} años, el {date}': 'Elke {n} jaar op {date}',
@@ -1259,7 +1262,7 @@ export const NL: Record<string, string> = {
   'Abre este enlace privado en la tele, la Raspberry Pi o una tablet: es la llave de esta pantalla, no lo publiques. Los cambios del panel aparecen en la pantalla al instante.': 'Open deze privélink op de tv, de Raspberry Pi of een tablet: het is de sleutel van dit scherm, dus maak hem niet openbaar. Wijzigingen in het beheer verschijnen meteen op het scherm.',
   'Código QR del enlace privado': 'QR-code van de privélink',
   'Enlace privado de la pantalla': 'Privélink van het scherm',
-  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).': 'Nog een scherm? Open daar {url} en koppel het met de code die het toont (Verbonden schermen → Koppelen).',
+  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Dispositivos conectados → Vincular).': 'Nog een scherm? Open daar {url} en koppel het met de code die het toont (Verbonden apparaten → Koppelen).',
   'Instalación existente: pantallas en modo abierto (sin clave). Recomendado: enlaces privados.': 'Bestaande installatie: schermen in open modus (zonder sleutel). Aanbevolen: privélinks.',
   'Enlace privado regenerado: {screen}': 'Privélink opnieuw gemaakt: {screen}',
   'Pantalla vinculada: {name} → {screen}': 'Scherm gekoppeld: {name} → {screen}',
@@ -1290,7 +1293,7 @@ export const NL: Record<string, string> = {
   'Hecho': 'Klaar',
   'Vincular': 'Koppelen',
   '¡Listo! «{name}» muestra ahora {screen}.': 'Klaar! “{name}” toont nu {screen}.',
-  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Pantallas conectadas.': 'Het scherm start over een paar seconden vanzelf. Je kunt het hernoemen of intrekken bij Verbonden schermen.',
+  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.': 'Het scherm start over een paar seconden vanzelf. Je kunt het hernoemen of intrekken bij Verbonden apparaten.',
   'Código de la pantalla': 'Code van het scherm',
   'Qué pantalla mostrará': 'Welk scherm het toont',
   'Nombre del dispositivo (opcional)': 'Naam van het apparaat (optioneel)',
@@ -1322,9 +1325,9 @@ export const NL: Record<string, string> = {
   'Como antes de la versión 0.3: cualquiera que llegue a la dirección del servidor ve el calendario sin clave. Úsalo solo en una red doméstica de confianza.': 'Zoals vóór versie 0.3: iedereen die het adres van de server bereikt ziet de agenda zonder sleutel. Gebruik dit alleen op een vertrouwd thuisnetwerk.',
   'Acceso a las pantallas': 'Toegang tot de schermen',
   'Quién puede ver el calendario familiar en una pantalla.': 'Wie de gezinsagenda op een scherm kan zien.',
-  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Pantallas conectadas. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Na het opslaan tonen schermen die zonder sleutel binnenkomen een koppelcode. Open op elk scherm zijn privélink (Scherm → Instellingen) of koppel het via Verbonden schermen. Zet op een Raspberry Pi-kiosk de privélink in KIOSK_URL (~/.config/marco/kiosk.env): daar gaat een koppeling verloren bij het herstarten.',
+  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Na het opslaan tonen schermen die zonder sleutel binnenkomen een koppelcode. Open op elk scherm zijn privélink (Scherm → Instellingen) of koppel het via Verbonden apparaten. Zet op een Raspberry Pi-kiosk de privélink in KIOSK_URL (~/.config/marco/kiosk.env): daar gaat een koppeling verloren bij het herstarten.',
   'Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.': 'Na het opslaan kan iedereen die het adres van de server bereikt de agenda zien zonder sleutel. Schermen met een koppelcode komen binnen een minuut vanzelf terug.',
-  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Pantallas conectadas.': 'Privélinks staan bij Scherm → Instellingen; gekoppelde apparaten bij Verbonden schermen.',
+  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.': 'Privélinks staan bij Scherm → Instellingen; gekoppelde apparaten bij Verbonden apparaten.',
   'Ver el enlace de esta pantalla': 'Link van dit scherm bekijken',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.': 'Elk scherm (woonkamer, keuken, hal…) heeft een eigen indeling en eigen widgets. Elk apparaat opent de privélink van zijn scherm of wordt gekoppeld met een code.',
   'Copiar enlace privado': 'Privélink kopiëren',

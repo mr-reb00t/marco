@@ -429,14 +429,14 @@ function DisplayAccessCard({ mode, savedMode, onChange, go }: { mode: 'private' 
       )}
       {mode === 'private' && savedMode === 'open' && (
         <Callout kind="warn">
-          {t('Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Pantallas conectadas. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.')}
+          {t('Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.')}
         </Callout>
       )}
       {mode === 'open' && savedMode === 'private' && (
         <Callout kind="warn">{t('Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.')}</Callout>
       )}
       <p class="muted small">
-        {t('Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Pantallas conectadas.')}{' '}
+        {t('Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.')}{' '}
         <button type="button" class="link-btn" onClick={() => go('screen/scr-link')}>
           {t('Ver el enlace de esta pantalla')}
         </button>

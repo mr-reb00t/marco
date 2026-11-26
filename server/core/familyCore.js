@@ -9,6 +9,7 @@
 // as a balance: pointsOf() adds them up from the entries.
 import { addDays } from './lib/tz.js';
 import { PHOTO_ID_RE, photoPath } from './familyPhotoCore.js';
+import { mealiePhotoPath, mealieUrlOk, normalizeMealieUrl } from './mealieCore.js';
 
 export const MAX_MEMBERS = 6;
 export const MAX_CHORES = 80;
@@ -232,6 +233,18 @@ export function sanitizeFamily(raw, err = () => {}, sourceIds) {
     template: mealDays(err, 'family.meals.template', me.template),
     weeks: Object.fromEntries(keep.map((k) => [k, weeks[k]])),
   };
+  // Mealie (core/mealieCore.js, server/mealie.js): { url, photo? }, written only when a URL is set or the photo is
+  // off, so configs without Mealie stay as they were. The API token is in secrets.json, never here.
+  const mm = me.mealie;
+  if (mm !== undefined && mm !== null) {
+    if (!isObj(mm)) err('family.meals.mealie', 'expected object');
+    else {
+      const url = normalizeMealieUrl(text(err, 'family.meals.mealie.url', mm.url, '', 512));
+      if (url && !mealieUrlOk(url)) err('family.meals.mealie.url', 'invalid URL');
+      const photo = bool(err, 'family.meals.mealie.photo', mm.photo, true);
+      if (url || !photo) meals.mealie = { url, ...(photo ? {} : { photo: false }) };
+    }
+  }
 
   return {
     enabled: bool(err, 'family.enabled', x.enabled, D.enabled),
@@ -297,22 +310,43 @@ export function slotAt(hhmm) {
 /**
  * Meals of one date for the enabled slots ({ breakfast: 'Tostadas' }). A week with its own plan only uses its own
  * days (an empty day there stays empty); a week without one shows the template when `useTemplate` is on.
+ * `overlay` (optional): meals from outside, { 'YYYY-MM-DD': { slot: text } } (Mealie, core/mealieCore.js); per meal
+ * its text wins, and the meals it has nothing for keep the plan above.
  */
-export function mealsForDate(meals, date) {
+export function mealsForDate(meals, date, overlay = null) {
   if (!meals) return {};
   const dow = String(dayOfWeek(date));
   const wk = meals.weeks?.[isoWeekKey(date)];
   const day = wk ? wk[dow] || {} : meals.useTemplate ? meals.template?.[dow] || {} : {};
+  const ext = overlay?.[date];
   const out = {};
-  for (const s of meals.slots || []) if (day[s]) out[s] = day[s];
+  for (const s of meals.slots || []) {
+    const v = (typeof ext?.[s] === 'string' && ext[s]) || day[s];
+    if (v) out[s] = v;
+  }
   return out;
 }
 
-/** 7 days from `startDate`: [{ date, dow, meals }]. */
-export function mealsOfWeek(meals, startDate) {
+/** 7 days from `startDate`: [{ date, dow, meals }]. `overlay` as in mealsForDate(). */
+export function mealsOfWeek(meals, startDate, overlay = null) {
   return Array.from({ length: 7 }, (_, i) => {
     const date = addDays(startDate, i);
-    return { date, dow: dayOfWeek(date), meals: mealsForDate(meals, date) };
+    return { date, dow: dayOfWeek(date), meals: mealsForDate(meals, date, overlay) };
+  });
+}
+
+/**
+ * The week for a screen, with the dinner's photo (`photo`, an address) on the days whose Mealie dinner has one, when
+ * the photo setting is on, dinner is shown and `photoUrl` is given (the caller leaves it out while the screen hides
+ * photos).
+ */
+function mealsWeekView(meals, startDate, overlay, photoUrl) {
+  const days = mealsOfWeek(meals, startDate, overlay);
+  if (!overlay || !photoUrl || meals.mealie?.photo === false || !(meals.slots || []).includes('dinner')) return days;
+  return days.map((d) => {
+    const p = overlay[d.date]?.photo;
+    const url = p && d.meals.dinner ? photoUrl(p) : null;
+    return url ? { ...d, photo: url } : d;
   });
 }
 
@@ -560,7 +594,11 @@ const choreRow = (c, done, member, showPoints) => ({
  * `photoUrl(id)` turns a member's photo id into the address the screen loads (default /media/avatars/<id>; the
  * server can answer null when the file is gone, Marco Cloud gives a signed address). Not called in privacy mode.
  */
-export function displayFamily(cfg, screen, state, { today, hhmm = '00:00', private: priv = false, qrUrl = null, generatedAt = null, photoUrl = photoPath }) {
+/**
+ * `mealOverlay`: meals from Mealie for mealsForDate(); `mealPhotoUrl(photo)` the address of a dinner's photo (default
+ * /media/mealie/<id>?v=<key>). The photo stays away while the screen is private with "hide photos".
+ */
+export function displayFamily(cfg, screen, state, { today, hhmm = '00:00', private: priv = false, qrUrl = null, generatedAt = null, photoUrl = photoPath, mealOverlay = null, mealPhotoUrl = mealiePhotoPath }) {
   const fam = cfg.family;
   const sf = screen.family || defaultScreenFamily();
   const hidden = Boolean(priv && fam.privacy === 'hide');
@@ -600,7 +638,9 @@ export function displayFamily(cfg, screen, state, { today, hhmm = '00:00', priva
     qrUrl: fam.enabled && sf.showQr !== false && !priv && showsFamilyQr(screen) ? qrUrl : null,
     members,
     chores,
-    meals: fam.meals.enabled ? { slots: [...fam.meals.slots], days: mealsOfWeek(fam.meals, weekStartOf(today, weekStart)) } : null,
+    meals: fam.meals.enabled
+      ? { slots: [...fam.meals.slots], days: mealsWeekView(fam.meals, weekStartOf(today, weekStart), mealOverlay, priv && screen.privacy?.hidePhotos ? null : mealPhotoUrl) }
+      : null,
     ...(Object.keys(rewards).length ? { nextReward: rewards } : {}),
     generatedAt,
   };
@@ -608,9 +648,9 @@ export function displayFamily(cfg, screen, state, { today, hhmm = '00:00', priva
 
 /**
  * FamilyPhoneState: what the family page (/f/<key>) needs and nothing else (no calendars, screens or config).
- * `photoUrl` as in displayFamily().
+ * `photoUrl` and `mealOverlay` as in displayFamily().
  */
-export function phoneFamily(cfg, state, { today, hhmm = '00:00', lang = 'en', photoUrl = photoPath }) {
+export function phoneFamily(cfg, state, { today, hhmm = '00:00', lang = 'en', photoUrl = photoPath, mealOverlay = null }) {
   const fam = cfg.family;
   const progress = todayProgress(fam, state, today);
   const points = pointsOf(fam, state);
@@ -630,7 +670,7 @@ export function phoneFamily(cfg, state, { today, hhmm = '00:00', lang = 'en', ph
     })),
     chores: choresForDay(fam, today).map((c) => choreRow(c, done, byId.get(c.memberId), fam.showPoints)),
     rewards: fam.rewards.map(({ id: rid, title, emoji, cost }) => ({ id: rid, title, emoji, cost })),
-    meals: fam.meals.enabled ? { slots: [...fam.meals.slots], today: mealsForDate(fam.meals, today) } : null,
+    meals: fam.meals.enabled ? { slots: [...fam.meals.slots], today: mealsForDate(fam.meals, today, mealOverlay) } : null,
   };
 }
 

@@ -25,8 +25,10 @@ export function dayOfWeek(date: string): number;
 export function isoWeekKey(date: string): string;
 export function weekStartOf(date: string, weekStart?: number): string;
 export function slotAt(hhmm: string): Exclude<ChoreSlot, 'any'>;
-export function mealsForDate(meals: MealsConfig, date: string): Partial<Record<MealSlot, string>>;
-export function mealsOfWeek(meals: MealsConfig, startDate: string): { date: string; dow: number; meals: Partial<Record<MealSlot, string>> }[];
+/** Meals from outside (Mealie): per date, per meal; `photo` is the dinner's recipe photo. */
+export type MealOverlay = Record<string, Partial<Record<MealSlot, string>> & { photo?: { id: string; v: string } }>;
+export function mealsForDate(meals: MealsConfig, date: string, overlay?: MealOverlay | null): Partial<Record<MealSlot, string>>;
+export function mealsOfWeek(meals: MealsConfig, startDate: string, overlay?: MealOverlay | null): { date: string; dow: number; meals: Partial<Record<MealSlot, string>> }[];
 export function choresForDay(family: Pick<FamilyConfig, 'members' | 'chores'>, date: string, memberIds?: string[] | null): FamilyChore[];
 export function initials(name: string): string;
 export type { MealDays };

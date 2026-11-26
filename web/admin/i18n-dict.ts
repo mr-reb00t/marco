@@ -39,6 +39,7 @@ import { ROWS_DECOR } from './i18n-dict-decor';
 import { ROWS_GROUP } from './i18n-dict-group';
 import { ROWS_PHOTOSOURCE } from './i18n-dict-photosource';
 import { ROWS_VCARD } from './i18n-dict-vcard';
+import { ROWS_MEALIE } from './i18n-dict-mealie';
 // Translations for the admin panel. Spanish is the source language (key); [es, en, pt].
 const ROWS: [string, string, string][] = [
   ['(ninguno)', '(none)', '(nenhum)'],
@@ -307,7 +308,7 @@ const ROWS: [string, string, string][] = [
   ['Panel de la pantalla', 'Screen panel', 'Painel do ecrã'],
   ['Panel lateral', 'Side panel', 'Painel lateral'],
   ['Pantalla', 'Screen', 'Ecrã'],
-  ['Pantallas conectadas', 'Connected screens', 'Ecrãs ligados'],
+  ['Dispositivos conectados', 'Connected devices', 'Dispositivos ligados'],
   ['Pantallas recargándose…', 'Screens reloading…', 'Ecrãs a recarregar…'],
   ['Para usuarios avanzados: se inyecta en la pantalla.', 'For advanced users: injected into the screen.', 'Para utilizadores avançados: é injetado no ecrã.'],
   ['Partículas', 'Particles', 'Partículas'],
@@ -444,7 +445,7 @@ for (const [es, en, pt] of ROWS) {
   PT[es] = pt;
 }
 // v2 pages; existing rows win on duplicates.
-for (const [es, en, pt] of [...ROWS2, ...ROWS3, ...ROWS4, ...ROWS5, ...ROWS6, ...ROWS7, ...ROWS8, ...ROWS9, ...ROWS10, ...ROWS11, ...ROWS12, ...ROWS13, ...ROWS14, ...ROWS15, ...ROWS_ICLOUD, ...ROWS_MOTION, ...ROWS_COMPACT, ...ROWS_FEEDBACK, ...ROWS_PRIVACY, ...ROWS_DOORBELL, ...ROWS_CAROUSELS, ...ROWS_IMMICH, ...ROWS_PLANNER, ...ROWS_FAMILY, ...ROWS_WIDGETS, ...ROWS_PRICES, ...ROWS_BACKGROUND, ...ROWS_TWOFA, ...ROWS_ACCOUNT, ...ROWS_BUILDER, ...ROWS_TILE, ...ROWS_NAV, ...ROWS_WXPLACES, ...ROWS_BGRULES, ...ROWS_TODO, ...ROWS_ACCESS, ...ROWS_SPOTIFY, ...ROWS_DECOR, ...ROWS_GROUP, ...ROWS_PHOTOSOURCE, ...ROWS_VCARD]) {
+for (const [es, en, pt] of [...ROWS2, ...ROWS3, ...ROWS4, ...ROWS5, ...ROWS6, ...ROWS7, ...ROWS8, ...ROWS9, ...ROWS10, ...ROWS11, ...ROWS12, ...ROWS13, ...ROWS14, ...ROWS15, ...ROWS_ICLOUD, ...ROWS_MOTION, ...ROWS_COMPACT, ...ROWS_FEEDBACK, ...ROWS_PRIVACY, ...ROWS_DOORBELL, ...ROWS_CAROUSELS, ...ROWS_IMMICH, ...ROWS_PLANNER, ...ROWS_FAMILY, ...ROWS_WIDGETS, ...ROWS_PRICES, ...ROWS_BACKGROUND, ...ROWS_TWOFA, ...ROWS_ACCOUNT, ...ROWS_BUILDER, ...ROWS_TILE, ...ROWS_NAV, ...ROWS_WXPLACES, ...ROWS_BGRULES, ...ROWS_TODO, ...ROWS_ACCESS, ...ROWS_SPOTIFY, ...ROWS_DECOR, ...ROWS_GROUP, ...ROWS_PHOTOSOURCE, ...ROWS_VCARD, ...ROWS_MEALIE]) {
   if (!(es in EN)) EN[es] = en;
   if (!(es in PT)) PT[es] = pt;
 }

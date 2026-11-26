@@ -52,7 +52,7 @@ test('caps: old servers and self-hosted keep every feature on', () => {
   assert.equal(old.edition, 'self-hosted');
   assert.equal(old.features, null);
   // accountMenu, microsoftCalendar, updates, feedback, privacy and the doorbell only exist on servers that say so
-  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower'].includes(k), k);
+  for (const k of FEATURE_KEYS) assert.equal(hasFeature(old, k), !['accountMenu', 'microsoftCalendar', 'updates', 'feedback', 'privacy', 'doorbell', 'doorbellLive', 'carousels', 'immich', 'family', 'widgets', 'webWidgets', 'priceWidgets', 'familyPhotos', 'twoFactor', 'accountSettings', 'screenBuilder', 'familyAccess', 'spotify', 'sourceRefresh', 'photoSources', 'commute', 'kioskPower', 'mealie'].includes(k), k);
   // carousels: on for this server, off for servers that do not say so (they would drop config.carousels)
   assert.equal(hasFeature(selfHosted(), 'carousels'), true);
   assert.equal(hasFeature(capsFrom({ ok: true, uptime: 1, version: '0.5.0', edition: 'self-hosted', features: { news: true } }), 'carousels'), false);
@@ -178,7 +178,10 @@ test('navFilter: self-hosted defaults and old servers show everything', () => {
   // "now playing" with Spotify: older servers have no /api/admin/spotify
   const spotifyEntries = search.SETTINGS_INDEX.filter((e) => e.feature === 'spotify').length;
   assert.equal(spotifyEntries, 2);
-  assert.equal(nav.filterSettings(search.SETTINGS_INDEX, oldServer(), routes).length, search.SETTINGS_INDEX.length - accountEntries - updateEntries - doorbellEntries - carouselEntries - immichEntries - familyEntries - widgetEntries - twoFactorEntries - accessEntries - spotifyEntries);
+  // Mealie (the card in Menús): servers without /api/admin/mealie
+  const mealieEntries = search.SETTINGS_INDEX.filter((e) => e.feature === 'mealie').length;
+  assert.equal(mealieEntries, 1);
+  assert.equal(nav.filterSettings(search.SETTINGS_INDEX, oldServer(), routes).length, search.SETTINGS_INDEX.length - accountEntries - updateEntries - doorbellEntries - carouselEntries - immichEntries - familyEntries - widgetEntries - twoFactorEntries - accessEntries - spotifyEntries - mealieEntries);
   // without Google credentials a self-hosted admin still lists the Google entries (with the setup hint); the doorbell
   // card is on the Home Assistant page there, so the entry for API & webhooks (servers without a live camera) is out
   const snapshotEntries = search.SETTINGS_INDEX.filter((e) => e.unless === 'doorbellLive').length;

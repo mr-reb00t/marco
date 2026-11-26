@@ -752,6 +752,9 @@ html.low-power.style-modern *, html.low-power.style-modern *::before, html.low-p
 #app.preset-canvas .cv-fam .kf-meal-em { grid-row: 1 / 3; display: grid; place-items: center; width: 3.8rem; height: 3.8rem; border-radius: 1rem; background: var(--k-fill); font-family: var(--font-emoji); font-size: 2.1rem; }
 #app.preset-canvas .cv-fam .kf-meal-l { font-size: 1.4rem; font-weight: 600; color: var(--k-ink-2); }
 #app.preset-canvas .cv-fam .kf-meal-t { font-size: 1.9rem; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the dinner's photo (Mealie) over the emoji, as on the kids layouts (styles-kids.css) */
+#app.preset-canvas .cv-fam .kf-meal-em.has-photo { position: relative; overflow: hidden; }
+#app.preset-canvas .cv-fam .kf-meal-em.has-photo .kf-meal-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 /* meals of the week: a column per day (wide card) or a row per day (tall card) */
 #app.preset-canvas .cvf-week .km-grid { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-template-columns: 8.4rem; grid-auto-columns: minmax(0, 1fr); gap: 0.8rem; }
 #app.preset-canvas .cvf-week .km-col { display: grid; grid-template-rows: 4.6rem repeat(var(--km-rows, 3), minmax(0, 1fr)); gap: 0.6rem; min-height: 0; border-radius: 1.4rem; }

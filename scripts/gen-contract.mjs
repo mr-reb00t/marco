@@ -27,6 +27,7 @@ const FEATURE_RULES = [
   [/^\/api\/admin\/(homeassistant\/|test\/homeassistant$)/, 'homeassistant'],
   [/^\/api\/admin\/(prices\/|test\/prices$)/, 'priceWidgets'],
   [/^\/api\/admin\/(immich\/|test\/immich$)/, 'immich'],
+  [/^\/api\/admin\/(mealie\/|test\/mealie$)/, 'mealie'],
   [/^\/api\/admin\/test\/rss$/, 'news'],
   [/^\/api\/admin\/google\//, 'googleCalendar'],
   [/^\/api\/admin\/microsoft\//, 'microsoftCalendar'],

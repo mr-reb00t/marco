@@ -24,6 +24,7 @@ import { getEvents, sourceStatus } from '../calendars.js';
 import { cachedWeather } from '../weather.js';
 import { localDate, addDays } from '../core/lib/tz.js';
 import { commuteKeyChanged } from '../commute.js';
+import { mealieTokenChanged } from '../mealie.js';
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const LEVELS = ['info', 'warn', 'error'];
@@ -161,6 +162,7 @@ export function systemRouter({ version = getServerVersion() } = {}) {
         }
         if (s.weatherKey !== undefined) { x.weather = { ...(x.weather || {}), apiKey: s.weatherKey }; applied.push('weather'); }
         if (s.immichKey !== undefined) { x.immich = { ...(x.immich || {}), apiKey: s.immichKey }; applied.push('immich'); }
+        if (s.mealie) { x.mealie = s.mealie; applied.push('mealie'); }
         if (s.entsoeToken !== undefined) { x.prices = { ...(x.prices || {}), entsoeToken: s.entsoeToken }; applied.push('prices'); }
         if (s.stocksKey !== undefined) { x.data = { ...(x.data || {}), stocksKey: s.stocksKey }; applied.push('data'); }
         if (s.commuteKey !== undefined) { x.commute = { ...(x.commute || {}), apiKey: s.commuteKey }; applied.push('commute'); }
@@ -192,6 +194,8 @@ export function systemRouter({ version = getServerVersion() } = {}) {
     if (applied.includes('displayKeys') || applied.includes('devices')) syncDisplayKeys();
     // a restored Google Maps key: routes that failed with the old one try again on their next ask
     if (applied.includes('commute')) commuteKeyChanged();
+    // a restored Mealie token: the meal plan is read again with it
+    if (applied.includes('mealie')) mealieTokenChanged();
     // Keys replaced / devices dropped by the import: close the streams still reading with the old credentials
     // (same as Regenerate link / Revoke). The password case closes admin-session streams via rotateSessionEpoch.
     if (applied.length) revalidateStreams();

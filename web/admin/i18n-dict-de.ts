@@ -16,6 +16,7 @@ import { DE_DECOR } from './i18n-dict-decor';
 import { DE_GROUP } from './i18n-dict-group';
 import { DE_PHOTOSOURCE } from './i18n-dict-photosource';
 import { DE_SINGULAR_VCARD, DE_VCARD } from './i18n-dict-vcard';
+import { DE_MEALIE } from './i18n-dict-mealie';
 
 /** Every admin row but the Familia ones. */
 export const DE: Record<string, string> = {
@@ -33,6 +34,7 @@ export const DE: Record<string, string> = {
   ...DE_GROUP,
   ...DE_PHOTOSOURCE,
   ...DE_VCARD,
+  ...DE_MEALIE,
   '(ninguno)': '(keine)',
   'Estás usando la contraseña inicial. Cámbiala: hasta entonces solo se acepta desde tu red local.': 'Du verwendest noch das Startpasswort. Ändere es: bis dahin wird es nur im lokalen Netzwerk akzeptiert.',
   'Sesiones': 'Sitzungen',
@@ -299,7 +301,7 @@ export const DE: Record<string, string> = {
   'Panel de la pantalla': 'Bildschirmansicht',
   'Panel lateral': 'Seitenleiste',
   'Pantalla': 'Bildschirm',
-  'Pantallas conectadas': 'Verbundene Bildschirme',
+  'Dispositivos conectados': 'Verbundene Geräte',
   'Pantallas recargándose…': 'Bildschirme werden neu geladen…',
   'Para usuarios avanzados: se inyecta en la pantalla.': 'Für Fortgeschrittene: wird in den Bildschirm eingefügt.',
   'Partículas': 'Partikel',
@@ -494,6 +496,7 @@ export const DE: Record<string, string> = {
   'Cada': 'Alle',
   'Cada año, el {date}': 'Jedes Jahr am {date}',
   'Cada mes, el día {d}': 'Jeden Monat am {d}.',
+  'Una pantalla es un conjunto de ajustes, no un aparato: varios dispositivos pueden mostrar la misma, y un carrusel puede alternar varias.': 'Ein Bildschirm ist eine Sammlung von Einstellungen, kein Gerät: Mehrere Geräte können denselben zeigen, und ein Karussell kann mehrere abwechseln.',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Abre /?screen=<dirección> en cada dispositivo.': 'Jeder Bildschirm (Wohnzimmer, Küche, Flur…) hat sein eigenes Layout und eigene Widgets. Öffne /?screen=<Adresse> auf jedem Gerät.',
   'Cada semana: {days}': 'Jede Woche: {days}',
   'Cada {n} años, el {date}': 'Alle {n} Jahre am {date}',
@@ -1259,7 +1262,7 @@ export const DE: Record<string, string> = {
   'Abre este enlace privado en la tele, la Raspberry Pi o una tablet: es la llave de esta pantalla, no lo publiques. Los cambios del panel aparecen en la pantalla al instante.': 'Öffne diesen privaten Link auf dem Fernseher, dem Raspberry Pi oder einem Tablet: er ist der Schlüssel zu diesem Bildschirm, veröffentliche ihn nicht. Änderungen im Admin-Bereich erscheinen sofort auf dem Bildschirm.',
   'Código QR del enlace privado': 'QR-Code des privaten Links',
   'Enlace privado de la pantalla': 'Privater Link des Bildschirms',
-  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).': 'Noch ein Bildschirm? Öffne dort {url} und kopple ihn mit dem angezeigten Code (Verbundene Bildschirme → Koppeln).',
+  '¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Dispositivos conectados → Vincular).': 'Noch ein Bildschirm? Öffne dort {url} und kopple ihn mit dem angezeigten Code (Verbundene Geräte → Koppeln).',
   'Instalación existente: pantallas en modo abierto (sin clave). Recomendado: enlaces privados.': 'Bestehende Installation: Bildschirme im offenen Modus (ohne Schlüssel). Empfohlen: private Links.',
   'Enlace privado regenerado: {screen}': 'Privater Link neu erstellt: {screen}',
   'Pantalla vinculada: {name} → {screen}': 'Bildschirm gekoppelt: {name} → {screen}',
@@ -1290,7 +1293,7 @@ export const DE: Record<string, string> = {
   'Hecho': 'Fertig',
   'Vincular': 'Koppeln',
   '¡Listo! «{name}» muestra ahora {screen}.': 'Fertig! „{name}“ zeigt jetzt {screen}.',
-  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Pantallas conectadas.': 'Der Bildschirm startet in ein paar Sekunden von selbst. Du kannst ihn unter Verbundene Bildschirme umbenennen oder widerrufen.',
+  'La pantalla arranca sola en unos segundos. Puedes renombrarla o revocarla en Dispositivos conectados.': 'Der Bildschirm startet in ein paar Sekunden von selbst. Du kannst ihn unter Verbundene Geräte umbenennen oder widerrufen.',
   'Código de la pantalla': 'Code des Bildschirms',
   'Qué pantalla mostrará': 'Anzuzeigender Bildschirm',
   'Nombre del dispositivo (opcional)': 'Gerätename (optional)',
@@ -1322,9 +1325,9 @@ export const DE: Record<string, string> = {
   'Como antes de la versión 0.3: cualquiera que llegue a la dirección del servidor ve el calendario sin clave. Úsalo solo en una red doméstica de confianza.': 'Wie vor Version 0.3: jeder, der die Serveradresse erreicht, sieht den Kalender ohne Schlüssel. Nutze das nur in einem Heimnetzwerk, dem du vertraust.',
   'Acceso a las pantallas': 'Zugriff auf die Bildschirme',
   'Quién puede ver el calendario familiar en una pantalla.': 'Wer den Familienkalender auf einem Bildschirm sehen kann.',
-  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Pantallas conectadas. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Nach dem Speichern zeigen Bildschirme, die jetzt ohne Schlüssel zugreifen, einen Kopplungscode. Öffne auf jedem seinen privaten Link (Bildschirm → Einstellungen) oder kopple ihn unter Verbundene Bildschirme. Bei einem Raspberry-Pi-Kiosk gehört der private Link in KIOSK_URL (~/.config/marco/kiosk.env): dort geht die Kopplung beim Neustart verloren.',
+  'Al guardar, las pantallas que ahora entran sin clave mostrarán un código de vinculación. Abre en cada una su enlace privado (Pantalla → Ajustes) o vincúlala desde Dispositivos conectados. En un kiosco Raspberry Pi pon el enlace privado en KIOSK_URL (~/.config/marco/kiosk.env): allí la vinculación se pierde al reiniciarse.': 'Nach dem Speichern zeigen Bildschirme, die jetzt ohne Schlüssel zugreifen, einen Kopplungscode. Öffne auf jedem seinen privaten Link (Bildschirm → Einstellungen) oder kopple ihn unter Verbundene Geräte. Bei einem Raspberry-Pi-Kiosk gehört der private Link in KIOSK_URL (~/.config/marco/kiosk.env): dort geht die Kopplung beim Neustart verloren.',
   'Al guardar, cualquiera que llegue a la dirección del servidor podrá ver el calendario sin clave. Las pantallas que muestran un código de vinculación vuelven solas en menos de un minuto.': 'Nach dem Speichern kann jeder, der die Serveradresse erreicht, den Kalender ohne Schlüssel sehen. Bildschirme, die einen Kopplungscode zeigen, kommen in weniger als einer Minute von selbst zurück.',
-  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Pantallas conectadas.': 'Private Links findest du unter Bildschirm → Einstellungen, gekoppelte Geräte unter Verbundene Bildschirme.',
+  'Los enlaces privados están en Pantalla → Ajustes; los dispositivos vinculados, en Dispositivos conectados.': 'Private Links findest du unter Bildschirm → Einstellungen, gekoppelte Geräte unter Verbundene Geräte.',
   'Ver el enlace de esta pantalla': 'Link dieses Bildschirms anzeigen',
   'Cada pantalla (salón, cocina, entrada…) tiene su propio diseño y widgets. Cada dispositivo abre el enlace privado de su pantalla o se vincula con un código.': 'Jeder Bildschirm (Wohnzimmer, Küche, Flur…) hat sein eigenes Layout und eigene Widgets. Jedes Gerät öffnet den privaten Link seines Bildschirms oder wird per Code gekoppelt.',
   'Copiar enlace privado': 'Privaten Link kopieren',

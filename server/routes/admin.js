@@ -8,6 +8,8 @@ import * as ha from '../homeassistant.js';
 import { homeAssistantTokenChanged } from '../haService.js';
 import * as immich from '../immich.js';
 import { IMMICH_KEY_RE, immichKeyStatus } from '../core/immichCore.js';
+import * as mealie from '../mealie.js';
+import { MEALIE_TOKEN_RE, mealieUrlOk, normalizeMealieUrl } from '../core/mealieCore.js';
 import { testIcs, sourceStatus, refreshNow, manualRefreshCooldowns } from '../calendars.js';
 import { runRefresh } from '../refresher.js';
 import { LOCAL_SOURCE_ID, BIRTHDAYS_SOURCE_ID } from '../core/defaults.js';
@@ -278,6 +280,45 @@ export function adminRouter({ onConfigSaved } = {}) {
     res.json(immich.immichStatus());
   }));
   r.delete('/immich/cache', (req, res) => res.json({ ok: true, freed: immich.clearCache() }));
+
+  // --- Mealie (server/mealie.js): the token is write-only and tied to the address it is saved for ---
+  r.post('/test/mealie', wrap(async (req, res) => {
+    const { url, token } = req.body || {};
+    if (url !== undefined && url !== '' && (typeof url !== 'string' || url.length > 512 || !mealieUrlOk(normalizeMealieUrl(url)))) return res.json({ ok: false, error: 'invalid_url' });
+    if (token !== undefined && token !== '' && (typeof token !== 'string' || !MEALIE_TOKEN_RE.test(token.trim()))) return res.json({ ok: false, error: 'invalid_token' });
+    res.json(await mealie.testMealie({
+      url: url || undefined,
+      token: typeof token === 'string' && token.trim() ? token.trim() : undefined,
+    }));
+  }));
+  r.get('/mealie/token', (req, res) => res.json(mealie.tokenStatus()));
+  r.put('/mealie/token', wrap(async (req, res) => {
+    const { token, url } = req.body || {};
+    if (typeof token !== 'string' || token.length > 4096) return res.status(400).json({ error: 'token must be a string' });
+    const k = token.trim();
+    if (k && !MEALIE_TOKEN_RE.test(k)) return res.status(400).json({ error: 'invalid_token' });
+    if (url !== undefined && url !== '' && (typeof url !== 'string' || url.length > 512)) return res.status(400).json({ error: 'invalid_url' });
+    const forUrl = normalizeMealieUrl(url || getConfig().family?.meals?.mealie?.url || '');
+    if (k && !mealieUrlOk(forUrl)) return res.status(400).json({ error: 'invalid_url' });
+    // a new token is tried first: one Mealie refuses is not stored (Mealie down: stored, not checked)
+    let checked = false;
+    if (k) {
+      const t = await mealie.testMealie({ url: forUrl, token: k });
+      if (t.error === 'invalid_token') return res.status(400).json({ error: 'invalid_token' });
+      checked = t.ok === true;
+    }
+    updateSecrets((s) => {
+      if (k) s.mealie = { token: k, url: forUrl };
+      else delete s.mealie;
+    });
+    mealie.mealieTokenChanged();
+    res.json({ ...mealie.tokenStatus(), checked });
+  }));
+  r.get('/mealie/status', (req, res) => res.json(mealie.mealieStatus()));
+  r.post('/mealie/refresh', wrap(async (req, res) => {
+    await mealie.refreshMealie();
+    res.json(mealie.mealieStatus());
+  }));
 
   // --- weather API key (Pirate Weather): kept in secrets.json, never sent back, only whether one is set ---
   r.get('/weather/key', (req, res) => res.json(weatherKeyStatus(weatherKey())));

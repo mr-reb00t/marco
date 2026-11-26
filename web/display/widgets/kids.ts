@@ -245,12 +245,26 @@ export function rewardRowsHtml(f: FamilyDisplayState, max = Infinity): string[] 
   });
 }
 
-/** The meals of `date` (one row per meal of the day that has one). */
+/**
+ * The dinner's photo address for this display (a Mealie recipe, /media/mealie/<id>?v=…), or ''. Only same-origin
+ * /media/ paths: they get this display's screen and credential.
+ */
+const mealPhotoSrc = (p: string | undefined) => (p && p.startsWith('/media/') ? mediaUrl(withScreen(p)) : '');
+
+/**
+ * The meals of `date` (one row per meal of the day that has one). With a dinner photo (Mealie) the dinner's tile
+ * shows it over the emoji, which stays as the fallback while it loads or when it fails.
+ */
 export function mealRowsHtml(meals: NonNullable<FamilyDisplayState['meals']>, date: string): string[] {
   const { t } = ctx;
   const day = meals.days.find((x) => x.date === date);
-  return meals.slots.filter((s) => day?.meals[s]).map((s) =>
-    `<div class="kf-meal"><span class="kf-meal-em">${MEAL_EMOJI[s]}</span><span class="kf-meal-l">${esc(t(`meal_${s}`))}</span><span class="kf-meal-t">${esc(day!.meals[s]!)}</span></div>`);
+  const photo = mealPhotoSrc(day?.photo);
+  return meals.slots.filter((s) => day?.meals[s]).map((s) => {
+    const em = s === 'dinner' && photo
+      ? `<span class="kf-meal-em has-photo"><span class="kf-meal-ph">${MEAL_EMOJI[s]}</span><img class="kf-meal-img" src="${esc(photo)}" alt="" decoding="async" draggable="false"></span>`
+      : `<span class="kf-meal-em">${MEAL_EMOJI[s]}</span>`;
+    return `<div class="kf-meal${s === 'dinner' && photo ? ' has-photo' : ''}">${em}<span class="kf-meal-l">${esc(t(`meal_${s}`))}</span><span class="kf-meal-t">${esc(day!.meals[s]!)}</span></div>`;
+  });
 }
 
 /**

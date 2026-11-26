@@ -18,8 +18,8 @@ import { PRESETS, Schematic } from './sections/Layout';
 import { HOLIDAY_PRESETS, isHttpUrl, SWATCHES } from './util';
 
 const TOKEN_KEY = 'calendar-admin.setupToken';
-/** README section with the Google OAuth guide (REPO_URL: web/shared/project.ts). */
-export const GOOGLE_GUIDE_URL = `${REPO_URL}#connecting-google-calendar`;
+/** Docs section with the Google OAuth guide (REPO_URL: web/shared/project.ts). */
+export const GOOGLE_GUIDE_URL = `${REPO_URL}/blob/main/docs/INTEGRATIONS.md#connecting-google-calendar`;
 
 /** `?setup=<token>` from the startup log: keep it for this tab only and drop it from the address bar. */
 export function takeSetupToken(): string {
@@ -885,7 +885,7 @@ export function SetupWizard({ status: initial, onDone, onLang }: { status: Setup
           <div class="wz-done__main">
             <Field
               label={privateLink ? t('Enlace privado de la pantalla') : t('Dirección de la pantalla')}
-              hint={privateLink ? t('¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Pantallas conectadas → Vincular).', { url: `${origin}/` }) : undefined}
+              hint={privateLink ? t('¿Otra pantalla? Abre {url} en ella y vincúlala con el código que muestra (Dispositivos conectados → Vincular).', { url: `${origin}/` }) : undefined}
             >
               <CopyField value={displayUrl} />
             </Field>
